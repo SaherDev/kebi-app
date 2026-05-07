@@ -1,34 +1,29 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="130" height="130" viewBox="0 0 130 130" fill="none">
-            <defs>
-              <style>
-                @keyframes blink {
-                  0%, 90%, 100% { opacity: 1; }
-                  95% { opacity: 0; }
-                }
-                .blink-eye { animation: blink 3s infinite; }
-              </style>
-            </defs>
-            <ellipse cx="65" cy="100" rx="34" ry="36" fill="#ADADAD"/>
-            <ellipse cx="65" cy="104" rx="20" ry="21" fill="#D8D8D0"/>
-            <ellipse cx="48" cy="32" rx="7" ry="18" fill="#9A9A9A" transform="rotate(-5 48 32)"/>
-            <ellipse cx="82" cy="32" rx="7" ry="18" fill="#9A9A9A" transform="rotate(5 82 32)"/>
-            <ellipse cx="48" cy="33" rx="4" ry="11" fill="#C8A0A0" transform="rotate(-5 48 33)" opacity="0.6"/>
-            <ellipse cx="82" cy="33" rx="4" ry="11" fill="#C8A0A0" transform="rotate(5 82 33)" opacity="0.6"/>
-            <ellipse cx="65" cy="75" rx="24" ry="22" fill="#ADADAD"/>
-            <ellipse cx="65" cy="72" rx="4" ry="3" fill="#1A1A2E"/>
-            <g class="blink-eye">
-              <ellipse cx="55" cy="64" rx="6" ry="7" fill="white"/>
-              <ellipse cx="56" cy="64" rx="4" ry="5" fill="#1A1A2E"/>
-              <circle cx="57" cy="62" r="1.2" fill="white"/>
-            </g>
-            <g class="blink-eye">
-              <ellipse cx="75" cy="64" rx="6" ry="7" fill="white"/>
-              <ellipse cx="76" cy="64" rx="4" ry="5" fill="#1A1A2E"/>
-              <circle cx="77" cy="62" r="1.2" fill="white"/>
-            </g>
-            <line x1="36" y1="72" x2="54" y2="74" stroke="#888" stroke-width="1" stroke-linecap="round" opacity="0.5"/>
-            <line x1="76" y1="74" x2="94" y2="72" stroke="#888" stroke-width="1" stroke-linecap="round" opacity="0.5"/>
-            <path d="M 42 96 Q 36 108 40 116" stroke="#9A9A9A" stroke-width="7" stroke-linecap="round" fill="none"/>
-            <path d="M 88 96 Q 94 108 90 116" stroke="#9A9A9A" stroke-width="7" stroke-linecap="round" fill="none"/>
-            <ellipse cx="65" cy="120" rx="10" ry="5" fill="#8A8A8A"/>
-          </svg>
+  <defs>
+    <style>
+      @keyframes blink {
+        0%, 90%, 100% { opacity: 1; }
+        95% { opacity: 0; }
+      }
+      .blink-eye { animation: blink 3s infinite; }
+    </style>
+  </defs>
+  <path d="M58 22 Q65 14 72 22" stroke="#8B7355" stroke-width="3" stroke-linecap="round" fill="none"/>
+  <ellipse cx="27" cy="72" rx="9" ry="14" fill="#A89070"/>
+  <ellipse cx="103" cy="72" rx="9" ry="14" fill="#A89070"/>
+  <ellipse cx="65" cy="72" rx="36" ry="40" fill="#D4B891"/>
+  <ellipse cx="65" cy="82" rx="22" ry="24" fill="#F5EBD3"/>
+  <g class="blink-eye">
+    <circle cx="55" cy="60" r="6.5" fill="white"/>
+    <circle cx="55.5" cy="60.5" r="3" fill="#2A1F15"/>
+  </g>
+  <g class="blink-eye">
+    <circle cx="75" cy="60" r="6.5" fill="white"/>
+    <circle cx="75.5" cy="60.5" r="3" fill="#2A1F15"/>
+  </g>
+  <path d="M65 67 L61 73 L69 73 Z" fill="#C87A4A"/>
+  <ellipse cx="48" cy="72" rx="5" ry="3.2" fill="#E8B894" opacity="0.75"/>
+  <ellipse cx="82" cy="72" rx="5" ry="3.2" fill="#E8B894" opacity="0.75"/>
+  <path d="M55 109 L52 114 M55 109 L55 115 M55 109 L58 114" stroke="#8B7355" stroke-width="2.2" stroke-linecap="round"/>
+  <path d="M75 109 L72 114 M75 109 L75 115 M75 109 L78 114" stroke="#8B7355" stroke-width="2.2" stroke-linecap="round"/>
+</svg>
