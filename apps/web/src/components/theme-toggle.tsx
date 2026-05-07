@@ -3,7 +3,7 @@
 import { useTheme } from 'next-themes';
 import { useEffect, useState } from 'react';
 import { Sun, Moon, Monitor } from 'lucide-react';
-import { cn } from '@totoro/ui';
+import { cn } from '@kebi-app/ui';
 
 export function ThemeToggle() {
   const { theme, setTheme } = useTheme();
@@ -67,7 +67,7 @@ export function ThemeSegment() {
             className={cn(
               'flex h-8 w-8 items-center justify-center rounded-lg transition-all duration-200',
               theme === value
-                ? 'bg-card text-foreground shadow-totoro-sm'
+                ? 'bg-card text-foreground shadow-kebi-app-sm'
                 : 'text-muted-foreground hover:text-foreground'
             )}
             title={label}

@@ -1,6 +1,6 @@
 # Phase 1 Data Model
 
-This feature introduces **no database schema changes**. All persistence lives in `totoro-ai`. What follows is the in-memory / wire model owned by the gateway and `libs/shared`.
+This feature introduces **no database schema changes**. All persistence lives in `kebi`. What follows is the in-memory / wire model owned by the gateway and `libs/shared`.
 
 ## Entities
 

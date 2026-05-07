@@ -68,7 +68,7 @@ Upstream URL: `${AI_SERVICE_BASE_URL}/v1/signal`. Timeout 30 s.
 
 ## Bruno file
 
-`totoro-config/bruno/nestjs-api/signal.bru` — two requests inside:
+`kebi-config/bruno/nestjs-api/signal.bru` — two requests inside:
 1. `Signal — Accepted` (`signal_type: recommendation_accepted`)
 2. `Signal — Rejected` (`signal_type: recommendation_rejected`)
 3. (Optional) `Signal — Bogus Recommendation ID` for the 404 path.

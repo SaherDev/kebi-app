@@ -1,4 +1,4 @@
-# Tasks: Wire Recall Proxy to totoro-ai
+# Tasks: Wire Recall Proxy to kebi
 
 **Feature**: 009-recall-proxy
 **Branch**: `009-recall-proxy`
@@ -15,7 +15,7 @@
 1. Implement AI service client interface and method (`recall()`)
 2. Wire RecallService to forward requests
 3. Update DTOs and controller
-4. Test forwarding with totoro-ai running
+4. Test forwarding with kebi running
 5. Add error handling (User Story 2)
 6. Add validation (User Story 3)
 7. Create Bruno test file for manual API testing
@@ -38,15 +38,15 @@ These tasks set up the infrastructure that both the client and service depend on
 
 ### Phase 2: User Story 1 — Successful Recall Query (P1)
 
-**Goal**: Forward valid recall requests to totoro-ai and return the response as-is.
+**Goal**: Forward valid recall requests to kebi and return the response as-is.
 
 **Independent Test Criteria**:
 - Send `POST /api/v1/recall` with body `{ "query": "that ramen place I saved from TikTok", "user_id": "user_123" }`
 - Verify NestJS forwards to `POST http://localhost:8000/v1/recall` with the same body
-- Verify the response from totoro-ai is returned to the caller with HTTP 200
+- Verify the response from kebi is returned to the caller with HTTP 200
 
 **Acceptance Scenarios** (from spec.md):
-1. Valid request body forwarded to totoro-ai with same structure
+1. Valid request body forwarded to kebi with same structure
 2. Exact response returned with HTTP 200
 3. Empty results array `{ "results": [], "total": 0 }` handled correctly
 
@@ -87,9 +87,9 @@ These tasks set up the infrastructure that both the client and service depend on
 
 ---
 
-### Phase 3: User Story 2 — totoro-ai Unreachable (P2)
+### Phase 3: User Story 2 — kebi Unreachable (P2)
 
-**Goal**: Return HTTP 503 with readable message when totoro-ai is unreachable or returns 5xx.
+**Goal**: Return HTTP 503 with readable message when kebi is unreachable or returns 5xx.
 
 **Independent Test Criteria**:
 - Point `ai_service.base_url` to invalid host
@@ -98,7 +98,7 @@ These tasks set up the infrastructure that both the client and service depend on
 
 **Acceptance Scenarios** (from spec.md):
 1. Connection refused/timeout → 503 with readable message
-2. totoro-ai returns HTTP 500 → 503 with readable message
+2. kebi returns HTTP 500 → 503 with readable message
 3. Network timeout → 503 with readable message
 
 #### Implementation Tasks
@@ -122,7 +122,7 @@ These tasks set up the infrastructure that both the client and service depend on
 **Independent Test Criteria**:
 - Send `POST /api/v1/recall` with empty body
 - Verify HTTP 400 returned with validation error message
-- Verify totoro-ai is NOT called
+- Verify kebi is NOT called
 
 **Acceptance Scenarios** (from spec.md):
 1. Missing `query` field → 400
@@ -141,7 +141,7 @@ These tasks set up the infrastructure that both the client and service depend on
   - Missing `user_id` → 400
   - Empty string → 400
 
-- [ ] T015 [US3] Manual test via Bruno: Send invalid payloads, confirm 400 responses without calling totoro-ai in `/Users/saher/dev/repos/totoro-dev/totoro-config/bruno/nestjs-api/recall.bru`
+- [ ] T015 [US3] Manual test via Bruno: Send invalid payloads, confirm 400 responses without calling kebi in `/Users/saher/dev/repos/kebi-dev/kebi-config/bruno/nestjs-api/recall.bru`
 
 ---
 
@@ -151,7 +151,7 @@ These tasks set up the infrastructure that both the client and service depend on
 
 #### Bruno API Test File
 
-- [x] T016 Create `recall.bru` in `/Users/saher/dev/repos/totoro-dev/totoro-config/bruno/nestjs-api/`:
+- [x] T016 Create `recall.bru` in `/Users/saher/dev/repos/kebi-dev/kebi-config/bruno/nestjs-api/`:
   - Happy path: Valid recall query with user_id → 200
   - Error: Missing query → 400
   - Error: Missing user_id → 400
@@ -164,7 +164,7 @@ These tasks set up the infrastructure that both the client and service depend on
   - `pnpm nx lint api` — no lint errors ✓ (warnings only in pre-existing unrelated code)
   - `pnpm nx build api` — clean build with no errors ✓ compiled successfully
 
-- [ ] T018 Manual smoke test (requires totoro-ai running at `localhost:8000`):
+- [ ] T018 Manual smoke test (requires kebi running at `localhost:8000`):
   ```bash
   curl -X POST http://localhost:3333/api/v1/recall \
     -H "Content-Type: application/json" \

@@ -1,4 +1,4 @@
-import type { ClientIntent } from '@totoro/shared';
+import type { ClientIntent } from '@kebi-app/shared';
 
 export type FlowId = 'consult' | 'recall' | 'save' | 'assistant' | 'clarification';
 

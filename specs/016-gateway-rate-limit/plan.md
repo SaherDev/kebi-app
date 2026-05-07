@@ -27,7 +27,7 @@ Add per-user rate limiting to the NestJS gateway via a new `RateLimitModule` (in
 | Gate | Status | Notes |
 |---|---|---|
 | §I Two-Repo Boundary | ✅ Pass | Rate limiting is pure NestJS gateway logic; no LLM calls, no embeddings, no AI-table writes |
-| §II Nx Boundaries | ✅ Pass | `libs/shared` gets `AuthUser`, `PlanTier`; `services/api` imports from `@totoro/shared`; no cross-boundary violations |
+| §II Nx Boundaries | ✅ Pass | `libs/shared` gets `AuthUser`, `PlanTier`; `services/api` imports from `@kebi-app/shared`; no cross-boundary violations |
 | §III ADR-032 Facade | ✅ Pass | Controller still makes one service call; all counter updates happen inside ChatService |
 | §III ADR-014 One Module | ✅ Pass | New `RateLimitModule` = one domain module |
 | §III ADR-022 Guard order | ✅ Pass | `RateLimitGuard` added alongside `AiEnabledGuard` via decorator |
@@ -69,7 +69,7 @@ services/api/src/
 │   ├── middleware/
 │   │   └── clerk.middleware.ts           UPDATE — extract plan from public_metadata, use AuthUser
 │   ├── guards/
-│   │   ├── ai-enabled.guard.ts           UPDATE — import AuthUser from @totoro/shared
+│   │   ├── ai-enabled.guard.ts           UPDATE — import AuthUser from @kebi-app/shared
 │   │   └── rate-limit.guard.ts           NEW
 │   └── decorators/
 │       └── current-user.decorator.ts     NO CHANGE
@@ -116,12 +116,12 @@ No ADR violations. All gates pass. No complexity tracking required.
 ### Phase C — ClerkMiddleware + AuthUser migration
 
 6. Update `clerk.middleware.ts`:
-   - Import `AuthUser`, `PlanTier` from `@totoro/shared`
+   - Import `AuthUser`, `PlanTier` from `@kebi-app/shared`
    - Extract `plan` from `public_metadata` typed as `PlanTier | undefined`
    - Populate `req.user = { id, ai_enabled, plan }` using the `AuthUser` shape
    - Remove the local `ClerkUser` interface definition
    - Update `Express.Request.user` global augmentation to use imported `AuthUser`
-7. Update `ai-enabled.guard.ts`: replace `import { ClerkUser } from '../middleware/clerk.middleware'` with `import { AuthUser } from '@totoro/shared'`
+7. Update `ai-enabled.guard.ts`: replace `import { ClerkUser } from '../middleware/clerk.middleware'` with `import { AuthUser } from '@kebi-app/shared'`
 8. Verify build: `pnpm nx build api`
 
 ### Phase D — Config + RateLimitModule
@@ -174,12 +174,12 @@ No ADR violations. All gates pass. No complexity tracking required.
 
 ### Phase G — Bruno tests
 
-18. Create `totoro-config/bruno/rate-limit/tool-calls-breach.bru`
-19. Create `totoro-config/bruno/rate-limit/turns-breach.bru`
-20. Create `totoro-config/bruno/rate-limit/sessions-breach.bru`
-21. Create `totoro-config/bruno/rate-limit/logout-reset.bru`
-22. Create `totoro-config/bruno/rate-limit/day-rollover.bru`
-23. Create `totoro-config/bruno/rate-limit/default-plan-fallback.bru`
+18. Create `kebi-config/bruno/rate-limit/tool-calls-breach.bru`
+19. Create `kebi-config/bruno/rate-limit/turns-breach.bru`
+20. Create `kebi-config/bruno/rate-limit/sessions-breach.bru`
+21. Create `kebi-config/bruno/rate-limit/logout-reset.bru`
+22. Create `kebi-config/bruno/rate-limit/day-rollover.bru`
+23. Create `kebi-config/bruno/rate-limit/default-plan-fallback.bru`
 
 ### Phase H — Verify
 

@@ -1,4 +1,4 @@
-# Coding Standards — Totoro Product Repo
+# Coding Standards — Kebi Product Repo
 
 ## Zero Hardcoding
 
@@ -13,8 +13,8 @@
 
 ## Path Aliases
 
-- `@totoro/shared` → `libs/shared/src`
-- `@totoro/ui` → `libs/ui/src`
+- `@kebi-app/shared` → `libs/shared/src`
+- `@kebi-app/ui` → `libs/ui/src`
 - App-internal imports use relative paths
 
 ## Naming Patterns
@@ -33,10 +33,10 @@
 
 ## Technical Notes
 
-- **pgvector**: PostgreSQL must have the `vector` extension enabled. All vector operations live in totoro-ai (FastAPI + Alembic). NestJS never defines or queries vector columns.
+- **pgvector**: PostgreSQL must have the `vector` extension enabled. All vector operations live in kebi (FastAPI + Alembic). NestJS never defines or queries vector columns.
 - **Clerk middleware**: Runs in both Next.js middleware and NestJS guards. Auth state is verified independently in each app — do not pass raw tokens between apps; use Clerk's backend SDK to verify.
-- **Config split**: `services/api/config/app.yaml` (committed) contains port, api prefix, public paths, and AI feature flags. Secrets go in `.env.local` (gitignored, symlinked to `totoro-config/secrets/api.env.local`). Both are loaded by `ConfigModule` at startup.
-- **Free-text place input**: The frontend sends a raw string to the API. The API forwards it to totoro-ai for parsing. totoro-ai writes the place and embedding directly to PostgreSQL and returns a confirmation (place_id + metadata). This repo never parses place names, URLs, or extracts metadata — that is the AI repo's job.
-- **totoro-ai returns 1+2**: One primary recommendation plus two alternatives. Each has: place name, address, reasoning text, source (saved vs discovered). Do not expect or depend on additional fields until they are added.
-- **No committed secrets**: NestJS secrets in `.env.local` (gitignored, symlinked to `totoro-config/secrets/api.env.local`). Next.js secrets in `.env.local`. FastAPI secrets in `config/.local.yaml`. Never commit secret files.
+- **Config split**: `services/api/config/app.yaml` (committed) contains port, api prefix, public paths, and AI feature flags. Secrets go in `.env.local` (gitignored, symlinked to `kebi-config/secrets/api.env.local`). Both are loaded by `ConfigModule` at startup.
+- **Free-text place input**: The frontend sends a raw string to the API. The API forwards it to kebi for parsing. kebi writes the place and embedding directly to PostgreSQL and returns a confirmation (place_id + metadata). This repo never parses place names, URLs, or extracts metadata — that is the AI repo's job.
+- **kebi returns 1+2**: One primary recommendation plus two alternatives. Each has: place name, address, reasoning text, source (saved vs discovered). Do not expect or depend on additional fields until they are added.
+- **No committed secrets**: NestJS secrets in `.env.local` (gitignored, symlinked to `kebi-config/secrets/api.env.local`). Next.js secrets in `.env.local`. FastAPI secrets in `config/.local.yaml`. Never commit secret files.
 - **git comment character**: This repo uses `;` as git's comment character (not `#`). Run `git config --global core.commentChar ";"` once per machine.

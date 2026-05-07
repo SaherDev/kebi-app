@@ -9,13 +9,13 @@ import {
   DataScope,
   SignalRequestWithUser,
   SignalResponse,
-} from '@totoro/shared';
+} from '@kebi-app/shared';
 import { IAiServiceClient } from './ai-service-client.interface';
 
 const AI_SERVICE_TIMEOUT_MS = 30000;
 
 /**
- * HTTP client for communicating with the AI service (totoro-ai)
+ * HTTP client for communicating with the AI service (kebi)
  *
  * ADR-036: Single chatStream() method — pipes raw SSE from FastAPI straight through.
  * No parsing, no transformation. responseType: 'stream' keeps Axios out of the data path.

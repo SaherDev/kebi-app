@@ -1,6 +1,6 @@
 # Contract: ChatResponseDto Extension
 
-**Applies to**: `POST /v1/chat` (totoro-ai → NestJS) — all intent types  
+**Applies to**: `POST /v1/chat` (kebi → NestJS) — all intent types  
 **File to update**: `libs/shared/src/lib/types.ts`
 
 ---

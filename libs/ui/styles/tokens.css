@@ -1,5 +1,5 @@
 /*
- * Totoro Design System — CSS Custom Properties & Tokens
+ * Kebi Design System — CSS Custom Properties & Tokens
  * All colors HSL. Semantic token names for light/dark mode swap.
  * Inspired by Studio Ghibli warmth: cream, forest, earth, lantern gold.
  */
@@ -242,16 +242,16 @@
   .font-body {
     font-family: var(--font-body);
   }
-  .shadow-totoro-sm {
+  .shadow-kebi-app-sm {
     box-shadow: var(--shadow-sm);
   }
-  .shadow-totoro-md {
+  .shadow-kebi-app-md {
     box-shadow: var(--shadow-md);
   }
-  .shadow-totoro-lg {
+  .shadow-kebi-app-lg {
     box-shadow: var(--shadow-lg);
   }
-  .shadow-totoro-glow {
+  .shadow-kebi-app-glow {
     box-shadow: var(--shadow-glow);
   }
 

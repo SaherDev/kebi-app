@@ -10,7 +10,7 @@ import type {
   SignalRequestWithUser,
   SignalResponse,
   UserContextResponse,
-} from '@totoro/shared';
+} from '@kebi-app/shared';
 
 /**
  * Interface for the AI service client.

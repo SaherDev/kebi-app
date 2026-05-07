@@ -1,4 +1,4 @@
-const KEY = 'totoro.tasteProfile';
+const KEY = 'kebi-app.tasteProfile';
 
 export function getTasteProfileConfirmed(): boolean {
   try {

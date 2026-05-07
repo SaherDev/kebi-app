@@ -8,13 +8,13 @@ const cardVariants = cva(
     variants: {
       elevation: {
         flat: "shadow-none border border-border rounded-2xl",
-        sm: "shadow-totoro-sm border border-border/60 rounded-2xl",
-        md: "shadow-totoro-md border-0 rounded-3xl",
-        lg: "shadow-totoro-lg border-0 rounded-3xl",
-        floating: "shadow-totoro-lg border-0 rounded-[1.75rem]",
+        sm: "shadow-kebi-app-sm border border-border/60 rounded-2xl",
+        md: "shadow-kebi-app-md border-0 rounded-3xl",
+        lg: "shadow-kebi-app-lg border-0 rounded-3xl",
+        floating: "shadow-kebi-app-lg border-0 rounded-[1.75rem]",
       },
       interactive: {
-        true: "cursor-pointer hover:shadow-totoro-lg hover:-translate-y-1 active:translate-y-0 active:shadow-totoro-md",
+        true: "cursor-pointer hover:shadow-kebi-app-lg hover:-translate-y-1 active:translate-y-0 active:shadow-kebi-app-md",
         false: "",
       },
     },
@@ -25,11 +25,11 @@ const cardVariants = cva(
   }
 );
 
-export interface TotoroCardProps
+export interface KebiCardProps
   extends React.HTMLAttributes<HTMLDivElement>,
     VariantProps<typeof cardVariants> {}
 
-const TotoroCard = React.forwardRef<HTMLDivElement, TotoroCardProps>(
+const KebiCard = React.forwardRef<HTMLDivElement, KebiCardProps>(
   ({ className, elevation, interactive, ...props }, ref) => (
     <div
       ref={ref}
@@ -38,22 +38,22 @@ const TotoroCard = React.forwardRef<HTMLDivElement, TotoroCardProps>(
     />
   )
 );
-TotoroCard.displayName = "TotoroCard";
+KebiCard.displayName = "KebiCard";
 
-const TotoroCardHeader = React.forwardRef<
+const KebiCardHeader = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
 >(({ className, ...props }, ref) => (
   <div ref={ref} className={cn("px-6 pt-6 pb-2", className)} {...props} />
 ));
-TotoroCardHeader.displayName = "TotoroCardHeader";
+KebiCardHeader.displayName = "KebiCardHeader";
 
-const TotoroCardContent = React.forwardRef<
+const KebiCardContent = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
 >(({ className, ...props }, ref) => (
   <div ref={ref} className={cn("px-6 pb-6", className)} {...props} />
 ));
-TotoroCardContent.displayName = "TotoroCardContent";
+KebiCardContent.displayName = "KebiCardContent";
 
-export { TotoroCard, TotoroCardHeader, TotoroCardContent, cardVariants };
+export { KebiCard, KebiCardHeader, KebiCardContent, cardVariants };

@@ -3,7 +3,7 @@
 ## Prerequisites
 
 - NestJS API running: `pnpm nx serve api`
-- FastAPI (totoro-ai) running: `uvicorn main:app --reload` on port 8000
+- FastAPI (kebi) running: `uvicorn main:app --reload` on port 8000
 - `services/api/config/.local.yaml` has `ai_service.base_url: http://localhost:8000`
 
 ## Test Non-Streaming
@@ -35,4 +35,4 @@ Run the streaming curl above and press Ctrl+C after a few events. In the NestJS 
 
 ## Bruno
 
-Open `totoro-config/bruno/nestjs-api/consult-stream.bru` in Bruno desktop, set the `nestjs_url` environment variable to `http://localhost:3333`, and run both variants.
+Open `kebi-config/bruno/nestjs-api/consult-stream.bru` in Bruno desktop, set the `nestjs_url` environment variable to `http://localhost:3333`, and run both variants.

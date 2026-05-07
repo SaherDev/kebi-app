@@ -1,5 +1,5 @@
 import { Capacitor } from '@capacitor/core';
-import type { ChipItem } from '@totoro/shared';
+import type { ChipItem } from '@kebi-app/shared';
 import { FetchClient } from '../api/transports/fetch.transport';
 
 export interface SignalClient {

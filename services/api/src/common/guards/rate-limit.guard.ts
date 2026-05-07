@@ -7,7 +7,7 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Request } from 'express';
-import { AuthUser } from '@totoro/shared';
+import { AuthUser } from '@kebi-app/shared';
 import { RateLimitService, PlanThresholds } from '../../rate-limit/rate-limit.service';
 
 @Injectable()

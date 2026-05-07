@@ -10,7 +10,7 @@
     "privacyPolicy": "Privacy Policy",
     "cantLogin": "Can't sign in?",
     "clickHere": "Click here",
-    "brandHeadline": "Totoro",
+    "brandHeadline": "Kebi",
     "brandTagline1": "Save places from TikTok, Instagram, anywhere.",
     "brandTagline2": "Tell me what you want. I'll find your match.",
     "brandChip1": "No filter panels",
@@ -172,7 +172,7 @@
       "subtitle": "Any post, reel, or video mentioning a place"
     },
     "step2": {
-      "title": "Tap Share → Totoro",
+      "title": "Tap Share → Kebi",
       "subtitle": "No need to open the app or copy any link"
     },
     "step3": {
@@ -206,17 +206,17 @@
     "closed": "Closed"
   },
   "illustrations": {
-    "auth": "Totoro waving hello",
-    "idleWelcoming": "Totoro in a welcoming pose",
-    "raining": "Totoro in the rain",
-    "encouraging": "Totoro looking encouraging",
-    "excited": "Totoro looking excited",
-    "knowing": "Totoro with a knowing smile",
-    "welcomeBack": "Totoro welcoming you back",
-    "listen": "Totoro listening",
-    "empty": "Totoro looking at an empty space",
-    "addPlace": "Totoro adding a place",
-    "addPlaceProcessing": "Totoro processing place data",
-    "addPlaceSuccess": "Totoro celebrating a successful save"
+    "auth": "Kebi waving hello",
+    "idleWelcoming": "Kebi in a welcoming pose",
+    "raining": "Kebi in the rain",
+    "encouraging": "Kebi looking encouraging",
+    "excited": "Kebi looking excited",
+    "knowing": "Kebi with a knowing smile",
+    "welcomeBack": "Kebi welcoming you back",
+    "listen": "Kebi listening",
+    "empty": "Kebi looking at an empty space",
+    "addPlace": "Kebi adding a place",
+    "addPlaceProcessing": "Kebi processing place data",
+    "addPlaceSuccess": "Kebi celebrating a successful save"
   }
 }

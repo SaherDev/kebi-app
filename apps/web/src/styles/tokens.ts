@@ -45,10 +45,10 @@ export const tokens = {
   } as const,
 
   shadows: {
-    'totoro-sm': 'var(--shadow-totoro-sm)',
-    'totoro-md': 'var(--shadow-totoro-md)',
-    'totoro-lg': 'var(--shadow-totoro-lg)',
-    'totoro-glow': 'var(--shadow-totoro-glow)',
+    'kebi-app-sm': 'var(--shadow-kebi-app-sm)',
+    'kebi-app-md': 'var(--shadow-kebi-app-md)',
+    'kebi-app-lg': 'var(--shadow-kebi-app-lg)',
+    'kebi-app-glow': 'var(--shadow-kebi-app-glow)',
   } as const,
 
   radius: {

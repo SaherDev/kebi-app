@@ -127,16 +127,16 @@ libs/shared/src/lib/
 
 ### R-003 — Illustration rename mapping
 
-**Decision**: No SVG files are renamed or deleted. Instead, `totoro-illustrations.tsx` gains new named exports that alias existing SVGs to the spec's canonical names:
+**Decision**: No SVG files are renamed or deleted. Instead, `kebi-app-illustrations.tsx` gains new named exports that alias existing SVGs to the spec's canonical names:
 
 | New export name | Maps to existing SVG | Used by |
 |---|---|---|
-| `TotoroIdleWelcoming` | `totoro-home-input.svg` | `HomeIdle`, `ConsultError` |
-| `TotoroExcited` | `totoro-success.svg` | `TasteProfileCelebration` |
+| `KebiIdleWelcoming` | `kebi-app-home-input.svg` | `HomeIdle`, `ConsultError` |
+| `KebiExcited` | `kebi-app-success.svg` | `TasteProfileCelebration` |
 
-Old exports (`TotoroHomeInput`, etc.) are removed if their only consumer is a component being deleted. Shared exports (`TotoroAuth`, `TotoroEmpty`) are untouched.
+Old exports (`KebiHomeInput`, etc.) are removed if their only consumer is a component being deleted. Shared exports (`KebiAuth`, `KebiEmpty`) are untouched.
 
-**Rationale**: The spec says "illustrations rename" — renaming the SVG files themselves would break `/places` page which imports `TotoroEmpty` directly. Renaming only the TS exports is safe and achieves the spec goal (canonical names in code) without touching static assets.
+**Rationale**: The spec says "illustrations rename" — renaming the SVG files themselves would break `/places` page which imports `KebiEmpty` directly. Renaming only the TS exports is safe and achieves the spec goal (canonical names in code) without touching static assets.
 
 ### R-004 — i18n key restructure scope
 
@@ -156,7 +156,7 @@ Old exports (`TotoroHomeInput`, etc.) are removed if their only consumer is a co
       "found": "Found your match"
     },
     "result": {
-      "header": "totoro recommends",
+      "header": "kebi-app recommends",
       "divider": "or, depending on your mood…",
       "source": { "saved": "From your saves", "discovered": "New discovery" },
       "actions": { "directions": "Directions", "call": "Call", "share": "Share", "menu": "Menu" }
@@ -214,7 +214,7 @@ Components to delete (no live consumer after home page rewrite):
 | `components/ReasoningBlock.tsx` | Only imported by `PlaceCard.tsx` |
 | `components/PlaceCard.tsx` | Only imported by `AgentResponseBubble.tsx` |
 
-**Keep** (still used): `ChatInput.tsx` (modified), `NavBar.tsx`, `profile-menu.tsx`, `language-switcher.tsx`, `locale-html-attrs.tsx`, `nav-link.tsx`, `theme-toggle.tsx`, `ThemeToggle.tsx`, `TotoroAvatar.tsx`, `PastePreview.tsx`, `PasteIndicator.tsx`, `Modal.tsx`, `add-place-modal.tsx`, `illustrations/totoro-illustrations.tsx`.
+**Keep** (still used): `ChatInput.tsx` (modified), `NavBar.tsx`, `profile-menu.tsx`, `language-switcher.tsx`, `locale-html-attrs.tsx`, `nav-link.tsx`, `theme-toggle.tsx`, `ThemeToggle.tsx`, `KebiAvatar.tsx`, `PastePreview.tsx`, `PasteIndicator.tsx`, `Modal.tsx`, `add-place-modal.tsx`, `illustrations/kebi-app-illustrations.tsx`.
 
 ---
 
@@ -374,9 +374,9 @@ interface ChatClient {
   - `reset()` — returns to correct resting phase based on `savedPlaceCount`
   - Stub actions for sub-plans 3-7: `submitRecall`, `openSaveSheet`, `confirmSave`, `dismissSaveSheet`, `dismissAssistantReply`, `incrementSavedCount` (all throw `NotImplementedError` until their sub-plan)
 
-#### Step 9: Illustration aliases (`apps/web/src/components/illustrations/totoro-illustrations.tsx`)
-- [ ] Add `TotoroIdleWelcoming` alias → `totoro-home-input.svg`
-- [ ] Add `TotoroExcited` alias → `totoro-success.svg`
+#### Step 9: Illustration aliases (`apps/web/src/components/illustrations/kebi-app-illustrations.tsx`)
+- [ ] Add `KebiIdleWelcoming` alias → `kebi-app-home-input.svg`
+- [ ] Add `KebiExcited` alias → `kebi-app-success.svg`
 - [ ] Remove exports only used by deleted components
 
 #### Step 10: Dead code deletion
@@ -397,7 +397,7 @@ interface ChatClient {
 - [ ] Keep all other state, markup, and styling unchanged
 
 #### Step 13: Resting-state components (sub-plan 1)
-- [ ] `components/home/HomeIdle.tsx` — `TotoroIdleWelcoming` illustration, headline, 3 suggestion chips from `CONSULT_SUGGESTIONS`
+- [ ] `components/home/HomeIdle.tsx` — `KebiIdleWelcoming` illustration, headline, 3 suggestion chips from `CONSULT_SUGGESTIONS`
 - [ ] `components/home/HomeGreeting.tsx` — greeting text visible on `idle`/`cold-0`/`cold-1-4` phases
 - [ ] `components/layout/ClarificationHint.tsx` — scaffold only; renders `null` until store has `clarificationMessage`
 
@@ -419,10 +419,10 @@ interface ChatClient {
 - [ ] Confirmed: bg `#d8ecc8` / fg `#3a6018` / border `#b0d090` + `TODO: tokenize`
 - [ ] Dismissed: 25% opacity
 - [ ] "Start exploring" CTA → `store.confirmTasteProfile()`
-- [ ] `TotoroExcited` illustration
+- [ ] `KebiExcited` illustration
 
 #### Step 16: ConsultError (`apps/web/src/components/home/ConsultError.tsx`)
-- [ ] `TotoroIdleWelcoming` illustration, error category headline/body from `flow2.error.*` i18n, "Try again" button → `store.reset()`
+- [ ] `KebiIdleWelcoming` illustration, error category headline/body from `flow2.error.*` i18n, "Try again" button → `store.reset()`
 
 #### Step 17: Home page rewrite (`apps/web/src/app/[locale]/(main)/home/page.tsx`)
 - [ ] Three-layer layout: NavBar / message area (flex-1, scrollable) / input bar (always mounted)

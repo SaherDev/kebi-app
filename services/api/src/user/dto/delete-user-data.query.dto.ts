@@ -1,6 +1,6 @@
 import { IsArray, IsIn, IsOptional } from 'class-validator';
 import { Transform } from 'class-transformer';
-import { DATA_SCOPES, type DataScope } from '@totoro/shared';
+import { DATA_SCOPES, type DataScope } from '@kebi-app/shared';
 
 const ALLOWED_SCOPES: readonly string[] = DATA_SCOPES;
 

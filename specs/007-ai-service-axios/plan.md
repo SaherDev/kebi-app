@@ -77,7 +77,7 @@ No constitution violations. No complexity justification needed.
 
 | Unknown | Resolution |
 |---------|-----------|
-| `@nestjs/axios` installed? | No — install via `pnpm --filter @totoro/api add @nestjs/axios axios` |
+| `@nestjs/axios` installed? | No — install via `pnpm --filter @kebi-app/api add @nestjs/axios axios` |
 | Observable → Promise bridge? | `firstValueFrom()` from rxjs 7 |
 | Streaming with Axios? | `responseType: 'stream'` → `response.data` is `Readable` |
 | Consult timeout? | 20s per ADR-016 + Constitution VI (spec FR-007 is incorrect — correct to 20s) |

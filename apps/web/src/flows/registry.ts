@@ -1,5 +1,5 @@
 import type { FlowDefinition, FlowId } from './flow-definition';
-import type { ClientIntent } from '@totoro/shared';
+import type { ClientIntent } from '@kebi-app/shared';
 import { consultFlow } from './consult';
 import { saveFlow } from './save';
 import { recallFlow } from './recall';

@@ -1,5 +1,5 @@
 {
-  "name": "@totoro/api-e2e",
+  "name": "@kebi-app/api-e2e",
   "version": "0.0.1",
   "private": true,
   "nx": {

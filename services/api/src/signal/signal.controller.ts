@@ -1,5 +1,5 @@
 import { Body, Controller, HttpCode, HttpStatus, Post } from '@nestjs/common';
-import type { AuthUser, SignalResponse } from '@totoro/shared';
+import type { AuthUser, SignalResponse } from '@kebi-app/shared';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { RequiresAi } from '../common/decorators/requires-ai.decorator';
 import { SignalRequestDto } from './dto/signal-request.dto';

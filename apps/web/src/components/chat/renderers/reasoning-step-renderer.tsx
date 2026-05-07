@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { ChevronUp, ChevronDown } from 'lucide-react';
-import type { SseReasoningStep } from '@totoro/shared';
+import type { SseReasoningStep } from '@kebi-app/shared';
 
 function useElapsed() {
   const [elapsed, setElapsed] = useState(0);

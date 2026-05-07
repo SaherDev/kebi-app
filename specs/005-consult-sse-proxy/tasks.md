@@ -34,7 +34,7 @@
 
 - [ ] T004 Create `services/api/src/ai-service/ai-service-client.interface.ts` with:
   - `IAiServiceClient` interface (methods: `consult(payload)` → Promise<AiConsultResponse>, `consultStream(payload)` → Promise<Readable>)
-  - Types: `AiConsultPayload`, `AiPlaceResult`, `AiReasoningStep`, `AiConsultResponse` (reference @totoro/shared types)
+  - Types: `AiConsultPayload`, `AiPlaceResult`, `AiReasoningStep`, `AiConsultResponse` (reference @kebi-app/shared types)
   - Export `AI_SERVICE_CLIENT` injection token (Symbol)
 - [ ] T005 Create `services/api/src/ai-service/ai-service.client.ts` implementing `IAiServiceClient`:
   - Use `node:http`/`node:https` (parse base URL to choose protocol)
@@ -170,7 +170,7 @@
 - [ ] T024 [P] Run lint: `pnpm nx lint api`
   - No ESLint errors
   - No inline disables without comments
-- [ ] T025 Create `totoro-config/bruno/nestjs-api/consult-stream.bru`:
+- [ ] T025 Create `kebi-config/bruno/nestjs-api/consult-stream.bru`:
   - Two examples: non-streaming request and streaming request
   - Non-streaming: `POST /api/v1/consult` with `stream: false` or omitted, expected response: complete JSON
   - Streaming: `POST /api/v1/consult` with `stream: true`, expected response: SSE events
@@ -207,7 +207,7 @@
   - [ ] Client disconnect terminates upstream FastAPI connection ✓
   - [ ] `pnpm nx test api` passes ✓
   - [ ] `pnpm nx lint api` passes ✓
-  - [ ] `totoro-config/bruno/nestjs-api/consult-stream.bru` committed ✓
+  - [ ] `kebi-config/bruno/nestjs-api/consult-stream.bru` committed ✓
 
 **Checkpoint**: Feature complete and ready for code review / deployment.
 
@@ -330,7 +330,7 @@ Deploy just non-streaming first for minimal risk:
 - `src/app/app.module.ts` (modify — import ConsultModule)
 - `config/.local.yaml` (modify — add ai_service.base_url)
 
-**totoro-config/bruno/**
+**kebi-config/bruno/**
 - `nestjs-api/consult-stream.bru` (API documentation + examples)
 
 ### Total New/Modified Files: 16 files

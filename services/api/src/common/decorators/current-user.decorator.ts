@@ -1,5 +1,5 @@
 import { createParamDecorator, ExecutionContext } from '@nestjs/common';
-import type { AuthUser } from '@totoro/shared';
+import type { AuthUser } from '@kebi-app/shared';
 
 /**
  * Decorator to inject the current authenticated user

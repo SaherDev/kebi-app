@@ -1,8 +1,8 @@
-# System Architecture — Totoro (Product Repo)
+# System Architecture — Kebi (Product Repo)
 
 ## Overview
 
-Totoro is split across two repositories. This repo (totoro) is the product layer. It owns the UI, authentication, and the HTTP gateway to the AI brain. It delegates all AI work and all database writes to the totoro-ai repo over HTTP.
+Kebi is split across two repositories. This repo (kebi-app) is the product layer. It owns the UI, authentication, and the HTTP gateway to the AI brain. It delegates all AI work and all database writes to the kebi repo over HTTP.
 
 ```
 ┌─────────────────────────────────────────────────────┐
@@ -21,13 +21,13 @@ Totoro is split across two repositories. This repo (totoro) is the product layer
 ┌─────────────────────────────────────────────────────┐
 │              services/api (NestJS)                   │
 │  - Auth verification (Clerk backend SDK)            │
-│  - Forwards all user messages to totoro-ai          │
+│  - Forwards all user messages to kebi          │
 │  - No database writes                               │
 └─────────────────────────────┬───────────────────────┘
                               │ HTTP (JSON) POST /v1/chat
                               ▼
 ┌──────────────────────┐  ┌──────────────────────────┐
-│  PostgreSQL           │  │  totoro-ai (FastAPI)     │
+│  PostgreSQL           │  │  kebi (FastAPI)     │
 │  + pgvector           │  │  - Classifies intent     │
 │                       │  │  - Runs agent pipeline   │
 │  FastAPI writes:      │  │  - Generates embeddings  │
@@ -44,7 +44,7 @@ Totoro is split across two repositories. This repo (totoro) is the product layer
 
 - All user-facing UI (Next.js)
 - Authentication and authorization (Clerk)
-- HTTP gateway: receives user messages, forwards to totoro-ai via `POST /v1/chat`, returns the response
+- HTTP gateway: receives user messages, forwards to kebi via `POST /v1/chat`, returns the response
 
 ## What This Repo Does NOT Do
 
@@ -61,17 +61,17 @@ All user messages — save, consult, recall — flow through a single endpoint (
 
 1. User submits input in apps/web.
 2. apps/web sends the message to services/api via `POST /api/v1/chat`.
-3. services/api verifies auth (Clerk), then forwards to totoro-ai via `POST /v1/chat` with user_id and message.
-4. totoro-ai classifies intent (save / consult / recall / assistant / clarification) and handles the full pipeline autonomously.
-5. totoro-ai returns a typed `ChatResponseDto` with a discriminated `type` field.
+3. services/api verifies auth (Clerk), then forwards to kebi via `POST /v1/chat` with user_id and message.
+4. kebi classifies intent (save / consult / recall / assistant / clarification) and handles the full pipeline autonomously.
+5. kebi returns a typed `ChatResponseDto` with a discriminated `type` field.
 6. services/api returns HTTP 200 with the response. The frontend reads the `type` field to determine what happened.
 7. apps/web renders the appropriate UI based on response type.
 
-One HTTP call to totoro-ai. Intent classification is the AI service's responsibility. NestJS never inspects response content — it forwards and returns. HTTP error codes (401, 403, 503) are reserved for transport failures only.
+One HTTP call to kebi. Intent classification is the AI service's responsibility. NestJS never inspects response content — it forwards and returns. HTTP error codes (401, 403, 503) are reserved for transport failures only.
 
 ## Intent Classification
 
-Classification happens in totoro-ai as the first step of request handling — not in NestJS, not in the frontend.
+Classification happens in kebi as the first step of request handling — not in NestJS, not in the frontend.
 
 Intent types returned in `type` field:
 - `extract-place` — URL or place name was saved
@@ -82,9 +82,9 @@ Intent types returned in `type` field:
 
 Empty state rule: the system always returns something. At zero saves, a consult query returns nearby popular options. A recall with no matches returns the closest consult result with a note that nothing was found in saves. Never return a zero-result response.
 
-## API Contract (NestJS to totoro-ai)
+## API Contract (NestJS to kebi)
 
-| Endpoint       | Purpose                      | NestJS Sends                   | totoro-ai Returns                    |
+| Endpoint       | Purpose                      | NestJS Sends                   | kebi Returns                    |
 | -------------- | ---------------------------- | ------------------------------ | ------------------------------------ |
 | POST /v1/chat  | All user interactions        | message, user_id, location?    | typed ChatResponseDto (discriminated union) |
 
@@ -92,14 +92,14 @@ See `docs/api-contract.md` for the full request/response schema.
 
 ## Database Ownership
 
-totoro-ai (FastAPI) owns all database writes. Alembic in totoro-ai owns all migrations. NestJS does not write to any database table.
+kebi (FastAPI) owns all database writes. Alembic in kebi owns all migrations. NestJS does not write to any database table.
 
 FastAPI writes and reads:
 
 - places, embeddings, taste_model
 - consult_logs, user_memories, interaction_log
 
-NestJS has no database write responsibilities. It reads nothing from the DB directly — all data it needs comes from totoro-ai responses or Clerk.
+NestJS has no database write responsibilities. It reads nothing from the DB directly — all data it needs comes from kebi responses or Clerk.
 
 ## Technology Stack
 

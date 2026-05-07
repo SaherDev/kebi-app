@@ -1,4 +1,4 @@
-import { cn } from "@totoro/ui";
+import { cn } from "@kebi-app/ui";
 
 interface NavBarProps {
   className?: string;
@@ -21,7 +21,7 @@ function NavBar({ className, children }: NavBarProps) {
 function NavBarLogo() {
   return (
     <div className="flex items-center gap-2">
-      <span className="font-display text-xl text-foreground">Totoro</span>
+      <span className="font-display text-xl text-foreground">Kebi</span>
     </div>
   );
 }

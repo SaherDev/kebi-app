@@ -1,6 +1,6 @@
 import { useState, useEffect, createContext, useContext } from "react";
 import { Sun, Moon, Monitor } from "lucide-react";
-import { cn } from "@totoro/ui";
+import { cn } from "@kebi-app/ui";
 
 type Theme = "light" | "dark" | "system";
 type ResolvedTheme = "light" | "dark";
@@ -26,7 +26,7 @@ function resolveTheme(theme: Theme): ResolvedTheme {
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setThemeState] = useState<Theme>(() => {
     if (typeof window !== "undefined") {
-      return (localStorage.getItem("totoro-theme") as Theme) || "system";
+      return (localStorage.getItem("kebi-app-theme") as Theme) || "system";
     }
     return "system";
   });
@@ -49,7 +49,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     applyTheme(resolveTheme(theme));
-    localStorage.setItem("totoro-theme", theme);
+    localStorage.setItem("kebi-app-theme", theme);
 
     if (theme === "system") {
       const mq = window.matchMedia("(prefers-color-scheme: dark)");
@@ -110,7 +110,7 @@ export function ThemeSegment() {
             className={cn(
               "flex h-8 w-8 items-center justify-center rounded-lg transition-all duration-200",
               theme === value
-                ? "bg-card text-foreground shadow-totoro-sm"
+                ? "bg-card text-foreground shadow-kebi-app-sm"
                 : "text-muted-foreground hover:text-foreground"
             )}
             title={label}

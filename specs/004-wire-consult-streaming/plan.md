@@ -81,7 +81,7 @@ No changes to `services/api`, `libs/shared`, `libs/ui`, or any other package.
 ### Step 1 — Install packages
 
 ```bash
-pnpm --filter @totoro/web add @ai-sdk/react ai
+pnpm --filter @kebi-app/web add @ai-sdk/react ai
 ```
 
 Verify `apps/web/package.json` has both entries.
@@ -194,7 +194,7 @@ Changes:
 5. Pass `isConsulting` to `ChatInput` for the disabled state (or derive from `allMessages` list).
 6. Render `AgentResponseBubble` with `content={msg.content}` for recommend flow messages.
 
-**What does NOT change**: intent detection logic, `isVoiceMode` handling, voice mode UI, `HomeEmptyState`, `ChatMessage`, `AgentResponseBubble` props shape, scroll behavior, `TotoroCard` wrapper, `NavBar`.
+**What does NOT change**: intent detection logic, `isVoiceMode` handling, voice mode UI, `HomeEmptyState`, `ChatMessage`, `AgentResponseBubble` props shape, scroll behavior, `KebiCard` wrapper, `NavBar`.
 
 ---
 

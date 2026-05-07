@@ -9,7 +9,7 @@
 
 ### User Story 1 — Place Save Triggers Extraction via extractPlace (Priority: P1)
 
-A developer working on the Places domain calls `extractPlace()` on the AI service client to forward a raw user input (text or URL) to totoro-ai for parsing and saving. The method must be present on the interface and the implementation must forward the payload correctly and return a typed response.
+A developer working on the Places domain calls `extractPlace()` on the AI service client to forward a raw user input (text or URL) to kebi for parsing and saving. The method must be present on the interface and the implementation must forward the payload correctly and return a typed response.
 
 **Why this priority**: Without `extractPlace()`, the Places domain cannot call the AI service at all. This is the primary reason for the feature and blocks all place-saving functionality.
 
@@ -44,7 +44,7 @@ After migrating from `node:http`/`node:https` to Axios, all existing functionali
 
 All TypeScript types for the `extractPlace` payload and response must match the api-contract.md schema exactly, including nullable fields. No field names are guessed or inferred — they come directly from the contract.
 
-**Why this priority**: Type safety at the boundary prevents runtime mismatches when totoro-ai returns real responses. Incorrect field names or wrong nullability cause silent failures.
+**Why this priority**: Type safety at the boundary prevents runtime mismatches when kebi returns real responses. Incorrect field names or wrong nullability cause silent failures.
 
 **Independent Test**: TypeScript compilation passes and a type-level test confirms that a raw api-contract.md JSON example can be assigned to `AiExtractPlaceResponse` without error.
 
@@ -80,8 +80,8 @@ All TypeScript types for the `extractPlace` payload and response must match the 
 
 ### Key Entities
 
-- **AiExtractPlacePayload**: The request body sent from NestJS to totoro-ai for place extraction. Two fields: user identity (`user_id`) and the raw unmodified input string (`raw_input`).
-- **AiExtractPlaceResponse**: The typed response from totoro-ai's extract-place endpoint. Contains the resolved or unresolved place record, confidence score, status, and whether user confirmation is required.
+- **AiExtractPlacePayload**: The request body sent from NestJS to kebi for place extraction. Two fields: user identity (`user_id`) and the raw unmodified input string (`raw_input`).
+- **AiExtractPlaceResponse**: The typed response from kebi's extract-place endpoint. Contains the resolved or unresolved place record, confidence score, status, and whether user confirmation is required.
 
 ## Success Criteria *(mandatory)*
 

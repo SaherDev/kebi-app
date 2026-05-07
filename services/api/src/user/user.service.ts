@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import type { AuthUser, DataScope, UserContextResponse } from '@totoro/shared';
+import type { AuthUser, DataScope, UserContextResponse } from '@kebi-app/shared';
 import {
   AI_SERVICE_CLIENT,
   IAiServiceClient,

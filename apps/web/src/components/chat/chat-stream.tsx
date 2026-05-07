@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, type MutableRefObject } from 'react';
-import type { SignalTier, SseReasoningStep } from '@totoro/shared';
+import type { SignalTier, SseReasoningStep } from '@kebi-app/shared';
 import { useChatStream } from '../../hooks/use-chat-stream';
 import { useChatStreamStore } from '../../store/chat-stream.store';
 import { EventRenderer } from './renderers/event-renderer';

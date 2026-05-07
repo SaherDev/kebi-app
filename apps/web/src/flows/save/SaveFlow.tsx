@@ -2,7 +2,7 @@
 
 import { AnimatePresence } from 'framer-motion';
 import type { HomeStoreApi } from '@/store/home-store';
-import type { ExtractPlaceItem } from '@totoro/shared';
+import type { ExtractPlaceItem } from '@kebi-app/shared';
 import { SaveSheet } from './SaveSheet';
 
 interface SaveFlowProps {

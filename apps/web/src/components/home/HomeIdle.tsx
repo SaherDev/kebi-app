@@ -3,7 +3,7 @@
 import { useTranslations } from 'next-intl';
 import { Illustration } from '@/components/illustrations/Illustration';
 import { CONSULT_SUGGESTIONS } from '@/constants/home-suggestions';
-import type { ChipItem } from '@totoro/shared';
+import type { ChipItem } from '@kebi-app/shared';
 
 interface HomeIdleProps {
   onSuggestionClick: (text: string) => void;

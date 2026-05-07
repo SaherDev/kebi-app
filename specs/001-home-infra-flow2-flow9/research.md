@@ -23,12 +23,12 @@
 
 ## R-003 — Illustration rename mapping
 
-**Decision**: No SVG file renames. New TS export aliases added in `totoro-illustrations.tsx`:
+**Decision**: No SVG file renames. New TS export aliases added in `kebi-app-illustrations.tsx`:
 
 | New canonical name | Maps to | Used by |
 |---|---|---|
-| `TotoroIdleWelcoming` | `totoro-home-input.svg` | `HomeIdle`, `ConsultError` |
-| `TotoroExcited` | `totoro-success.svg` | `TasteProfileCelebration` |
+| `KebiIdleWelcoming` | `kebi-app-home-input.svg` | `HomeIdle`, `ConsultError` |
+| `KebiExcited` | `kebi-app-success.svg` | `TasteProfileCelebration` |
 
 **Rationale**: Renaming SVG files would break `/places` page and any future consumers. Renaming only TS exports achieves the spec goal (canonical names in code) without touching static assets.
 

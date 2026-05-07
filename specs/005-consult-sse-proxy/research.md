@@ -99,9 +99,9 @@ Production Railway service URL will be injected via environment (the YAML `${AI_
 
 ## 7. Bruno File Location
 
-**Finding**: `totoro-config/bruno/nestjs-api/` contains NestJS API request files (recall.bru, hello.bru). The feature spec says `totoro-config/bruno/consult-stream-nestjs.bru` but the correct location per existing convention is `nestjs-api/`.
+**Finding**: `kebi-config/bruno/nestjs-api/` contains NestJS API request files (recall.bru, hello.bru). The feature spec says `kebi-config/bruno/consult-stream-nestjs.bru` but the correct location per existing convention is `nestjs-api/`.
 
-**Decision**: Create at `totoro-config/bruno/nestjs-api/consult-stream.bru`. Also note: a non-streaming consult bru file is needed for completeness.
+**Decision**: Create at `kebi-config/bruno/nestjs-api/consult-stream.bru`. Also note: a non-streaming consult bru file is needed for completeness.
 
 ---
 

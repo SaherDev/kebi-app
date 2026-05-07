@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { cn } from '@totoro/ui';
+import { cn } from '@kebi-app/ui';
 
 interface NavLinkProps {
   href: string;

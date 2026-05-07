@@ -1,7 +1,7 @@
 'use client';
 
 import { create } from 'zustand';
-import type { Location } from '@totoro/shared';
+import type { Location } from '@kebi-app/shared';
 
 /**
  * Session-only browser geolocation store.

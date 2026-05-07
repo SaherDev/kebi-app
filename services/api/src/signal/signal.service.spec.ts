@@ -1,4 +1,4 @@
-import type { SignalResponse } from '@totoro/shared';
+import type { SignalResponse } from '@kebi-app/shared';
 import { IAiServiceClient } from '../ai-service/ai-service-client.interface';
 import { SignalRequestDto } from './dto/signal-request.dto';
 import { SignalService } from './signal.service';

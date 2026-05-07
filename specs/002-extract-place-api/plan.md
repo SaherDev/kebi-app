@@ -75,7 +75,7 @@ services/api/src/
     └── dto/
         └── extract-place-request.dto.ts
 
-totoro-config/bruno/places/
+kebi-config/bruno/places/
 └── extract-place.bru                              ← CREATE (ADR-021)
 ```
 
@@ -216,7 +216,7 @@ Remove the `@Post('extract-place')` method and the `@RequiresAi()` import (if no
 
 ### Step 9 — Bruno test file
 
-**File**: `totoro-config/bruno/places/extract-place.bru`
+**File**: `kebi-config/bruno/places/extract-place.bru`
 
 Create a Bruno request for `POST {{baseUrl}}/api/v1/places/extract` with a test body. Per ADR-021.
 

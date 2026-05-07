@@ -52,7 +52,7 @@ All design decisions were locked in `docs/plans/2026-04-18-ui-align-placeobject.
 ## Finding 7: Save auto-save rule change
 
 **Decision**: Replace `confidence >= 0.7 && status !== 'unresolved'` with `status === 'saved'` as the auto-save signal.  
-**Rationale**: The AI service now stamps `status: 'saved'` directly when it decided to save. Confidence threshold enforcement moved to totoro-ai. The `SaveSheet` mount effect auto-saves items where `status === 'saved'`; no other items are auto-saved.
+**Rationale**: The AI service now stamps `status: 'saved'` directly when it decided to save. Confidence threshold enforcement moved to kebi. The `SaveSheet` mount effect auto-saves items where `status === 'saved'`; no other items are auto-saved.
 
 ---
 

@@ -1,4 +1,4 @@
-import type { AuthUser, UserContextResponse } from '@totoro/shared';
+import type { AuthUser, UserContextResponse } from '@kebi-app/shared';
 import { UserController } from './user.controller';
 import { UserService } from './user.service';
 import { DeleteUserDataQueryDto } from './dto/delete-user-data.query.dto';

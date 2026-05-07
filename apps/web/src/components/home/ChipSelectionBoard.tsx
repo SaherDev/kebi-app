@@ -3,7 +3,7 @@
 import { useState, useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 import { Check, X } from 'lucide-react';
-import type { ChipItem, ChipStatus } from '@totoro/shared';
+import type { ChipItem, ChipStatus } from '@kebi-app/shared';
 import { Illustration } from '@/components/illustrations/Illustration';
 
 interface ChipSelectionBoardProps {

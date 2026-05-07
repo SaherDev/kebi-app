@@ -1,9 +1,9 @@
 'use client';
 
 import { useUser } from '@clerk/nextjs';
-import type { PlanTier } from '@totoro/shared';
-import { TotoroAvatar } from './TotoroAvatar';
-import { Button } from '@totoro/ui';
+import type { PlanTier } from '@kebi-app/shared';
+import { KebiAvatar } from './KebiAvatar';
+import { Button } from '@kebi-app/ui';
 
 interface UserCardProps {
   onSetupProfile?: () => void;
@@ -46,7 +46,7 @@ export function UserCard({ onSetupProfile }: UserCardProps) {
   return (
     <div className="px-5 pt-5 pb-4">
       <div className="flex items-center gap-3 mb-3">
-        <TotoroAvatar
+        <KebiAvatar
           fallback={avatarInitial}
           src={user.imageUrl}
           size="lg"

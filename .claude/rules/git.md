@@ -1,4 +1,4 @@
-# Git Conventions — Totoro Product Repo
+# Git Conventions — Kebi Product Repo
 
 ## Branch Strategy
 

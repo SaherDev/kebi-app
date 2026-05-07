@@ -1,4 +1,4 @@
-# Phase 0 Research — Capacitor iOS Shell for Totoro Web
+# Phase 0 Research — Capacitor iOS Shell for Kebi Web
 
 **Feature**: 013-capacitor-ios-shell
 **Spec**: [spec.md](./spec.md)
@@ -10,7 +10,7 @@ This document resolves every `NEEDS CLARIFICATION` in the plan's Technical Conte
 
 ## Decision 1 — Architecture: C2 (remote-URL shell with runtime-native API branch)
 
-**Decision**: Capacitor's `server.url` points the iOS WKWebView at the live Vercel deployment (`https://totoro-ten-phi.vercel.app`). The same JS code that ships to browser users also runs inside the WebView. A single `Capacitor.isNativePlatform()` check in the chat client's `FetchClient` instantiation switches outbound `/api/v1/*` requests from relative paths (hitting the Vercel rewrite proxy) to absolute URLs pointing directly at the Railway NestJS backend.
+**Decision**: Capacitor's `server.url` points the iOS WKWebView at the live Vercel deployment (`https://kebi-app-ten-phi.vercel.app`). The same JS code that ships to browser users also runs inside the WebView. A single `Capacitor.isNativePlatform()` check in the chat client's `FetchClient` instantiation switches outbound `/api/v1/*` requests from relative paths (hitting the Vercel rewrite proxy) to absolute URLs pointing directly at the Railway NestJS backend.
 
 **Rationale**:
 
@@ -26,7 +26,7 @@ This document resolves every `NEEDS CLARIFICATION` in the plan's Technical Conte
 
 **Alternatives considered**:
 
-- **C1 — Pure remote URL, no API client change.** `server.url = https://totoro-ten-phi.vercel.app`, and the iOS app makes same-origin `/api/v1/*` calls that flow through the Vercel rewrite to Railway. Simplest possible (zero code changes), but violates FR-002 because Vercel becomes the API proxy, and it hard-couples the iOS app's API availability to Vercel's uptime. Rejected.
+- **C1 — Pure remote URL, no API client change.** `server.url = https://kebi-app-ten-phi.vercel.app`, and the iOS app makes same-origin `/api/v1/*` calls that flow through the Vercel rewrite to Railway. Simplest possible (zero code changes), but violates FR-002 because Vercel becomes the API proxy, and it hard-couples the iOS app's API availability to Vercel's uptime. Rejected.
 - **C3 — Static export with dual build.** Add `output: 'export'` under `BUILD_TARGET=ios`, stage `middleware.ts` aside during the iOS build via a shell script, add `generateStaticParams` to `[locale]/layout.tsx`, replace the root `redirect()` with a client component, introduce an `IOSAuthGate` to replace middleware-based auth gating, and produce `out/` for Capacitor to consume. Roughly 10× the hand-written diff, touches auth UX, risks web regressions every time someone edits the staging script. Rejected.
 - **Option A from the stale plan** (a hybrid of C3): same as C3 but with more ceremony. Rejected.
 - **Using `@ionic/react-router` or rewriting UI natively**: grossly over-scoped. Rejected without investigation.
@@ -54,7 +54,7 @@ This document resolves every `NEEDS CLARIFICATION` in the plan's Technical Conte
 
 ## Decision 3 — `server.url` vs `webDir`
 
-**Decision**: Use `server.url = 'https://totoro-ten-phi.vercel.app'` as the primary load target. Set `webDir = 'public'` as a stub that points at `apps/web/public/`, which already exists and holds static assets like `favicon.svg`. This satisfies Capacitor's config validation (which requires `webDir`) without adding a new directory or producing a static export.
+**Decision**: Use `server.url = 'https://kebi-app-ten-phi.vercel.app'` as the primary load target. Set `webDir = 'public'` as a stub that points at `apps/web/public/`, which already exists and holds static assets like `favicon.svg`. This satisfies Capacitor's config validation (which requires `webDir`) without adding a new directory or producing a static export.
 
 **Rationale**:
 
@@ -89,14 +89,14 @@ function makeRealChatClient(getToken: () => Promise<string>): ChatClient {
 **Rationale**:
 
 - `NEXT_PUBLIC_API_URL` is already required in `deployment.md` line 86 and is already referenced by `apps/web/src/api/client.ts:10` with a non-null assertion. It is therefore already set on Vercel for the production deployment, otherwise the existing build would fail at runtime. No new env var plumbing needed.
-- The existing env value includes the `/api/v1` suffix (e.g. `https://api-totoro.up.railway.app/api/v1`) because `next.config.js` rewrites append the path suffix directly.
-- `chat-client.ts` calls `http.post<>('/api/v1/chat', ...)` with the `/api/v1` prefix in the path, which collides with the env value's suffix. The regex strip keeps the env var unchanged (preserving web build behavior) while producing a clean base URL for the iOS mode: `https://api-totoro.up.railway.app`.
+- The existing env value includes the `/api/v1` suffix (e.g. `https://api-kebi-app.up.railway.app/api/v1`) because `next.config.js` rewrites append the path suffix directly.
+- `chat-client.ts` calls `http.post<>('/api/v1/chat', ...)` with the `/api/v1` prefix in the path, which collides with the env value's suffix. The regex strip keeps the env var unchanged (preserving web build behavior) while producing a clean base URL for the iOS mode: `https://api-kebi-app.up.railway.app`.
 - The whole derivation is a single expression, no helper function, no new exported constant. It stays inside `makeRealChatClient` where it's used.
 - Browser behavior is preserved: `Capacitor.isNativePlatform()` returns `false` in a regular browser, so `apiBase` stays `''` and the existing relative-path flow continues.
 
 **Alternatives considered**:
 
-- **Add a new env var** `NEXT_PUBLIC_RAILWAY_BASE_URL` that is bare (no `/api/v1` suffix). Cleaner conceptually but requires setting a second Vercel variable, documenting it in `totoro-config/deployment.md`, and remembering to set it in every environment. Over-engineered for a one-liner. Rejected.
+- **Add a new env var** `NEXT_PUBLIC_RAILWAY_BASE_URL` that is bare (no `/api/v1` suffix). Cleaner conceptually but requires setting a second Vercel variable, documenting it in `kebi-config/deployment.md`, and remembering to set it in every environment. Over-engineered for a one-liner. Rejected.
 - **Refactor `FetchClient` to accept a base URL with `/api/v1` built in**: touches shared transport code that is used by both web and iOS, with risk of breaking web. Rejected.
 - **Move the `/api/v1` prefix out of `chat-client.ts`'s hard-coded path into a shared constant in `libs/shared`**: good long-term hygiene per ADR-010, but out of scope for this feature. Deferred.
 - **Read the config from Capacitor's native side via a bridge call**: massive over-engineering. Rejected.
@@ -109,10 +109,10 @@ function makeRealChatClient(getToken: () => Promise<string>): ChatClient {
 
 ```ts
 server: {
-  url: 'https://totoro-ten-phi.vercel.app',
+  url: 'https://kebi-app-ten-phi.vercel.app',
   cleartext: false,
   allowNavigation: [
-    'totoro-ten-phi.vercel.app',
+    'kebi-app-ten-phi.vercel.app',
     '*.clerk.accounts.dev',    // Clerk dev frontend API
     '*.clerk.com',             // Clerk prod frontend API (if/when migrated)
     'accounts.google.com',     // Google OAuth consent
@@ -193,14 +193,14 @@ server: {
 
 ## Decision 9 — NestJS CORS configuration
 
-**Decision**: `APP_CORS_ORIGINS` on Railway must contain `https://totoro-ten-phi.vercel.app` in every environment the iOS app targets. This is an operational change to an env var, not a backend code change, and therefore does not violate FR-005.
+**Decision**: `APP_CORS_ORIGINS` on Railway must contain `https://kebi-app-ten-phi.vercel.app` in every environment the iOS app targets. This is an operational change to an env var, not a backend code change, and therefore does not violate FR-005.
 
 **Rationale**:
 
-- With C2, the WKWebView's document origin is the Vercel domain, and its JS makes cross-origin requests to Railway. Railway must send `Access-Control-Allow-Origin: https://totoro-ten-phi.vercel.app` for preflight to succeed.
+- With C2, the WKWebView's document origin is the Vercel domain, and its JS makes cross-origin requests to Railway. Railway must send `Access-Control-Allow-Origin: https://kebi-app-ten-phi.vercel.app` for preflight to succeed.
 - Today's web bundle does not actually need the Vercel domain in `APP_CORS_ORIGINS` because it uses the Vercel rewrite (same-origin from the browser's perspective). Adding it is additive and causes no regression.
 - `credentials: true` in `services/api/src/main.ts:31` forbids `origin: '*'`, so each origin must be listed explicitly.
-- The `deployment.md` example already shows `https://totoro.vercel.app` as an example value, suggesting the maintainer's intent was always to have the Vercel origin in the list. The C2 design simply makes that requirement load-bearing instead of aspirational.
+- The `deployment.md` example already shows `https://kebi-app.vercel.app` as an example value, suggesting the maintainer's intent was always to have the Vercel origin in the list. The C2 design simply makes that requirement load-bearing instead of aspirational.
 
 **Alternatives considered**:
 
@@ -212,7 +212,7 @@ server: {
 
 ## Decision 10 — Preview deployments
 
-**Decision**: Out of scope. `server.url` is hardcoded to `https://totoro-ten-phi.vercel.app` (production). Preview URL testing from the iOS shell is deferred.
+**Decision**: Out of scope. `server.url` is hardcoded to `https://kebi-app-ten-phi.vercel.app` (production). Preview URL testing from the iOS shell is deferred.
 
 **Rationale**:
 
@@ -259,6 +259,6 @@ The following items are not research questions — they are implementation-time 
 
 - **`NEXT_PUBLIC_API_URL` present in Vercel env**: verify via `vercel env ls` or the Vercel dashboard before T003 is tested. If missing, set it and redeploy.
 - **`APP_CORS_ORIGINS` contains the Vercel domain on Railway**: verify via `railway variables` or the Railway dashboard. If missing, add it.
-- **`totoro-config/deployment.md` update**: sibling-repo doc edit; committed separately from this feature branch.
+- **`kebi-config/deployment.md` update**: sibling-repo doc edit; committed separately from this feature branch.
 - **Exact Clerk frontend API host**: derivable at implementation time from the publishable key if the wildcard-based `allowNavigation` turns out to be insufficient. Verify during first sign-in in Xcode Simulator.
 - **First-run Xcode steps** (Apple ID, team selection, developer cert trust, run-on-device): owner actions, documented in `quickstart.md`.

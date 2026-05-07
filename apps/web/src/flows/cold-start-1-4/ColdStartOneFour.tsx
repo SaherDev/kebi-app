@@ -18,7 +18,7 @@ export function ColdStartOneFour({ store }: ColdStartOneFourProps) {
   return (
     <div className="flex flex-col gap-4 py-4 w-full">
 
-      {/* Totoro message bubble */}
+      {/* Kebi message bubble */}
       <div className="flex items-start gap-3">
         <div className="flex-shrink-0 h-9 w-9 rounded-full overflow-hidden">
           <Illustration id="encouraging" />

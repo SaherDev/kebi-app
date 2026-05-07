@@ -1,4 +1,4 @@
-import type { AuthUser, SignalResponse } from '@totoro/shared';
+import type { AuthUser, SignalResponse } from '@kebi-app/shared';
 import { SignalController } from './signal.controller';
 import { SignalRequestDto } from './dto/signal-request.dto';
 import { SignalService } from './signal.service';

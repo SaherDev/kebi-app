@@ -24,21 +24,21 @@ Set localStorage state in browser DevTools → Application → Local Storage:
 
 ```js
 // Flow 7 — Cold 0
-localStorage.removeItem('totoro.savedCount');
-localStorage.removeItem('totoro.savedPlaces');
+localStorage.removeItem('kebi-app.savedCount');
+localStorage.removeItem('kebi-app.savedPlaces');
 
 // Flow 8 — Cold 1–4
-localStorage.setItem('totoro.savedCount', '2');
+localStorage.setItem('kebi-app.savedCount', '2');
 
 // Taste profile
-localStorage.setItem('totoro.tasteProfile', 'true');
+localStorage.setItem('kebi-app.tasteProfile', 'true');
 
 // Flow 2 — Idle + Consult
-localStorage.setItem('totoro.savedCount', '5');
-localStorage.setItem('totoro.tasteProfile', 'true');
+localStorage.setItem('kebi-app.savedCount', '5');
+localStorage.setItem('kebi-app.tasteProfile', 'true');
 
 // Set location (for consult context)
-localStorage.setItem('totoro.location', '{"lat":13.7563,"lng":100.5018}');
+localStorage.setItem('kebi-app.location', '{"lat":13.7563,"lng":100.5018}');
 ```
 
 Then reload the page.
@@ -72,7 +72,7 @@ pnpm nx build web   # type-check + build
 
 ```bash
 # After renames, check no old references remain
-grep -r "totoro-home-input\|totoro-splash\|totoro-success\|totoro-place-detail\|totoro-hover-peek\|totoro-step-complete" apps/web/src/
+grep -r "kebi-app-home-input\|kebi-app-splash\|kebi-app-success\|kebi-app-place-detail\|kebi-app-hover-peek\|kebi-app-step-complete" apps/web/src/
 # Should return zero results
 ```
 

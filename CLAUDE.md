@@ -1,10 +1,10 @@
-# CLAUDE.md — Totoro Product Repo
+# CLAUDE.md — Kebi Product Repo
 
 **Rule: Keep this file under 150 lines. Move detailed standards to `.claude/rules/` files and reference them here.**
 
 ## Project Context
 
-Totoro is an AI-native place decision engine. The AI IS the product — NestJS is supporting infrastructure. Users share places over time (free-text, URLs, descriptions), the system builds a taste model, and returns one confident recommendation from natural language intent. This is the **product repo**: an Nx monorepo with a Next.js frontend (`apps/web`), NestJS backend (`services/api`), and shared TypeScript types (`libs/shared`). NestJS is a **thin gateway** — it authenticates, forwards AI requests, stores recommendation history, and serves user CRUD. All AI logic lives in a separate Python repo (`totoro-ai`, FastAPI) that acts as the **autonomous AI brain**. See @docs/architecture.md for the full design and `docs/api-contract.md` for the HTTP contract.
+Kebi is an AI-native place decision engine. The AI IS the product — NestJS is supporting infrastructure. Users share places over time (free-text, URLs, descriptions), the system builds a taste model, and returns one confident recommendation from natural language intent. This is the **product repo**: an Nx monorepo with a Next.js frontend (`apps/web`), NestJS backend (`services/api`), and shared TypeScript types (`libs/shared`). NestJS is a **thin gateway** — it authenticates, forwards AI requests, stores recommendation history, and serves user CRUD. All AI logic lives in a separate Python repo (`kebi`, FastAPI) that acts as the **autonomous AI brain**. See @docs/architecture.md for the full design and `docs/api-contract.md` for the HTTP contract.
 
 ## Key Directories
 
@@ -47,12 +47,12 @@ pnpm nx build api
 Details in @.claude/rules/standards.md, @.claude/rules/architecture.md, @.claude/rules/frontend.md, and @.claude/rules/tailwind-patterns.md.
 
 - **Zero hardcoding** — config (YAML/env vars) or constants in `libs/shared` for everything
-- **Path aliases** — `@totoro/shared`, `@totoro/ui`; app-internal imports use relative paths
+- **Path aliases** — `@kebi-app/shared`, `@kebi-app/ui`; app-internal imports use relative paths
 - **Naming** — files: `kebab-case.ts`, classes: `PascalCase`, DTOs: `PascalCase` + `Dto` suffix
 - **Types** — shared types in `libs/shared`, no type duplication; Zod schemas in `apps/web` for runtime validation of AI responses
 - **Linting** — Nx-generated ESLint configs only, no plugins, no inline disables without comments
 - **Nx boundaries** — `apps/web` imports `libs/shared` + `libs/ui`; `services/api` imports `libs/shared` only; `libs/shared` imports nothing
-- **Architecture** — NestJS: authenticate, forward all user messages to totoro-ai via `POST /v1/chat`, return the response — nothing else. NestJS has no database writes. FastAPI owns all DB writes (places, embeddings, taste_model, consult_logs, user_memories, interaction_log) via Alembic migrations
+- **Architecture** — NestJS: authenticate, forward all user messages to kebi via `POST /v1/chat`, return the response — nothing else. NestJS has no database writes. FastAPI owns all DB writes (places, embeddings, taste_model, consult_logs, user_memories, interaction_log) via Alembic migrations
 - **Frontend** — Tailwind v3 + shadcn/ui, CSS variables with raw HSL, dark mode via `next-themes`, i18n via `next-intl` with URL routing `/en/`
 - **API routes** — all NestJS routes use `/api/v1/` prefix; AI service called via single endpoint (`POST /v1/chat`); frontend calls `POST /api/v1/chat` for all interactions (ADR-036)
 - **Commits** — `type(scope): description`, types: `feat|fix|chore|docs|refactor|test`, scopes: `api|web|shared` (details in @.claude/rules/git.md)
@@ -78,21 +78,21 @@ See `.claude/workflows.md` for the complete 5-step token-efficient workflow (ADR
 
 ## Notes
 
-- **Secrets management** (ADR-025): NestJS secrets in `.env.local` (gitignored, symlinked to `totoro-config/secrets/api.env.local`); non-secrets in `services/api/config/app.yaml` (committed). Next.js (`apps/web`) uses `.env.local`. FastAPI (`totoro-ai`) uses `config/.local.yaml`. Railway injects secrets as environment variables — names must match the `.env.local` keys exactly.
+- **Secrets management** (ADR-025): NestJS secrets in `.env.local` (gitignored, symlinked to `kebi-config/secrets/api.env.local`); non-secrets in `services/api/config/app.yaml` (committed). Next.js (`apps/web`) uses `.env.local`. FastAPI (`kebi`) uses `config/.local.yaml`. Railway injects secrets as environment variables — names must match the `.env.local` keys exactly.
 - **Git comment char is `;`** not `#` — run `git config core.commentChar ";"` once per machine.
-- **Bruno API testing**: Collection at `totoro-config/bruno/`. New endpoints need a corresponding `.bru` request file.
-- **pgvector**: All vector operations live in totoro-ai. NestJS never touches the database. Embedding dimensions and migrations are totoro-ai's concern only.
+- **Bruno API testing**: Collection at `kebi-config/bruno/`. New endpoints need a corresponding `.bru` request file.
+- **pgvector**: All vector operations live in kebi. NestJS never touches the database. Embedding dimensions and migrations are kebi's concern only.
 - **Deployment**: Vercel (frontend), Railway (backend + AI service + PostgreSQL + Redis). Redis is FastAPI-only. Docker Compose for local dev only.
 
 ## Active Technologies
 - TypeScript 5.x / Node 20 LTS + Next.js 16 (App Router), React 19, Zustand, Zod, Tailwind v3, shadcn/ui, next-intl, next-themes, Clerk v5 (012-home-subplans-3-7)
-- localStorage only (`totoro.savedCount`, `totoro.savedPlaces`, `totoro.tasteProfile`, `totoro.location`) — no DB changes (012-home-subplans-3-7)
+- localStorage only (`kebi-app.savedCount`, `kebi-app.savedPlaces`, `kebi-app.tasteProfile`, `kebi-app.location`) — no DB changes (012-home-subplans-3-7)
 - TypeScript 5.x, Node 20 LTS (existing). Swift is auto-generated by Capacitor and not hand-written. (013-capacitor-ios-shell)
 - None added. The iOS app reuses the web app's existing in-memory and `localStorage` patterns (Zustand home store, Clerk session cookie in WKHTTPCookieStore). (013-capacitor-ios-shell)
 - TypeScript 5.x / Node 20 LTS + NestJS 11 (`@nestjs/common`, `@nestjs/axios`, `@nestjs/config`), `class-validator`, `class-transformer`, `@clerk/backend`, `rxjs` (014-signal-context-endpoints)
 - N/A — this feature is a stateless gateway pass-through. No TypeORM entity, migration, or DB query changes. Constitution §V preserved. (014-signal-context-endpoints)
 - TypeScript 5.x / Node 20 LTS + Next.js 16, React 19, Zustand, Zod, Tailwind v3, shadcn/ui, framer-motion v11 (installed), next-intl, Clerk v5 (015-ui-align-placeobject)
-- localStorage only (`totoro.savedCount`, `totoro.savedPlaces`) (015-ui-align-placeobject)
+- localStorage only (`kebi-app.savedCount`, `kebi-app.savedPlaces`) (015-ui-align-placeobject)
 - TypeScript 5.x / Node 20 LTS + NestJS 11, `@nestjs/config` (ConfigService), `@nestjs/axios` (HttpService), `@clerk/backend`, class-validator, class-transformer (016-gateway-rate-limit)
 - In-memory `Map` — no DB, no Redis (NestJS never touches Redis per Constitution §I) (016-gateway-rate-limit)
 

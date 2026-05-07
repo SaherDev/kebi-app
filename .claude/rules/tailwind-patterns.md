@@ -1,4 +1,4 @@
-# Tailwind Patterns — Totoro
+# Tailwind Patterns — Kebi
 
 Reference examples showing how Tailwind v3 + shadcn/ui is used across the system.
 
@@ -192,7 +192,7 @@ Shows all rules together: semantic tokens, logical properties, i18n strings, `cn
 ```tsx
 // apps/web/src/components/place-card.tsx
 import { useTranslations } from 'next-intl';
-import { cn } from '@totoro/ui';
+import { cn } from '@kebi-app/ui';
 
 interface PlaceCardProps {
   placeName: string;

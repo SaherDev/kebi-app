@@ -1,4 +1,4 @@
-# Totoro Constitution
+# Kebi Constitution
 
 ## I. Two-Repo Boundary (NON-NEGOTIABLE)
 
@@ -7,11 +7,11 @@ NestJS is a thin gateway. The AI IS the product. Everything in this repo serves 
 NestJS has exactly four responsibilities:
 
 1. Authenticate every request (Clerk)
-2. Forward AI requests to totoro-ai with user context
+2. Forward AI requests to kebi with user context
 3. Write product data to PostgreSQL (users, user_settings) via TypeORM
 4. Serve user CRUD
 
-NestJS NEVER: calls LLMs, generates embeddings, runs vector search, calls Google Places API, writes place/embedding/taste_model records, or touches Redis. If a task requires any of these, it belongs in totoro-ai.
+NestJS NEVER: calls LLMs, generates embeddings, runs vector search, calls Google Places API, writes place/embedding/taste_model records, or touches Redis. If a task requires any of these, it belongs in kebi.
 
 ## II. Nx Module Boundaries (NON-NEGOTIABLE)
 
@@ -40,7 +40,7 @@ Current binding decisions:
 - **ADR-013**: `ClerkAuthGuard` global + `@Public()` opt-out
 - **ADR-014**: One NestJS module per domain
 - **ADR-035**: TypeORM with `synchronize: true`, two entities (users, user_settings)
-- **ADR-016**: `AiServiceClient` for all forwarding to totoro-ai
+- **ADR-016**: `AiServiceClient` for all forwarding to kebi
 - **ADR-017**: Global `ValidationPipe` with `whitelist: true, forbidNonWhitelisted: true, transform: true`
 - **ADR-018**: Global `AllExceptionsFilter` for AI service error mapping
 - **ADR-020**: pnpm as package manager
@@ -51,7 +51,7 @@ Current binding decisions:
 ## IV. Configuration Rules
 
 - Non-secret config → `services/api/config/app.yaml` (NestJS), `apps/web/next.config.js` (Next.js)
-- Secrets → `.env.local` in each service (gitignored, symlinked from `totoro-config/secrets/`). FastAPI uses `config/.local.yaml`
+- Secrets → `.env.local` in each service (gitignored, symlinked from `kebi-config/secrets/`). FastAPI uses `config/.local.yaml`
 - No `.env` or secret files committed — developers create these locally with their own secret values
 - Constants shared across apps → `libs/shared/src/lib/constants.ts`
 - Nothing hardcoded: URLs, ports, thresholds, labels must come from config or a named constant
@@ -60,14 +60,14 @@ Current binding decisions:
 
 - NestJS writes: `users`, `user_settings` (via TypeORM with `synchronize: true`)
 - FastAPI writes: `places`, `embeddings`, `taste_model`, `consult_logs`, `user_memories`, `interaction_log`
-- Alembic in totoro-ai owns all AI-table migrations
-- pgvector columns are owned entirely by totoro-ai's Alembic migrations — NestJS never defines vector columns
+- Alembic in kebi owns all AI-table migrations
+- pgvector columns are owned entirely by kebi's Alembic migrations — NestJS never defines vector columns
 
 ## VI. AI Service Contract
 
 Single endpoint (ADR-036), via `AiServiceClient`:
 
-- `POST /v1/chat` — 30s timeout; totoro-ai classifies intent and returns a discriminated `ChatResponseDto`.
+- `POST /v1/chat` — 30s timeout; kebi classifies intent and returns a discriminated `ChatResponseDto`.
 
 Base URL: `AI_SERVICE_BASE_URL` env var (`.env.local` locally, Railway variable in production).
 Full schema in `docs/api-contract.md`. Response DTOs must tolerate extra fields (forward-compatible, `@IsOptional()` on all AI response fields).
@@ -94,7 +94,7 @@ Full schema in `docs/api-contract.md`. Response DTOs must tolerate extra fields 
 - Types: `feat|fix|chore|docs|refactor|test` | Scopes: `api|web|shared`
 - Feature branches from `dev`, merge to `dev`, milestone merges to `main`
 - Never push directly to `main`
-- New endpoints require a `.bru` file in `totoro-config/bruno/`
+- New endpoints require a `.bru` file in `kebi-config/bruno/`
 
 ## X. Required Skills Per Domain
 

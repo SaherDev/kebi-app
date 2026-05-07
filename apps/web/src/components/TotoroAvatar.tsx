@@ -1,4 +1,4 @@
-import { cn } from "@totoro/ui";
+import { cn } from "@kebi-app/ui";
 
 interface AvatarProps extends React.HTMLAttributes<HTMLDivElement> {
   src?: string;
@@ -13,7 +13,7 @@ const sizeClasses = {
   lg: "w-12 h-12 text-base",
 };
 
-function TotoroAvatar({
+function KebiAvatar({
   src,
   alt,
   fallback,
@@ -39,4 +39,4 @@ function TotoroAvatar({
   );
 }
 
-export { TotoroAvatar };
+export { KebiAvatar };

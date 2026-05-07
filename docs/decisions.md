@@ -1,4 +1,4 @@
-# Architecture Decisions Log — Totoro
+# Architecture Decisions Log — Kebi
 
 Log of architectural decisions. Add new entries at the top.
 
@@ -30,7 +30,7 @@ Format:
 **Date:** 2026-04-09\
 **Status:** accepted\
 **Context:** services/api manages exactly two domain tables — users and user_settings. A lightweight ORM is sufficient for a two-table gateway service.\
-**Decision:** Use TypeORM in services/api. `TypeOrmModule.forRootAsync()` reads `DATABASE_URL` from env vars via `ConfigService`. `synchronize: true` — acceptable at this stage (small team, no production data at risk). `UserEntity` and `UserSettingsEntity` map to the `users` and `user_settings` tables; `@PrimaryColumn()` with `@BeforeInsert()` CUID generation. TypeORM with `synchronize: true` only touches registered entities — AI-owned tables (places, embeddings, taste_model, consult_logs, user_memories, interaction_log) are never registered and are fully owned by totoro-ai's Alembic migrations.\
+**Decision:** Use TypeORM in services/api. `TypeOrmModule.forRootAsync()` reads `DATABASE_URL` from env vars via `ConfigService`. `synchronize: true` — acceptable at this stage (small team, no production data at risk). `UserEntity` and `UserSettingsEntity` map to the `users` and `user_settings` tables; `@PrimaryColumn()` with `@BeforeInsert()` CUID generation. TypeORM with `synchronize: true` only touches registered entities — AI-owned tables (places, embeddings, taste_model, consult_logs, user_memories, interaction_log) are never registered and are fully owned by kebi's Alembic migrations.\
 **Consequences:** Single-tool schema management on the NestJS side. If the team grows or production data accrues, replace `synchronize: true` with explicit TypeORM migrations via a future ADR.
 
 ---
@@ -39,7 +39,7 @@ Format:
 
 **Date:** 2026-03-14\
 **Status:** deferred\
-**Context:** NestJS controllers currently use a global ValidationPipe (ADR-017) for request body validation. As domain-specific validation rules grow — for example, validating consult location bounds, checking user quota before forwarding to totoro-ai, or enforcing place input constraints — a single pipe or service method will accumulate unrelated rules that are hard to test independently.\
+**Context:** NestJS controllers currently use a global ValidationPipe (ADR-017) for request body validation. As domain-specific validation rules grow — for example, validating consult location bounds, checking user quota before forwarding to kebi, or enforcing place input constraints — a single pipe or service method will accumulate unrelated rules that are hard to test independently.\
 **Decision:** Deferred. Apply the Chain of Responsibility pattern when any single validation path exceeds 3 independent rules. Each validator implements a validate(payload) -> ValidationResult interface and is chained at module startup. Until the threshold is reached, a single validation method per service is acceptable.\
 **Consequences:** No implementation now. When the threshold is reached, refactor into a chain of validator classes. Each rule becomes independently testable. Adding a new rule means adding a new class, not editing existing ones.
 
@@ -49,8 +49,8 @@ Format:
 
 **Date:** 2026-03-14\
 **Status:** accepted\
-**Context:** The product repo depends on external systems: Clerk for auth, TypeORM for database access, Axios for HTTP calls to totoro-ai, and any future integrations. ADR-030 establishes that interfaces are implemented via classes. This ADR extends that to require an interface abstraction for any dependency that meets one or more criteria: (1) has more than one possible implementation now or in the future, (2) is an external system that could be swapped for cost, performance, or availability reasons, (3) needs to be mockable in tests without hitting a real service. This mirrors ADR-039 in totoro-ai and makes the rule consistent across both repos.\
-**Decision:** Any dependency meeting the criteria above must be abstracted behind a TypeScript interface before a concrete class is written. Concrete implementations live in their domain module or in a shared provider if used across multiple modules. Controllers and services depend on the interface only, injected via NestJS Depends(). No concrete class is imported directly in business logic. Swapping any dependency requires a config change and a new implementation class, never a change to business logic. AiServiceClient (ADR-016) is the first example of this pattern applied correctly — it abstracts all totoro-ai HTTP forwarding behind a typed interface.\
+**Context:** The product repo depends on external systems: Clerk for auth, TypeORM for database access, Axios for HTTP calls to kebi, and any future integrations. ADR-030 establishes that interfaces are implemented via classes. This ADR extends that to require an interface abstraction for any dependency that meets one or more criteria: (1) has more than one possible implementation now or in the future, (2) is an external system that could be swapped for cost, performance, or availability reasons, (3) needs to be mockable in tests without hitting a real service. This mirrors ADR-039 in kebi and makes the rule consistent across both repos.\
+**Decision:** Any dependency meeting the criteria above must be abstracted behind a TypeScript interface before a concrete class is written. Concrete implementations live in their domain module or in a shared provider if used across multiple modules. Controllers and services depend on the interface only, injected via NestJS Depends(). No concrete class is imported directly in business logic. Swapping any dependency requires a config change and a new implementation class, never a change to business logic. AiServiceClient (ADR-016) is the first example of this pattern applied correctly — it abstracts all kebi HTTP forwarding behind a typed interface.\
 **Consequences:** Every new external dependency introduced must be evaluated against the three criteria before implementation begins. If it qualifies, an interface is defined first, then the concrete class. This rule is a Constitution Check item — any plan that introduces a concrete external dependency directly into a controller or service must be flagged and revised before implementation starts.
 
 ---
@@ -59,7 +59,7 @@ Format:
 
 **Date:** 2026-03-14\
 **Status:** accepted\
-**Context:** NestJS controllers are entry points into the domain layer. Without a constraint, controllers accumulate business logic, direct database calls, and inline HTTP forwarding to totoro-ai when building quickly. This couples the HTTP layer to infrastructure and makes both harder to test.\
+**Context:** NestJS controllers are entry points into the domain layer. Without a constraint, controllers accumulate business logic, direct database calls, and inline HTTP forwarding to kebi when building quickly. This couples the HTTP layer to infrastructure and makes both harder to test.\
 **Decision:** Controllers are facades. Each controller method makes exactly one service call and returns the result. No direct database calls, no direct AiServiceClient calls, no Redis, no business logic appear inside any controller file. All orchestration lives in the service layer. The one exception is request validation via pipes and guards, which are decorators and do not count as logic inside the method body.\
 **Consequences:** Controller files stay under 50 lines. Infrastructure concerns are testable independently of HTTP routing. Violations of this rule must be flagged during Constitution Check in the Plan phase before implementation begins.
 
@@ -69,7 +69,7 @@ Format:
 
 **Date:** 2026-03-12\
 **Status:** accepted\
-**Context:** The Totoro project uses Claude Code with 8 agent skills installed to enhance development efficiency. Without a documented integration strategy, skills may be underutilized or invoked at the wrong workflow stage, wasting tokens or missing optimization opportunities.\
+**Context:** The Kebi project uses Claude Code with 8 agent skills installed to enhance development efficiency. Without a documented integration strategy, skills may be underutilized or invoked at the wrong workflow stage, wasting tokens or missing optimization opportunities.\
 **Decision:** Agent skills are scoped to specific workflow stages (from ADR-028) and invoked only when task context matches their domain. The mapping is:
 
 | Workflow Step | Active Skills | Activation Trigger |
@@ -169,7 +169,7 @@ await extractPlace({ input });
 
 See `docs/examples/consult-example.ts` for the full flow.
 
-**Consequences:** Swapping transports requires changing one class. Components stay thin — one function call, typed response. Reads benefit from Next.js caching. Mutations run as Server Actions. No DI library needed. Request/response types come from `@totoro/shared` when implemented.
+**Consequences:** Swapping transports requires changing one class. Components stay thin — one function call, typed response. Reads benefit from Next.js caching. Mutations run as Server Actions. No DI library needed. Request/response types come from `@kebi-app/shared` when implemented.
 
 ---
 
@@ -179,7 +179,7 @@ See `docs/examples/consult-example.ts` for the full flow.
 **Status:** accepted\
 **Context:** Previous workflow was unclear about when to use agents, causing token waste through unnecessary subagent dispatches and review loops. Needed a standardized approach that scales from simple 1-file tasks to complex multi-repo changes.\
 **Decision:** Adopt 5-step workflow with specific Claude model per step: (1) **Clarify** (Haiku) — If ambiguous, ask 5 questions; (2) **Plan** (Sonnet) — If 3+ files, create docs/plans/\*.md with phases + Constitution Check against docs/decisions.md; (3) **Implement** (Haiku/Sonnet per complexity) — Follow plan checklist, write code, commit; (4) **Verify** (Haiku) — Run commands, all must pass; (5) **Complete** (Haiku) — Mark task done. See `.claude/workflows.md` for flow, `.claude/constitution.md` for check process.\
-**Consequences:** Average task cost reduced from 250K to 13-18K tokens (~95% savings). Clear decision points on when to plan vs implement. Constitution Check catches architectural violations early (in Plan phase, not Implement phase). Plan doc becomes single source of truth for implementation. Workflow applies consistently across all repos (totoro, totoro-ai, future repos).
+**Consequences:** Average task cost reduced from 250K to 13-18K tokens (~95% savings). Clear decision points on when to plan vs implement. Constitution Check catches architectural violations early (in Plan phase, not Implement phase). Plan doc becomes single source of truth for implementation. Workflow applies consistently across all repos (kebi-app, kebi, future repos).
 
 ---
 
@@ -192,7 +192,7 @@ See `docs/examples/consult-example.ts` for the full flow.
 **Date:** 2026-03-09\
 **Status:** superseded\
 **Context:** Originally defined how two ORM tools would share one PostgreSQL instance.\
-**Decision:** Superseded by ADR-035. Current state: NestJS uses TypeORM with `synchronize: true` for `users` and `user_settings`; Alembic in totoro-ai owns all AI tables. See ADR-035 for details.
+**Decision:** Superseded by ADR-035. Current state: NestJS uses TypeORM with `synchronize: true` for `users` and `user_settings`; Alembic in kebi owns all AI tables. See ADR-035 for details.
 
 ---
 
@@ -201,8 +201,8 @@ See `docs/examples/consult-example.ts` for the full flow.
 **Date:** 2026-03-09\
 **Status:** accepted\
 **Context:** Secrets must never be stored in version control. Each service needs a simple way to manage its own secrets without external dependencies or complex setup.\
-**Decision:** (1) **NestJS** (totoro/services/api) — secrets in `.env.local` (gitignored, symlinked to `totoro-config/secrets/api.env.local`); non-secrets in `services/api/config/app.yaml` (committed). `ConfigModule` loads `.env.local` via `envFilePath` for local dev; Railway injects the same variable names as env vars in production. (2) **Next.js** (totoro/apps/web) — secrets in `.env.local` (gitignored). (3) **FastAPI** (totoro-ai) — secrets in `config/.local.yaml` (gitignored). Secret files are never committed.\
-**Consequences:** Non-secret NestJS config (`app.yaml`) is version-controlled and reviewable. Secrets are isolated in gitignored files symlinked from `totoro-config/secrets/`. Railway variable names are the canonical names — `.env.local` keys must match them exactly for local/prod parity.
+**Decision:** (1) **NestJS** (kebi-app/services/api) — secrets in `.env.local` (gitignored, symlinked to `kebi-config/secrets/api.env.local`); non-secrets in `services/api/config/app.yaml` (committed). `ConfigModule` loads `.env.local` via `envFilePath` for local dev; Railway injects the same variable names as env vars in production. (2) **Next.js** (kebi-app/apps/web) — secrets in `.env.local` (gitignored). (3) **FastAPI** (kebi) — secrets in `config/.local.yaml` (gitignored). Secret files are never committed.\
+**Consequences:** Non-secret NestJS config (`app.yaml`) is version-controlled and reviewable. Secrets are isolated in gitignored files symlinked from `kebi-config/secrets/`. Railway variable names are the canonical names — `.env.local` keys must match them exactly for local/prod parity.
 
 ---
 
@@ -230,7 +230,7 @@ See `docs/examples/consult-example.ts` for the full flow.
 
 **Date:** 2026-03-08\
 **Status:** accepted\
-**Context:** AI requests to totoro-ai are expensive and may need to be disabled — either globally (service outage, cost control) or per-user (abuse, account restriction). This must be enforced at the NestJS boundary before any forwarding happens.\
+**Context:** AI requests to kebi are expensive and may need to be disabled — either globally (service outage, cost control) or per-user (abuse, account restriction). This must be enforced at the NestJS boundary before any forwarding happens.\
 **Decision:** `AiEnabledGuard` in `services/api/src/common/guards/ai-enabled.guard.ts` runs after `ClerkMiddleware` on AI routes only. It checks two things in order: (1) `AI_GLOBAL_KILL_SWITCH` Railway environment variable — if set to the string `"true"`, blocks all AI requests with 503, no redeploy needed; (2) `req.user.ai_enabled` from the verified Clerk JWT — if false, blocks that user's AI requests with 403, defaults to true if the field is absent. Applied via the `@RequiresAi()` decorator (shorthand for `@UseGuards(AiEnabledGuard)`) on endpoints that call the AI service. New users get `ai_enabled: true` and `plan: "homebody"` set in Clerk `publicMetadata` via the `user.created` webhook handler.\
 **Consequences:** AI can be killed globally by setting `AI_GLOBAL_KILL_SWITCH=true` in Railway without a redeploy. Individual users can be disabled via Clerk dashboard or API without touching the codebase. The `@RequiresAi()` decorator provides a clean, reusable pattern for guard application across multiple endpoints. Guard order matters — `ClerkMiddleware` must run first to populate `req.user`.
 
@@ -241,7 +241,7 @@ See `docs/examples/consult-example.ts` for the full flow.
 **Date:** 2026-03-08\
 **Status:** accepted\
 **Context:** The NestJS API needs a way to document and test endpoints. Swagger (`@nestjs/swagger`) would duplicate the contract already maintained in `docs/api-contract.md` and add runtime overhead.\
-**Decision:** No Swagger. Bruno is the API testing and documentation tool. Every new NestJS endpoint gets a corresponding `.bru` request file in `totoro-config/bruno/`. `docs/api-contract.md` remains the human-readable source of truth for the NestJS ↔ totoro-ai contract.\
+**Decision:** No Swagger. Bruno is the API testing and documentation tool. Every new NestJS endpoint gets a corresponding `.bru` request file in `kebi-config/bruno/`. `docs/api-contract.md` remains the human-readable source of truth for the NestJS ↔ kebi contract.\
 **Consequences:** No `@ApiProperty()` decorators in DTOs. No Swagger UI endpoint. New endpoints require a `.bru` file — this is the acceptance signal that an endpoint is documented and testable.
 
 ---
@@ -260,9 +260,9 @@ See `docs/examples/consult-example.ts` for the full flow.
 
 **Date:** 2026-03-07\
 **Status:** accepted\
-**Context:** The api-contract.md explicitly states that the totoro-ai response schema will evolve and clients must not fail on extra keys. DTOs that strip or reject unknown fields would break silently when totoro-ai adds new fields.\
+**Context:** The api-contract.md explicitly states that the kebi response schema will evolve and clients must not fail on extra keys. DTOs that strip or reject unknown fields would break silently when kebi adds new fields.\
 **Decision:** AI service response DTOs in `services/api/src/ai-service/dto/` declare all currently known fields and mark every field optional with `@IsOptional()`. Unknown fields from the AI response are not stripped at the NestJS boundary — they pass through to the frontend or are ignored. Implementation is pending.\
-**Consequences:** NestJS tolerates totoro-ai API evolution without breaking. Frontend receives richer payloads as new fields are added. DTOs must be updated when new fields become required by business logic.
+**Consequences:** NestJS tolerates kebi API evolution without breaking. Frontend receives richer payloads as new fields are added. DTOs must be updated when new fields become required by business logic.
 
 ---
 
@@ -270,7 +270,7 @@ See `docs/examples/consult-example.ts` for the full flow.
 
 **Date:** 2026-03-07\
 **Status:** accepted\
-**Context:** totoro-ai returns 400, 422, 500, and timeout conditions that require different user-facing messages. Without a consistent translation layer, error handling would be duplicated across every controller.\
+**Context:** kebi returns 400, 422, 500, and timeout conditions that require different user-facing messages. Without a consistent translation layer, error handling would be duplicated across every controller.\
 **Decision:** A global `AllExceptionsFilter` registered in `services/api/src/main.ts` catches Axios errors from AI service calls and HTTP exceptions from NestJS itself. It maps AI service 400 → 400, 422 → 422 with "couldn't understand" message, 500 → 503 with retry suggestion, and timeout → 503. The filter lives in `services/api/src/common/filters/all-exceptions.filter.ts`. Implementation is pending.\
 **Consequences:** All controllers get consistent error translation for free. AI service error shape changes require only updating this filter, not each controller. No raw Axios errors reach the frontend.
 
@@ -286,11 +286,11 @@ See `docs/examples/consult-example.ts` for the full flow.
 
 ---
 
-## ADR-016: AiServiceClient encapsulating all forwarding to totoro-ai _(superseded by ADR-036)_
+## ADR-016: AiServiceClient encapsulating all forwarding to kebi _(superseded by ADR-036)_
 
 **Date:** 2026-03-07\
 **Status:** superseded\
-**Context:** Both the places and recommendations domains need to call totoro-ai. Without a shared abstraction, each service would duplicate base URL config, timeout setup, and error normalization.\
+**Context:** Both the places and recommendations domains need to call kebi. Without a shared abstraction, each service would duplicate base URL config, timeout setup, and error normalization.\
 **Decision:** `AiServiceModule` in `services/api/src/ai-service/` wraps NestJS `HttpModule` (Axios). `AiServiceClient` (injectable service) exposes two typed methods: `extractPlace(payload)` → calls `POST /v1/extract-place` and `consult(payload)` → calls `POST /v1/consult`. Base URL is read from `ConfigService` (`ai_service.base_url`). Timeouts are set per endpoint: 10s for extract-place, 20s for consult. Implementation is pending.\
 **Consequences:** All AI forwarding is in one place. Domain services call `AiServiceClient` methods rather than raw HTTP. Timeout policy from api-contract.md is enforced consistently. Future auth header between services (shared secret) is added once in this module.
 
@@ -355,8 +355,8 @@ See `docs/examples/consult-example.ts` for the full flow.
 **Date:** 2026-03-07\
 **Status:** accepted\
 **Context:** The `/api/v1/` prefix must be consistent across NestJS routing and any TypeScript code that builds URLs to call the NestJS API (e.g., the frontend fetch client). Hardcoding it in `main.ts` alone would create drift if it ever changes.\
-**Decision:** `API_GLOBAL_PREFIX = 'api/v1'` is defined in `libs/shared/src/lib/constants.ts` and exported from `libs/shared/src/index.ts`. `services/api/src/main.ts` calls `app.setGlobalPrefix(API_GLOBAL_PREFIX)` using this constant. The frontend fetch client will import the same constant via `@totoro/shared` when implemented. This is already implemented.\
-**Consequences:** The prefix is defined once and consumed wherever needed. A prefix change requires editing one constant. Nx boundary rules ensure `apps/web` can import `@totoro/shared` where this constant lives.
+**Decision:** `API_GLOBAL_PREFIX = 'api/v1'` is defined in `libs/shared/src/lib/constants.ts` and exported from `libs/shared/src/index.ts`. `services/api/src/main.ts` calls `app.setGlobalPrefix(API_GLOBAL_PREFIX)` using this constant. The frontend fetch client will import the same constant via `@kebi-app/shared` when implemented. This is already implemented.\
+**Consequences:** The prefix is defined once and consumed wherever needed. A prefix change requires editing one constant. Nx boundary rules ensure `apps/web` can import `@kebi-app/shared` where this constant lives.
 
 ---
 
@@ -375,7 +375,7 @@ See `docs/examples/consult-example.ts` for the full flow.
 **Date:** 2026-03-05\
 **Status:** accepted\
 **Context:** When a bad recommendation comes back, there is no way to tell if intent parsing failed, retrieval missed the right place, or ranking scored incorrectly. The eval pipeline also needs per-step accuracy measurement.\
-**Decision:** The consult response includes a `reasoning_steps` array. Each entry has a `step` identifier and a human-readable `summary` of what happened at that stage. totoro-ai produces it, this repo consumes and renders it.\
+**Decision:** The consult response includes a `reasoning_steps` array. Each entry has a `step` identifier and a human-readable `summary` of what happened at that stage. kebi produces it, this repo consumes and renders it.\
 **Consequences:** Frontend can display agent thinking steps. DTOs must include the new field. Both repos' API contract docs updated.
 
 ---
@@ -384,7 +384,7 @@ See `docs/examples/consult-example.ts` for the full flow.
 
 **Date:** 2026-03-04\
 **Status:** accepted\
-**Context:** The UI needs a component library with Dialog, Sheet, Toast, Skeleton, and Command — all required for Totoro's core UX. Tailwind v4 was available but shadcn/ui was not fully stable on it at project start.\
+**Context:** The UI needs a component library with Dialog, Sheet, Toast, Skeleton, and Command — all required for Kebi's core UX. Tailwind v4 was available but shadcn/ui was not fully stable on it at project start.\
 **Decision:** Use Tailwind CSS v3 with shadcn/ui. shadcn components are copied into `libs/ui` (not installed as a package) so the code is owned and can be modified freely. Alternatives considered: Tailwind v4, Radix primitives without shadcn, Material UI.\
 **Consequences:** shadcn components are fully customisable with no upstream dependency. Tailwind v3 patterns apply throughout — see `.claude/rules/tailwind-patterns.md`. If upgrading to Tailwind v4 in future, shadcn components will need re-testing.
 
@@ -429,12 +429,12 @@ See `docs/examples/consult-example.ts` for the full flow.
 
 ---
 
-## ADR-002: Separate AI repo (totoro-ai)
+## ADR-002: Separate AI repo (kebi)
 
 **Date:** 2026-03-04\
 **Status:** accepted\
 **Context:** All AI/ML logic requires Python, a different deployment target (Python runtime with GPU), and a faster iteration cycle than product code. Mixing languages in one repo would complicate CI, deployments, and dependency management.\
-**Decision:** Keep all AI/ML code in a separate Python repository (`totoro-ai`). This repo communicates with it via HTTP only. Alternatives considered: Python in a monorepo subfolder, AI logic as a microservice within this repo.\
+**Decision:** Keep all AI/ML code in a separate Python repository (`kebi`). This repo communicates with it via HTTP only. Alternatives considered: Python in a monorepo subfolder, AI logic as a microservice within this repo.\
 **Consequences:** A stable HTTP contract (see `docs/api-contract.md`) is the boundary between repos. Changes to the AI pipeline do not require touching this repo unless the contract changes. Each repo deploys independently.
 
 ---

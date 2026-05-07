@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { Check } from 'lucide-react';
-import type { ReasoningStep } from '@totoro/shared';
+import type { ReasoningStep } from '@kebi-app/shared';
 
 interface ConsultThinkingProps {
   query: string;

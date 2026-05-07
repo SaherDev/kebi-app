@@ -1,7 +1,7 @@
 'use client';
 
 import { create } from 'zustand';
-import type { SseEvent } from '@totoro/shared';
+import type { SseEvent } from '@kebi-app/shared';
 
 type StreamPhase = 'idle' | 'streaming' | 'done' | 'stopped' | 'error';
 

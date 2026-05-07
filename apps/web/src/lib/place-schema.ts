@@ -4,7 +4,7 @@ import type {
   PlaceAttributes,
   PlaceHours,
   PlaceLocationContext,
-} from '@totoro/shared';
+} from '@kebi-app/shared';
 
 const PlaceLocationContextSchema: z.ZodType<PlaceLocationContext> = z.object({
   neighborhood: z.string().nullable(),

@@ -1,7 +1,7 @@
 import { Controller, Post, Body, Res, Req, UseGuards } from '@nestjs/common';
 import { IncomingMessage } from 'http';
 import type { Response } from 'express';
-import type { AuthUser } from '@totoro/shared';
+import type { AuthUser } from '@kebi-app/shared';
 import { ChatService } from './chat.service';
 import { ChatRequestBodyDto } from './dto/chat-request.dto';
 import { CurrentUser } from '../common/decorators/current-user.decorator';

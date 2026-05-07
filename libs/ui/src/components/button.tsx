@@ -9,7 +9,7 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default:
-          "bg-primary text-primary-foreground rounded-xl shadow-totoro-sm hover:shadow-totoro-md hover:brightness-110 active:scale-[0.98]",
+          "bg-primary text-primary-foreground rounded-xl shadow-kebi-app-sm hover:shadow-kebi-app-md hover:brightness-110 active:scale-[0.98]",
         secondary:
           "bg-secondary text-secondary-foreground rounded-xl border border-border hover:bg-secondary/80 active:scale-[0.98]",
         ghost:
@@ -20,7 +20,7 @@ const buttonVariants = cva(
           "border border-input bg-background text-foreground rounded-xl hover:bg-accent hover:text-accent-foreground",
         link: "text-primary underline-offset-4 hover:underline",
         hero:
-          "bg-primary text-primary-foreground rounded-2xl shadow-totoro-md hover:shadow-totoro-lg hover:brightness-110 active:scale-[0.97] text-base font-semibold",
+          "bg-primary text-primary-foreground rounded-2xl shadow-kebi-app-md hover:shadow-kebi-app-lg hover:brightness-110 active:scale-[0.97] text-base font-semibold",
       },
       size: {
         default: "h-11 px-5 py-2.5 text-sm",

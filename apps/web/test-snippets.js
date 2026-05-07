@@ -1,5 +1,5 @@
 // ==========================================
-// TOTORO LOCAL TESTING SNIPPETS
+// KEBI_APP LOCAL TESTING SNIPPETS
 // Copy & paste into browser console
 // No real API calls - localStorage only
 // ==========================================
@@ -23,8 +23,8 @@ function testColdStart1to4() {
     {place_id:'2',place_name:'Steak House',address:'456 Sukhumvit'},
     {place_id:'3',place_name:'Coffee Shop',address:'789 Sukhumvit'}
   ]
-  localStorage.setItem('totoro.savedPlaces',JSON.stringify(places))
-  localStorage.setItem('totoro.savedCount','3')
+  localStorage.setItem('kebi-app.savedPlaces',JSON.stringify(places))
+  localStorage.setItem('kebi-app.savedCount','3')
   location.reload()
 }
 
@@ -38,14 +38,14 @@ function testColdStart5Plus() {
     {place_id:'5',place_name:'Pizza',address:'222 St'},
     {place_id:'6',place_name:'Burger',address:'333 St'}
   ]
-  localStorage.setItem('totoro.savedPlaces',JSON.stringify(places))
-  localStorage.setItem('totoro.savedCount','6')
+  localStorage.setItem('kebi-app.savedPlaces',JSON.stringify(places))
+  localStorage.setItem('kebi-app.savedCount','6')
   location.reload()
 }
 
 function confirmTasteProfile() {
   console.log('✅ Confirming taste profile...')
-  localStorage.setItem('totoro.tasteProfileConfirmed','true')
+  localStorage.setItem('kebi-app.tasteProfileConfirmed','true')
   useHomeStore.getState().confirmTasteProfile()
   location.reload()
 }
@@ -69,9 +69,9 @@ function viewThreadEntries() {
 function viewStorage() {
   console.log('📦 LocalStorage:')
   console.table({
-    savedCount: localStorage.getItem('totoro.savedCount'),
-    tasteProfileConfirmed: localStorage.getItem('totoro.tasteProfileConfirmed'),
-    savedPlaces: JSON.parse(localStorage.getItem('totoro.savedPlaces') || '[]').length + ' places'
+    savedCount: localStorage.getItem('kebi-app.savedCount'),
+    tasteProfileConfirmed: localStorage.getItem('kebi-app.tasteProfileConfirmed'),
+    savedPlaces: JSON.parse(localStorage.getItem('kebi-app.savedPlaces') || '[]').length + ' places'
   })
 }
 
@@ -80,7 +80,7 @@ function viewStorage() {
 // ==========================================
 console.log(`
 ╔═══════════════════════════════════════════════════════════╗
-║       TOTORO TESTING SNIPPETS - QUICK REFERENCE           ║
+║       KEBI_APP TESTING SNIPPETS - QUICK REFERENCE           ║
 ╠═══════════════════════════════════════════════════════════╣
 ║                                                           ║
 ║ COLD-START TESTS:                                         ║

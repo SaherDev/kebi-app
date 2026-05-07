@@ -32,5 +32,5 @@
 ## Notes
 
 - All items pass. Spec is ready for `/speckit.plan`.
-- This is a developer-experience / infrastructure setup feature. "Users" are the engineers building Totoro; spec is framed accordingly.
+- This is a developer-experience / infrastructure setup feature. "Users" are the engineers building Kebi; spec is framed accordingly.
 - Shared library section (Key Entities) was omitted — this feature involves no persistent data entities, only type definitions in a library.

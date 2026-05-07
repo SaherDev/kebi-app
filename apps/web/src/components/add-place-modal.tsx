@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Link as LinkIcon } from 'lucide-react';
-import { cn } from '@totoro/ui';
+import { cn } from '@kebi-app/ui';
 import { Illustration } from '@/components/illustrations/Illustration';
 
 type AddPlaceStep = 'input' | 'processing' | 'success';

@@ -1,4 +1,4 @@
-import type { SseEvent } from '@totoro/shared';
+import type { SseEvent } from '@kebi-app/shared';
 import { ReasoningStepRenderer } from './reasoning-step-renderer';
 import { ToolResultRenderer } from './tool-result-renderer';
 import { MessageRenderer } from './message-renderer';

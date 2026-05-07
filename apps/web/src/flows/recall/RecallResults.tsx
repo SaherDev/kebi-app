@@ -2,9 +2,9 @@
 
 import { useTranslations } from 'next-intl';
 import { motion, AnimatePresence } from 'framer-motion';
-import type { RecallResult } from '@totoro/shared';
+import type { RecallResult } from '@kebi-app/shared';
 import { PlaceCard } from '../../components/PlaceCard';
-import { cn } from '@totoro/ui';
+import { cn } from '@kebi-app/ui';
 
 function MatchReasonBadge({ reason }: { reason: string }) {
   return (

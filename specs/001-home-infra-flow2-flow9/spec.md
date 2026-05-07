@@ -65,11 +65,11 @@ On first mount, the home page correctly reads localStorage to determine which ph
 
 1. **Given** no localStorage data and no dev override, **When** the page mounts and hydration runs, **Then** `savedPlaceCount = 0` and phase transitions to `cold-0`.
 
-2. **Given** `localStorage.totoro.savedPlaces` contains 3 entries, **When** hydration runs, **Then** `savedPlaceCount = 3` and phase transitions to `cold-1-4`.
+2. **Given** `localStorage.kebi-app.savedPlaces` contains 3 entries, **When** hydration runs, **Then** `savedPlaceCount = 3` and phase transitions to `cold-1-4`.
 
-3. **Given** `localStorage.totoro.savedPlaces` contains 6 entries and `tasteProfileConfirmed = false`, **When** hydration runs, **Then** phase transitions to `taste-profile`.
+3. **Given** `localStorage.kebi-app.savedPlaces` contains 6 entries and `tasteProfileConfirmed = false`, **When** hydration runs, **Then** phase transitions to `taste-profile`.
 
-4. **Given** `localStorage.totoro.savedPlaces` contains 6 entries and `tasteProfileConfirmed = true`, **When** hydration runs, **Then** phase transitions to `idle`.
+4. **Given** `localStorage.kebi-app.savedPlaces` contains 6 entries and `tasteProfileConfirmed = true`, **When** hydration runs, **Then** phase transitions to `idle`.
 
 5. **Given** `NEXT_PUBLIC_DEV_SAVED_COUNT=3` is set and localStorage has 10 saves, **When** hydration runs, **Then** the store uses the override value (3), not the localStorage value — dev override takes precedence.
 
@@ -116,12 +116,12 @@ Old home-page components (`AgentResponseBubble.tsx`, `ChatMessage.tsx`, `home-em
 
 - **FR-001**: The system MUST delete `AgentResponseBubble.tsx`, `ChatMessage.tsx`, and `home-empty-state.tsx`, all imports that reference only these components, and any other unused components, functions, types, constants, or variables that are rendered dead by the cleanup (no live consumer after the deletion). This includes unused imports left behind in any file touched by the task.
 - **FR-002**: The system MUST provide a `classifyIntent(message): 'consult' | 'recall' | 'save' | 'assistant'` pure function in `apps/web/src/lib/classify-intent.ts`.
-- **FR-003**: The system MUST provide a `saved-places-storage.ts` module that reads and writes `localStorage.totoro.savedPlaces` and returns a count of saved places.
-- **FR-004**: The system MUST provide a `taste-profile-storage.ts` module that reads and writes `localStorage.totoro.tasteProfile` including the `confirmed` boolean.
-- **FR-005**: The system MUST provide a `location-storage.ts` module that reads and writes `localStorage.totoro.location` as `{ lat, lng } | null`.
+- **FR-003**: The system MUST provide a `saved-places-storage.ts` module that reads and writes `localStorage.kebi-app.savedPlaces` and returns a count of saved places.
+- **FR-004**: The system MUST provide a `taste-profile-storage.ts` module that reads and writes `localStorage.kebi-app.tasteProfile` including the `confirmed` boolean.
+- **FR-005**: The system MUST provide a `location-storage.ts` module that reads and writes `localStorage.kebi-app.location` as `{ lat, lng } | null`.
 - **FR-006**: The system MUST implement a `useHomeStore` Zustand store in `apps/web/src/store/home-store.ts` with the full 13-value `HomePhase` enum, hydration logic, and the `NEXT_PUBLIC_DEV_SAVED_COUNT` dev override.
 - **FR-007**: The `useHomeStore` MUST expose a `hydrate()` action that reads from all three localStorage modules, seeds `savedPlaceCount`, `tasteProfileConfirmed`, and `location`, and sets the correct initial phase based on the four-way branch rule.
-- **FR-008**: The `useHomeStore` MUST expose a `setLocation()` action that persists to `localStorage.totoro.location` and updates the store in one synchronous call.
+- **FR-008**: The `useHomeStore` MUST expose a `setLocation()` action that persists to `localStorage.kebi-app.location` and updates the store in one synchronous call.
 - **FR-009**: The system MUST provide a `chat-client.ts` module that sends `POST /api/v1/chat` with `{ user_id, message, location }` and returns `ChatResponseDto`.
 - **FR-010**: When `NEXT_PUBLIC_CHAT_FIXTURES=true`, the chat client MUST return the fixture for the classified intent without any network call.
 - **FR-011**: The system MUST scaffold the Flow Registry with `FlowDefinition` interface, `FlowId` union, `FLOW_REGISTRY` object, `FLOW_BY_RESPONSE_TYPE` reverse lookup, and `FLOW_BY_CLIENT_INTENT` forward lookup — even if only the consult flow is registered in sub-plan 2.
@@ -129,7 +129,7 @@ Old home-page components (`AgentResponseBubble.tsx`, `ChatMessage.tsx`, `home-em
 - **FR-013**: The system MUST rename illustration SVGs and update the `Illustration` component to use the renamed keys per the cleanup pass spec.
 - **FR-014**: The system MUST add i18n keys under `consult.*` and `tasteProfile.*` namespaces (and `home.idle.*`) in `en.json` and `he.json`. Flow numbers (`flow2`, `flow9`) are spec-tracking labels only and MUST NOT appear as code identifiers or i18n key prefixes.
 - **FR-015**: The `NEXT_PUBLIC_DEV_SAVED_COUNT` override MUST be silently ignored when `NODE_ENV === 'production'`.
-- **FR-015a**: The system MUST implement a `HomeIdle` component (replacing `home-empty-state.tsx`) that renders the `TotoroIdleWelcoming` illustration, a "What are you in the mood for?" headline, and three suggestion chips that fill the input bar on tap.
+- **FR-015a**: The system MUST implement a `HomeIdle` component (replacing `home-empty-state.tsx`) that renders the `KebiIdleWelcoming` illustration, a "What are you in the mood for?" headline, and three suggestion chips that fill the input bar on tap.
 - **FR-015b**: The system MUST implement a `HomeGreeting` component that renders on resting phases (`idle`, `cold-0`, `cold-1-4`) and is hidden during flow states, error, and `hydrating`.
 - **FR-015c**: `ChatInput.tsx` MUST be simplified by removing its local message state and wiring its submit handler to call `store.submit()`. All existing markup and styling MUST remain unchanged.
 

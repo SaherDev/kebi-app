@@ -85,7 +85,7 @@ services/api/
 │   │       └── consult-response.dto.ts      (non-streaming response)
 │   └── app/
 │       └── app.module.ts        ← MODIFY: import ConsultModule
-totoro-config/bruno/
+kebi-config/bruno/
 └── nestjs-api/
     └── consult-stream.bru       ← NEW Bruno request file
 ```
@@ -110,7 +110,7 @@ totoro-config/bruno/
   - `SseEvent: SseStepEvent | SseResultEvent` (discriminated union for frontend to switch on)
 
 **Usage after this phase**:
-- `apps/web` imports `ConsultRequest`, `ConsultResponse`, `SseEvent` from `@totoro/shared`
+- `apps/web` imports `ConsultRequest`, `ConsultResponse`, `SseEvent` from `@kebi-app/shared`
 - `services/api` DTOs implement these interfaces + add class-validator decorators
 
 **Verification**: `pnpm nx build shared && pnpm nx lint shared`
@@ -124,7 +124,7 @@ totoro-config/bruno/
 **Files**:
 - [ ] `services/api/src/ai-service/ai-service-client.interface.ts`
   - Define `IAiServiceClient` with `consult()` and `consultStream()` methods
-  - Types `AiConsultPayload` (adds `user_id`) and `AiConsultResponse` reference `@totoro/shared` types
+  - Types `AiConsultPayload` (adds `user_id`) and `AiConsultResponse` reference `@kebi-app/shared` types
   - Export `AI_SERVICE_CLIENT` injection token (Symbol)
 - [ ] `services/api/src/ai-service/ai-service.client.ts`
   - Implements `IAiServiceClient`
@@ -149,12 +149,12 @@ totoro-config/bruno/
 
 **Files**:
 - [ ] `services/api/src/consult/dto/consult-request.dto.ts`
-  - `implements ConsultRequest` from `@totoro/shared`
+  - `implements ConsultRequest` from `@kebi-app/shared`
   - `query: string` — `@IsString() @IsNotEmpty() @MaxLength(1000)`
   - `location?: LocationCoordinates` — `@IsOptional() @ValidateNested() @Type(() => LocationDto)`
   - `stream?: boolean` — `@IsOptional() @IsBoolean()`
 - [ ] `services/api/src/consult/dto/consult-response.dto.ts`
-  - `implements ConsultResponse` from `@totoro/shared`
+  - `implements ConsultResponse` from `@kebi-app/shared`
   - `primary: PlaceResultDto` — `@IsOptional()`
   - `alternatives: PlaceResultDto[]` — `@IsOptional()`
   - `reasoning_steps: ReasoningStepDto[]` — `@IsOptional()`
@@ -217,7 +217,7 @@ totoro-config/bruno/
   - `jest.spyOn(http, 'request')` to mock node http (no nock dep needed)
   - Test: `consult()` collects body chunks and parses JSON response
   - Test: `consultStream()` returns a Readable stream
-- [ ] `totoro-config/bruno/nestjs-api/consult-stream.bru`
+- [ ] `kebi-config/bruno/nestjs-api/consult-stream.bru`
   - Two examples: non-streaming and streaming variants
 
 **Verification**: `pnpm nx test api && pnpm nx lint api`
@@ -240,4 +240,4 @@ pnpm nx affected -t test,lint       # Full affected check (shared + api + web)
 - [ ] Client disconnect terminates upstream FastAPI connection
 - [ ] `pnpm nx test api` passes
 - [ ] `pnpm nx lint api` passes
-- [ ] `totoro-config/bruno/nestjs-api/consult-stream.bru` committed
+- [ ] `kebi-config/bruno/nestjs-api/consult-stream.bru` committed

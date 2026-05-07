@@ -183,11 +183,11 @@ export interface FlowDefinition<TData = unknown> {
 
 | Key | Type | Owner |
 |-----|------|-------|
-| `localStorage.totoro.savedPlaces` | `SavedPlaceStub[]` (JSON) | `saved-places-storage.ts` |
-| `localStorage.totoro.tasteProfile` | `{ confirmed: boolean }` (JSON) | `taste-profile-storage.ts` |
-| `localStorage.totoro.location` | `{ lat: number; lng: number }` (JSON) | `location-storage.ts` |
+| `localStorage.kebi-app.savedPlaces` | `SavedPlaceStub[]` (JSON) | `saved-places-storage.ts` |
+| `localStorage.kebi-app.tasteProfile` | `{ confirmed: boolean }` (JSON) | `taste-profile-storage.ts` |
+| `localStorage.kebi-app.location` | `{ lat: number; lng: number }` (JSON) | `location-storage.ts` |
 
-All keys are namespaced under `totoro.*`. All reads are wrapped in try/catch with safe defaults.
+All keys are namespaced under `kebi-app.*`. All reads are wrapped in try/catch with safe defaults.
 
 ---
 

@@ -1,4 +1,4 @@
-import { cn } from "@totoro/ui";
+import { cn } from "@kebi-app/ui";
 import { motion, AnimatePresence } from "framer-motion";
 import { X } from "lucide-react";
 
@@ -23,7 +23,7 @@ function Modal({ open, onClose, children, className }: ModalProps) {
           />
           <motion.div
             className={cn(
-              "fixed left-1/2 top-1/2 z-50 w-[calc(100%-2rem)] max-w-md -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-border bg-card p-6 shadow-totoro-lg",
+              "fixed left-1/2 top-1/2 z-50 w-[calc(100%-2rem)] max-w-md -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-border bg-card p-6 shadow-kebi-app-lg",
               "md:max-w-lg",
               className
             )}

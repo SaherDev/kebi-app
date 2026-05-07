@@ -8,7 +8,7 @@ import {
   SignalRequestWithUser,
   SignalResponse,
   AiUserContext,
-} from '@totoro/shared';
+} from '@kebi-app/shared';
 import { AiServiceClient } from './ai-service.client';
 
 describe('AiServiceClient', () => {

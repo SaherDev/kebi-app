@@ -6,7 +6,7 @@ import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { useUser, useClerk } from '@clerk/nextjs';
 import { useLocale } from 'next-intl';
-import { cn } from '@totoro/ui';
+import { cn } from '@kebi-app/ui';
 import { clearPersistedThread, useHomeStore } from '@/store/home-store';
 import {
   Settings,
@@ -14,7 +14,7 @@ import {
   LogOut,
   Trash2,
 } from 'lucide-react';
-import { TotoroAvatar } from './TotoroAvatar';
+import { KebiAvatar } from './KebiAvatar';
 import { UserCard } from './user-card';
 import { ThemeSegment } from './theme-toggle';
 
@@ -78,7 +78,7 @@ export function ProfileMenu() {
         className="focus:outline-none"
         suppressHydrationWarning
       >
-        <TotoroAvatar
+        <KebiAvatar
           fallback={avatarInitial}
           src={user?.imageUrl}
           size="sm"
@@ -96,7 +96,7 @@ export function ProfileMenu() {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 4 }}
             transition={{ duration: 0.15, ease: 'easeOut' }}
-            className="absolute end-0 top-full mt-2 z-50 w-72 rounded-2xl border border-border bg-card shadow-totoro-lg overflow-hidden"
+            className="absolute end-0 top-full mt-2 z-50 w-72 rounded-2xl border border-border bg-card shadow-kebi-app-lg overflow-hidden"
           >
             {/* Profile Header */}
             <UserCard onSetupProfile={() => router.push('/profile/setup')} />

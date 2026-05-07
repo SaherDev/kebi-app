@@ -6,7 +6,7 @@ import {
   HttpStatus,
   Query,
 } from '@nestjs/common';
-import type { AuthUser, UserContextResponse } from '@totoro/shared';
+import type { AuthUser, UserContextResponse } from '@kebi-app/shared';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { RequiresAi } from '../common/decorators/requires-ai.decorator';
 import { DeleteUserDataQueryDto } from './dto/delete-user-data.query.dto';

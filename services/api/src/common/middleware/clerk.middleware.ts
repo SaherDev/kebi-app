@@ -2,7 +2,7 @@ import { Injectable, NestMiddleware, UnauthorizedException, Logger } from '@nest
 import { Request, Response, NextFunction } from 'express';
 import { ConfigService } from '@nestjs/config';
 import { verifyToken } from '@clerk/backend';
-import { AuthUser, PlanTier } from '@totoro/shared';
+import { AuthUser, PlanTier } from '@kebi-app/shared';
 
 interface ClerkPublicMetadata {
   ai_enabled?: boolean;
