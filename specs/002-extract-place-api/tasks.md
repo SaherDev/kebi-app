@@ -88,7 +88,7 @@ The error handling layer is implemented via the `AllExceptionsFilter` created in
 
 **Purpose**: Final integration, testing, and documentation
 
-- [ ] T017 [P] Create Bruno request file at `totoro-config/bruno/places/extract-place.bru` with test scenarios for happy path and error cases
+- [ ] T017 [P] Create Bruno request file at `kebi-config/bruno/places/extract-place.bru` with test scenarios for happy path and error cases
 - [ ] T018 Run tests: `pnpm nx test api` — verify all existing tests pass
 - [ ] T019 Run linter: `pnpm nx lint api` — verify no lint errors introduced
 - [ ] T020 Run build: `pnpm nx build api` — verify TypeScript compiles cleanly

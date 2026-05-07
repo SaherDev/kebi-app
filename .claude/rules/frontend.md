@@ -1,4 +1,4 @@
-# Frontend Standards — Totoro
+# Frontend Standards — Kebi
 
 ## RTL Support (not active — reserved for future Hebrew locale)
 

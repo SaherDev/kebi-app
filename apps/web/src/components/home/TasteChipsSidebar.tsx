@@ -1,7 +1,7 @@
 'use client';
 
-import type { ChipItem, SignalTier } from '@totoro/shared';
-import { cn } from '@totoro/ui';
+import type { ChipItem, SignalTier } from '@kebi-app/shared';
+import { cn } from '@kebi-app/ui';
 
 interface TasteChipsSidebarProps {
   chips: ChipItem[];

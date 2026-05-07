@@ -27,14 +27,14 @@
 
 **⚠️ CRITICAL**: US1 and US2 both depend on `libs/ui` existing and being installed.
 
-- [X] T006 Create `libs/ui/package.json` — `name: @totoro/ui`, `"type": "module"`, `"tags": ["scope:ui"]` in `nx` field, conditional exports with `@totoro/source` pointing to `./src/index.ts`, deps: `@totoro/shared: workspace:*`, `clsx`, `tailwind-merge`, `class-variance-authority`
+- [X] T006 Create `libs/ui/package.json` — `name: @kebi-app/ui`, `"type": "module"`, `"tags": ["scope:ui"]` in `nx` field, conditional exports with `@kebi-app/source` pointing to `./src/index.ts`, deps: `@kebi-app/shared: workspace:*`, `clsx`, `tailwind-merge`, `class-variance-authority`
 - [X] T007 [P] Create `libs/ui/tsconfig.json` — composite tsconfig extending `../../tsconfig.base.json`, `files: []`, `references` to `tsconfig.lib.json` and `tsconfig.spec.json`
 - [X] T008 [P] Create `libs/ui/tsconfig.lib.json` — extends `../../tsconfig.base.json`, `compilerOptions`: `jsx: preserve`, `rootDir: src`, `outDir: dist`, `module: nodenext`, `moduleResolution: nodenext`, `experimentalDecorators: true`, `include: ["src/**/*.ts", "src/**/*.tsx"]`
 - [X] T009 Create `libs/ui/src/lib/utils.ts` — export `cn(...inputs: ClassValue[])` using `clsx` + `tailwind-merge`
 - [X] T010 Create `libs/ui/src/lib/button.tsx` — export `Button` component with `cva` variants (`default`, `muted`, `outline`, `ghost`; sizes `sm`, `default`, `lg`, `icon`); uses `cn()` from `./utils`
 - [X] T011 Create `libs/ui/src/index.ts` — public entry point: `export * from './lib/utils.js'` and `export * from './lib/button.js'`
 - [X] T012 [P] Create `libs/ui/eslint.config.mjs` — extends `../../eslint.config.mjs` (same pattern as `libs/shared`)
-- [X] T013 Run `pnpm install` from repo root to link `libs/ui` into workspace node_modules as `@totoro/ui`
+- [X] T013 Run `pnpm install` from repo root to link `libs/ui` into workspace node_modules as `@kebi-app/ui`
 
 **Checkpoint**: `libs/ui` is installed. Run `pnpm nx lint ui` — must pass with no boundary violations before proceeding.
 
@@ -48,7 +48,7 @@
 
 ### Implementation
 
-- [X] T014 [US1] Add `@totoro/shared: workspace:*` and `@totoro/ui: workspace:*` to `apps/web/package.json` dependencies
+- [X] T014 [US1] Add `@kebi-app/shared: workspace:*` and `@kebi-app/ui: workspace:*` to `apps/web/package.json` dependencies
 - [X] T015 [US1] Add frontend-specific dependencies to `apps/web/package.json`: `tailwindcss`, `autoprefixer`, `postcss`, `tailwindcss-animate`, `next-themes`, `next-intl`, `@clerk/nextjs`
 - [X] T016 [P] [US1] Create `apps/web/tailwind.config.js` — Tailwind v3 config: `darkMode: 'class'`, content includes `./src/**/*.{ts,tsx}` and `../../libs/ui/src/**/*.{ts,tsx}`, theme extends with CSS variable color tokens (`primary`, `foreground`, `background`, `muted`, `accent`, `border`, `ring`, `destructive`) and `borderRadius` using `var(--radius)`, plugin: `tailwindcss-animate`
 - [X] T017 [P] [US1] Create `apps/web/postcss.config.js` — `{ plugins: { tailwindcss: {}, autoprefixer: {} } }`
@@ -65,19 +65,19 @@
 
 **Goal**: A developer adds a type to `libs/shared` and a component to `libs/ui`, imports them in both apps using their path alias, and the project typechecks without errors.
 
-**Independent Test**: `pnpm nx run-many -t build` (or `typecheck`) passes. Import `PlaceSource` from `@totoro/shared` in both `apps/web` and `services/api`. Import `Button` from `@totoro/ui` in `apps/web`. No type errors in any project.
+**Independent Test**: `pnpm nx run-many -t build` (or `typecheck`) passes. Import `PlaceSource` from `@kebi-app/shared` in both `apps/web` and `services/api`. Import `Button` from `@kebi-app/ui` in `apps/web`. No type errors in any project.
 
 ### Implementation
 
 - [X] T022 [US2] Create `libs/shared/src/lib/types.ts` — `export type PlaceSource = 'saved' | 'discovered'` (used in consult API response per api-contract.md; proves shared type pipeline end-to-end)
 - [X] T023 [US2] Remove placeholder `shared()` function from `libs/shared/src/lib/shared.ts` (or delete the file if it contains only the placeholder)
 - [X] T024 [US2] Update `libs/shared/src/index.ts` — add `export * from './lib/types.js'`; remove export of deleted `shared.ts` if applicable
-- [X] T025 [P] [US2] Add `import type { PlaceSource } from '@totoro/shared'` to `services/api/src/main.ts` (or a new `services/api/src/lib/types.ts`) and use the type in a comment or type assertion — verifies backend can import shared types
-- [X] T026 [P] [US2] Update `apps/web/src/app/page.tsx` to import `PlaceSource` from `@totoro/shared` and `Button` from `@totoro/ui` — render a `<Button>` element to verify both frontend imports resolve with full type-checking
+- [X] T025 [P] [US2] Add `import type { PlaceSource } from '@kebi-app/shared'` to `services/api/src/main.ts` (or a new `services/api/src/lib/types.ts`) and use the type in a comment or type assertion — verifies backend can import shared types
+- [X] T026 [P] [US2] Update `apps/web/src/app/page.tsx` to import `PlaceSource` from `@kebi-app/shared` and `Button` from `@kebi-app/ui` — render a `<Button>` element to verify both frontend imports resolve with full type-checking
 - [X] T027 [US2] Run `pnpm nx run-many -t lint` — must pass with zero errors across all projects
 - [X] T028 [US2] Run typecheck across all projects (e.g., `pnpm nx run-many -t build` or equivalent) — verify zero type errors; fix any type mismatches before proceeding
 
-**Checkpoint**: Both path aliases (`@totoro/shared`, `@totoro/ui`) resolve correctly from all permitted consumers. Changing a shared type causes a type error in any consumer that becomes mismatched.
+**Checkpoint**: Both path aliases (`@kebi-app/shared`, `@kebi-app/ui`) resolve correctly from all permitted consumers. Changing a shared type causes a type error in any consumer that becomes mismatched.
 
 ---
 
@@ -85,11 +85,11 @@
 
 **Goal**: A developer who writes a disallowed cross-boundary import sees a lint error immediately, before any build. A written boundary reference exists in project documentation.
 
-**Independent Test**: Add `import { Button } from '@totoro/ui'` to `services/api/src/main.ts` → `pnpm nx lint api` reports a boundary violation. Remove the import → lint passes. The boundary table in `docs/architecture.md` is readable without opening any config file.
+**Independent Test**: Add `import { Button } from '@kebi-app/ui'` to `services/api/src/main.ts` → `pnpm nx lint api` reports a boundary violation. Remove the import → lint passes. The boundary table in `docs/architecture.md` is readable without opening any config file.
 
 ### Implementation
 
-- [X] T029 [US3] Verify boundary enforcement works: temporarily add `import { Button } from '@totoro/ui'` to `services/api/src/main.ts`, run `pnpm nx lint api`, confirm error mentions `@nx/enforce-module-boundaries`; then remove the import and confirm lint passes
+- [X] T029 [US3] Verify boundary enforcement works: temporarily add `import { Button } from '@kebi-app/ui'` to `services/api/src/main.ts`, run `pnpm nx lint api`, confirm error mentions `@nx/enforce-module-boundaries`; then remove the import and confirm lint passes
 - [X] T030 [US3] Add or verify module boundary table in `docs/architecture.md` under a `## Module Boundaries` section — must show all four rules (apps/web, services/api, libs/ui, libs/shared) in a readable markdown table; must be accurate against the current eslint.config.mjs rules
 
 **Checkpoint**: Boundary violations caught 100% of the time by lint. Table in docs/ is the single source of truth for new developers.

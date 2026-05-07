@@ -9,13 +9,13 @@
 
 **Decision**: Use pnpm workspace protocol (`workspace:*`) + package.json `exports` for cross-library imports. No tsconfig `paths` needed.
 
-**Rationale**: The monorepo already uses this approach successfully. `services/api` imports `@totoro/shared` via `workspace:*` and it resolves both at type-check time (via `customConditions: ["@totoro/source"]` in `tsconfig.base.json`) and at runtime (via compiled `dist/`). This is cleaner than maintaining parallel `paths` mappings that can drift out of sync.
+**Rationale**: The monorepo already uses this approach successfully. `services/api` imports `@kebi-app/shared` via `workspace:*` and it resolves both at type-check time (via `customConditions: ["@kebi-app/source"]` in `tsconfig.base.json`) and at runtime (via compiled `dist/`). This is cleaner than maintaining parallel `paths` mappings that can drift out of sync.
 
 **How it works**:
-1. `libs/shared/package.json` defines a conditional export: `"@totoro/source": "./src/index.ts"` — TypeScript sees source files during development
-2. `tsconfig.base.json` sets `customConditions: ["@totoro/source"]` — compiler resolves the source entry
-3. Consumers declare `"@totoro/shared": "workspace:*"` in their `package.json`
-4. pnpm symlinks the lib into `node_modules/@totoro/shared` at install time
+1. `libs/shared/package.json` defines a conditional export: `"@kebi-app/source": "./src/index.ts"` — TypeScript sees source files during development
+2. `tsconfig.base.json` sets `customConditions: ["@kebi-app/source"]` — compiler resolves the source entry
+3. Consumers declare `"@kebi-app/shared": "workspace:*"` in their `package.json`
+4. pnpm symlinks the lib into `node_modules/@kebi-app/shared` at install time
 
 **Alternatives considered**: tsconfig `paths` (more fragile, requires per-consumer config), project references only (complex, build-order dependent for dev).
 
@@ -42,7 +42,7 @@
 
 ### Decision 3: libs/ui Package Structure
 
-**Decision**: Mirror `libs/shared` package structure exactly — ESM package with conditional exports and `@totoro/source` custom condition.
+**Decision**: Mirror `libs/shared` package structure exactly — ESM package with conditional exports and `@kebi-app/source` custom condition.
 
 **Rationale**: Consistency with the existing pattern; allows the same TypeScript resolution strategy. Both libs are consumed by `apps/web` during development; both need source-file resolution at type-check time.
 
@@ -51,7 +51,7 @@
 {
   "exports": {
     ".": {
-      "@totoro/source": "./src/index.ts",
+      "@kebi-app/source": "./src/index.ts",
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
       "default": "./dist/index.js"
@@ -97,15 +97,15 @@
 | API_GLOBAL_PREFIX constant | `libs/shared/src/lib/constants.ts` | ✅ In use by services/api |
 | apps/web Nx tag | `apps/web/package.json` `nx.tags` | ✅ scope:web |
 | services/api Nx tag | `services/api/package.json` `nx.tags` | ✅ scope:api |
-| services/api imports @totoro/shared | `services/api/package.json` | ✅ workspace:* |
+| services/api imports @kebi-app/shared | `services/api/package.json` | ✅ workspace:* |
 
 ## What Is Missing (Must Be Created)
 
 | Item | Location | Reason |
 |------|----------|--------|
 | `libs/ui` library | `libs/ui/` | Never created — needed for frontend components |
-| `@totoro/shared` in web deps | `apps/web/package.json` | Web app doesn't declare the dependency yet |
-| `@totoro/ui` in web deps | `apps/web/package.json` | Lib doesn't exist yet |
+| `@kebi-app/shared` in web deps | `apps/web/package.json` | Web app doesn't declare the dependency yet |
+| `@kebi-app/ui` in web deps | `apps/web/package.json` | Lib doesn't exist yet |
 | Frontend deps (Tailwind, Clerk, etc.) | `apps/web/package.json` | Missing from scaffolded app |
 | Tailwind config | `apps/web/tailwind.config.js` | Required for Tailwind to process classes |
 | CSS variable definitions | `apps/web/src/app/globals.css` | Required for shadcn/ui token system |

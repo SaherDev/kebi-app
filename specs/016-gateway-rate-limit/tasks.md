@@ -30,8 +30,8 @@
 - [x] T003 [P] Extend `ChatResponseDto` in `libs/shared/src/lib/types.ts` — add `tool_calls_used: number` and `session_started?: true` fields
 - [x] T004 Export `PlanTier` and `AuthUser` from `libs/shared/src/index.ts` (after T002)
 - [x] T005 [P] Add `rate_limits` block to `services/api/config/app.yaml` — `default_plan: homebody`; plans: homebody (sessions_per_day:3, tool_calls_per_day:30, turns_per_session:10), explorer (10/100/20), local_legend (20/200/30)
-- [x] T006 Update `services/api/src/common/middleware/clerk.middleware.ts` — import `AuthUser`, `PlanTier` from `@totoro/shared`; extract `plan` from `verifiedSession.public_metadata` typed as `PlanTier | undefined`; populate `req.user = { id, ai_enabled, plan }`; remove local `ClerkUser` interface; update `Express.Request.user` augmentation to use imported `AuthUser` (after T002, T004)
-- [x] T007 Update `services/api/src/common/guards/ai-enabled.guard.ts` — replace `import { ClerkUser } from '../middleware/clerk.middleware'` with `import { AuthUser } from '@totoro/shared'`; update `request.user as AuthUser` cast (after T002, T004)
+- [x] T006 Update `services/api/src/common/middleware/clerk.middleware.ts` — import `AuthUser`, `PlanTier` from `@kebi-app/shared`; extract `plan` from `verifiedSession.public_metadata` typed as `PlanTier | undefined`; populate `req.user = { id, ai_enabled, plan }`; remove local `ClerkUser` interface; update `Express.Request.user` augmentation to use imported `AuthUser` (after T002, T004)
+- [x] T007 Update `services/api/src/common/guards/ai-enabled.guard.ts` — replace `import { ClerkUser } from '../middleware/clerk.middleware'` with `import { AuthUser } from '@kebi-app/shared'`; update `request.user as AuthUser` cast (after T002, T004)
 - [x] T008 Create `services/api/src/rate-limit/rate-limit.service.ts` — `@Injectable()` class with `Map<string, UserRateLimitState>` private field; implement `getTodayUtc()` via `new Date().toISOString().slice(0,10)` (UTC always, never local date methods); `resetIfNewDay(counter)`; `getOrCreate(userId)` lazy init; `check(userId, thresholds): RateLimitBreach | null` checks in order tool_calls_per_day → turns_per_session → sessions_per_day, resets stale daily counters before each check; `incrementTurns(userId)`; `onSessionStarted(userId)` increments sessions + sets turns to 1; `addToolCalls(userId, n)` resets if new day then adds n; `resetTurns(userId)` sets turns to 0 (after T005)
 - [x] T009 Create `services/api/src/rate-limit/rate-limit.service.spec.ts` — Jest unit tests: (1) check() returns null when all counters under threshold; (2) check() returns correct breach for each of the three limit types; (3) check() respects order (tool_calls checked before turns, turns before sessions); (4) check() resets daily counter when stored date is yesterday UTC; (5) onSessionStarted() increments sessions and sets turns to 1; (6) resetTurns() sets turns to 0 without changing sessions or toolCalls (after T008)
 - [x] T010 Create `services/api/src/rate-limit/rate-limit.module.ts` — `@Module({ providers: [RateLimitService], exports: [RateLimitService] })` (after T008)
@@ -52,7 +52,7 @@
 
 - [x] T013 [US1] Create `services/api/src/common/guards/rate-limit.guard.ts` — `@Injectable() RateLimitGuard implements CanActivate`; inject `RateLimitService` and `ConfigService`; in `canActivate`: read `req.user as AuthUser`; resolve plan as `user.plan ?? configService.get<string>('rate_limits.default_plan')`; load `PlanThresholds` via `configService.get<PlanThresholds>('rate_limits.plans.<plan>')`; call `rateLimitService.check(userId, thresholds)`; on breach throw `new HttpException({ error: 'rate_limit_exceeded', limit: breach.limit, limit_value: breach.limit_value }, HttpStatus.TOO_MANY_REQUESTS)` (after T008, T010, T011)
 - [x] T014 [US1] Update `services/api/src/chat/chat.controller.ts` — add `@UseGuards(RateLimitGuard)` decorator to the `@Post()` method alongside the existing `@RequiresAi()` decorator; import `RateLimitGuard` (after T013)
-- [x] T015 [US1] Create `totoro-config/bruno/rate-limit/sessions-breach.bru` — POST to `{{base_url}}/chat` with `Authorization: Bearer {{auth_token}}`; precondition note: user's sessions.count is at plan threshold; assert status 429 and body `{ "error": "rate_limit_exceeded", "limit": "sessions_per_day", "limit_value": 3 }`
+- [x] T015 [US1] Create `kebi-config/bruno/rate-limit/sessions-breach.bru` — POST to `{{base_url}}/chat` with `Authorization: Bearer {{auth_token}}`; precondition note: user's sessions.count is at plan threshold; assert status 429 and body `{ "error": "rate_limit_exceeded", "limit": "sessions_per_day", "limit_value": 3 }`
 
 **Checkpoint**: Guard is live; session cap and default-plan fallback are testable end-to-end
 
@@ -67,7 +67,7 @@
 ### Implementation
 
 - [x] T016 [US2] Update `services/api/src/chat/chat.service.ts` — inject `RateLimitService`; at the start of `chat(userId, dto)` call `rateLimitService.incrementTurns(userId)` before calling `aiClient.chat()`; keep the rest of the method unchanged for now (after T008, T011)
-- [x] T017 [US2] Create `totoro-config/bruno/rate-limit/turns-breach.bru` — POST to `{{base_url}}/chat`; precondition note: user's turns is at plan threshold (10 for homebody); assert status 429 and body `{ "error": "rate_limit_exceeded", "limit": "turns_per_session", "limit_value": 10 }`
+- [x] T017 [US2] Create `kebi-config/bruno/rate-limit/turns-breach.bru` — POST to `{{base_url}}/chat`; precondition note: user's turns is at plan threshold (10 for homebody); assert status 429 and body `{ "error": "rate_limit_exceeded", "limit": "turns_per_session", "limit_value": 10 }`
 
 **Checkpoint**: Turns accumulate on every forwarded message; turns breach is testable independently of session and tool-call limits
 
@@ -82,8 +82,8 @@
 ### Implementation
 
 - [x] T018 [US3] Update `services/api/src/chat/chat.service.ts` — after `aiClient.chat()` returns: call `rateLimitService.addToolCalls(userId, response.tool_calls_used ?? 0)`; if `response.session_started === true` call `rateLimitService.onSessionStarted(userId)`; return response unchanged (after T016 — same file, sequential)
-- [x] T019 [P] [US3] Create `totoro-config/bruno/rate-limit/tool-calls-breach.bru` — POST to `{{base_url}}/chat`; precondition note: user's toolCalls.count is at plan threshold (30 for homebody); assert status 429 and body `{ "error": "rate_limit_exceeded", "limit": "tool_calls_per_day", "limit_value": 30 }`
-- [x] T020 [P] [US3] Create `totoro-config/bruno/rate-limit/default-plan-fallback.bru` — POST to `{{base_url}}/chat` with a token whose `public_metadata` has no `plan` field; exhaust homebody's `sessions_per_day: 3`; assert 429 with `"limit_value": 3` confirming default plan was applied
+- [x] T019 [P] [US3] Create `kebi-config/bruno/rate-limit/tool-calls-breach.bru` — POST to `{{base_url}}/chat`; precondition note: user's toolCalls.count is at plan threshold (30 for homebody); assert status 429 and body `{ "error": "rate_limit_exceeded", "limit": "tool_calls_per_day", "limit_value": 30 }`
+- [x] T020 [P] [US3] Create `kebi-config/bruno/rate-limit/default-plan-fallback.bru` — POST to `{{base_url}}/chat` with a token whose `public_metadata` has no `plan` field; exhaust homebody's `sessions_per_day: 3`; assert 429 with `"limit_value": 3` confirming default plan was applied
 
 **Checkpoint**: Counter updates fire on every response; tool-call cap and default-plan fallback are testable
 
@@ -99,8 +99,8 @@
 ### Implementation
 
 - [x] T021 [US4] Update `services/api/src/webhooks/clerk.webhook.ts` — inject `RateLimitService` in constructor; add a handler branch for `event.type === 'session.ended'`: extract `userId = event.data?.user_id as string`; call `rateLimitService.resetTurns(userId)`; log the reset (after T008, T012)
-- [x] T022 [P] [US4] Create `totoro-config/bruno/rate-limit/day-rollover.bru` — precondition note: sessions.date and toolCalls.date set to yesterday UTC; POST to `{{base_url}}/chat`; assert status 200 (not 429) confirming counters were reset by the stale-date check
-- [x] T023 [P] [US4] Create `totoro-config/bruno/rate-limit/logout-reset.bru` — sequence: (1) accumulate turns; (2) POST Clerk webhook event `session.ended` to `{{base_url}}/webhooks/clerk`; (3) POST chat; assert turns reset (session_started: true expected on next new session) while sessions/toolCalls daily counts are unchanged
+- [x] T022 [P] [US4] Create `kebi-config/bruno/rate-limit/day-rollover.bru` — precondition note: sessions.date and toolCalls.date set to yesterday UTC; POST to `{{base_url}}/chat`; assert status 200 (not 429) confirming counters were reset by the stale-date check
+- [x] T023 [P] [US4] Create `kebi-config/bruno/rate-limit/logout-reset.bru` — sequence: (1) accumulate turns; (2) POST Clerk webhook event `session.ended` to `{{base_url}}/webhooks/clerk`; (3) POST chat; assert turns reset (session_started: true expected on next new session) while sessions/toolCalls daily counts are unchanged
 
 **Checkpoint**: All four user stories independently verifiable; full rate-limit system complete
 
@@ -193,4 +193,4 @@ Phase 7 parallel group:
 - Day-reset uses `new Date().toISOString().slice(0,10)` — never `getDate()`/`getMonth()`/`toLocaleDateString()` (see data-model.md timezone rule)
 - `session_started` check in ChatService: `if (response.session_started)` — the field is `true | absent`, never `false`; this check handles both cases correctly
 - Bruno tests require `DEV_BYPASS_TOKEN` set in `.env.local` and NestJS running on port 3333
-- New Bruno collection folder: `totoro-config/bruno/rate-limit/`
+- New Bruno collection folder: `kebi-config/bruno/rate-limit/`

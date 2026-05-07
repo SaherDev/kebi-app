@@ -12,5 +12,5 @@ export * from './components/tabs';
 export * from './components/tooltip';
 export * from './components/dropdown-menu';
 export * from './components/popover';
-export * from './components/totoro-card';
+export * from './components/kebi-app-card';
 export * from './components/tag';

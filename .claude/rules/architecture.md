@@ -1,8 +1,8 @@
-# Architecture Rules — Totoro Product Repo
+# Architecture Rules — Kebi Product Repo
 
 ## First Principle
 
-The AI IS the product. NestJS is supporting infrastructure. totoro-ai (FastAPI) is the autonomous brain. This repo is the thin gateway and schema owner.
+The AI IS the product. NestJS is supporting infrastructure. kebi (FastAPI) is the autonomous brain. This repo is the thin gateway and schema owner.
 
 ## NestJS: Four Responsibilities Only
 
@@ -13,9 +13,9 @@ The AI IS the product. NestJS is supporting infrastructure. totoro-ai (FastAPI) 
 
 NestJS does NOT write place records, embeddings, or taste model data. FastAPI writes those directly to PostgreSQL.
 
-If you are writing code in this repo that calls an LLM, generates embeddings, parses free-text input, runs vector search, or calls Google Places API — stop. That belongs in `totoro-ai`.
+If you are writing code in this repo that calls an LLM, generates embeddings, parses free-text input, runs vector search, or calls Google Places API — stop. That belongs in `kebi`.
 
-## totoro-ai: Autonomous AI Brain
+## kebi: Autonomous AI Brain
 
 FastAPI owns the entire AI pipeline. It writes AI-generated data (places, embeddings, taste model) directly to PostgreSQL. It has read-write access to Redis. It calls external APIs (Google Places, LLM providers) directly. It runs the full agent graph via LangGraph. NestJS never intervenes mid-pipeline.
 
@@ -32,7 +32,7 @@ These boundaries are enforced by Nx module boundary rules. If you get a lint err
 
 ## Two-Repo Separation
 
-| Concern          | This repo (`totoro`)                                     | AI repo (`totoro-ai`)                                                                                               |
+| Concern          | This repo (`kebi-app`)                                     | AI repo (`kebi`)                                                                                               |
 | ---------------- | -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
 | Language         | TypeScript                                               | Python                                                                                                              |
 | Runtime          | Node 20                                                  | Python 3.11+                                                                                                        |
@@ -42,13 +42,13 @@ These boundaries are enforced by Nx module boundary rules. If you get a lint err
 | Redis access     | None                                                     | Read-write (LLM cache, session state, agent state)                                                                  |
 | Communication    | Sends HTTP requests                                      | Receives HTTP requests                                                                                              |
 
-**Hard rule:** This repo never runs ML models, parses free-text place input, calls embedding APIs, runs vector queries, or calls Google Places API. If you find yourself importing an NLP library or writing text extraction logic, stop — that belongs in `totoro-ai`.
+**Hard rule:** This repo never runs ML models, parses free-text place input, calls embedding APIs, runs vector queries, or calls Google Places API. If you find yourself importing an NLP library or writing text extraction logic, stop — that belongs in `kebi`.
 
 ## Database Ownership
 
 Write ownership is split by domain. Each service writes to its own tables. Neither service writes to the other's tables. This prevents race conditions and conflicting updates.
 
-Migration ownership is split by domain. TypeORM (synchronize: true) in this repo manages product tables (users, user_settings). Alembic in totoro-ai owns and migrates AI tables (places, embeddings, taste_model, consult_logs, user_memories, interaction_log). NestJS entities must only reference product tables — never AI-owned tables.
+Migration ownership is split by domain. TypeORM (synchronize: true) in this repo manages product tables (users, user_settings). Alembic in kebi owns and migrates AI tables (places, embeddings, taste_model, consult_logs, user_memories, interaction_log). NestJS entities must only reference product tables — never AI-owned tables.
 
 - **NestJS writes and reads:** users, user_settings, recommendations (history of consult results)
 - **FastAPI writes and reads:** places, embeddings, taste_model
@@ -56,12 +56,12 @@ Migration ownership is split by domain. TypeORM (synchronize: true) in this repo
 
 Both services read from any table as needed. One shared PostgreSQL instance. Two connection strings with appropriate write permissions.
 
-**pgvector is owned entirely by totoro-ai.** NestJS never defines or queries vector columns. If the embedding model changes, only totoro-ai's Alembic migration and config need updating.
+**pgvector is owned entirely by kebi.** NestJS never defines or queries vector columns. If the embedding model changes, only kebi's Alembic migration and config need updating.
 
 ## AI Service Communication
 
-- All calls to `totoro-ai` originate from `services/api` (NestJS services).
-- `apps/web` never calls `totoro-ai` directly. The frontend talks to the NestJS API, which forwards to the AI service.
+- All calls to `kebi` originate from `services/api` (NestJS services).
+- `apps/web` never calls `kebi` directly. The frontend talks to the NestJS API, which forwards to the AI service.
 - The AI service base URL is loaded from `AI_SERVICE_BASE_URL` env var (`.env.local` locally, Railway variable in production).
 - Single endpoint: `POST /v1/chat`. The AI service classifies intent internally. See @docs/api-contract.md for the full schema.
 
@@ -75,7 +75,7 @@ All NestJS routes use the `/api/v1/` global prefix. Set via `app.setGlobalPrefix
 | ----------------------- | -------- | ------------------------- |
 | `apps/web` (Next.js)    | Vercel   | Free Hobby                |
 | `services/api` (NestJS) | Railway  | Hobby $5/mo               |
-| `totoro-ai` (FastAPI)   | Railway  | Hobby $5/mo               |
+| `kebi` (FastAPI)   | Railway  | Hobby $5/mo               |
 | PostgreSQL + pgvector   | Railway  | Hobby $5/mo               |
 | Redis                   | Railway  | Serverless (FastAPI-only) |
 

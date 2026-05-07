@@ -1,4 +1,4 @@
-# Specification Quality Checklist: Capacitor iOS Shell for Totoro Web
+# Specification Quality Checklist: Capacitor iOS Shell for Kebi Web
 
 **Purpose**: Validate specification completeness and quality before proceeding to planning
 **Created**: 2026-04-13

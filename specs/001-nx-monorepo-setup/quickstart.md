@@ -1,4 +1,4 @@
-# Developer Quickstart — Totoro Monorepo
+# Developer Quickstart — Kebi Monorepo
 
 **Updated**: 2026-03-08
 
@@ -13,7 +13,7 @@
 ```bash
 # 1. Clone the repo
 git clone <repo-url>
-cd totoro
+cd kebi-app
 
 # 2. Set git comment character (required — allows # in commit messages)
 git config core.commentChar ";"
@@ -65,7 +65,7 @@ export * from './lib/types.js';
 
 Then import in any app:
 ```typescript
-import { YourType } from '@totoro/shared';
+import { YourType } from '@kebi-app/shared';
 ```
 
 ### Adding a component to libs/ui
@@ -80,18 +80,18 @@ export * from './lib/your-component.js';
 
 Then import in the frontend only:
 ```typescript
-import { YourComponent } from '@totoro/ui';
+import { YourComponent } from '@kebi-app/ui';
 ```
 
-**Note**: `@totoro/ui` is only importable by `apps/web`. The backend (`services/api`) cannot import from it — the linter will catch this as an error.
+**Note**: `@kebi-app/ui` is only importable by `apps/web`. The backend (`services/api`) cannot import from it — the linter will catch this as an error.
 
 ## Module Boundary Reference
 
 | Package | Can import from | Cannot import from |
 |---------|----------------|-------------------|
-| `apps/web` | `@totoro/shared`, `@totoro/ui` | `services/api` |
-| `services/api` | `@totoro/shared` | `apps/web`, `@totoro/ui` |
-| `libs/ui` | `@totoro/shared` | `apps/web`, `services/api` |
+| `apps/web` | `@kebi-app/shared`, `@kebi-app/ui` | `services/api` |
+| `services/api` | `@kebi-app/shared` | `apps/web`, `@kebi-app/ui` |
+| `libs/ui` | `@kebi-app/shared` | `apps/web`, `services/api` |
 | `libs/shared` | Nothing | Everything |
 
 Violations are reported as **lint errors** — run `pnpm nx run-many -t lint` to check.

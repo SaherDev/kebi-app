@@ -25,7 +25,7 @@ Bring the Nx monorepo workspace to a fully operational state: both apps run loca
 
 | Rule | Status | Notes |
 |------|--------|-------|
-| I. Two-Repo Boundary | ✅ Pass | Feature scoped to product repo; no totoro-ai changes |
+| I. Two-Repo Boundary | ✅ Pass | Feature scoped to product repo; no kebi changes |
 | II. Nx Module Boundaries | ✅ Pass | Boundary rules already configured correctly in `eslint.config.mjs`; this feature completes the `libs/ui` gap |
 | III. ADR-001 (Nx) | ✅ Pass | Nx is the workspace tool |
 | III. ADR-003 (YAML config, no .env) | ✅ Pass | config/ directory creation is in scope |
@@ -55,7 +55,7 @@ specs/001-nx-monorepo-setup/
 ```text
 apps/
 └── web/                         # Next.js 16 frontend (scope:web)
-    ├── package.json             # Add @totoro/shared, @totoro/ui, missing frontend deps
+    ├── package.json             # Add @kebi-app/shared, @kebi-app/ui, missing frontend deps
     ├── tsconfig.json            # Extend tsconfig.base.json
     ├── tailwind.config.js       # CREATE — Tailwind v3 + CSS variable tokens
     ├── src/
@@ -64,9 +64,9 @@ apps/
 
 services/
 └── api/                         # NestJS 11 backend (scope:api)
-    ├── package.json             # Already has @totoro/shared workspace:*
+    ├── package.json             # Already has @kebi-app/shared workspace:*
     └── src/
-        └── main.ts              # Already imports API_GLOBAL_PREFIX from @totoro/shared
+        └── main.ts              # Already imports API_GLOBAL_PREFIX from @kebi-app/shared
 
 libs/
 ├── shared/                      # Types, interfaces, constants (scope:shared)
@@ -78,7 +78,7 @@ libs/
 │           └── types.ts         # CREATE — example shared type (PlaceSource) to verify wiring
 │
 └── ui/                          # CREATE — UI components (scope:ui)
-    ├── package.json             # name: @totoro/ui, tags: scope:ui, exports via workspace protocol
+    ├── package.json             # name: @kebi-app/ui, tags: scope:ui, exports via workspace protocol
     ├── tsconfig.json            # Extend tsconfig.base.json
     ├── tsconfig.lib.json        # Compilation config
     └── src/
@@ -111,7 +111,7 @@ Create the UI component library from scratch, mirroring `libs/shared`'s package 
 
 **Files to create:**
 
-1. `libs/ui/package.json` — ESM package with `name: @totoro/ui`, `tags: ["scope:ui"]`, workspace protocol exports, `@totoro/source` custom condition
+1. `libs/ui/package.json` — ESM package with `name: @kebi-app/ui`, `tags: ["scope:ui"]`, workspace protocol exports, `@kebi-app/source` custom condition
 2. `libs/ui/tsconfig.json` — composite tsconfig extending `tsconfig.base.json`
 3. `libs/ui/tsconfig.lib.json` — compilation config with `rootDir: src`, `outDir: dist`
 4. `libs/ui/src/index.ts` — public entry point exporting `cn()` and `Button`
@@ -119,7 +119,7 @@ Create the UI component library from scratch, mirroring `libs/shared`'s package 
 6. `libs/ui/src/lib/button.tsx` — example Button with `cva` variants (`default`, `muted`, `outline`)
 7. `libs/ui/eslint.config.mjs` — extends root config
 
-**Key constraint**: `libs/ui` must list `@totoro/shared` as a dependency (workspace:*) since it is allowed to depend on `scope:shared`. It must NOT import from `apps/web` or `services/api`.
+**Key constraint**: `libs/ui` must list `@kebi-app/shared` as a dependency (workspace:*) since it is allowed to depend on `scope:shared`. It must NOT import from `apps/web` or `services/api`.
 
 ### Step 2 — Add example type to libs/shared
 
@@ -132,12 +132,12 @@ Remove the placeholder `shared()` function. Add one real example type (`PlaceSou
 
 ### Step 3 — Wire apps/web to both libraries
 
-Add `@totoro/shared` and `@totoro/ui` as workspace dependencies in `apps/web`. Add all missing frontend dependencies.
+Add `@kebi-app/shared` and `@kebi-app/ui` as workspace dependencies in `apps/web`. Add all missing frontend dependencies.
 
 **Files to modify:**
 - `apps/web/package.json` — Add:
-  - `@totoro/shared: workspace:*`
-  - `@totoro/ui: workspace:*`
+  - `@kebi-app/shared: workspace:*`
+  - `@kebi-app/ui: workspace:*`
   - `tailwindcss`, `autoprefixer`, `postcss` (Tailwind v3)
   - `tailwindcss-animate` (shadcn/ui animations)
   - `clsx`, `tailwind-merge` (consumed by libs/ui but peer deps needed)

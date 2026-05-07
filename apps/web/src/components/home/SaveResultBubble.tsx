@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Check } from 'lucide-react';
-import type { ExtractPlaceItem } from '@totoro/shared';
+import type { ExtractPlaceItem } from '@kebi-app/shared';
 
 interface SaveResultBubbleProps {
   item: ExtractPlaceItem;

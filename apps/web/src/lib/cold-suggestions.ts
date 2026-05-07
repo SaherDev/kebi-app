@@ -1,5 +1,5 @@
 // PLACEHOLDER — hardcoded until a /v1/suggestions endpoint exists.
-import type { PlaceObject } from '@totoro/shared';
+import type { PlaceObject } from '@kebi-app/shared';
 
 const tier1Place = (
   id: string,

@@ -28,7 +28,7 @@
 - `tailwindcss-animate` — **already installed** (v1.0.0 in apps/web). No approval flag needed.
 - Existing semantic tokens: background, foreground, primary, muted, accent, destructive, border, ring, radius
 - Content paths: `./src/**/*.{ts,tsx}` + `../../libs/ui/src/**/*.{ts,tsx}` — correct for monorepo
-- Missing: fontFamily, extended colors (forest, gold, cream, warm-white, surface, sidebar), full borderRadius scale, boxShadow (totoro-sm/md/lg/glow), keyframes, animations
+- Missing: fontFamily, extended colors (forest, gold, cream, warm-white, surface, sidebar), full borderRadius scale, boxShadow (kebi-app-sm/md/lg/glow), keyframes, animations
 
 **Rationale**: Existing tokens must be preserved (monorepo's shadcn base). New tokens from Lovable are additive via the preset.
 
@@ -42,7 +42,7 @@
 - 14 CSS variables currently (light + dark): background, foreground, primary, muted, accent, destructive, border, ring, radius
 - Lovable's `index.css` has many more: sidebar tokens, shadow tokens (--shadow-sm/md/lg/glow), font variables, surface, text levels (primary/secondary/tertiary), forest, cream, warm-white, gold
 - Lovable's primary color differs (warm cream/brown vs monorepo's purple) — **Lovable wins** as design intent source
-- Lovable also has `@layer utilities` with `.shadow-totoro-*` and `.font-display`/`.font-body` classes
+- Lovable also has `@layer utilities` with `.shadow-kebi-app-*` and `.font-display`/`.font-body` classes
 - Lovable has `src/styles/animations.css` with organic keyframes — must be merged too
 
 **Rationale**: CSS variables move to `libs/ui/styles/tokens.css`. The `globals.css` becomes the import point + Tailwind directives only.
@@ -58,7 +58,7 @@ Migrate only what target screens actually use:
 - `button.tsx` — used everywhere
 - `badge.tsx` — used in PlaceCard, result views
 - `avatar.tsx` — used in NavBar, ProfileMenu
-- `card.tsx` — used in TotoroCard, PlaceCard
+- `card.tsx` — used in KebiCard, PlaceCard
 - `input.tsx` — used in ChatInput
 - `dialog.tsx` — used in Modal
 - `scroll-area.tsx` — used in HomeScreen
@@ -71,15 +71,15 @@ Migrate only what target screens actually use:
 Do NOT migrate the other ~36 components (calendar, carousel, chart, data-table, etc.) — not used in target screens. Add on demand.
 
 ### `src/components/` root → `apps/web/src/components/`
-All 14 Totoro-specific components:
+All 14 Kebi-specific components:
 - AgentResponseBubble, AgentStep, ChatInput, ChatMessage, EmptyState
 - LanguageSwitcher, LoadingState, Modal, NavBar, NavLink
 - PlaceCard, ProfileMenu, ReasoningBlock, Tag, ThemeToggle
-- TotoroAvatar, TotoroCard
+- KebiAvatar, KebiCard
 - + SplashScreen (new, with localStorage logic)
 
-### `src/components/illustrations/TotoroIllustrations.tsx`
-Migrate as React component to `apps/web/src/components/illustrations/totoro-illustrations.tsx`. Keep as component (not static assets) — these are animated SVG wrappers.
+### `src/components/illustrations/KebiIllustrations.tsx`
+Migrate as React component to `apps/web/src/components/illustrations/kebi-app-illustrations.tsx`. Keep as component (not static assets) — these are animated SVG wrappers.
 
 ---
 
@@ -115,16 +115,16 @@ Migrate as React component to `apps/web/src/components/illustrations/totoro-illu
 **Decision**: Static SVGs → `apps/web/public/illustrations/`. React wrappers stay as components.
 
 **Findings**:
-- 19 SVG files in `src/assets/` — all Totoro illustrations
-- `TotoroIllustrations.tsx` wraps these as React components with responsive sizing
-- In Next.js: SVGs in `public/` are served at `/illustrations/totoro-auth.svg` etc.
-- `TotoroIllustrations.tsx` will use `<img src="/illustrations/totoro-auth.svg">` or Next.js `<Image>` — prefer `next/image` for optimization
+- 19 SVG files in `src/assets/` — all Kebi illustrations
+- `KebiIllustrations.tsx` wraps these as React components with responsive sizing
+- In Next.js: SVGs in `public/` are served at `/illustrations/kebi-app-auth.svg` etc.
+- `KebiIllustrations.tsx` will use `<img src="/illustrations/kebi-app-auth.svg">` or Next.js `<Image>` — prefer `next/image` for optimization
 
 ---
 
 ## 8. SplashScreen localStorage Strategy
 
-**Decision**: Key `totoro-splash-seen` in localStorage. Check on mount, set on dismiss.
+**Decision**: Key `kebi-app-splash-seen` in localStorage. Check on mount, set on dismiss.
 
 **Findings**:
 - Current SplashScreen navigates to `/auth` on click — no persistence
@@ -163,8 +163,8 @@ The Tailwind preset then references `var(--font-display)` and `var(--font-body)`
 | Framer Motion | Flag for approval — used in all screens |
 | i18n conversion | JSON content compatible; config-only swap |
 | SVG assets | Static files → public/illustrations/; React wrappers stay as components |
-| Component scope | Selective: 12 shadcn primitives, all 14 Totoro-specific, not full shadcn library |
+| Component scope | Selective: 12 shadcn primitives, all 14 Kebi-specific, not full shadcn library |
 | Lovable primary color | Overwrites monorepo's purple — warm brown/cream is design intent |
-| SplashScreen persistence | localStorage key `totoro-splash-seen` |
+| SplashScreen persistence | localStorage key `kebi-app-splash-seen` |
 | Font loading | next/font/google, CSS variables on body |
 | tailwind.config filename | Keep as .js (not .ts) — do not rename |

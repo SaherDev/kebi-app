@@ -78,4 +78,4 @@ Note: no 404 is expected from FastAPI for this endpoint — a valid Clerk user a
 
 ## Bruno file
 
-`totoro-config/bruno/nestjs-api/user-context.bru` — single GET request with expected response examples for both populated and cold-start states.
+`kebi-config/bruno/nestjs-api/user-context.bru` — single GET request with expected response examples for both populated and cold-start states.

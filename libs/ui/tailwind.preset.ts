@@ -73,10 +73,10 @@ const config: Config = {
         sm: "calc(var(--radius) - 4px)",
       },
       boxShadow: {
-        "totoro-sm": "var(--shadow-sm)",
-        "totoro-md": "var(--shadow-md)",
-        "totoro-lg": "var(--shadow-lg)",
-        "totoro-glow": "var(--shadow-glow)",
+        "kebi-app-sm": "var(--shadow-sm)",
+        "kebi-app-md": "var(--shadow-md)",
+        "kebi-app-lg": "var(--shadow-lg)",
+        "kebi-app-glow": "var(--shadow-glow)",
       },
       keyframes: {
         breathe: {

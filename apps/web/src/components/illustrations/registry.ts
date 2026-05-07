@@ -29,62 +29,62 @@ export interface IllustrationDefinition {
 export const ILLUSTRATION_REGISTRY: Record<IllustrationId, IllustrationDefinition> = {
   'auth': {
     id: 'auth',
-    src: '/illustrations/totoro-auth.svg',
+    src: '/illustrations/kebi-app-auth.svg',
     altKey: 'illustrations.auth',
   },
   'idle-welcoming': {
     id: 'idle-welcoming',
-    src: '/illustrations/totoro-idle-welcoming.svg',
+    src: '/illustrations/kebi-app-idle-welcoming.svg',
     altKey: 'illustrations.idleWelcoming',
   },
   'raining': {
     id: 'raining',
-    src: '/illustrations/totoro-raining.svg',
+    src: '/illustrations/kebi-app-raining.svg',
     altKey: 'illustrations.raining',
   },
   'encouraging': {
     id: 'encouraging',
-    src: '/illustrations/totoro-encouraging.svg',
+    src: '/illustrations/kebi-app-encouraging.svg',
     altKey: 'illustrations.encouraging',
   },
   'excited': {
     id: 'excited',
-    src: '/illustrations/totoro-excited.svg',
+    src: '/illustrations/kebi-app-excited.svg',
     altKey: 'illustrations.excited',
   },
   'knowing': {
     id: 'knowing',
-    src: '/illustrations/totoro-knowing.svg',
+    src: '/illustrations/kebi-app-knowing.svg',
     altKey: 'illustrations.knowing',
   },
   'welcome-back': {
     id: 'welcome-back',
-    src: '/illustrations/totoro-welcome-back.svg',
+    src: '/illustrations/kebi-app-welcome-back.svg',
     altKey: 'illustrations.welcomeBack',
   },
   'listen': {
     id: 'listen',
-    src: '/illustrations/totoro-listen.svg',
+    src: '/illustrations/kebi-app-listen.svg',
     altKey: 'illustrations.listen',
   },
   'empty': {
     id: 'empty',
-    src: '/illustrations/totoro-empty.svg',
+    src: '/illustrations/kebi-app-empty.svg',
     altKey: 'illustrations.empty',
   },
   'add-place': {
     id: 'add-place',
-    src: '/illustrations/totoro-add-place.svg',
+    src: '/illustrations/kebi-app-add-place.svg',
     altKey: 'illustrations.addPlace',
   },
   'add-place-processing': {
     id: 'add-place-processing',
-    src: '/illustrations/totoro-add-place-processing.svg',
+    src: '/illustrations/kebi-app-add-place-processing.svg',
     altKey: 'illustrations.addPlaceProcessing',
   },
   'add-place-success': {
     id: 'add-place-success',
-    src: '/illustrations/totoro-add-place-success.svg',
+    src: '/illustrations/kebi-app-add-place-success.svg',
     altKey: 'illustrations.addPlaceSuccess',
   },
 };

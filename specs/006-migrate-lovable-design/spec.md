@@ -1,9 +1,9 @@
-# Feature Specification: Migrate Lovable Design Output into Totoro Nx Monorepo
+# Feature Specification: Migrate Lovable Design Output into Kebi Nx Monorepo
 
 **Feature Branch**: `001-migrate-lovable-design`
 **Created**: 2026-03-12
 **Status**: Draft
-**Input**: User description: "Migrate Lovable-generated Vite + React app (totoro-guide-bot) design output — components, screens, styles, i18n, and assets — into the Totoro Nx monorepo (apps/web) as proper Next.js App Router pages and shared UI components."
+**Input**: User description: "Migrate Lovable-generated Vite + React app (kebi-app-guide-bot) design output — components, screens, styles, i18n, and assets — into the Kebi Nx monorepo (apps/web) as proper Next.js App Router pages and shared UI components."
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -26,7 +26,7 @@ A developer running the local dev server sees the migrated design rendered corre
 
 ### User Story 2 - Designer Reviews Component Library (Priority: P2)
 
-A designer or developer reviews the migrated components and verifies each component's variants, sizes, and states match the DesignSystemScreen visual reference. Generic UI primitives live in the shared design system (`libs/ui`); Totoro-specific components live in the app layer (`apps/web/src/components`).
+A designer or developer reviews the migrated components and verifies each component's variants, sizes, and states match the DesignSystemScreen visual reference. Generic UI primitives live in the shared design system (`libs/ui`); Kebi-specific components live in the app layer (`apps/web/src/components`).
 
 **Why this priority**: Components are reused across all screens. Correctness here prevents rework on every consumer.
 
@@ -69,8 +69,8 @@ A developer imports typed design tokens from `tokens.ts` to use token values in 
 
 **Component placement:**
 
-- **FR-001**: Generic UI primitives from Lovable's `src/components/ui/` (Badge, Modal, NavBar, NavLink, Tag, ThemeToggle, and any other app-agnostic primitives) MUST be migrated to `libs/ui/src/components/` and exported via `libs/ui`'s `index.ts`, importable as `@totoro/ui`.
-- **FR-002**: Totoro-specific components from Lovable's `src/components/` root (AgentResponseBubble, AgentStep, ChatInput, ChatMessage, EmptyState, LanguageSwitcher, LoadingState, PlaceCard, ProfileMenu, ReasoningBlock, TotoroAvatar, TotoroCard) MUST be migrated to `apps/web/src/components/`.
+- **FR-001**: Generic UI primitives from Lovable's `src/components/ui/` (Badge, Modal, NavBar, NavLink, Tag, ThemeToggle, and any other app-agnostic primitives) MUST be migrated to `libs/ui/src/components/` and exported via `libs/ui`'s `index.ts`, importable as `@kebi-app/ui`.
+- **FR-002**: Kebi-specific components from Lovable's `src/components/` root (AgentResponseBubble, AgentStep, ChatInput, ChatMessage, EmptyState, LanguageSwitcher, LoadingState, PlaceCard, ProfileMenu, ReasoningBlock, KebiAvatar, KebiCard) MUST be migrated to `apps/web/src/components/`.
 - **FR-003**: Any component not clearly fitting either category MUST be flagged to the developer before migrating.
 
 **Screens:**
@@ -81,7 +81,7 @@ A developer imports typed design tokens from `tokens.ts` to use token values in 
 
 **Styles and tokens:**
 
-- **FR-007**: `libs/ui` MUST export a Tailwind preset at `libs/ui/tailwind.preset.ts` containing all custom theme extensions: `fontFamily` (DM Serif Display, DM Sans), extended color palette (forest, gold, cream, warm-white, surface, sidebar), `borderRadius` scale, `boxShadow` (totoro-sm/md/lg/glow), `keyframes`, and `animation` entries.
+- **FR-007**: `libs/ui` MUST export a Tailwind preset at `libs/ui/tailwind.preset.ts` containing all custom theme extensions: `fontFamily` (DM Serif Display, DM Sans), extended color palette (forest, gold, cream, warm-white, surface, sidebar), `borderRadius` scale, `boxShadow` (kebi-app-sm/md/lg/glow), `keyframes`, and `animation` entries.
 - **FR-008**: `apps/web/tailwind.config.ts` MUST consume the `libs/ui` preset via `presets: [preset]` instead of duplicating theme values. App-specific overrides only.
 - **FR-009**: `libs/ui` MUST export a CSS stylesheet (e.g., `libs/ui/styles/tokens.css`) containing all CSS custom properties for both light (`[data-theme="light"]`/`:root`) and dark (`.dark`/`[data-theme="dark"]`) themes. This makes the design system self-contained.
 - **FR-010**: `apps/web/src/app/globals.css` MUST import `libs/ui`'s token stylesheet and add only app-specific CSS on top. No duplication of variable definitions.
@@ -114,9 +114,9 @@ A developer imports typed design tokens from `tokens.ts` to use token values in 
 ### Key Entities
 
 - **Design Token**: A named, typed value (color, spacing, radius, shadow, font) that maps to a CSS custom property. Defined once in `libs/ui/styles/tokens.css`, mapped to Tailwind classes via `libs/ui/tailwind.preset.ts`, and exported as typed values in `apps/web/src/styles/tokens.ts`.
-- **Generic UI Component**: A reusable, app-agnostic primitive (Badge, Modal, NavBar, etc.) that lives in `libs/ui` and is consumed via `@totoro/ui`.
-- **Totoro-Specific Component**: A component encoding Totoro product logic or visual identity (PlaceCard, AgentStep, ReasoningBlock, etc.) that lives in `apps/web/src/components`.
-- **Screen / Page**: A Next.js App Router page component mapping to a URL route, composed from both generic and Totoro-specific components.
+- **Generic UI Component**: A reusable, app-agnostic primitive (Badge, Modal, NavBar, etc.) that lives in `libs/ui` and is consumed via `@kebi-app/ui`.
+- **Kebi-Specific Component**: A component encoding Kebi product logic or visual identity (PlaceCard, AgentStep, ReasoningBlock, etc.) that lives in `apps/web/src/components`.
+- **Screen / Page**: A Next.js App Router page component mapping to a URL route, composed from both generic and Kebi-specific components.
 - **Theme Variable Set**: The collection of CSS custom properties defining the visual appearance for light or dark mode.
 
 ## Success Criteria *(mandatory)*
@@ -129,7 +129,7 @@ A developer imports typed design tokens from `tokens.ts` to use token values in 
 - **SC-004**: Both English and Hebrew locales display correct translations with correct RTL layout on all migrated screens.
 - **SC-005**: Every design token exported from `apps/web/src/styles/tokens.ts` matches its corresponding CSS custom property in `libs/ui/styles/tokens.css` — no mismatches.
 - **SC-006**: Zero new packages are installed without explicit developer approval.
-- **SC-007**: Generic UI components are importable via `@totoro/ui`; Totoro-specific components are importable from `apps/web/src/components/` — no Nx boundary violations.
+- **SC-007**: Generic UI components are importable via `@kebi-app/ui`; Kebi-specific components are importable from `apps/web/src/components/` — no Nx boundary violations.
 
 ## Clarifications
 
@@ -141,12 +141,12 @@ A developer imports typed design tokens from `tokens.ts` to use token values in 
 
 ## Assumptions
 
-- The Lovable source repo is accessible at `~/dev/others-repos/totoro-guide-bot/`.
+- The Lovable source repo is accessible at `~/dev/others-repos/kebi-app-guide-bot/`.
 - The Lovable i18n format is JSON-based; content is usable but key structure may need adjustment for next-intl conventions.
 - `tailwindcss-animate` is not yet installed in the monorepo and will be flagged for approval before use.
 - The Lovable components were built with Tailwind; no CSS Modules or styled-components are expected.
 - DesignSystemScreen.tsx is the canonical visual reference; any discrepancy between it and a component file is resolved in favor of DesignSystemScreen.
 - Fonts (DM Serif Display, DM Sans) are loaded via `next/font/google` — self-hosted by Next.js, zero layout shift, no external CDN dependency at runtime.
 - The illustrations subfolder (`src/components/illustrations/`) contains SVG components that will be converted to static assets in `apps/web/public/illustrations/`.
-- **The `src/components/ui/` components are NOT pure shadcn primitives.** They use Totoro-specific Tailwind classes (`font-body`, `shadow-totoro-sm/md/lg`, `bg-sidebar`, `text-sidebar-foreground`, etc.) that depend on the custom preset and CSS variables. The `libs/ui` preset and token stylesheet MUST be in place before any component migration begins.
+- **The `src/components/ui/` components are NOT pure shadcn primitives.** They use Kebi-specific Tailwind classes (`font-body`, `shadow-kebi-app-sm/md/lg`, `bg-sidebar`, `text-sidebar-foreground`, etc.) that depend on the custom preset and CSS variables. The `libs/ui` preset and token stylesheet MUST be in place before any component migration begins.
 - **`libs/ui` is the design system owner.** It ships the Tailwind preset (`tailwind.preset.ts`) and CSS variable stylesheet (`styles/tokens.css`). Apps consume both — they do not duplicate or define token values themselves.

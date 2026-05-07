@@ -35,7 +35,7 @@
 |---|-------|----------|
 | Q1 | SplashScreen placement | Standalone client component at `apps/web/src/components/splash-screen.tsx`, controlled by root layout |
 | Q2 | i18n file destination | Move `messages/` to `apps/web/messages/`, update next-intl config, merge Lovable content there |
-| Q3 | Component library location | Generic UI primitives → `libs/ui/src/components/` (`@totoro/ui`); Totoro-specific → `apps/web/src/components/` |
+| Q3 | Component library location | Generic UI primitives → `libs/ui/src/components/` (`@kebi-app/ui`); Kebi-specific → `apps/web/src/components/` |
 
 ## Notes
 

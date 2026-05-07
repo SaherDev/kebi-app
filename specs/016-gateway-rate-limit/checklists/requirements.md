@@ -32,5 +32,5 @@
 ## Notes
 
 - All items pass. Spec is ready for `/speckit.clarify` or `/speckit.plan`.
-- FR-013 and FR-014 describe FastAPI SSE event requirements — these are cross-repo changes (totoro-ai) that the plan phase must track as out-of-scope for this repo's implementation but must coordinate.
+- FR-013 and FR-014 describe FastAPI SSE event requirements — these are cross-repo changes (kebi) that the plan phase must track as out-of-scope for this repo's implementation but must coordinate.
 - FR-012 (AuthUser rename) touches libs/shared, services/api, and apps/web — plan phase should enumerate all affected files.

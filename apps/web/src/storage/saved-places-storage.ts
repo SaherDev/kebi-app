@@ -1,7 +1,7 @@
-import type { SavedPlaceStub } from '@totoro/shared';
+import type { SavedPlaceStub } from '@kebi-app/shared';
 
-const COUNT_KEY = 'totoro.savedCount';
-const PLACES_KEY = 'totoro.savedPlaces';
+const COUNT_KEY = 'kebi-app.savedCount';
+const PLACES_KEY = 'kebi-app.savedPlaces';
 
 export function getSavedPlaceCount(): number {
   try {

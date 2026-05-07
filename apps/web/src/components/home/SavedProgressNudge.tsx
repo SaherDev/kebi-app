@@ -1,7 +1,7 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import type { SignalTier } from '@totoro/shared';
+import type { SignalTier } from '@kebi-app/shared';
 
 interface SavedProgressNudgeProps {
   count: number;

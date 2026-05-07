@@ -1,5 +1,5 @@
 {
-  "name": "@totoro/api",
+  "name": "@kebi-app/api",
   "version": "0.0.1",
   "private": true,
   "engines": {
@@ -98,7 +98,7 @@
     "@nestjs/platform-express": "^11.0.0",
     "@nestjs/typeorm": "^11.0.0",
     "@paralleldrive/cuid2": "^2.2.2",
-    "@totoro/shared": "workspace:*",
+    "@kebi-app/shared": "workspace:*",
     "axios": "^1.6.0",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.15.1",

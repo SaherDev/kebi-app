@@ -1,5 +1,5 @@
 {
-  "name": "@totoro/source",
+  "name": "@kebi-app/source",
   "version": "0.0.0",
   "private": true,
   "engines": {
@@ -7,9 +7,9 @@
   },
   "packageManager": "pnpm@10.28.2",
   "scripts": {
-    "dev": "sh -c 'set -a && . ../totoro-config/.env.shared && . ../totoro-config/.env.totoro && . ../totoro-config/.env.totoro-ai && set +a && nx run-many -t dev serve -p web api'",
-    "dev:web": "sh -c 'set -a && . ../totoro-config/.env.shared && . ../totoro-config/.env.totoro && set +a && nx dev web'",
-    "dev:api": "sh -c 'set -a && . ../totoro-config/.env.shared && . ../totoro-config/.env.totoro && set +a && nx serve api'"
+    "dev": "sh -c 'set -a && . ../kebi-config/.env.shared && . ../kebi-config/.env.kebi-app && . ../kebi-config/.env.kebi && set +a && nx run-many -t dev serve -p web api'",
+    "dev:web": "sh -c 'set -a && . ../kebi-config/.env.shared && . ../kebi-config/.env.kebi-app && set +a && nx dev web'",
+    "dev:api": "sh -c 'set -a && . ../kebi-config/.env.shared && . ../kebi-config/.env.kebi-app && set +a && nx serve api'"
   },
   "devDependencies": {
     "@eslint/js": "^9.8.0",

@@ -146,15 +146,15 @@ dismissAssistantReply()
 
 ## 3. localStorage Schema
 
-### `totoro.savedCount` — existing (integer string)
+### `kebi-app.savedCount` — existing (integer string)
 No change.
 
-### `totoro.savedPlaces` — new (JSON array)
+### `kebi-app.savedPlaces` — new (JSON array)
 Written only on server `status: 'resolved'`. Read by `ColdStartOneToFour`.
 
 ```ts
 // Schema: SavedPlaceStub[]
-// Key: 'totoro.savedPlaces'
+// Key: 'kebi-app.savedPlaces'
 // Written: after confirmed save (status: 'resolved')
 // Read: by saved-places-storage.ts getSavedPlaces()
 // Max displayed in cold-1-4 list: last 4 entries (most recent first)
@@ -164,7 +164,7 @@ New functions in `saved-places-storage.ts`:
 - `getSavedPlaces(): SavedPlaceStub[]`
 - `appendSavedPlace(place: SavedPlaceStub): void`
 
-### `totoro.savedCount` — existing, also incremented on save
+### `kebi-app.savedCount` — existing, also incremented on save
 `incrementSavedPlaceCount()` already exists. Called alongside `appendSavedPlace()`.
 
 ---
@@ -254,15 +254,15 @@ export interface IllustrationDefinition {
 
 | Old filename | New filename | Registry id |
 |-------------|-------------|-------------|
-| `totoro-home-input.svg` | `totoro-idle-welcoming.svg` | `idle-welcoming` |
-| `totoro-splash.svg` | `totoro-raining.svg` | `raining` |
-| `totoro-success.svg` | `totoro-excited.svg` | `excited` |
-| `totoro-place-detail.svg` | `totoro-encouraging.svg` | `encouraging` |
-| `totoro-hover-peek.svg` | `totoro-knowing.svg` | `knowing` |
-| `totoro-step-complete.svg` | `totoro-welcome-back.svg` | `welcome-back` |
+| `kebi-app-home-input.svg` | `kebi-app-idle-welcoming.svg` | `idle-welcoming` |
+| `kebi-app-splash.svg` | `kebi-app-raining.svg` | `raining` |
+| `kebi-app-success.svg` | `kebi-app-excited.svg` | `excited` |
+| `kebi-app-place-detail.svg` | `kebi-app-encouraging.svg` | `encouraging` |
+| `kebi-app-hover-peek.svg` | `kebi-app-knowing.svg` | `knowing` |
+| `kebi-app-step-complete.svg` | `kebi-app-welcome-back.svg` | `welcome-back` |
 
 ### Orphaned SVGs to delete
 
-`totoro-error.svg`, `totoro-processing.svg`, `totoro-result-card.svg`, `totoro-step-check.svg`, `totoro-step-evaluate.svg`, `totoro-step-listen.svg`, `totoro-step-move.svg`, `totoro-step-read.svg`
+`kebi-app-error.svg`, `kebi-app-processing.svg`, `kebi-app-result-card.svg`, `kebi-app-step-check.svg`, `kebi-app-step-evaluate.svg`, `kebi-app-step-listen.svg`, `kebi-app-step-move.svg`, `kebi-app-step-read.svg`
 
 _(Verify no consumers via grep before deleting.)_

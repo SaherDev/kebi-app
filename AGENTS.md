@@ -1,6 +1,6 @@
-# AGENTS.md — Totoro AI Agents Configuration
+# AGENTS.md — Kebi AI Agents Configuration
 
-This file documents AI agents configured for the Totoro project. Generated to support Claude Code and AI-assisted development workflows.
+This file documents AI agents configured for the Kebi project. Generated to support Claude Code and AI-assisted development workflows.
 
 ## Installed Agent Skills
 
@@ -20,7 +20,7 @@ This file documents AI agents configured for the Totoro project. Generated to su
 
 ## Project Context
 
-Totoro is an AI-native place recommendation system. This configuration enables agents to understand:
+Kebi is an AI-native place recommendation system. This configuration enables agents to understand:
 - **Architecture**: Nx monorepo with Next.js (frontend), NestJS (backend), shared types
 - **Tech Stack**: TypeScript, React, Tailwind CSS, PostgreSQL with pgvector
 - **Deployment**: Vercel (frontend) + Railway (backend + AI service)

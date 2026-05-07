@@ -1,6 +1,6 @@
 import { Capacitor } from "@capacitor/core";
 import { FetchClient } from "../api/transports/fetch.transport";
-import type { DataScope, UserContextResponse } from "@totoro/shared";
+import type { DataScope, UserContextResponse } from "@kebi-app/shared";
 
 export interface UserClient {
   getUserContext(): Promise<UserContextResponse>;

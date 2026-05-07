@@ -11,7 +11,7 @@
 
 **Rationale**: `@nestjs/axios` is not currently installed. It provides `HttpModule` and `HttpService`, which wrap Axios in NestJS's DI system. This is the package mandated by ADR-016.
 
-**How to install**: `pnpm --filter @totoro/api add @nestjs/axios axios`
+**How to install**: `pnpm --filter @kebi-app/api add @nestjs/axios axios`
 
 Note: `axios` itself may also need to be installed as a peer — verify after `@nestjs/axios` installs.
 

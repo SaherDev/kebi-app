@@ -8,7 +8,7 @@ import type {
   SseMessage,
   SseReasoningStep,
   SseToolResult,
-} from "@totoro/shared";
+} from "@kebi-app/shared";
 import { useCallback, useEffect, useRef } from "react";
 
 import { Capacitor } from "@capacitor/core";

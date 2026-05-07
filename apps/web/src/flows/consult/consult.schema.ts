@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import type { ConsultResponseData } from '@totoro/shared';
+import type { ConsultResponseData } from '@kebi-app/shared';
 import { PlaceObjectSchema } from '../../lib/place-schema';
 
 const ReasoningStepSchema = z.object({

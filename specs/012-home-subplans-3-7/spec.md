@@ -29,7 +29,7 @@ Additionally: the illustration system is refactored from scattered named exports
 
 - Q: After the `SavedSnackbar` auto-dismisses (or the user taps outside it), what phase does the home page return to? → A: Return to whatever phase was active before the save sheet opened.
 - Q: When the user taps an assistant/clarification bubble to dismiss it, does that remove it from the thread array or mark it hidden? → A: Keep the entry but mark it `dismissed: true` so it renders nothing (append-only thread preserved).
-- Q: When should `totoro.savedPlaces` localStorage array be written — optimistically on sheet open or only on server `status: 'resolved'`? → A: Write only when server returns `status: 'resolved'`.
+- Q: When should `kebi-app.savedPlaces` localStorage array be written — optimistically on sheet open or only on server `status: 'resolved'`? → A: Write only when server returns `status: 'resolved'`.
 - Q: Should `<Illustration />` auto-detect `prefers-reduced-motion` internally or rely on consumers passing `animate={false}`? → A: Auto-detect inside the component — no consumer action needed.
 
 ---
@@ -38,15 +38,15 @@ Additionally: the illustration system is refactored from scattered named exports
 
 ### User Story 1 — New user sees a welcoming cold-start screen (Priority: P1)
 
-A brand-new user opens the home page for the first time with zero saved places. Instead of a blank, purposeless screen they see a friendly Totoro illustration, a clear headline, a three-step guide to saving from TikTok or Instagram, a muted paste hint, and two example consult prompts. They understand immediately what to do next.
+A brand-new user opens the home page for the first time with zero saved places. Instead of a blank, purposeless screen they see a friendly Kebi illustration, a clear headline, a three-step guide to saving from TikTok or Instagram, a muted paste hint, and two example consult prompts. They understand immediately what to do next.
 
 **Why this priority**: Cold-start zero is the first impression for every new user. Without it the home page is blank and the product's value is invisible.
 
-**Independent Test**: Set `localStorage.totoro.savedCount` to `0` (or clear it), load the home page in the idle phase, and verify the cold-start zero layout renders with the correct illustration, headline, three steps, hint, and two suggestion pills.
+**Independent Test**: Set `localStorage.kebi-app.savedCount` to `0` (or clear it), load the home page in the idle phase, and verify the cold-start zero layout renders with the correct illustration, headline, three steps, hint, and two suggestion pills.
 
 **Acceptance Scenarios**:
 
-1. **Given** a user with zero saved places and no confirmed taste profile, **When** the home page loads in the idle phase, **Then** the cold-start zero screen is shown with a Totoro illustration, the headline "Save places you love. I'll figure out the rest.", three numbered share-extension steps, a paste hint, and two static suggestion pills.
+1. **Given** a user with zero saved places and no confirmed taste profile, **When** the home page loads in the idle phase, **Then** the cold-start zero screen is shown with a Kebi illustration, the headline "Save places you love. I'll figure out the rest.", three numbered share-extension steps, a paste hint, and two static suggestion pills.
 2. **Given** the cold-start zero screen is visible, **When** the user taps one of the suggestion pills, **Then** the text is filled into the input bar but nothing is submitted.
 3. **Given** the cold-start zero screen is visible, **When** the input bar is focused, **Then** the placeholder reads "Paste a link or type a name…".
 
@@ -58,11 +58,11 @@ A user with 1–4 saved places sees a compact encouragement screen: their saves 
 
 **Why this priority**: Retention depends on users feeling progress during the early phase. Without visible feedback, users with only 1–2 saves may not return.
 
-**Independent Test**: Set `localStorage.totoro.savedCount` to `2`, reload, and verify the cold-1-4 layout appears with the save list, popular card with dashed gold border, and starter-pack link. Then trigger a save and verify the snackbar shows the "Taste signals updating." addendum.
+**Independent Test**: Set `localStorage.kebi-app.savedCount` to `2`, reload, and verify the cold-1-4 layout appears with the save list, popular card with dashed gold border, and starter-pack link. Then trigger a save and verify the snackbar shows the "Taste signals updating." addendum.
 
 **Acceptance Scenarios**:
 
-1. **Given** a user with `savedPlaceCount` of 2, **When** the home page loads, **Then** the cold-1-4 screen appears with the Totoro encouraging illustration, the headline, the two saved place rows, the popular nearby card with dashed gold border and footnote, and the starter-pack link.
+1. **Given** a user with `savedPlaceCount` of 2, **When** the home page loads, **Then** the cold-1-4 screen appears with the Kebi encouraging illustration, the headline, the two saved place rows, the popular nearby card with dashed gold border and footnote, and the starter-pack link.
 2. **Given** the cold-1-4 screen is showing, **When** the user successfully saves a new place, **Then** the success snackbar shows the gold italic "Taste signals updating." line above the normal "Saved!" body.
 3. **Given** a user with `savedPlaceCount ≥ 5`, **When** a save succeeds, **Then** the "Taste signals updating." line is absent from the snackbar.
 
@@ -70,16 +70,16 @@ A user with 1–4 saved places sees a compact encouragement screen: their saves 
 
 ### User Story 3 — User saves a place via the half-sheet (Priority: P1)
 
-A user types a TikTok URL or place name. The input is client-classified as a save intent and a half-sheet slides up from the bottom showing the place details, thumbnail, and a "Save to Totoro" button. The user taps the button, sees "Saving…" with a spinner, then the sheet closes and a success snackbar slides in. If the place is already saved, the sheet shows a duplicate state with a "View saved place" option. If the save fails, an error message and "Try again" button appear.
+A user types a TikTok URL or place name. The input is client-classified as a save intent and a half-sheet slides up from the bottom showing the place details, thumbnail, and a "Save to Kebi" button. The user taps the button, sees "Saving…" with a spinner, then the sheet closes and a success snackbar slides in. If the place is already saved, the sheet shows a duplicate state with a "View saved place" option. If the save fails, an error message and "Try again" button appear.
 
 **Why this priority**: Saving is the primary data-ingestion action. It gates everything else (recall, consult accuracy).
 
-**Independent Test**: Type `tiktok.com/@foodie/ramen123` in the input bar (fixture). Verify the save sheet opens with pending state; tap "Save to Totoro"; see the saving spinner; then see the snackbar. Then type `Fuji Ramen Bangkok` (duplicate fixture) and verify the duplicate state renders.
+**Independent Test**: Type `tiktok.com/@foodie/ramen123` in the input bar (fixture). Verify the save sheet opens with pending state; tap "Save to Kebi"; see the saving spinner; then see the snackbar. Then type `Fuji Ramen Bangkok` (duplicate fixture) and verify the duplicate state renders.
 
 **Acceptance Scenarios**:
 
-1. **Given** the user submits a URL or short place name, **When** the client classifier identifies it as a save, **Then** the save half-sheet opens immediately with the place thumbnail, name, source badge, location, and a "Save to Totoro" button.
-2. **Given** the save sheet is open with `pending` status, **When** the user taps "Save to Totoro", **Then** the button changes to "Saving…" with a spinner and is disabled.
+1. **Given** the user submits a URL or short place name, **When** the client classifier identifies it as a save, **Then** the save half-sheet opens immediately with the place thumbnail, name, source badge, location, and a "Save to Kebi" button.
+2. **Given** the save sheet is open with `pending` status, **When** the user taps "Save to Kebi", **Then** the button changes to "Saving…" with a spinner and is disabled.
 3. **Given** the save completes successfully, **When** the server returns `status: 'resolved'`, **Then** the sheet closes and the success snackbar slides in showing the place name and source.
 4. **Given** the server returns `status: 'duplicate'`, **When** the response lands, **Then** the sheet body switches to the duplicate state showing the knowing illustration, "Already in your places" headline, original save date, and "View saved place" button.
 5. **Given** the save fails, **When** the server returns an error, **Then** the sheet shows the error message and a "Try again" button.
@@ -129,7 +129,7 @@ All home-page illustrations are accessed via a single `<Illustration id="…" />
 
 **Why this priority**: The old system has many orphaned exports and no single source of truth for "which flow uses which illustration". This blocks safe maintenance.
 
-**Independent Test**: Run TypeScript compilation — zero errors. Grep for old named exports (`TotoroHomeInput`, `TotoroSplash`, `TotoroSuccess`, etc.) — zero results outside deleted/replaced files. Verify each illustration referenced in the per-flow mapping table renders in its flow.
+**Independent Test**: Run TypeScript compilation — zero errors. Grep for old named exports (`KebiHomeInput`, `KebiSplash`, `KebiSuccess`, etc.) — zero results outside deleted/replaced files. Verify each illustration referenced in the per-flow mapping table renders in its flow.
 
 **Acceptance Scenarios**:
 
@@ -141,7 +141,7 @@ All home-page illustrations are accessed via a single `<Illustration id="…" />
 
 ### Edge Cases
 
-- User clears `localStorage.totoro.savedPlaces` manually but `totoro.savedCount` is still non-zero — `ColdStartOneToFour` shows a placeholder row rather than crashing.
+- User clears `localStorage.kebi-app.savedPlaces` manually but `kebi-app.savedCount` is still non-zero — `ColdStartOneToFour` shows a placeholder row rather than crashing.
 - Recall fetch returns 0 results — the empty-state footer card renders.
 - Save sheet is open when the user navigates to a different page — the sheet is mounted at the `<HomePage>` root and dismisses when the phase transitions.
 - `SavedSnackbar` auto-dismiss timer fires while the user is mid-input — the timer still runs, phase restores to `preSavePhase`; this is acceptable behaviour.
@@ -159,7 +159,7 @@ All home-page illustrations are accessed via a single `<Illustration id="…" />
 **Flow 7 — Cold Start Zero**
 
 - **FR-001**: When `savedPlaceCount === 0` and the home page is in the idle phase, the system MUST display the cold-start zero screen instead of the default idle view.
-- **FR-002**: The cold-start zero screen MUST show: a Totoro illustration, the headline "Save places you love. I'll figure out the rest.", the subline "The easiest way to save is from TikTok or Instagram", three numbered share-extension steps, a muted paste hint, and two static suggestion pills.
+- **FR-002**: The cold-start zero screen MUST show: a Kebi illustration, the headline "Save places you love. I'll figure out the rest.", the subline "The easiest way to save is from TikTok or Instagram", three numbered share-extension steps, a muted paste hint, and two static suggestion pills.
 - **FR-003**: Tapping a suggestion pill MUST fill the input bar with the pill's text without submitting.
 - **FR-004**: The input bar placeholder MUST read "Paste a link or type a name…" when the phase is `cold-0`.
 - **FR-005**: The cold-start zero component MUST be stateless and receive all interaction via props.
@@ -167,11 +167,11 @@ All home-page illustrations are accessed via a single `<Illustration id="…" />
 **Flow 8 — Cold Start 1–4 + Popular Nearby**
 
 - **FR-006**: When `1 ≤ savedPlaceCount ≤ 4` and the home is in the idle phase, the system MUST display the cold-start 1–4 screen.
-- **FR-007**: The cold-start 1–4 screen MUST show: the Totoro encouraging illustration, the headline "The more you save, the better I get.", the subline "Recall works now. Consult shows what's good nearby.", a compact list of saved place stubs, a "What's good nearby" label, a `PopularNearbyCard`, and a "City starter pack" link.
+- **FR-007**: The cold-start 1–4 screen MUST show: the Kebi encouraging illustration, the headline "The more you save, the better I get.", the subline "Recall works now. Consult shows what's good nearby.", a compact list of saved place stubs, a "What's good nearby" label, a `PopularNearbyCard`, and a "City starter pack" link.
 - **FR-008**: `PopularNearbyCard` MUST wrap a `PrimaryResultCard` with a dashed gold border, a "Popular right now" small-caps label above, and a muted italic footnote below.
 - **FR-009**: When `savedPlaceCount < 5` and the phase is `result`, the primary result MUST be wrapped in a `PopularNearbyCard`.
 - **FR-010**: When a save succeeds and `1 ≤ savedPlaceCount ≤ 4` at the moment of display, the `SavedSnackbar` MUST include a gold italic "Taste signals updating." line above the normal body.
-- **FR-010a**: `totoro.savedPlaces` and `totoro.savedCount` MUST be written to localStorage only after the server returns `status: 'resolved'`. Duplicate and error responses MUST NOT increment the count or append to the array.
+- **FR-010a**: `kebi-app.savedPlaces` and `kebi-app.savedCount` MUST be written to localStorage only after the server returns `status: 'resolved'`. Duplicate and error responses MUST NOT increment the count or append to the array.
 
 **Flow 4 — Save**
 
@@ -231,7 +231,7 @@ All home-page illustrations are accessed via a single `<Illustration id="…" />
 
 - **SC-001**: Every home-page phase (`cold-0`, `cold-1-4`, `thinking`, `result`, `recall`, `save-sheet`, `save-duplicate`, `save-snackbar`, `error`, `idle`, `taste-profile`, `assistant-reply`) renders the correct UI without runtime errors.
 - **SC-002**: A new user (zero saves) lands on a screen that communicates the product's value and first action within 1 second of page load.
-- **SC-003**: Save flow completes (sheet opens → saving state → snackbar visible) within 3 seconds of the user tapping "Save to Totoro" in fixture mode.
+- **SC-003**: Save flow completes (sheet opens → saving state → snackbar visible) within 3 seconds of the user tapping "Save to Kebi" in fixture mode.
 - **SC-004**: Recall results begin appearing within 600 ms of the server response; if the response is delayed beyond 600 ms, the breadcrumb appears within 50 ms of crossing that threshold.
 - **SC-005**: TypeScript compilation produces zero errors after all orphaned illustration exports are removed.
 - **SC-006**: Grepping the codebase for any of the deleted named illustration exports returns zero results outside the deleted/replaced files.
@@ -246,7 +246,7 @@ All home-page illustrations are accessed via a single `<Illustration id="…" />
 
 1. Sub-plans 1–2 have landed and the store skeleton, Flow Registry, `HomePhase` enum, `ConsultThinking`, `PrimaryResultCard`, `ConsultError`, `TasteProfileCelebration`, `HomeIdle`, and `HomeGreeting` components are already in place.
 2. The `chatClient` architecture (interface + HTTP transport + fixture toggle) was established in sub-plans 1–2 — this task extends the fixture files and typed response shapes, not the architecture itself.
-3. `localStorage.totoro.savedCount` (integer) is the primary saved-count signal. The `totoro.savedPlaces` array is written by Flow 4 in this task and consumed by `ColdStartOneToFour`.
+3. `localStorage.kebi-app.savedCount` (integer) is the primary saved-count signal. The `kebi-app.savedPlaces` array is written by Flow 4 in this task and consumed by `ColdStartOneToFour`.
 4. The six SVG files targeted for renaming have been visually confirmed to match their semantic labels during the spec's design phase. If any rename looks wrong during implementation, the escape hatch is extracting the authoritative pose from `v10.html`.
 5. The "Undo" save action is out of scope — only the UI affordance (gold text link) is delivered; the action is a no-op with a logged TODO.
 6. The `CityStarterPack` full browsing screen is out of scope — only the link affordance is delivered.

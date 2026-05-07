@@ -1,4 +1,4 @@
-import type { AiUserContext, AuthUser } from '@totoro/shared';
+import type { AiUserContext, AuthUser } from '@kebi-app/shared';
 import { IAiServiceClient } from '../ai-service/ai-service-client.interface';
 import { UserService } from './user.service';
 

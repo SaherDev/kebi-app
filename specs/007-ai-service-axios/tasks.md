@@ -19,7 +19,7 @@ This task list implements the migration of `AiServiceClient` from `node:http`/`n
 
 ### Phase 1: Setup & Infrastructure
 
-- [X] T001 Install `@nestjs/axios` and `axios` packages via `pnpm --filter @totoro/api add @nestjs/axios axios` in `services/api/package.json`
+- [X] T001 Install `@nestjs/axios` and `axios` packages via `pnpm --filter @kebi-app/api add @nestjs/axios axios` in `services/api/package.json`
 - [X] T002 Verify NestJS 11 and rxjs 7.8.0 are installed in `services/api/` — they are dependencies already
 
 **Completion**: Both packages confirmed installed.

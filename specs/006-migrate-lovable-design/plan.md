@@ -1,10 +1,10 @@
-# Implementation Plan: Migrate Lovable Design Output into Totoro Nx Monorepo
+# Implementation Plan: Migrate Lovable Design Output into Kebi Nx Monorepo
 
 **Branch**: `001-migrate-lovable-design` | **Date**: 2026-03-12 | **Spec**: [spec.md](./spec.md)
 
 ## Summary
 
-Migrate the Lovable-generated `totoro-guide-bot` Vite+React app design output into the Totoro Nx monorepo (`apps/web` + `libs/ui`). The migration establishes `libs/ui` as the self-contained design system (owning the Tailwind preset, CSS token stylesheet, and generic UI primitives), migrates 14 Totoro-specific components to `apps/web/src/components/`, converts 3 screens to Next.js App Router pages, moves i18n to `apps/web/messages/`, and copies 19 SVG illustrations to `apps/web/public/illustrations/`.
+Migrate the Lovable-generated `kebi-app-guide-bot` Vite+React app design output into the Kebi Nx monorepo (`apps/web` + `libs/ui`). The migration establishes `libs/ui` as the self-contained design system (owning the Tailwind preset, CSS token stylesheet, and generic UI primitives), migrates 14 Kebi-specific components to `apps/web/src/components/`, converts 3 screens to Next.js App Router pages, moves i18n to `apps/web/messages/`, and copies 19 SVG illustrations to `apps/web/public/illustrations/`.
 
 **⚠️ APPROVAL REQUIRED before Phase D**: `framer-motion` is used in all 3 screens. If not approved, screens use `tailwindcss-animate` CSS alternatives instead.
 
@@ -18,7 +18,7 @@ Migrate the Lovable-generated `totoro-guide-bot` Vite+React app design output in
 **Project Type**: Frontend migration
 **Performance Goals**: No layout shift from fonts; zero broken styles on first render
 **Constraints**: No new packages without approval; Nx boundary rules enforced; Tailwind v3 only (ADR-007)
-**Scale/Scope**: 3 screens, 12 shadcn primitives, 14 Totoro-specific components, 1 design token system, 19 SVG assets
+**Scale/Scope**: 3 screens, 12 shadcn primitives, 14 Kebi-specific components, 1 design token system, 19 SVG assets
 
 ## Constitution Check
 
@@ -79,9 +79,9 @@ apps/web/
 │   └── he.json                  ← UPDATED: Lovable Hebrew translations merged in
 ├── public/
 │   └── illustrations/           ← NEW directory
-│       ├── totoro-auth.svg
-│       ├── totoro-splash.svg
-│       ├── totoro-home-input.svg
+│       ├── kebi-app-auth.svg
+│       ├── kebi-app-splash.svg
+│       ├── kebi-app-home-input.svg
 │       └── ... (19 SVGs total)
 └── src/
     ├── app/
@@ -95,7 +95,7 @@ apps/web/
     ├── components/
     │   ├── splash-screen.tsx    ← NEW: SplashScreen with localStorage
     │   ├── illustrations/
-    │   │   └── totoro-illustrations.tsx  ← NEW: SVG wrapper components
+    │   │   └── kebi-app-illustrations.tsx  ← NEW: SVG wrapper components
     │   ├── agent-response-bubble.tsx
     │   ├── agent-step.tsx
     │   ├── chat-input.tsx
@@ -111,8 +111,8 @@ apps/web/
     │   ├── reasoning-block.tsx
     │   ├── tag.tsx
     │   ├── theme-toggle.tsx
-    │   ├── totoro-avatar.tsx
-    │   └── totoro-card.tsx
+    │   ├── kebi-app-avatar.tsx
+    │   └── kebi-app-card.tsx
     └── styles/
         └── tokens.ts            ← NEW: typed JS token exports
 ```
@@ -132,7 +132,7 @@ Move ALL CSS custom properties from Lovable's `index.css` into this file:
   - Shadows: `--shadow-sm`, `--shadow-md`, `--shadow-lg`, `--shadow-glow`
   - Typography: `--font-display`, `--font-body`
 - Dark theme: `.dark` and `[data-theme="dark"]` blocks (all same tokens, dark values)
-- `@layer utilities`: `.shadow-totoro-sm`, `.shadow-totoro-md`, `.shadow-totoro-lg`, `.shadow-totoro-glow`, `.font-display`, `.font-body`
+- `@layer utilities`: `.shadow-kebi-app-sm`, `.shadow-kebi-app-md`, `.shadow-kebi-app-lg`, `.shadow-kebi-app-glow`, `.font-display`, `.font-body`
 - `@layer base`: `html { font-family: var(--font-body) }`, `h1-h4 { font-family: var(--font-display) }`, `body { @apply bg-background text-foreground antialiased }`
 
 ### A2 — Create `libs/ui/tailwind.preset.ts`
@@ -159,10 +159,10 @@ export default {
         sm: "calc(var(--radius) - 4px)",
       },
       boxShadow: {
-        "totoro-sm": "var(--shadow-sm)",
-        "totoro-md": "var(--shadow-md)",
-        "totoro-lg": "var(--shadow-lg)",
-        "totoro-glow": "var(--shadow-glow)",
+        "kebi-app-sm": "var(--shadow-sm)",
+        "kebi-app-md": "var(--shadow-md)",
+        "kebi-app-lg": "var(--shadow-lg)",
+        "kebi-app-glow": "var(--shadow-glow)",
       },
       keyframes: {
         // accordion-down, accordion-up, fade-in, slide-up, breathe
@@ -207,17 +207,17 @@ export default {
 
 ### B1 — Copy SVG files
 
-Copy all 19 files from `~/dev/others-repos/totoro-guide-bot/src/assets/` to `apps/web/public/illustrations/`. File names unchanged (already kebab-case).
+Copy all 19 files from `~/dev/others-repos/kebi-app-guide-bot/src/assets/` to `apps/web/public/illustrations/`. File names unchanged (already kebab-case).
 
-### B2 — Migrate `TotoroIllustrations.tsx`
+### B2 — Migrate `KebiIllustrations.tsx`
 
-- Source: `src/components/illustrations/TotoroIllustrations.tsx`
-- Target: `apps/web/src/components/illustrations/totoro-illustrations.tsx`
-- Conversion: Replace `import` statements of local SVGs with `next/image` or `<img>` pointing to `/illustrations/totoro-*.svg`
+- Source: `src/components/illustrations/KebiIllustrations.tsx`
+- Target: `apps/web/src/components/illustrations/kebi-app-illustrations.tsx`
+- Conversion: Replace `import` statements of local SVGs with `next/image` or `<img>` pointing to `/illustrations/kebi-app-*.svg`
 - Add `'use client'` if any browser API is used
 - Export all illustration components
 
-**Verify B**: Start dev server, confirm `/illustrations/totoro-auth.svg` loads in browser.
+**Verify B**: Start dev server, confirm `/illustrations/kebi-app-auth.svg` loads in browser.
 
 ---
 
@@ -267,13 +267,13 @@ Replace current `libs/ui/src/lib/button.tsx` with Lovable's version. Lovable has
 
 Export all new components. Move existing `lib/button` export to `components/button`.
 
-**Verify C**: `pnpm nx build ui` must pass. Import `@totoro/ui` in a test file — all exports resolve.
+**Verify C**: `pnpm nx build ui` must pass. Import `@kebi-app/ui` in a test file — all exports resolve.
 
 ---
 
-## Phase D: `apps/web` Totoro-Specific Components
+## Phase D: `apps/web` Kebi-Specific Components
 
-**Goal**: All 14 Totoro-specific components + SplashScreen migrated to `apps/web/src/components/`.
+**Goal**: All 14 Kebi-specific components + SplashScreen migrated to `apps/web/src/components/`.
 
 **⚠️ APPROVAL GATE**: Before starting Phase D, confirm with developer whether `framer-motion` is approved. If yes, install and use. If no, replace all `motion.div` / `AnimatePresence` with Tailwind CSS animation classes using `tailwindcss-animate`.
 
@@ -285,8 +285,8 @@ For each component, migration steps are:
 4. Replace `react-router-dom` imports: `useNavigate` → `useRouter` from `next/navigation`; `<Link>` → `next/link`
 5. Replace i18n: `useTranslation()` from i18next → `useTranslations()` from next-intl
 6. Replace `import.meta.env.*` with `process.env.NEXT_PUBLIC_*`
-7. Replace `@/components/ui/*` imports → `@totoro/ui`
-8. Replace `@/lib/utils` → `@totoro/ui` (re-exports cn())
+7. Replace `@/components/ui/*` imports → `@kebi-app/ui`
+8. Replace `@/lib/utils` → `@kebi-app/ui` (re-exports cn())
 9. Audit for RTL violations (physical → logical Tailwind properties)
 10. Verify all TypeScript types explicit (no `any`)
 
@@ -304,7 +304,7 @@ For each component, migration steps are:
 
 ### D7 — `loading-state.tsx`
 
-### D8 — `modal.tsx` — wraps `dialog.tsx` from `@totoro/ui`
+### D8 — `modal.tsx` — wraps `dialog.tsx` from `@kebi-app/ui`
 
 ### D9 — `nav-bar.tsx`
 
@@ -320,15 +320,15 @@ For each component, migration steps are:
 
 ### D15 — `theme-toggle.tsx` — uses `next-themes` `useTheme()`
 
-### D16 — `totoro-avatar.tsx`
+### D16 — `kebi-app-avatar.tsx`
 
-### D17 — `totoro-card.tsx`
+### D17 — `kebi-app-card.tsx`
 
 ### D18 — `splash-screen.tsx` (NEW)
 
 ```tsx
 "use client";
-// Reads localStorage key 'totoro-splash-seen' on mount
+// Reads localStorage key 'kebi-app-splash-seen' on mount
 // If not set: renders splash animation, sets key on dismiss
 // If set: returns null (renders nothing)
 // Uses SplashScreen content from Lovable's SplashScreen.tsx
@@ -350,7 +350,7 @@ For each component, migration steps are:
 - Remove framer-motion OR replace with CSS alternatives
 - Replace i18next with `useTranslations('auth')`
 - Add `'use client'` (has state/click handlers)
-- Import TotoroAuth illustration from `apps/web/src/components/illustrations/totoro-illustrations`
+- Import KebiAuth illustration from `apps/web/src/components/illustrations/kebi-app-illustrations`
 - Auth buttons are UI-only (no real auth wiring in this migration — Clerk integration is separate)
 - Create `apps/web/src/app/(auth)/layout.tsx` if needed for layout isolation
 
@@ -361,7 +361,7 @@ For each component, migration steps are:
 - Replace `useNavigate` with `useRouter()`
 - Replace i18next with `useTranslations('home')`
 - Replace framer-motion with CSS alternatives OR keep if approved
-- Import all Totoro-specific components from `apps/web/src/components/`
+- Import all Kebi-specific components from `apps/web/src/components/`
 - Create `apps/web/src/app/(main)/layout.tsx` if needed
 
 ### E3 — SplashScreen integration in `apps/web/src/app/layout.tsx`

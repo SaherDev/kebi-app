@@ -3,13 +3,13 @@
 **Generated**: 2026-03-25
 **Branch**: `001-ai-service-axios`
 
-This feature adds no database tables or migrations. It only modifies the TypeScript interface and implementation of the AI service client. The data model here describes the TypeScript type contract between NestJS and totoro-ai.
+This feature adds no database tables or migrations. It only modifies the TypeScript interface and implementation of the AI service client. The data model here describes the TypeScript type contract between NestJS and kebi.
 
 ---
 
 ## AiExtractPlacePayload
 
-The request body sent from NestJS to totoro-ai's `POST /v1/extract-place` endpoint.
+The request body sent from NestJS to kebi's `POST /v1/extract-place` endpoint.
 
 | Field       | Type     | Nullable | Description                                      |
 |-------------|----------|----------|--------------------------------------------------|
@@ -22,7 +22,7 @@ Validation: `raw_input` must not be empty (AI service returns 400 if it is).
 
 ## AiExtractPlaceResponse
 
-The response body returned by totoro-ai's `POST /v1/extract-place` endpoint.
+The response body returned by kebi's `POST /v1/extract-place` endpoint.
 
 | Field                  | Type                          | Nullable | Description                                             |
 |------------------------|-------------------------------|----------|---------------------------------------------------------|
@@ -50,7 +50,7 @@ These types exist in `ai-service-client.interface.ts` and are not modified by th
 
 ### AiConsultPayload
 
-Extends `ConsultRequest` from `@totoro/shared`, adds `user_id: string`.
+Extends `ConsultRequest` from `@kebi-app/shared`, adds `user_id: string`.
 
 ### AiConsultResponse
 

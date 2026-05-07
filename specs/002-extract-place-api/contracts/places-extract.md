@@ -66,7 +66,7 @@ Response is the `AiExtractPlaceResponse` from the AI service, passed through wit
 
 A corresponding `.bru` request file must be created at:
 ```
-totoro-config/bruno/places/extract-place.bru
+kebi-config/bruno/places/extract-place.bru
 ```
 
 Per ADR-021 (Bruno for API testing, no Swagger).

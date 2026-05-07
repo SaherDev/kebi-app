@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import type { ExtractPlaceItem } from '@totoro/shared';
+import type { ExtractPlaceItem } from '@kebi-app/shared';
 import { PlaceCard } from '../../components/PlaceCard';
 
 // ── Badges ─────────────────────────────────────────────────────────────────────

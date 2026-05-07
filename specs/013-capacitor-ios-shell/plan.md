@@ -1,13 +1,13 @@
-# Implementation Plan: Capacitor iOS Shell for Totoro Web
+# Implementation Plan: Capacitor iOS Shell for Kebi Web
 
 **Branch**: `013-capacitor-ios-shell` | **Date**: 2026-04-13 | **Spec**: [spec.md](./spec.md)
 **Input**: Feature specification from `/specs/013-capacitor-ios-shell/spec.md`
 
 ## Summary
 
-Wrap the existing `apps/web` Next.js frontend in a Capacitor iOS shell that loads the **live Vercel deployment** (`https://totoro-ten-phi.vercel.app`) as its HTML/JS/CSS host via Capacitor's `server.url`, and routes API calls directly to the Railway-hosted NestJS backend via a runtime `Capacitor.isNativePlatform()` branch in the chat client. No static export, no middleware staging, no routing changes, no build-system changes. The web bundle shipping to Vercel stays byte-identical.
+Wrap the existing `apps/web` Next.js frontend in a Capacitor iOS shell that loads the **live Vercel deployment** (`https://kebi-app-ten-phi.vercel.app`) as its HTML/JS/CSS host via Capacitor's `server.url`, and routes API calls directly to the Railway-hosted NestJS backend via a runtime `Capacitor.isNativePlatform()` branch in the chat client. No static export, no middleware staging, no routing changes, no build-system changes. The web bundle shipping to Vercel stays byte-identical.
 
-The entire feature is **~32 lines of hand-written diff**: a new `capacitor.config.ts`, a three-line change to `FetchClient` instantiation in `chat-client.ts`, a one-line JSX wrap around the Apple sign-in button, four dependency additions to `package.json`, and three lines added to `.gitignore`. Plus one committed native `ios/` directory scaffolded by `npx cap add ios` (auto-generated, not hand-authored) and a one-line doc update in the sibling `totoro-config` repo.
+The entire feature is **~32 lines of hand-written diff**: a new `capacitor.config.ts`, a three-line change to `FetchClient` instantiation in `chat-client.ts`, a one-line JSX wrap around the Apple sign-in button, four dependency additions to `package.json`, and three lines added to `.gitignore`. Plus one committed native `ios/` directory scaffolded by `npx cap add ios` (auto-generated, not hand-authored) and a one-line doc update in the sibling `kebi-config` repo.
 
 This plan is the regenerated version after the C2 clarification. The previous plan (Option A — dual build with static export and middleware staging) is obsolete; its design assumed three hard static-export blockers that C2 sidesteps entirely by loading the live Vercel site into the iOS WebView instead of bundling a static export.
 
@@ -22,13 +22,13 @@ This plan is the regenerated version after the C2 clarification. The previous pl
 - `@capacitor/geolocation` — installed solely to auto-inject `NSLocationWhenInUseUsageDescription` into `Info.plist` during `cap sync`. No JS code change; the existing `navigator.geolocation` call continues to work.
 
 **Storage**: None added. The iOS app reuses the web app's existing in-memory and `localStorage` patterns (Zustand home store, Clerk session cookie in WKHTTPCookieStore).
-**Testing**: Existing Jest + RTL under `apps/web` continues to run unchanged (`pnpm nx test web`). No automated iOS simulator tests are added. The iOS build is smoke-verified manually: (a) `pnpm nx build web` succeeds on Vercel (unchanged), (b) `npx cap sync ios` copies web config into the native project, (c) `npx cap open ios` opens Xcode with a buildable project, (d) the owner's in-Xcode "Run" button launches the simulator and loads `https://totoro-ten-phi.vercel.app`.
+**Testing**: Existing Jest + RTL under `apps/web` continues to run unchanged (`pnpm nx test web`). No automated iOS simulator tests are added. The iOS build is smoke-verified manually: (a) `pnpm nx build web` succeeds on Vercel (unchanged), (b) `npx cap sync ios` copies web config into the native project, (c) `npx cap open ios` opens Xcode with a buildable project, (d) the owner's in-Xcode "Run" button launches the simulator and loads `https://kebi-app-ten-phi.vercel.app`.
 **Target Platform**: iOS 14+ (Capacitor 6 default minimum) on the owner's personal iPhone and the Xcode iOS Simulator.
 **Project Type**: Native iOS shell wrapping an existing web app via remote-URL loading.
-**Performance Goals**: Parity with mobile Safari loading `https://totoro-ten-phi.vercel.app`. No extra latency beyond the HTTPS round-trip the browser web app already pays. First API call after sign-in under 2s round-trip to Railway (matching current web behavior).
+**Performance Goals**: Parity with mobile Safari loading `https://kebi-app-ten-phi.vercel.app`. No extra latency beyond the HTTPS round-trip the browser web app already pays. First API call after sign-in under 2s round-trip to Railway (matching current web behavior).
 **Constraints**:
 
-- Zero diff to `services/api/` or `totoro-ai/` source.
+- Zero diff to `services/api/` or `kebi/` source.
 - Zero new Railway services.
 - Zero regressions to the existing browser web experience (no edits to `middleware.ts`, `next.config.js`, or any file under `apps/web/src/app/[locale]/` that alters web behavior).
 - Backend base URL for iOS mode comes from `process.env.NEXT_PUBLIC_API_URL`, read at build time by Next.js, baked into the client bundle that Vercel serves. No hardcoded literals.
@@ -44,11 +44,11 @@ This plan is the regenerated version after the C2 clarification. The previous pl
 | Principle | Impact under C2 | Verdict |
 | --- | --- | --- |
 | **I. Two-Repo Boundary** | Zero AI logic. Zero backend writes. Zero Redis. Zero LLM or embedding calls. The feature is a delivery wrapper for the existing frontend. | ✅ Pass |
-| **II. Nx Module Boundaries** | Everything lives under `apps/web/` (scope: `scope:web`). No new Nx project. No cross-boundary imports. `@capacitor/*` packages are dependencies of `@totoro/web` only; they do not appear in `libs/shared`, `libs/ui`, or `services/api`. | ✅ Pass |
+| **II. Nx Module Boundaries** | Everything lives under `apps/web/` (scope: `scope:web`). No new Nx project. No cross-boundary imports. `@capacitor/*` packages are dependencies of `@kebi-app/web` only; they do not appear in `libs/shared`, `libs/ui`, or `services/api`. | ✅ Pass |
 | **III. ADRs are constraints** | All binding ADRs respected. `ADR-001` (Nx), `ADR-020` (pnpm), `ADR-007` (Tailwind v3), `ADR-004` (Clerk) — none touched. `ADR-010` (`/api/v1/` prefix via shared constant) preserved: the iOS API client prepends an absolute base URL to the same `/api/v1/chat` path the web client uses. `ADR-013` (`ClerkAuthGuard`) is backend-only, untouched. `ADR-016` (`AiServiceClient`) is backend-only, untouched. | ✅ Pass |
-| **IV. Configuration Rules** | Reuses existing `NEXT_PUBLIC_API_URL` env var (already set on Vercel per `apps/web/src/api/client.ts:10`). `appId` and `appName` are non-secret constants committed in `apps/web/capacitor.config.ts`. The `server.url` value (`https://totoro-ten-phi.vercel.app`) is a non-secret production URL committed in the same config file. No new secrets introduced, no hardcoded backend URLs. | ✅ Pass |
+| **IV. Configuration Rules** | Reuses existing `NEXT_PUBLIC_API_URL` env var (already set on Vercel per `apps/web/src/api/client.ts:10`). `appId` and `appName` are non-secret constants committed in `apps/web/capacitor.config.ts`. The `server.url` value (`https://kebi-app-ten-phi.vercel.app`) is a non-secret production URL committed in the same config file. No new secrets introduced, no hardcoded backend URLs. | ✅ Pass |
 | **V. Database Write Ownership** | Feature touches no database, no schema, no migrations. | ✅ Pass (N/A) |
-| **VI. AI Service Contract** | Unchanged. iOS hits `POST /api/v1/chat` on the NestJS gateway, which forwards to `POST /v1/chat` on totoro-ai, identical to web. Same DTOs, same `AiServiceClient`, same timeouts. | ✅ Pass (N/A) |
+| **VI. AI Service Contract** | Unchanged. iOS hits `POST /api/v1/chat` on the NestJS gateway, which forwards to `POST /v1/chat` on kebi, identical to web. Same DTOs, same `AiServiceClient`, same timeouts. | ✅ Pass (N/A) |
 | **VII. Frontend Standards** | Tailwind v3, next-intl, next-themes, `libs/ui`, semantic tokens, logical properties — all untouched. The only UI diff is `{!isNativePlatform && (<AppleButton />)}` inside `login/page.tsx`. | ✅ Pass |
 | **VIII. Code Standards** | New file is `capacitor.config.ts` (kebab-case). No barrel exports. No inline lint disables planned. Shared types not touched. | ✅ Pass |
 | **IX. Git & Commits** | Feature branch `013-capacitor-ios-shell` from `dev`. Commits use `feat(web):` scope since every hand-edited file lives under `apps/web/`. No backend or shared scopes. Bruno collection untouched (no new backend endpoints). | ✅ Pass |
@@ -77,10 +77,10 @@ specs/013-capacitor-ios-shell/
 ```text
 apps/web/
 ├── capacitor.config.ts                                   # NEW — Capacitor config (~12 lines)
-│                                                         #   appId='com.totoro.app'
-│                                                         #   appName='Totoro'
+│                                                         #   appId='com.kebi-app.app'
+│                                                         #   appName='Kebi'
 │                                                         #   webDir='public'           (stub; not used because server.url wins)
-│                                                         #   server.url='https://totoro-ten-phi.vercel.app'
+│                                                         #   server.url='https://kebi-app-ten-phi.vercel.app'
 │                                                         #   server.cleartext=false
 │                                                         #   ios.contentInset='always'
 │                                                         #   plugins.Geolocation.permissions=[…]
@@ -114,13 +114,13 @@ apps/web/
 - `apps/web/src/app/[locale]/layout.tsx` — unchanged. No `generateStaticParams` needed; still SSR.
 - `apps/web/src/app/[locale]/page.tsx` — unchanged. Server `redirect()` still works under Vercel SSR.
 - `services/api/**` — unchanged (FR-005).
-- `totoro-ai/**` — unchanged (FR-005).
+- `kebi/**` — unchanged (FR-005).
 - `libs/shared/**` — unchanged (no new shared types or constants needed; the `/api/v1/chat` path is already a literal in `chat-client.ts`, and per ADR-010 that's acceptable since it's the documented public contract).
 - `libs/ui/**` — unchanged.
 
 **Out-of-repo file touched** (one line):
 
-- `totoro-config/deployment.md` — update `APP_CORS_ORIGINS` example from the placeholder `https://totoro.vercel.app` to the real `https://totoro-ten-phi.vercel.app` and add a note that the Vercel origin is required for the iOS shell's cross-origin Railway calls. Lives in a sibling git repo. Commit there is separate from the feature branch.
+- `kebi-config/deployment.md` — update `APP_CORS_ORIGINS` example from the placeholder `https://kebi-app.vercel.app` to the real `https://kebi-app-ten-phi.vercel.app` and add a note that the Vercel origin is required for the iOS shell's cross-origin Railway calls. Lives in a sibling git repo. Commit there is separate from the feature branch.
 
 **Structure Decision**: All iOS-related files live under `apps/web/`. No new Nx project, no new `libs/*`, nothing under `services/api/`. Capacitor treats `apps/web` as the project root for the native shell. The generated `ios/` directory is the only new committed folder outside TypeScript source, and it is intentionally committed so the owner can open the project directly with `npx cap open ios` after cloning without re-running `cap add ios`.
 
@@ -138,12 +138,12 @@ Headline findings:
 
 1. **Architecture**: C2 (remote URL shell + runtime native detection) chosen during `/speckit.clarify`. Alternatives C1 (pure remote URL, traffic via Vercel rewrite) and C3 (static export + dual build) were rejected — C1 violates FR-002 (Vercel becomes an API proxy), C3 requires ~10x the diff and touches middleware, `next.config.js`, and route files.
 2. **`NEXT_PUBLIC_API_URL` is already in the client bundle.** `apps/web/src/api/client.ts:10` dereferences `process.env.NEXT_PUBLIC_API_URL!` directly, which forces Next.js to statically replace it at build time. The value is baked into the Vercel-deployed bundle. No new env plumbing needed.
-3. **Base URL format quirk.** `NEXT_PUBLIC_API_URL` already includes the `/api/v1` suffix (per `totoro-config/deployment.md` line 86 example: `https://api-totoro.up.railway.app/api/v1`). `chat-client.ts` calls `http.post<ChatResponseDto>('/api/v1/chat', ...)` — which also starts with `/api/v1`. Naive prepending would produce `…/api/v1/api/v1/chat`. Mitigation: strip the trailing `/api/v1` from `NEXT_PUBLIC_API_URL` before handing it to `FetchClient` when in native mode, via a one-line regex: `.replace(/\/api\/v1\/?$/, '')`.
+3. **Base URL format quirk.** `NEXT_PUBLIC_API_URL` already includes the `/api/v1` suffix (per `kebi-config/deployment.md` line 86 example: `https://api-kebi-app.up.railway.app/api/v1`). `chat-client.ts` calls `http.post<ChatResponseDto>('/api/v1/chat', ...)` — which also starts with `/api/v1`. Naive prepending would produce `…/api/v1/api/v1/chat`. Mitigation: strip the trailing `/api/v1` from `NEXT_PUBLIC_API_URL` before handing it to `FetchClient` when in native mode, via a one-line regex: `.replace(/\/api\/v1\/?$/, '')`.
 4. **`allowNavigation` list.** The Capacitor WKWebView blocks navigation to any host not in `server.allowNavigation`. For Clerk's Google OAuth redirect chain, the list must include: the project's Clerk frontend API host (wildcard `*.clerk.accounts.dev` for dev instances, `clerk.<your-domain>` for prod instances), `accounts.google.com`, `oauth2.googleapis.com`, and anything Clerk bounces through. Because Clerk's exact frontend API host is derivable from the publishable key but we don't have it baked into the repo, the plan uses a safe wildcard set. Misses will be caught by the owner during first sign-in in Xcode Simulator and appended.
 5. **Apple sign-in.** Hidden on iOS per Q3 clarification. The existing web button is wrapped in `{!isNativePlatform && (…)}`. Native Sign in with Apple deferred.
 6. **Geolocation**: `@capacitor/geolocation` installed solely for `Info.plist` key injection. No JS migration required — existing `navigator.geolocation` call keeps working.
 7. **Committing `ios/`**: Yes, commit the whole `apps/web/ios/` directory minus `ios/App/Pods/`, `ios/DerivedData/`, and `ios/App/App/public/` (which `cap sync` rebuilds). Rationale: deterministic re-open via `npx cap open ios` without re-running `cap add ios` and picking up non-determinism.
-8. **CORS**: `APP_CORS_ORIGINS` on Railway must contain `https://totoro-ten-phi.vercel.app`. If already present (pre-C2 doc example implies it was intended), zero runtime change. If not, one Railway env-var edit. Not backend code, not blocked by FR-005.
+8. **CORS**: `APP_CORS_ORIGINS` on Railway must contain `https://kebi-app-ten-phi.vercel.app`. If already present (pre-C2 doc example implies it was intended), zero runtime change. If not, one Railway env-var edit. Not backend code, not blocked by FR-005.
 
 ## Phase 1 — Design & Contracts
 
@@ -184,16 +184,16 @@ Re-evaluated after writing the project structure and the Phase 0 decisions:
 
 `/speckit.tasks` will generate `tasks.md` from this plan. Expected shape (~8–10 tasks, heavily parallelizable):
 
-- T001: Install Capacitor dependencies in `apps/web` via `pnpm --filter @totoro/web add @capacitor/core @capacitor/ios @capacitor/geolocation` and `pnpm --filter @totoro/web add -D @capacitor/cli`.
-- T002: Create `apps/web/capacitor.config.ts` with appId `com.totoro.app`, appName `Totoro`, server.url `https://totoro-ten-phi.vercel.app`, `allowNavigation` list, and Geolocation plugin permissions block.
+- T001: Install Capacitor dependencies in `apps/web` via `pnpm --filter @kebi-app/web add @capacitor/core @capacitor/ios @capacitor/geolocation` and `pnpm --filter @kebi-app/web add -D @capacitor/cli`.
+- T002: Create `apps/web/capacitor.config.ts` with appId `com.kebi-app.app`, appName `Kebi`, server.url `https://kebi-app-ten-phi.vercel.app`, `allowNavigation` list, and Geolocation plugin permissions block.
 - T003: Edit `apps/web/src/lib/chat-client.ts` — import `Capacitor` from `@capacitor/core`, derive `iosApiBase` from `NEXT_PUBLIC_API_URL` with the `/api/v1` suffix stripped, pass to `FetchClient` when `isNativePlatform()` is true.
 - T004: Edit `apps/web/src/app/[locale]/(auth)/login/page.tsx` — hide the Apple button when `Capacitor.isNativePlatform()` is true. Web UX unchanged.
 - T005: Edit `apps/web/.gitignore` — add `ios/App/Pods/`, `ios/DerivedData/`, `ios/App/App/public/`.
 - T006: First iOS scaffold: run `npx cap add ios` inside `apps/web`. Commit the generated `ios/` directory minus the ignored sub-paths.
 - T007: Run `npx cap sync ios` to copy `capacitor.config.ts` and geolocation plugin permission strings into the native project's `Info.plist`.
-- T008: Verify Railway env: `APP_CORS_ORIGINS` on each target environment contains `https://totoro-ten-phi.vercel.app`. Owner action — zero code.
+- T008: Verify Railway env: `APP_CORS_ORIGINS` on each target environment contains `https://kebi-app-ten-phi.vercel.app`. Owner action — zero code.
 - T009: Verify Vercel env: `NEXT_PUBLIC_API_URL` is set on the production deployment. Owner action — zero code.
-- T010: Update `totoro-config/deployment.md` (sibling repo) to fix the `APP_CORS_ORIGINS` example and add a note about iOS-shell cross-origin requirements. Owner action or separate commit in `totoro-config`.
+- T010: Update `kebi-config/deployment.md` (sibling repo) to fix the `APP_CORS_ORIGINS` example and add a note about iOS-shell cross-origin requirements. Owner action or separate commit in `kebi-config`.
 - T011: Run `npx cap open ios`, hand off to the owner with `quickstart.md`'s Xcode instructions.
 - T012: (Post-hand-off verification — User Story 1 acceptance scenarios) Owner confirms: (a) sign-in with Google works from the iOS Simulator, (b) a chat message round-trips to Railway and returns a typed response, (c) killing and relaunching the app preserves the signed-in state.
 

@@ -5,7 +5,7 @@ import {
   DataScope,
   SignalRequestWithUser,
   SignalResponse,
-} from '@totoro/shared';
+} from '@kebi-app/shared';
 
 /**
  * Interface for the AI service client

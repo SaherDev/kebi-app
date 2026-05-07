@@ -21,7 +21,7 @@ import { SaveError } from '@/components/home/SaveError';
 import { ConsultResult } from '@/flows/consult/ConsultResult';
 import { TASTE_CHIP_BANK } from '@/constants/home-suggestions';
 import { Illustration } from '@/components/illustrations/Illustration';
-import { TotoroCard } from '@totoro/ui';
+import { KebiCard } from '@kebi-app/ui';
 import { useHomeStore, type ThreadEntry } from '@/store/home-store';
 import { ChatStream } from '@/components/chat/chat-stream';
 import { ReasoningCard } from '@/components/chat/renderers/reasoning-step-renderer';
@@ -32,10 +32,10 @@ const LOADING_LINES = [
   'Reading your food memories…',
   'Counting your saves…',
   'Building your taste map…',
-  'Almost there — Totoro is thinking…',
+  'Almost there — Kebi is thinking…',
 ];
 
-function TotoroLoadingScreen() {
+function KebiLoadingScreen() {
   const [lineIdx, setLineIdx] = useState(0);
 
   useEffect(() => {
@@ -71,7 +71,7 @@ function TotoroLoadingScreen() {
   );
 }
 
-function ReasoningThreadEntry({ steps }: { steps: import('@totoro/shared').SseReasoningStep[] }) {
+function ReasoningThreadEntry({ steps }: { steps: import('@kebi-app/shared').SseReasoningStep[] }) {
   return <ReasoningCard steps={steps} isStreaming={false} />;
 }
 
@@ -159,7 +159,7 @@ export default function HomePage() {
   if (!store.hydrated) return null;
 
   if (store.contextLoading) {
-    return <TotoroLoadingScreen />;
+    return <KebiLoadingScreen />;
   }
 
   return (
@@ -267,7 +267,7 @@ export default function HomePage() {
       {/* Input bar */}
       <div className="px-4 pb-4 md:pb-6">
         <div className="mx-auto w-full max-w-2xl">
-          <TotoroCard elevation="floating" className="overflow-hidden">
+          <KebiCard elevation="floating" className="overflow-hidden">
             <div className="p-2">
               <ChatInput
                 onSubmit={store.submit}
@@ -277,7 +277,7 @@ export default function HomePage() {
                 placeholder={t(placeholderKey as Parameters<typeof t>[0])}
               />
             </div>
-          </TotoroCard>
+          </KebiCard>
         </div>
       </div>
     </div>

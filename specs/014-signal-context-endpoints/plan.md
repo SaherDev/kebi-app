@@ -5,7 +5,7 @@
 
 ## Summary
 
-Three gateway-level additions to `services/api`, all pure pass-through to `totoro-ai` via the existing `AiServiceClient`:
+Three gateway-level additions to `services/api`, all pure pass-through to `kebi` via the existing `AiServiceClient`:
 
 1. **Consult response carries `recommendation_id`** — widen `ConsultResponseData` in `libs/shared` to include `recommendation_id: string | null`. No NestJS code change required beyond the type (the current chat pipeline is already shape-opaque over `data`).
 2. **`POST /api/v1/signal`** — new module (`SignalModule`) with facade controller, service, and discriminated-union DTO. Forwards `{ signal_type, user_id, recommendation_id, place_id }` to FastAPI's `POST /v1/signal` via a new `IAiServiceClient.postSignal()` method.
@@ -103,7 +103,7 @@ services/api/
 libs/shared/src/lib/
 └── types.ts                                 # EXTEND — widen ConsultResponseData, add UserContextResponse + SignalRequest + SignalResponse
 
-totoro-config/bruno/nestjs-api/              # NEW bruno files for both endpoints
+kebi-config/bruno/nestjs-api/              # NEW bruno files for both endpoints
 ├── signal.bru                               # NEW — two example requests (accepted + rejected)
 └── user-context.bru                         # NEW
 ```

@@ -1,5 +1,5 @@
 {
-  "name": "@totoro/web",
+  "name": "@kebi-app/web",
   "targets": {
     "dev": {
       "options": {

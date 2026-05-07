@@ -15,7 +15,7 @@ const dmSans = DM_Sans({
 });
 
 export const metadata = {
-  title: 'Totoro - AI Place Recommendations',
+  title: 'Kebi - AI Place Recommendations',
   description: 'An AI-native place decision engine',
   icons: {
     icon: '/favicon.svg',

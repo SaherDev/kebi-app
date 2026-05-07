@@ -1,11 +1,11 @@
 "use client";
 
 import { Camera, Paperclip, Plus, Send, Square } from "lucide-react";
-import { Popover, PopoverContent, PopoverTrigger } from "@totoro/ui";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@totoro/ui";
+import { Popover, PopoverContent, PopoverTrigger } from "@kebi-app/ui";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@kebi-app/ui";
 import { useRef, useState, useEffect } from "react";
 
-import { cn } from "@totoro/ui";
+import { cn } from "@kebi-app/ui";
 import { useTranslations } from "next-intl";
 
 interface ChatInputProps {
@@ -120,7 +120,7 @@ function ChatInput({ onSubmit, onStop, isStreaming, disabled, placeholder, class
           {isStreaming ? (
             <button
               onClick={onStop}
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-foreground text-background shadow-totoro-sm hover:bg-foreground/80 active:scale-95 transition-all duration-200"
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-foreground text-background shadow-kebi-app-sm hover:bg-foreground/80 active:scale-95 transition-all duration-200"
             >
               <Square className="h-4 w-4 fill-current" />
             </button>
@@ -133,7 +133,7 @@ function ChatInput({ onSubmit, onStop, isStreaming, disabled, placeholder, class
                   className={cn(
                     "flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl transition-all duration-200",
                     hasContent
-                      ? "bg-primary text-primary-foreground shadow-totoro-sm hover:shadow-totoro-md active:scale-95"
+                      ? "bg-primary text-primary-foreground shadow-kebi-app-sm hover:shadow-kebi-app-md active:scale-95"
                       : "bg-muted text-muted-foreground",
                   )}
                 >

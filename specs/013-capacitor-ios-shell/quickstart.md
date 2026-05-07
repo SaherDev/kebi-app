@@ -1,9 +1,9 @@
-# Quickstart — Capacitor iOS Shell for Totoro Web
+# Quickstart — Capacitor iOS Shell for Kebi Web
 
 **Feature**: 013-capacitor-ios-shell
 **Audience**: Repo owner (Saher), running this on a Mac with Xcode and a personal iPhone.
 
-This document is the end-to-end dev workflow, from "nothing exists yet" to "Totoro app icon on my iPhone home screen". It is written so it can be followed cold without re-reading the plan or spec.
+This document is the end-to-end dev workflow, from "nothing exists yet" to "Kebi app icon on my iPhone home screen". It is written so it can be followed cold without re-reading the plan or spec.
 
 ---
 
@@ -21,7 +21,7 @@ Before starting, confirm all five items. If any are missing, stop and fix them f
    ```
    Install via `sudo gem install cocoapods` if missing.
 3. **`NEXT_PUBLIC_API_URL` is set on the Vercel production deployment** of `apps/web`. Value format: `https://<railway-api-host>/api/v1` (trailing `/api/v1` included). Verify in the Vercel dashboard under Project → Settings → Environment Variables, or via the Vercel CLI if installed. If missing, add it and trigger a redeploy.
-4. **`APP_CORS_ORIGINS` on the Railway `api` service contains `https://totoro-ten-phi.vercel.app`**. Check in the Railway dashboard under the api service → Variables. Add it if missing (comma-separated alongside any existing values). This change takes effect on the next Railway deploy; existing instances pick it up on restart.
+4. **`APP_CORS_ORIGINS` on the Railway `api` service contains `https://kebi-app-ten-phi.vercel.app`**. Check in the Railway dashboard under the api service → Variables. Add it if missing (comma-separated alongside any existing values). This change takes effect on the next Railway deploy; existing instances pick it up on restart.
 5. **Apple ID signed into Xcode** under Xcode → Settings → Accounts. This is required to sign the app for your personal device. A free Apple ID works for local development; a paid Apple Developer account is only needed for TestFlight or App Store.
 
 ---
@@ -31,8 +31,8 @@ Before starting, confirm all five items. If any are missing, stop and fix them f
 From the repo root:
 
 ```bash
-pnpm --filter @totoro/web add @capacitor/core @capacitor/ios @capacitor/geolocation
-pnpm --filter @totoro/web add -D @capacitor/cli
+pnpm --filter @kebi-app/web add @capacitor/core @capacitor/ios @capacitor/geolocation
+pnpm --filter @kebi-app/web add -D @capacitor/cli
 ```
 
 This adds four packages to `apps/web/package.json`. Total diff: ~4 lines.
@@ -47,14 +47,14 @@ Create `apps/web/capacitor.config.ts` with the following content:
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'com.totoro.app',
-  appName: 'Totoro',
+  appId: 'com.kebi-app.app',
+  appName: 'Kebi',
   webDir: 'public',
   server: {
-    url: 'https://totoro-ten-phi.vercel.app',
+    url: 'https://kebi-app-ten-phi.vercel.app',
     cleartext: false,
     allowNavigation: [
-      'totoro-ten-phi.vercel.app',
+      'kebi-app-ten-phi.vercel.app',
       '*.clerk.accounts.dev',
       '*.clerk.com',
       'accounts.google.com',
@@ -193,12 +193,12 @@ These steps cannot be automated because they require your Apple ID and device. F
 2. **Go to the "Signing & Capabilities" tab**.
 3. **Check "Automatically manage signing"**.
 4. **Select your personal team** from the Team dropdown (it should show your Apple ID's name followed by "(Personal Team)" for a free account).
-5. **Xcode may complain that the bundle identifier `com.totoro.app` is already in use.** If it does, change it to something unique, e.g. `com.saher.totoro.app`. This only affects the Xcode project's local signing — the `appId` in `capacitor.config.ts` is independent.
+5. **Xcode may complain that the bundle identifier `com.kebi-app.app` is already in use.** If it does, change it to something unique, e.g. `com.saher.kebi-app.app`. This only affects the Xcode project's local signing — the `appId` in `capacitor.config.ts` is independent.
 6. **Plug in your iPhone via USB**. Unlock it and tap "Trust This Computer" when prompted.
 7. **Select your iPhone as the run destination** in the Xcode toolbar (the device dropdown, left of the Play button).
 8. **Press ⌘R (or the Play button)** to build and run.
 9. **First run on-device will fail** with "Could not launch — untrusted developer". On your iPhone, go to Settings → General → VPN & Device Management → Developer App → your Apple ID → "Trust". Then press Play again in Xcode.
-10. The Totoro app launches on your iPhone, loads `https://totoro-ten-phi.vercel.app` inside the WebView, and you should see the home screen. If you're not signed in, the Clerk middleware on Vercel redirects you to `/en/login`, where the Google button is visible and the Apple button is hidden.
+10. The Kebi app launches on your iPhone, loads `https://kebi-app-ten-phi.vercel.app` inside the WebView, and you should see the home screen. If you're not signed in, the Clerk middleware on Vercel redirects you to `/en/login`, where the Google button is visible and the Apple button is hidden.
 
 ---
 
@@ -206,12 +206,12 @@ These steps cannot be automated because they require your Apple ID and device. F
 
 For User Story 1:
 
-1. **Launch the app** on the iPhone or simulator. The Totoro home screen (or login page, if signed out) renders identically to mobile Safari on the same device.
+1. **Launch the app** on the iPhone or simulator. The Kebi home screen (or login page, if signed out) renders identically to mobile Safari on the same device.
 2. **Sign in with Google**. Tap "Continue with Google", complete the OAuth flow in the in-WebView Google consent page, land back in the app signed in.
 3. **Send a chat message**. Type a query, submit it. The request goes directly to `https://<railway-host>/api/v1/chat` (not through Vercel's rewrite). A response renders.
 4. **Kill the app** (swipe up from Home / double-press Home) and **relaunch**. You should still be signed in — Clerk's session cookie persists in WKHTTPCookieStore.
 
-If step 3 fails with a CORS error in the Xcode debug console, verify `APP_CORS_ORIGINS` on Railway contains `https://totoro-ten-phi.vercel.app` (Prerequisite #4).
+If step 3 fails with a CORS error in the Xcode debug console, verify `APP_CORS_ORIGINS` on Railway contains `https://kebi-app-ten-phi.vercel.app` (Prerequisite #4).
 
 If step 2 fails with "This browser or app may not be secure" on a Google page, it means your Clerk Frontend API host is not in `allowNavigation`. Check the Xcode console for the blocked URL, add its host (wildcarded) to `capacitor.config.ts`, and re-run `npx cap sync ios`.
 
@@ -219,9 +219,9 @@ If step 2 fails with "This browser or app may not be secure" on a Google page, i
 
 ## Operational checklist (after the Xcode hand-off)
 
-- [ ] `APP_CORS_ORIGINS` on Railway contains `https://totoro-ten-phi.vercel.app` in every environment (dev, staging, prod).
+- [ ] `APP_CORS_ORIGINS` on Railway contains `https://kebi-app-ten-phi.vercel.app` in every environment (dev, staging, prod).
 - [ ] `NEXT_PUBLIC_API_URL` on Vercel production contains the Railway API base URL with `/api/v1` suffix.
-- [ ] `totoro-config/deployment.md` updated: fix the `APP_CORS_ORIGINS` example to the real Vercel URL and add a one-line note that the Vercel origin is required for the iOS shell's cross-origin Railway calls.
+- [ ] `kebi-config/deployment.md` updated: fix the `APP_CORS_ORIGINS` example to the real Vercel URL and add a one-line note that the Vercel origin is required for the iOS shell's cross-origin Railway calls.
 - [ ] First Google sign-in confirmed working on the iPhone.
 - [ ] First chat round-trip confirmed hitting Railway directly (check Xcode console for `https://<railway>/api/v1/chat` network activity).
 - [ ] Relaunch preserves the signed-in state.
@@ -241,7 +241,7 @@ If step 2 fails with "This browser or app may not be secure" on a Google page, i
 
 **"This browser or app may not be secure" when using Apple sign-in**. Apple button should not be visible on iOS at all — if you see this, Step 4 was not applied correctly. Verify `login/page.tsx` wraps the Apple button in `{!isNativePlatform && (...)}`.
 
-**Chat returns a CORS error**. Railway `APP_CORS_ORIGINS` doesn't include `https://totoro-ten-phi.vercel.app`. Add it in the Railway dashboard and redeploy the `api` service.
+**Chat returns a CORS error**. Railway `APP_CORS_ORIGINS` doesn't include `https://kebi-app-ten-phi.vercel.app`. Add it in the Railway dashboard and redeploy the `api` service.
 
 **Geolocation prompt never appears**. Either `@capacitor/geolocation` is not installed, or `cap sync` was not run after installing it. Install and re-sync. Verify `apps/web/ios/App/App/Info.plist` contains the `NSLocationWhenInUseUsageDescription` key after sync.
 
@@ -257,7 +257,7 @@ Double-check after implementation that these files have zero diffs attributable 
 - `apps/web/src/app/[locale]/page.tsx`
 - `apps/web/src/app/[locale]/(main)/layout.tsx`
 - Anything under `services/api/`
-- Anything under `totoro-ai/` (separate repo, unreachable from here)
+- Anything under `kebi/` (separate repo, unreachable from here)
 - Anything under `libs/shared/` or `libs/ui/`
 
 If any of these have diffs, stop and review — it means the implementation drifted off the C2 path and is re-introducing static-export-shaped workarounds.

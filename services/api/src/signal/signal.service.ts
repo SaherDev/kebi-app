@@ -3,7 +3,7 @@ import type {
   ChipItem,
   SignalRequestWithUser,
   SignalResponse,
-} from '@totoro/shared';
+} from '@kebi-app/shared';
 import {
   AI_SERVICE_CLIENT,
   IAiServiceClient,

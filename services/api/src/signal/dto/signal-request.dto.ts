@@ -9,7 +9,7 @@ import {
   ValidateNested,
 } from 'class-validator';
 import { Type } from 'class-transformer';
-import type { ChipStatus, SignalType } from '@totoro/shared';
+import type { ChipStatus, SignalType } from '@kebi-app/shared';
 
 const ALLOWED_SIGNAL_TYPES: SignalType[] = [
   'recommendation_accepted',

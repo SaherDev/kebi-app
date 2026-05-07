@@ -10,7 +10,7 @@ import type {
   RecallResult,
   SavedPlaceStub,
   SignalTier,
-} from "@totoro/shared";
+} from "@kebi-app/shared";
 import type { FlowId, HomePhase } from "../flows/flow-definition";
 import {
   appendSavedPlace,
@@ -74,7 +74,7 @@ export type ThreadEntry =
       id: string;
       role: "assistant";
       type: "reasoning";
-      steps: import("@totoro/shared").SseReasoningStep[];
+      steps: import("@kebi-app/shared").SseReasoningStep[];
     }
   | {
       id: string;
@@ -205,7 +205,7 @@ function nextId() {
   return `e-${Date.now()}-${++entryCounter}`;
 }
 
-const THREAD_STORAGE_KEY = "totoro.thread";
+const THREAD_STORAGE_KEY = "kebi-app.thread";
 
 export function clearPersistedThread() {
   if (typeof window !== "undefined") {
@@ -383,7 +383,7 @@ export const useHomeStore = create<HomeState>()(
           .filter(s => s!.visibility !== "debug")
           .filter(
             s => s!.step !== "agent.tool_decision",
-          ) as import("@totoro/shared").SseReasoningStep[];
+          ) as import("@kebi-app/shared").SseReasoningStep[];
 
         if (reasoningSteps.length > 0) {
           newEntries.push({

@@ -1,4 +1,4 @@
-# Totoro Web App — Flow Reference
+# Kebi Web App — Flow Reference
 
 All implemented user flows as of branch `012-home-subplans-3-7`.
 
@@ -153,7 +153,7 @@ ThreadEntry =
 - Subtitle: "The easiest way to save is from TikTok or Instagram"
 - 3 instructional step cards with gold/amber numbered badges (`bg-card` white):
   1. "Find a place on TikTok or Instagram" / "Any post, reel, or video mentioning a place"
-  2. "Tap Share → Totoro" / "No need to open the app or copy any link"
+  2. "Tap Share → Kebi" / "No need to open the app or copy any link"
   3. "I extract and save it automatically" / "Place name, location, and context — done"
 - Paste hint: "or paste a link or type a name below"
 - 2 quoted suggestion buttons (`bg-card` white):
@@ -173,7 +173,7 @@ ThreadEntry =
 **Trigger:** `1 ≤ savedPlaceCount ≤ 4` on hydration.
 
 **What the user sees** (`ColdStartOneFour`):
-- **Totoro message bubble** — small encouraging illustration + chat bubble: "The more you save, the better I get." + subtitle
+- **Kebi message bubble** — small encouraging illustration + chat bubble: "The more you save, the better I get." + subtitle
 - **Saved places list** — up to 3 most recent saves from localStorage, each with `PlaceAvatar` + place name + source domain · city
 - **"What's good nearby"** section:
   - Dashed amber-border card (`border-dashed border-accent/60 bg-accent/5`)

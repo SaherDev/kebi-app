@@ -13,7 +13,7 @@
 
 ## Decision 2: AuthUser type placement
 
-**Decision**: Add `AuthUser` (with `plan?: PlanTier`) and `PlanTier` to `libs/shared/src/lib/types.ts`. Update `clerk.middleware.ts` to import `AuthUser` from `@totoro/shared` instead of using the local `ClerkUser` interface. The Express `Request.user` global augmentation stays in `clerk.middleware.ts` (services/api only).
+**Decision**: Add `AuthUser` (with `plan?: PlanTier`) and `PlanTier` to `libs/shared/src/lib/types.ts`. Update `clerk.middleware.ts` to import `AuthUser` from `@kebi-app/shared` instead of using the local `ClerkUser` interface. The Express `Request.user` global augmentation stays in `clerk.middleware.ts` (services/api only).
 
 **Rationale**: `libs/shared` is the canonical location for types consumed across multiple packages (CLAUDE.md standard). `AuthUser` will be read by `RateLimitGuard` (services/api) and will eventually be needed by any future frontend type-checking. The Express namespace augmentation is NestJS-specific and stays in services/api.
 

@@ -24,7 +24,7 @@
 
 ## Finding 2 — Error Mapping: 503 not 502
 
-**Decision**: The recall proxy returns HTTP 503 when totoro-ai is unreachable, not 502 as originally specified in spec.md.
+**Decision**: The recall proxy returns HTTP 503 when kebi is unreachable, not 502 as originally specified in spec.md.
 
 **Rationale**:
 - `AllExceptionsFilter` (ADR-018) already maps AxiosError without response → 503 `SERVICE_UNAVAILABLE`
@@ -86,7 +86,7 @@
 
 ## Finding 7 — Bruno Test File Location
 
-**Decision**: Add `recall.bru` to `totoro-config/bruno/nestjs-api/` (not a new folder).
+**Decision**: Add `recall.bru` to `kebi-config/bruno/nestjs-api/` (not a new folder).
 
 **Rationale**:
 - Existing pattern: `consult-stream.bru` lives in `nestjs-api/`

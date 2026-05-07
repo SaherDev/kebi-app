@@ -8,7 +8,7 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Request } from 'express';
-import { AuthUser } from '@totoro/shared';
+import { AuthUser } from '@kebi-app/shared';
 
 /**
  * @RequiresAi() guard validates that the user can access AI-powered endpoints.

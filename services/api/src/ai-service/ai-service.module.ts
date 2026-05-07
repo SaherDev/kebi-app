@@ -6,7 +6,7 @@ import { AI_SERVICE_CLIENT } from './ai-service-client.interface';
 
 /**
  * Module providing the AiServiceClient for all modules that need to communicate
- * with the totoro-ai service
+ * with the kebi service
  *
  * Usage in other modules:
  * 1. Import AiServiceModule

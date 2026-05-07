@@ -1,13 +1,13 @@
-# totoro
+# kebi-app
 
-Product repo for [Totoro](https://github.com/SaherDev/totoro) — an AI-native place decision engine. Next.js frontend, NestJS API gateway, and shared TypeScript libraries. The AI brain lives in [totoro-ai](https://github.com/SaherDev/totoro-ai).
+Product repo for [Kebi](https://github.com/SaherDev/kebi-app) — an AI-native place decision engine. Next.js frontend, NestJS API gateway, and shared TypeScript libraries. The AI brain lives in [kebi](https://github.com/SaherDev/kebi).
 
 ## Docs
 
 | Doc | What's in it |
 | --- | --- |
 | [docs/architecture.md](docs/architecture.md) | System overview, data flows, design patterns |
-| [docs/api-contract.md](docs/api-contract.md) | HTTP contract between NestJS and totoro-ai |
+| [docs/api-contract.md](docs/api-contract.md) | HTTP contract between NestJS and kebi |
 | [docs/decisions.md](docs/decisions.md) | Architecture decision records (ADRs) — read before implementing |
 
 ## Setup
@@ -32,7 +32,7 @@ Secrets go in `services/api/.env.local` (gitignored). Non-secret config is in `s
 | `CLERK_SECRET_KEY` | yes | Clerk backend secret key |
 | `CLERK_WEBHOOK_SECRET` | yes | Clerk webhook signing secret |
 | `APP_CORS_ORIGINS` | yes | Comma-separated allowed origins |
-| `AI_SERVICE_BASE_URL` | yes | URL of the totoro-ai service |
+| `AI_SERVICE_BASE_URL` | yes | URL of the kebi service |
 
 ### `apps/web` (Next.js)
 

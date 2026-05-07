@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
-import { LocationSchema, type Location } from '@totoro/shared';
+import { LocationSchema, type Location } from '@kebi-app/shared';
 import { useLocationStore } from '../store/locationStore';
 
 /**

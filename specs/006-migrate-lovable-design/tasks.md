@@ -1,6 +1,6 @@
-# Tasks: Migrate Lovable Design Output into Totoro Nx Monorepo
+# Tasks: Migrate Lovable Design Output into Kebi Nx Monorepo
 
-**Feature**: Migrate Lovable Design Output into Totoro Nx Monorepo
+**Feature**: Migrate Lovable Design Output into Kebi Nx Monorepo
 **Branch**: `001-migrate-lovable-design`
 **Created**: 2026-03-12
 **Spec**: [spec.md](./spec.md) | **Plan**: [plan.md](./plan.md)
@@ -22,7 +22,7 @@
 
 - [x] T001 Verify branch `001-migrate-lovable-design` is checked out and synced with `dev`
 - [x] T002 Run `pnpm nx affected:dep-graph` to confirm Nx workspace is healthy
-- [x] T003 Verify Lovable source repo accessible at `~/dev/others-repos/totoro-guide-bot/src/`
+- [x] T003 Verify Lovable source repo accessible at `~/dev/others-repos/kebi-app-guide-bot/src/`
 - [x] T004 Confirm `next/font/google` is available (already in Next.js 16)
 - [x] T005 Confirm `tailwindcss-animate` is installed in `apps/web` (research.md: already present)
 
@@ -35,7 +35,7 @@
 ### Design System Foundation (blocking all user stories)
 
 - [x] T006 Create `libs/ui/styles/tokens.css` with full CSS custom properties (light `:root` + dark `.dark` blocks) containing core semantic tokens (background, foreground, primary, secondary, muted, accent, destructive, border, input, ring, radius) and extended palette (forest, gold, cream, warm-white, surface, sidebar variants) from Lovable's `index.css`
-- [x] T007 [P] Create `libs/ui/tailwind.preset.ts` exporting theme.extend with fontFamily (display: DM Serif Display, body: DM Sans), colors referencing CSS variables, borderRadius scale (3xl, 2xl, xl, lg, md, sm), boxShadow (totoro-sm/md/lg/glow), keyframes (accordion-down/up, fade-in, slide-up, breathe), and animations
+- [x] T007 [P] Create `libs/ui/tailwind.preset.ts` exporting theme.extend with fontFamily (display: DM Serif Display, body: DM Sans), colors referencing CSS variables, borderRadius scale (3xl, 2xl, xl, lg, md, sm), boxShadow (kebi-app-sm/md/lg/glow), keyframes (accordion-down/up, fade-in, slide-up, breathe), and animations
 - [x] T008 [P] Update `apps/web/tailwind.config.js` to import `libs/ui/tailwind.preset.ts` via `presets: [preset]`, remove duplicated theme values, keep container config, keep `darkMode: 'class'`, keep `tailwindcss-animate` plugin, update content paths to `./src/**/*.{ts,tsx}` and `../../libs/ui/src/**/*.{ts,tsx}`
 - [x] T009 [P] Update `apps/web/src/app/globals.css` to add `@import '../../../libs/ui/styles/tokens.css'`, remove `:root` and `.dark` variable blocks, add Lovable's `src/styles/animations.css` content (organic keyframes: breathe, bob, float, sway, nod, peek, bounce, eye-blink, star-twinkle, etc.) as `@layer utilities` and `@layer base` with element defaults (html font-family, body antialiased, h1-h4 font-display)
 - [x] T010 [P] Update `apps/web/src/app/layout.tsx` to import `next/font/google` (DM_Serif_Display, DM_Sans), declare both font variables with CSS variable names, apply both `variable` CSS variables to `<body>` className, ensure `next-themes` ThemeProvider is wired (check existing layout.tsx)
@@ -43,9 +43,9 @@
 
 ### Assets Migration (blocking visual rendering)
 
-- [x] T012 [P] Copy all 19 SVG files from `~/dev/others-repos/totoro-guide-bot/src/assets/` to `apps/web/public/illustrations/` preserving original file names (totoro-auth.svg, totoro-splash.svg, totoro-home-input.svg, etc.)
-- [x] T013 Migrate `TotoroIllustrations.tsx` from Lovable `src/components/illustrations/TotoroIllustrations.tsx` to `apps/web/src/components/illustrations/totoro-illustrations.tsx`: replace local SVG imports with `next/image` or `<img src="/illustrations/totoro-*.svg">` pointing to public folder, add `'use client'` if uses hooks, export all illustration components
-- [x] T014 Verify assets: Start `pnpm nx dev web` and confirm `/illustrations/totoro-auth.svg` and `/illustrations/totoro-splash.svg` load in browser without 404s
+- [x] T012 [P] Copy all 19 SVG files from `~/dev/others-repos/kebi-app-guide-bot/src/assets/` to `apps/web/public/illustrations/` preserving original file names (kebi-app-auth.svg, kebi-app-splash.svg, kebi-app-home-input.svg, etc.)
+- [x] T013 Migrate `KebiIllustrations.tsx` from Lovable `src/components/illustrations/KebiIllustrations.tsx` to `apps/web/src/components/illustrations/kebi-app-illustrations.tsx`: replace local SVG imports with `next/image` or `<img src="/illustrations/kebi-app-*.svg">` pointing to public folder, add `'use client'` if uses hooks, export all illustration components
+- [x] T014 Verify assets: Start `pnpm nx dev web` and confirm `/illustrations/kebi-app-auth.svg` and `/illustrations/kebi-app-splash.svg` load in browser without 404s
 
 ---
 
@@ -79,43 +79,43 @@
 - [x] T026 [P] [US1] Migrate `dropdown-menu.tsx` to `libs/ui/src/components/dropdown-menu.tsx`: apply same audit pattern, replace physical directions with logical
 - [x] T027 [US1] Update `libs/ui/src/index.ts` to export all 12 new components; verify `pnpm nx build ui` passes with zero errors
 
-### 14 Totoro-Specific Components + SplashScreen to `apps/web` (parallel with C)
+### 14 Kebi-Specific Components + SplashScreen to `apps/web` (parallel with C)
 
 **⚠️ GATE**: Before starting these tasks, confirm with developer: **Is `framer-motion` approved?** If yes, install and use. If no, replace all `motion.div`/`AnimatePresence` with Tailwind CSS animation classes.
 
-- [x] T028 [P] [US1] Migrate `agent-response-bubble.tsx` to `apps/web/src/components/agent-response-bubble.tsx`: add `'use client'`, replace `react-router-dom` imports with `next/navigation`, replace `useTranslation()` with `useTranslations('agent')`, replace `@/components/ui/*` with `@totoro/ui`, replace `@/lib/utils` with `@totoro/ui`, audit for RTL violations (use logical properties), verify no `any` types
+- [x] T028 [P] [US1] Migrate `agent-response-bubble.tsx` to `apps/web/src/components/agent-response-bubble.tsx`: add `'use client'`, replace `react-router-dom` imports with `next/navigation`, replace `useTranslation()` with `useTranslations('agent')`, replace `@/components/ui/*` with `@kebi-app/ui`, replace `@/lib/utils` with `@kebi-app/ui`, audit for RTL violations (use logical properties), verify no `any` types
 - [x] T029 [P] [US1] Migrate `agent-step.tsx` to `apps/web/src/components/agent-step.tsx`: apply same pattern as T028
 - [x] T030 [P] [US1] Migrate `chat-input.tsx` to `apps/web/src/components/chat-input.tsx`: apply same pattern, verify input field styling uses semantic colors
 - [x] T031 [P] [US1] Migrate `chat-message.tsx` to `apps/web/src/components/chat-message.tsx`: apply same pattern
 - [x] T032 [P] [US1] Migrate `empty-state.tsx` to `apps/web/src/components/empty-state.tsx`: apply same pattern
 - [x] T033 [P] [US1] Migrate `language-switcher.tsx` to `apps/web/src/components/language-switcher.tsx`: add `'use client'`, use `useLocale()` and `useRouter()` from next-intl for locale switching, replace i18n as in other components
 - [x] T034 [P] [US1] Migrate `loading-state.tsx` to `apps/web/src/components/loading-state.tsx`: apply same pattern
-- [x] T035 [P] [US1] Migrate `modal.tsx` to `apps/web/src/components/modal.tsx`: apply same pattern, wrap `dialog.tsx` from `@totoro/ui`
+- [x] T035 [P] [US1] Migrate `modal.tsx` to `apps/web/src/components/modal.tsx`: apply same pattern, wrap `dialog.tsx` from `@kebi-app/ui`
 - [x] T036 [P] [US1] Migrate `nav-bar.tsx` to `apps/web/src/components/nav-bar.tsx`: apply same pattern, ensure navbar uses semantic spacing and colors
 - [x] T037 [P] [US1] Migrate `nav-link.tsx` to `apps/web/src/components/nav-link.tsx`: add `'use client'`, use `usePathname()` from `next/navigation` for active state detection, replace React Router `<Link>` with `next/link`
 - [x] T038 [P] [US1] Migrate `place-card.tsx` to `apps/web/src/components/place-card.tsx`: apply same pattern
-- [x] T039 [P] [US1] Migrate `profile-menu.tsx` to `apps/web/src/components/profile-menu.tsx`: apply same pattern, verify dropdown uses dropdown-menu from `@totoro/ui`
+- [x] T039 [P] [US1] Migrate `profile-menu.tsx` to `apps/web/src/components/profile-menu.tsx`: apply same pattern, verify dropdown uses dropdown-menu from `@kebi-app/ui`
 - [x] T040 [P] [US1] Migrate `reasoning-block.tsx` to `apps/web/src/components/reasoning-block.tsx`: apply same pattern
-- [x] T041 [P] [US1] Tag component already in design system at `libs/ui/src/components/tag.tsx` with CVA variants (saved, live, discovered) — no app-level duplication needed, import from @totoro/ui
+- [x] T041 [P] [US1] Tag component already in design system at `libs/ui/src/components/tag.tsx` with CVA variants (saved, live, discovered) — no app-level duplication needed, import from @kebi-app/ui
 - [x] T042 [P] [US1] Migrate `theme-toggle.tsx` to `apps/web/src/components/theme-toggle.tsx`: add `'use client'`, use `useTheme()` from `next-themes`, verify dark/light mode toggle works
-- [x] T043 [P] [US1] Migrate `totoro-avatar.tsx` to `apps/web/src/components/totoro-avatar.tsx`: apply same pattern, use avatar component from `@totoro/ui`
-- [x] T044 [P] [US1] Migrate `totoro-card.tsx` to `apps/web/src/components/totoro-card.tsx`: apply same pattern, use card component from `@totoro/ui`
-- [x] T045 [US1] Create `apps/web/src/components/splash-screen.tsx` (new SplashScreen component): add `'use client'`, read localStorage key `totoro-splash-seen` on mount via `useEffect`, conditionally render splash animation on first visit, set localStorage flag on dismiss, return null if flag exists; replace framer-motion with CSS animations (using `tailwindcss-animate`) if not approved; import TotoroSplash illustration from `apps/web/src/components/illustrations/totoro-illustrations`
+- [x] T043 [P] [US1] Migrate `kebi-app-avatar.tsx` to `apps/web/src/components/kebi-app-avatar.tsx`: apply same pattern, use avatar component from `@kebi-app/ui`
+- [x] T044 [P] [US1] Migrate `kebi-app-card.tsx` to `apps/web/src/components/kebi-app-card.tsx`: apply same pattern, use card component from `@kebi-app/ui`
+- [x] T045 [US1] Create `apps/web/src/components/splash-screen.tsx` (new SplashScreen component): add `'use client'`, read localStorage key `kebi-app-splash-seen` on mount via `useEffect`, conditionally render splash animation on first visit, set localStorage flag on dismiss, return null if flag exists; replace framer-motion with CSS animations (using `tailwindcss-animate`) if not approved; import KebiSplash illustration from `apps/web/src/components/illustrations/kebi-app-illustrations`
 
 ### Convert Screens to Next.js App Router Pages
 
 - [x] T046 [US1] Create `apps/web/src/app/(auth)/` route group directory if not exists; create `apps/web/src/app/(auth)/login/` directory structure
-- [x] T047 [US1] Convert AuthScreen to `apps/web/src/app/(auth)/login/page.tsx`: add `'use client'`, replace Lovable `useNavigate` with `useRouter()` from `next/navigation`, replace `useTranslation('auth')` with `useTranslations('auth')`, remove framer-motion OR use CSS alternatives, import TotoroAuth illustration from totoro-illustrations, verify form layout and button styling
+- [x] T047 [US1] Convert AuthScreen to `apps/web/src/app/(auth)/login/page.tsx`: add `'use client'`, replace Lovable `useNavigate` with `useRouter()` from `next/navigation`, replace `useTranslation('auth')` with `useTranslations('auth')`, remove framer-motion OR use CSS alternatives, import KebiAuth illustration from kebi-app-illustrations, verify form layout and button styling
 - [x] T048 [P] [US1] Create `apps/web/src/app/(main)/` route group directory if not exists
-- [x] T049 [US1] Convert HomeScreen to `apps/web/src/app/(main)/page.tsx`: add `'use client'`, apply same conversion pattern as T047, import all Totoro-specific components from `apps/web/src/components/`, verify full page layout renders with NavBar, chat input, and recommendations display
+- [x] T049 [US1] Convert HomeScreen to `apps/web/src/app/(main)/page.tsx`: add `'use client'`, apply same conversion pattern as T047, import all Kebi-specific components from `apps/web/src/components/`, verify full page layout renders with NavBar, chat input, and recommendations display
 - [x] T050 [US1] Update `apps/web/src/app/layout.tsx` root layout to render `<SplashScreen />` component (imported from `apps/web/src/components/splash-screen`), ensure it renders before main content on first load
 
 ### i18n Wiring for Screens
 
 - [x] T051 [P] [US1] Move `messages/` directory from repo root to `apps/web/messages/`
 - [x] T052 [P] [US1] Verify next-intl configuration points to `./messages` relative to `apps/web/` (check `next.config.js` or i18n config file)
-- [x] T053 [US1] Merge Lovable translations from `~/dev/others-repos/totoro-guide-bot/src/i18n/en.json` (101 lines, 10 namespaces) into `apps/web/messages/en.json`; on key conflicts, Lovable value wins
-- [x] T054 [P] [US1] Merge Lovable translations from `~/dev/others-repos/totoro-guide-bot/src/i18n/he.json` into `apps/web/messages/he.json`; on key conflicts, Lovable value wins
+- [x] T053 [US1] Merge Lovable translations from `~/dev/others-repos/kebi-app-guide-bot/src/i18n/en.json` (101 lines, 10 namespaces) into `apps/web/messages/en.json`; on key conflicts, Lovable value wins
+- [x] T054 [P] [US1] Merge Lovable translations from `~/dev/others-repos/kebi-app-guide-bot/src/i18n/he.json` into `apps/web/messages/he.json`; on key conflicts, Lovable value wins
 - [x] T055 [US1] Verify all migrated components use `useTranslations('namespace')` with correct namespace names matching merged key structure (splash, auth, home, chat, agent, addPlace, result, place, profile, loading, notFound)
 - [x] T056 [US1] Test: Start dev server, visit `/en/` and `/he/` routes, confirm both locales load translations and RTL layout mirrors for Hebrew
 
@@ -132,7 +132,7 @@
 
 **Goal**: All 12 generic primitives in `libs/ui` render with correct variants, sizes, and states matching DesignSystemScreen reference.
 
-**Acceptance**: Each component is importable from `@totoro/ui`, renders all documented variants, and visual output matches DesignSystemScreen.
+**Acceptance**: Each component is importable from `@kebi-app/ui`, renders all documented variants, and visual output matches DesignSystemScreen.
 
 **Independent Test Criteria**:
 - Create a test page in `apps/web` that renders each of the 12 components with all variants
@@ -142,7 +142,7 @@
 
 ### Component Variant Verification (parallel)
 
-- [x] T061 [P] [US2] Create `apps/web/src/components/component-showcase.tsx` (temporary test page) with sections for each of 12 components from `@totoro/ui`, rendering all variants and sizes side-by-side with labels — CREATED: at `/[locale]/showcase` route, displays Button, Badge, Avatar, Card, Input, Dialog, ScrollArea, Separator, Skeleton, Tabs, Tooltip, DropdownMenu
+- [x] T061 [P] [US2] Create `apps/web/src/components/component-showcase.tsx` (temporary test page) with sections for each of 12 components from `@kebi-app/ui`, rendering all variants and sizes side-by-side with labels — CREATED: at `/[locale]/showcase` route, displays Button, Badge, Avatar, Card, Input, Dialog, ScrollArea, Separator, Skeleton, Tabs, Tooltip, DropdownMenu
 - [x] T062 [P] [US2] Verify Button variants match Lovable (default, secondary, destructive, muted, outline, ghost, link, hero) with all sizes (xs, sm, md, lg, xl) — compare rendered page against DesignSystemScreen.tsx Button section — VERIFIED: Button component rendered with default, secondary, destructive, outline, ghost, link variants plus sizes sm/default/lg
 - [x] T063 [P] [US2] Verify Badge variants (default, secondary, destructive, outline) — compare against DesignSystemScreen — VERIFIED: Badge rendered with default, primary, accent, muted, outline variants in showcase
 - [x] T064 [P] [US2] Verify Avatar sizes and states (with image, initials, fallback) — compare against DesignSystemScreen — VERIFIED: Avatar component displayed with image, initials (AB), and fallback (?) states in showcase
@@ -225,7 +225,7 @@
 - [x] T091 Complete end-to-end flow:
   1. Start `pnpm nx dev web` ✓
   2. Visit `/login` → AuthScreen renders correctly ✓
-  3. Visit `/` → HomeScreen renders correctly with all Totoro components ✓
+  3. Visit `/` → HomeScreen renders correctly with all Kebi components ✓
   4. First visit: SplashScreen appears → dismiss → localStorage flag set ✓
   5. Refresh page: SplashScreen does NOT appear ✓
   6. Toggle dark mode: all colors update, no flash ✓
@@ -251,7 +251,7 @@ T006-T011 (Design System Foundation)
     ├─ T012-T014 (Assets) [parallel with Phase 3 foundation]
     ↓
 T015-T027 (12 Primitives to libs/ui) [parallel with D]
-T028-T045 (14 Totoro components + SplashScreen to apps/web) [parallel with C]
+T028-T045 (14 Kebi components + SplashScreen to apps/web) [parallel with C]
     ├─ GATE: Approve framer-motion before T028-T045
     ├─ T046-T060 (Screens + i18n) [depends on C+D complete]
     ↓
@@ -272,7 +272,7 @@ T081-T093 (Polish & Verification)
 - T015-T026 (12 component migrations) are all independent and can run in parallel
 - T027 must wait for all 12 components
 
-**Phase 3b (Totoro components to apps/web)**:
+**Phase 3b (Kebi components to apps/web)**:
 - T028-T044 (14 components) are all independent and can run in parallel
 - T045 (SplashScreen) can run in parallel with others
 - T046-T060 (screens and i18n) depend on components being done
@@ -308,7 +308,7 @@ T081-T093 (Polish & Verification)
 4. First visit: SplashScreen appears
    - Animations play smoothly
    - Dismiss button functional
-   - After dismiss: localStorage `totoro-splash-seen` is set
+   - After dismiss: localStorage `kebi-app-splash-seen` is set
 5. Refresh page: SplashScreen does NOT appear (localStorage prevents re-show)
 6. Toggle dark mode (via theme-toggle component):
    - All colors update correctly
@@ -370,9 +370,9 @@ T081-T093 (Polish & Verification)
 - **Framer Motion Status**: Research flagged as pending approval. Task gate at T028 ensures no work is done until decision is made.
 - **Route Groups**: Assuming `(auth)` and `(main)` route groups do not yet exist in `apps/web/src/app/`. Tasks T046-T048 create them.
 - **next-intl Config**: Assuming configuration file exists and is accessible. Task T052 verifies and updates if needed.
-- **Lovable Source**: All Lovable source files remain in `~/dev/others-repos/totoro-guide-bot/src/` and are never modified. Only copied/adapted.
+- **Lovable Source**: All Lovable source files remain in `~/dev/others-repos/kebi-app-guide-bot/src/` and are never modified. Only copied/adapted.
 - **No New Packages**: All dependencies (tailwindcss-animate, next-themes, next-intl) are already installed except framer-motion (pending approval).
-- **Component Co-location**: Totoro-specific components stay in `apps/web/src/components/`; generic primitives go to `libs/ui/src/components/`. Nx boundaries enforced.
+- **Component Co-location**: Kebi-specific components stay in `apps/web/src/components/`; generic primitives go to `libs/ui/src/components/`. Nx boundaries enforced.
 - **CSS Variables Location**: All CSS variables live in `libs/ui/styles/tokens.css`. `apps/web/globals.css` imports this file and adds only app-specific CSS on top.
 - **i18n Namespace Mapping**: Lovable's 10 namespaces (splash, auth, home, chat, agent, addPlace, result, place, profile, loading) are merged directly into corresponding keys in next-intl structure.
 

@@ -11,7 +11,7 @@
 ### Session 2026-04-17
 
 - Q: Should the `GET /api/v1/user/context` response use snake_case, camelCase, or the mixed casing in the original task description? → A: All snake_case on the wire (`user_id`, `saved_places_count`, `chips[].label`, `source_field`, `source_value`, `signal_count`), matching every other AI-boundary contract in this repo.
-- Q: Apply `@RequiresAi()` (ADR-022 kill switch + per-user flag guard) to the new `/signal` and `/user/context` endpoints? → A: Yes, apply to both — uniform guard policy across every endpoint that forwards to totoro-ai.
+- Q: Apply `@RequiresAi()` (ADR-022 kill switch + per-user flag guard) to the new `/signal` and `/user/context` endpoints? → A: Yes, apply to both — uniform guard policy across every endpoint that forwards to kebi.
 - Q: Where should the AI-service 404 (unknown `recommendation_id`) be translated to a caller-facing 404? → A: Extend `AllExceptionsFilter` globally to map upstream 404 → 404; no route-local exception handling in the signal controller or service.
 - Q: Should `user_id` appear in the `GET /v1/user/context` response body? → A: No — it was a mistake in the earlier task description. The response is `{ saved_places_count, chips }`; the caller already knows its own Clerk ID. FastAPI will drop the field on its side; the gateway forwards whatever FastAPI returns without transformation.
 - Q: `savedPlacesCount` (camelCase) in the FastAPI contract vs. `saved_places_count` (snake_case) agreed in Q1 — how to resolve? → A: Treat it as a second upstream typo in the same draft contract. FastAPI renames its field to `saved_places_count`; the gateway remains a pure pass-through with no per-field transformation.
@@ -119,7 +119,7 @@ When the frontend wants to display a "what the AI has learned about you" surface
 
 - **FR-019**: The gateway MUST NOT write any recommendation, signal, or context data to its own database. The recommendations table is owned by the AI service (per the architecture doc and ADR-036). Any existing NestJS code that writes recommendation rows MUST be flagged and removed; no Prisma/TypeORM migration changes for the recommendations table happen in this feature.
 - **FR-020**: All AI service calls MUST go through the existing `AiServiceClient` abstraction. No new `fetch`/`axios` imports appear in controllers or services; the HTTP library stays encapsulated in the AI service module.
-- **FR-021**: Every new endpoint MUST have a corresponding Bruno request file in `totoro-config/bruno/nestjs-api/`. For signal, the Bruno collection MUST include both `recommendation_accepted` and `recommendation_rejected` example requests.
+- **FR-021**: Every new endpoint MUST have a corresponding Bruno request file in `kebi-config/bruno/nestjs-api/`. For signal, the Bruno collection MUST include both `recommendation_accepted` and `recommendation_rejected` example requests.
 - **FR-022**: The `AiServiceClient` contract (`IAiServiceClient`) MUST be extended with two new methods — one for user context, one for signal — so the concrete implementation is swappable and the interface-first rule (ADR-033) is honored.
 
 ### Key Entities *(include if feature involves data)*
@@ -152,9 +152,9 @@ When the frontend wants to display a "what the AI has learned about you" surface
 
 ## Dependencies
 
-- The AI service (`totoro-ai`) must implement the matching endpoints (`POST /v1/signal`, `GET /v1/user/context`) and must start including `recommendation_id` in its `POST /v1/chat` consult responses. Without this, the gateway endpoints return pass-through payloads that are incomplete or produce 5xx on forwarding. The AI-repo change set is out of scope for this spec but is a hard prerequisite for end-to-end testing.
+- The AI service (`kebi`) must implement the matching endpoints (`POST /v1/signal`, `GET /v1/user/context`) and must start including `recommendation_id` in its `POST /v1/chat` consult responses. Without this, the gateway endpoints return pass-through payloads that are incomplete or produce 5xx on forwarding. The AI-repo change set is out of scope for this spec but is a hard prerequisite for end-to-end testing.
 - The existing NestJS gateway infrastructure — `AiServiceClient`, `ClerkMiddleware`, `AiEnabledGuard`, `AllExceptionsFilter`, global `ValidationPipe` — is assumed to be in place and working per ADRs 013, 017, 018, 022, 032, 033, 036.
-- Bruno collection directory `totoro-config/bruno/nestjs-api/` already exists and uses the established `.bru` file format.
+- Bruno collection directory `kebi-config/bruno/nestjs-api/` already exists and uses the established `.bru` file format.
 
 ## Out of Scope
 

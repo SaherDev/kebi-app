@@ -7,7 +7,7 @@ End-to-end manual verification path. Run after implementation is complete and be
 - NestJS dev server: `pnpm nx serve api` (port 3333, base `http://localhost:3333/api/v1`)
 - FastAPI dev server running at `AI_SERVICE_BASE_URL` (default `http://localhost:8000`) with the matching `022-recommendations-context-signals` contract implemented
 - Valid Clerk session token available as `CLERK_TOKEN` in Bruno's environment
-- Bruno desktop or CLI; collection at `totoro-config/bruno/nestjs-api/`
+- Bruno desktop or CLI; collection at `kebi-config/bruno/nestjs-api/`
 
 ## Step 1 — Verify consult returns `recommendation_id`
 

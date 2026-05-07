@@ -1,11 +1,11 @@
 'use client';
 
-import type { ConsultResponseData } from '@totoro/shared';
+import type { ConsultResponseData } from '@kebi-app/shared';
 import { useTranslations } from 'next-intl';
 import { ThumbsUp, ThumbsDown } from 'lucide-react';
 import { PlaceCard } from '../../components/PlaceCard';
 import { useHomeStore } from '../../store/home-store';
-import { cn } from '@totoro/ui';
+import { cn } from '@kebi-app/ui';
 
 const SOURCE_BADGE_STYLES: Record<string, { bg: string; dot: string }> = {
   saved:      { bg: 'bg-green-50 text-green-700 dark:bg-green-950 dark:text-green-300',   dot: 'bg-green-500' },

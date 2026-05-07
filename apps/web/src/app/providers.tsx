@@ -2,7 +2,7 @@
 
 import { ThemeProvider } from 'next-themes';
 import { ClerkProvider, useAuth } from '@clerk/nextjs';
-import { TooltipProvider } from '@totoro/ui';
+import { TooltipProvider } from '@kebi-app/ui';
 import { useGeolocation } from '@/hooks/useGeolocation';
 
 /**

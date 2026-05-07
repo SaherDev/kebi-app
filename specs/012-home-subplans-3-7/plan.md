@@ -10,7 +10,7 @@ Implement the remaining home-page flows (Recall/Flow 3, Save/Flow 4, Assistant R
 
 **Language/Version**: TypeScript 5.x / Node 20 LTS  
 **Primary Dependencies**: Next.js 16 (App Router), React 19, Zustand, Zod, Tailwind v3, shadcn/ui, next-intl, next-themes, Clerk v5  
-**Storage**: localStorage only (`totoro.savedCount`, `totoro.savedPlaces`, `totoro.tasteProfile`, `totoro.location`) — no DB changes  
+**Storage**: localStorage only (`kebi-app.savedCount`, `kebi-app.savedPlaces`, `kebi-app.tasteProfile`, `kebi-app.location`) — no DB changes  
 **Testing**: Jest + React Testing Library (`pnpm nx test web`)  
 **Target Platform**: Web — Next.js App Router, mobile-first  
 **Performance Goals**: Save flow visible within 3s; recall results within 600ms; cold-start render within 1s of page load  
@@ -66,7 +66,7 @@ apps/web/src/
   components/illustrations/
     registry.ts                      NEW — IllustrationId union + ILLUSTRATION_REGISTRY
     Illustration.tsx                 NEW — single generic component
-    totoro-illustrations.tsx         DELETE — replaced by above
+    kebi-app-illustrations.tsx         DELETE — replaced by above
 
   flows/
     recall/
@@ -113,12 +113,12 @@ apps/web/src/
     he.json                          UPDATE — same keys in Hebrew
 
 public/illustrations/
-  totoro-idle-welcoming.svg          RENAME (was totoro-home-input.svg)
-  totoro-raining.svg                 RENAME (was totoro-splash.svg)
-  totoro-excited.svg                 RENAME (was totoro-success.svg)
-  totoro-encouraging.svg             RENAME (was totoro-place-detail.svg)
-  totoro-knowing.svg                 RENAME (was totoro-hover-peek.svg)
-  totoro-welcome-back.svg            RENAME (was totoro-step-complete.svg)
+  kebi-app-idle-welcoming.svg          RENAME (was kebi-app-home-input.svg)
+  kebi-app-raining.svg                 RENAME (was kebi-app-splash.svg)
+  kebi-app-excited.svg                 RENAME (was kebi-app-success.svg)
+  kebi-app-encouraging.svg             RENAME (was kebi-app-place-detail.svg)
+  kebi-app-knowing.svg                 RENAME (was kebi-app-hover-peek.svg)
+  kebi-app-welcome-back.svg            RENAME (was kebi-app-step-complete.svg)
   [8 orphaned SVGs]                  DELETE (after grep verification)
 ```
 
@@ -143,7 +143,7 @@ public/illustrations/
 
 4. Rename 6 SVGs via `git mv`
 
-5. Grep verify no consumers of old named exports, then delete `totoro-illustrations.tsx`
+5. Grep verify no consumers of old named exports, then delete `kebi-app-illustrations.tsx`
 
 6. Delete 8 orphaned SVG files (after grep confirms no consumers)
 

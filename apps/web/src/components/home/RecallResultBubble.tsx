@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import type { RecallResponseData } from '@totoro/shared';
+import type { RecallResponseData } from '@kebi-app/shared';
 import { PlaceCard } from '@/components/PlaceCard';
 
 interface RecallResultBubbleProps {

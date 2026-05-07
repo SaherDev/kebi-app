@@ -1,6 +1,6 @@
 # Contract: POST /api/v1/recall
 
-**Direction**: Frontend → NestJS → totoro-ai
+**Direction**: Frontend → NestJS → kebi
 **Branch**: `009-recall-proxy`
 **Source of truth**: `docs/api-contract.md`
 
@@ -47,12 +47,12 @@
 | Status | Trigger | Body |
 |--------|---------|------|
 | 400 | Missing/invalid `query` or `user_id` | `{ "statusCode": 400, "message": [...validation errors...] }` |
-| 503 | totoro-ai unreachable or 5xx | `{ "statusCode": 503, "message": "service temporarily unavailable, please retry" }` |
-| 422 | totoro-ai returns 422 | `{ "statusCode": 422, "message": "couldn't understand your request" }` |
+| 503 | kebi unreachable or 5xx | `{ "statusCode": 503, "message": "service temporarily unavailable, please retry" }` |
+| 422 | kebi returns 422 | `{ "statusCode": 422, "message": "couldn't understand your request" }` |
 
 ---
 
-## NestJS → totoro-ai (forwarded as-is)
+## NestJS → kebi (forwarded as-is)
 
 **Endpoint**: `POST /v1/recall` (at `ai_service.base_url`)
 

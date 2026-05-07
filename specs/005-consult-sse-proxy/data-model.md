@@ -7,13 +7,13 @@
 
 ## No New Database Tables
 
-This feature introduces no schema changes. The consult endpoint forwards to totoro-ai and returns the response. SSE proxying is stateless pass-through.
+This feature introduces no schema changes. The consult endpoint forwards to kebi and returns the response. SSE proxying is stateless pass-through.
 
 ---
 
 ## Shared Types (Source of Truth)
 
-**File**: `libs/shared/src/lib/types.ts` — imported by both `apps/web` (`@totoro/shared`) and `services/api` DTOs
+**File**: `libs/shared/src/lib/types.ts` — imported by both `apps/web` (`@kebi-app/shared`) and `services/api` DTOs
 
 | Type | Fields | Consumed by |
 |------|--------|-------------|

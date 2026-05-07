@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MapPin, Star, Phone, Clock, ChevronDown, ChevronUp } from 'lucide-react';
 import { PlaceAvatar } from '@/components/PlaceAvatar';
-import { cn } from '@totoro/ui';
+import { cn } from '@kebi-app/ui';
 
 // ── Fake data ────────────────────────────────────────────────────────────────
 

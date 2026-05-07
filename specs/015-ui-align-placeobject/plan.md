@@ -12,7 +12,7 @@ Align `apps/web` with the updated `libs/shared` type contract. `libs/shared/src/
 
 **Language/Version**: TypeScript 5.x / Node 20 LTS  
 **Primary Dependencies**: Next.js 16, React 19, Zustand, Zod, Tailwind v3, shadcn/ui, framer-motion v11 (installed), next-intl, Clerk v5  
-**Storage**: localStorage only (`totoro.savedCount`, `totoro.savedPlaces`)  
+**Storage**: localStorage only (`kebi-app.savedCount`, `kebi-app.savedPlaces`)  
 **Testing**: `pnpm nx lint web`, `pnpm nx typecheck web`, `pnpm nx build web`, browser smoke  
 **Target Platform**: Browser + Capacitor iOS shell  
 **Project Type**: Next.js App Router SPA (client-heavy home page)  
@@ -27,7 +27,7 @@ Align `apps/web` with the updated `libs/shared` type contract. `libs/shared/src/
 | Gate | Status | Notes |
 |------|--------|-------|
 | §I Two-repo boundary | ✅ PASS | `apps/web` only. No NestJS changes, no AI logic. |
-| §II Nx module boundaries | ✅ PASS | `apps/web` imports `@totoro/shared` and `@totoro/ui` only. New clients live in `apps/web/src/lib/`. |
+| §II Nx module boundaries | ✅ PASS | `apps/web` imports `@kebi-app/shared` and `@kebi-app/ui` only. New clients live in `apps/web/src/lib/`. |
 | §III ADR constraints | ✅ PASS | ADR-029 (FetchClient transport) followed for new API clients. ADR-007 (Tailwind v3) respected in all components. ADR-036 (single /v1/chat endpoint) unchanged. |
 | §IV Config rules | ✅ PASS | Fixture mode via existing `NEXT_PUBLIC_CHAT_FIXTURES` env flag. No new hardcoded values. |
 | §V DB write ownership | ✅ PASS | No DB writes from frontend. |
@@ -399,7 +399,7 @@ Real implementation: `GET /api/v1/user/context?user_id={userId}`. Uses `FetchCli
 
 ```typescript
 // PLACEHOLDER — hardcoded until a suggestions endpoint exists.
-import type { PlaceObject } from '@totoro/shared';
+import type { PlaceObject } from '@kebi-app/shared';
 
 export const COLD_SUGGESTIONS: PlaceObject[] = [
   // 6–8 entries, all Tier 1 only, geo_fresh: false, enriched: false

@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import type { ExtractPlaceItem, ExtractPlaceData } from '@totoro/shared';
+import type { ExtractPlaceItem, ExtractPlaceData } from '@kebi-app/shared';
 import { PlaceObjectSchema } from '../../lib/place-schema';
 
 export const ExtractPlaceItemSchema = z.object({

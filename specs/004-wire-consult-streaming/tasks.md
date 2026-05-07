@@ -21,7 +21,7 @@ description: "Task list for Wire Consult Streaming feature implementation"
 
 **Status**: All tasks required before Phase 2 can begin
 
-- [x] T001 Install `@ai-sdk/react` and `ai` packages in `apps/web` using `pnpm --filter @totoro/web add @ai-sdk/react ai`
+- [x] T001 Install `@ai-sdk/react` and `ai` packages in `apps/web` using `pnpm --filter @kebi-app/web add @ai-sdk/react ai`
 - [x] T002 [P] Extend `HttpClient` interface with `postStream` method in `apps/web/src/api/types.ts` — add signature `postStream(path: string, body: unknown): Promise<Response>`
 - [x] T003 [P] Implement `postStream` method in `FetchClient` class in `apps/web/src/api/transports/fetch.transport.ts` — follow pattern from `post` method but return raw `Response` without calling `.json()`
 

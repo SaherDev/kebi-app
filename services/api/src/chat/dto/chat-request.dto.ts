@@ -1,6 +1,6 @@
 import { IsString, IsNotEmpty, IsOptional, IsNumber, IsIn, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
-import type { SignalTier } from '@totoro/shared';
+import type { SignalTier } from '@kebi-app/shared';
 
 const ALLOWED_SIGNAL_TIERS: SignalTier[] = ['cold', 'warming', 'chip_selection', 'active'];
 

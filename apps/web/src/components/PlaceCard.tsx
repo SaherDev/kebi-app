@@ -7,8 +7,8 @@ import {
   Music2, Camera, Youtube, Link2, PenLine, Sparkles,
 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import type { PlaceObject } from '@totoro/shared';
-import { cn } from '@totoro/ui';
+import type { PlaceObject } from '@kebi-app/shared';
+import { cn } from '@kebi-app/ui';
 
 // ── Letter avatar ─────────────────────────────────────────────────────────────
 

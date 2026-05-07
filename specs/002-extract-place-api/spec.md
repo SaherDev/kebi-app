@@ -138,7 +138,7 @@ When external services are unavailable or requests timeout, the system returns m
 - Network timeout occurs when no response is received within 10 seconds
 - Validation framework can standardize validation across all endpoints globally
 - Centralized exception filter can intercept all exceptions from all handlers
-- Place data persistence is handled entirely by the extraction service (totoro-ai), not by this module
+- Place data persistence is handled entirely by the extraction service (kebi), not by this module
 - Rate limiting is handled at the infrastructure/CDN layer (reverse proxy, API gateway), not implemented in the NestJS application code
 - Pattern-level security validation (XSS, injection detection) is the responsibility of the FastAPI extraction service, not the NestJS gateway
 

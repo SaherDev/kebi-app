@@ -33,7 +33,7 @@
 
 ### Storage extension
 
-- [ ] T005 [P] Add `getSavedPlaces(): SavedPlaceStub[]` and `appendSavedPlace(place: SavedPlaceStub): void` to `apps/web/src/storage/saved-places-storage.ts` using key `totoro.savedPlaces` (JSON array, try/catch no-op)
+- [ ] T005 [P] Add `getSavedPlaces(): SavedPlaceStub[]` and `appendSavedPlace(place: SavedPlaceStub): void` to `apps/web/src/storage/saved-places-storage.ts` using key `kebi-app.savedPlaces` (JSON array, try/catch no-op)
 
 ### Store state extension
 
@@ -67,13 +67,13 @@
 
 **Goal**: Replace scattered named illustration exports with a typed registry and single `<Illustration />` component. Required before cold-start components can use illustrations.
 
-**Independent Test**: `pnpm nx build web` zero errors; `grep -r "TotoroHomeInput\|TotoroSplash\|TotoroSuccess\|TotoroPlaceDetail\|TotoroHoverPeek\|TotoroStepComplete" apps/web/src/` returns zero results.
+**Independent Test**: `pnpm nx build web` zero errors; `grep -r "KebiHomeInput\|KebiSplash\|KebiSuccess\|KebiPlaceDetail\|KebiHoverPeek\|KebiStepComplete" apps/web/src/` returns zero results.
 
 - [ ] T021 [US6] Create `apps/web/src/components/illustrations/registry.ts` with `IllustrationId` union, `AnimationClass` union, `IllustrationDefinition` interface, and `ILLUSTRATION_REGISTRY` const — full definition in `specs/012-home-subplans-3-7/data-model.md` §5 (depends on T020)
 - [ ] T022 [US6] Create `apps/web/src/components/illustrations/Illustration.tsx`: looks up `ILLUSTRATION_REGISTRY[id]`, renders `<img>` with `t(def.altKey)`, applies animation class when `animate !== false`, applies `motion-reduce:!animate-none` unconditionally (depends on T021)
-- [ ] T023 [US6] Rename SVGs via git mv: `totoro-home-input.svg` → `totoro-idle-welcoming.svg`, `totoro-splash.svg` → `totoro-raining.svg`, `totoro-success.svg` → `totoro-excited.svg`, `totoro-place-detail.svg` → `totoro-encouraging.svg`, `totoro-hover-peek.svg` → `totoro-knowing.svg`, `totoro-step-complete.svg` → `totoro-welcome-back.svg` in `apps/web/public/illustrations/`
-- [ ] T024 [US6] Grep all consumers of old named exports from `totoro-illustrations.tsx` (`TotoroAuth`, `TotoroEmpty`, `TotoroAddPlace`, `TotoroAddPlaceProcessing`, `TotoroAddPlaceSuccess`) and update each call site to use `<Illustration id="..." />` instead (depends on T022, T023)
-- [ ] T025 [US6] Verify no remaining consumers of orphaned exports (`TotoroHomeInput`, `TotoroSplash`, `TotoroSuccess`, `TotoroPlaceDetail`, `TotoroHoverPeek`, `TotoroStepComplete`, `TotoroResultCard`, `TotoroProcessing`, `TotoroError`) — then delete `apps/web/src/components/illustrations/totoro-illustrations.tsx` and the 8 orphaned SVG files from `apps/web/public/illustrations/` (depends on T024)
+- [ ] T023 [US6] Rename SVGs via git mv: `kebi-app-home-input.svg` → `kebi-app-idle-welcoming.svg`, `kebi-app-splash.svg` → `kebi-app-raining.svg`, `kebi-app-success.svg` → `kebi-app-excited.svg`, `kebi-app-place-detail.svg` → `kebi-app-encouraging.svg`, `kebi-app-hover-peek.svg` → `kebi-app-knowing.svg`, `kebi-app-step-complete.svg` → `kebi-app-welcome-back.svg` in `apps/web/public/illustrations/`
+- [ ] T024 [US6] Grep all consumers of old named exports from `kebi-app-illustrations.tsx` (`KebiAuth`, `KebiEmpty`, `KebiAddPlace`, `KebiAddPlaceProcessing`, `KebiAddPlaceSuccess`) and update each call site to use `<Illustration id="..." />` instead (depends on T022, T023)
+- [ ] T025 [US6] Verify no remaining consumers of orphaned exports (`KebiHomeInput`, `KebiSplash`, `KebiSuccess`, `KebiPlaceDetail`, `KebiHoverPeek`, `KebiStepComplete`, `KebiResultCard`, `KebiProcessing`, `KebiError`) — then delete `apps/web/src/components/illustrations/kebi-app-illustrations.tsx` and the 8 orphaned SVG files from `apps/web/public/illustrations/` (depends on T024)
 
 **Checkpoint**: Build passes, zero orphaned exports, all illustrations render via `<Illustration />`.
 
@@ -81,9 +81,9 @@
 
 ## Phase 4: User Story 3 — Save a Place via the Half-Sheet (Priority: P1) 🎯 MVP
 
-**Goal**: User submits a URL/place name → save sheet slides up → user taps "Save to Totoro" → snackbar confirms. All four sheet states (pending, saving, duplicate, error) work correctly.
+**Goal**: User submits a URL/place name → save sheet slides up → user taps "Save to Kebi" → snackbar confirms. All four sheet states (pending, saving, duplicate, error) work correctly.
 
-**Independent Test**: Submit `tiktok.com/@foodie/ramen123` → sheet opens with pending state → tap "Save to Totoro" → sheet shows saving spinner → snackbar slides in → auto-dismisses after 2800ms → previous phase restored. Submit `Fuji Ramen Bangkok` → duplicate state renders with knowing illustration + original save date.
+**Independent Test**: Submit `tiktok.com/@foodie/ramen123` → sheet opens with pending state → tap "Save to Kebi" → sheet shows saving spinner → snackbar slides in → auto-dismisses after 2800ms → previous phase restored. Submit `Fuji Ramen Bangkok` → duplicate state renders with knowing illustration + original save date.
 
 - [ ] T026 [US3] Create `apps/web/src/flows/save/save.schema.ts` with `ExtractPlaceDataSchema` Zod schema (matches `ExtractPlaceData` from `libs/shared` — see `data-model.md` §4)
 - [ ] T027 [US3] Create `apps/web/src/flows/save/SaveSheet.tsx`: fixed bottom panel `translate-y-full → translate-y-0` CSS transition duration-300; dark overlay `bg-[rgba(60,40,20,0.2)]` tap-outside calls `onDismiss`; handle bar + 52×52 thumbnail + Georgia serif place name + gold source badge + location text; status-driven body with all 4 states; `<Illustration id="knowing" />` in duplicate state; uses `SaveSheetPlace` props type (depends on T022, T018)
@@ -100,12 +100,12 @@
 
 **Goal**: A user with zero saved places sees the cold-start zero onboarding screen with illustration, steps, and suggestion pills.
 
-**Independent Test**: Set `localStorage.totoro.savedCount = '0'` (or clear it), reload → cold-start zero screen renders with Totoro illustration, headline, 3 numbered steps, paste hint, 2 suggestion pills. Tap a pill → text fills input bar but nothing submits.
+**Independent Test**: Set `localStorage.kebi-app.savedCount = '0'` (or clear it), reload → cold-start zero screen renders with Kebi illustration, headline, 3 numbered steps, paste hint, 2 suggestion pills. Tap a pill → text fills input bar but nothing submits.
 
 - [ ] T032 [US1] Create `apps/web/src/components/home/ColdStartZero.tsx`: stateless component with `onSuggestionClick: (text: string) => void` prop; `<Illustration id="raining" className="size-24" />`; headline + subline from `t('flow7.headline')` / `t('flow7.subline')`; 3 numbered steps using `flow7.step1.*` / `flow7.step2.*` / `flow7.step3.*` i18n keys; muted paste hint `t('flow7.pasteHint')`; 2 suggestion pills from `CONSULT_SUGGESTIONS` constant calling `onSuggestionClick` on click (depends on T022, T018)
 - [ ] T033 [US1] Update `apps/web/src/app/[locale]/(main)/home/page.tsx`: wire `phase === 'cold-0'` branch to render `<ColdStartZero onSuggestionClick={(text) => { /* fill input bar */ }} />`; remove the placeholder comment from sub-plans 1–2 (depends on T032)
 
-**Checkpoint**: Cold-start zero renders correctly in isolation (`localStorage.totoro.savedCount` cleared).
+**Checkpoint**: Cold-start zero renders correctly in isolation (`localStorage.kebi-app.savedCount` cleared).
 
 ---
 
@@ -113,7 +113,7 @@
 
 **Goal**: A user with 1–4 saved places sees their saves, a popular nearby card, and a starter-pack link. Saving a new place from this state shows the "Taste signals updating." snackbar addendum.
 
-**Independent Test**: Set `localStorage.totoro.savedCount = '2'`, reload → cold-start 1–4 screen renders with encouraging illustration, saved place list (or placeholder row), popular card with dashed gold border, starter-pack link. Trigger a save → snackbar shows gold italic "Taste signals updating." line.
+**Independent Test**: Set `localStorage.kebi-app.savedCount = '2'`, reload → cold-start 1–4 screen renders with encouraging illustration, saved place list (or placeholder row), popular card with dashed gold border, starter-pack link. Trigger a save → snackbar shows gold italic "Taste signals updating." line.
 
 - [ ] T034 [US2] Create `apps/web/src/components/home/PopularNearbyCard.tsx`: wrapper component accepting `children: React.ReactNode`; renders "Popular right now" small-caps label above, `children`, then muted italic footnote `t('flow8.popularFootnote')` below; dashed gold border using `border border-dashed` with inline style `borderColor: '#c8a060'` (TODO: tokenize) (depends on T018)
 - [ ] T035 [US2] Create `apps/web/src/components/home/ColdStartOneToFour.tsx`: accepts `savedPlaces: SavedPlaceStub[]`, `savedPlaceCount: number`, `onStarterPackClick: () => void`; `<Illustration id="encouraging" className="size-16" />`; headline + subline from `t('flow8.headline')` / `t('flow8.subline')`; compact saves list — map over `savedPlaces` (if empty show single placeholder row with `t('flow8.savedListEmpty')`); "What's good nearby" label; `<PopularNearbyCard>` wrapping a `<PrimaryResultCard>` seeded from the consult fixture; "City starter pack" link calling `onStarterPackClick` (depends on T034, T022, T003, T018)
@@ -164,7 +164,7 @@
 - [ ] T049 Run `pnpm nx build web` — zero TypeScript errors (depends on all preceding tasks)
 - [ ] T050 Run `pnpm nx lint web` — zero lint errors (depends on T049)
 - [ ] T051 [P] Grep `apps/web/src/` for RTL violations (`\bpl-\|\bpr-\|\bml-\|\bmr-\|\btext-left\b\|\btext-right\b`) in all new/modified files — fix any found
-- [ ] T052 [P] Grep `apps/web/src/` for orphaned illustration named exports (`TotoroHomeInput\|TotoroSplash\|TotoroSuccess\|TotoroPlaceDetail\|TotoroHoverPeek\|TotoroStepComplete`) — must return zero results (depends on T025)
+- [ ] T052 [P] Grep `apps/web/src/` for orphaned illustration named exports (`KebiHomeInput\|KebiSplash\|KebiSuccess\|KebiPlaceDetail\|KebiHoverPeek\|KebiStepComplete`) — must return zero results (depends on T025)
 - [ ] T053 [P] Grep `apps/web/src/components\|apps/web/src/flows` for hardcoded user-facing strings (any string literal that matches user-visible text not wrapped in `t(...)`) in new files — fix any found
 - [ ] T054 Manual browser verification — cycle through all phases by manipulating localStorage per `specs/012-home-subplans-3-7/quickstart.md`: cold-0, cold-1-4, save flow (pending → saving → snackbar → phase restore), duplicate save, recall (results + empty-state + mode-override), assistant reply, clarification
 - [ ] T055 [P] Manual browser verification — Hebrew locale (`/he/`) — reload in all phases, confirm no missing-key placeholders appear

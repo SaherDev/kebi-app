@@ -7,7 +7,7 @@
 
 ## Overview
 
-No database changes. Recall is a pure proxy — NestJS forwards the request to totoro-ai and returns the response. No writes to any table.
+No database changes. Recall is a pure proxy — NestJS forwards the request to kebi and returns the response. No writes to any table.
 
 ---
 
@@ -66,7 +66,7 @@ Add two types + one method:
 **AiRecallPayload**:
 | Field   | Type   | Description                        |
 |---------|--------|------------------------------------|
-| user_id | string | User ID forwarded to totoro-ai     |
+| user_id | string | User ID forwarded to kebi     |
 | query   | string | Raw memory fragment from user      |
 
 **AiRecallResponse**:

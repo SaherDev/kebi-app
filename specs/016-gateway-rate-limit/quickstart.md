@@ -1,6 +1,6 @@
 # Quickstart: Bruno Test Scenarios (016)
 
-All Bruno test files live in `totoro-config/bruno/rate-limit/`.  
+All Bruno test files live in `kebi-config/bruno/rate-limit/`.  
 Requires: NestJS running on `http://localhost:3333`, FastAPI running on `http://localhost:8000`.  
 Auth: Use `DEV_BYPASS_TOKEN` for all requests (set in `.env.local`).
 
@@ -18,7 +18,7 @@ auth_token: {{DEV_BYPASS_TOKEN}}
 
 ## Test 1: tool_calls_per_day breach
 
-**File**: `totoro-config/bruno/rate-limit/tool-calls-breach.bru`
+**File**: `kebi-config/bruno/rate-limit/tool-calls-breach.bru`
 
 **Precondition**: Manually set the homebody user's `toolCalls.count` to 30 (via a debug endpoint or by sending 30 turns that each accumulate tool calls until done events total 30).
 
@@ -41,7 +41,7 @@ Content-Type: application/json
 
 ## Test 2: turns_per_session breach
 
-**File**: `totoro-config/bruno/rate-limit/turns-breach.bru`
+**File**: `kebi-config/bruno/rate-limit/turns-breach.bru`
 
 **Precondition**: User's `turns` counter is at 10 (send 10 messages in one session).
 
@@ -64,7 +64,7 @@ Content-Type: application/json
 
 ## Test 3: sessions_per_day breach
 
-**File**: `totoro-config/bruno/rate-limit/sessions-breach.bru`
+**File**: `kebi-config/bruno/rate-limit/sessions-breach.bru`
 
 **Precondition**: User has had 3 sessions today (turns was reset 3 times by `session_started` events).
 
@@ -87,7 +87,7 @@ Content-Type: application/json
 
 ## Test 4: Logout resets turns but not daily counters
 
-**File**: `totoro-config/bruno/rate-limit/logout-reset.bru`
+**File**: `kebi-config/bruno/rate-limit/logout-reset.bru`
 
 **Sequence**:
 1. Accumulate 5 turns in current session
@@ -104,7 +104,7 @@ Content-Type: application/json
 
 ## Test 5: Day rollover resets daily counters but not turns
 
-**File**: `totoro-config/bruno/rate-limit/day-rollover.bru`
+**File**: `kebi-config/bruno/rate-limit/day-rollover.bru`
 
 **Precondition**: Manually set `sessions.date` and `toolCalls.date` to yesterday's UTC date string (via a debug/test endpoint or by inspecting in-memory state in a test environment).
 
@@ -131,7 +131,7 @@ Content-Type: application/json
 
 ## Test 6: Missing plan falls back to default_plan
 
-**File**: `totoro-config/bruno/rate-limit/default-plan-fallback.bru`
+**File**: `kebi-config/bruno/rate-limit/default-plan-fallback.bru`
 
 **Precondition**: User token has no `plan` field in `public_metadata`.
 

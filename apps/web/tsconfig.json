@@ -24,10 +24,10 @@
       "@/*": [
         "./src/*"
       ],
-      "@totoro/shared": [
+      "@kebi-app/shared": [
         "../../libs/shared/src/index.ts"
       ],
-      "@totoro/ui": [
+      "@kebi-app/ui": [
         "../../libs/ui/src/index.ts"
       ]
     },
