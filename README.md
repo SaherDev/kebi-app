@@ -2,6 +2,8 @@
 
 Product repo for [Kebi](https://github.com/SaherDev/kebi-app) — an AI-native place decision engine. Next.js frontend, NestJS API gateway, and shared TypeScript libraries. The AI brain lives in [kebi](https://github.com/SaherDev/kebi).
 
+Live: https://kebi-ten-phi.vercel.app
+
 ## Docs
 
 | Doc | What's in it |

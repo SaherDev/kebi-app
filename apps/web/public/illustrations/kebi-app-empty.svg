@@ -1,29 +1,15 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="130" height="130" viewBox="0 0 130 130" fill="none">
-  <defs>
-    <style>
-      @keyframes blink {
-        0%, 90%, 100% { opacity: 1; }
-        95% { opacity: 0; }
-      }
-      .blink-eye { animation: blink 3s infinite; }
-    </style>
-  </defs>
   <path d="M58 22 Q65 14 72 22" stroke="#8B7355" stroke-width="3" stroke-linecap="round" fill="none"/>
   <ellipse cx="27" cy="72" rx="9" ry="14" fill="#A89070"/>
   <ellipse cx="103" cy="72" rx="9" ry="14" fill="#A89070"/>
   <ellipse cx="65" cy="72" rx="36" ry="40" fill="#D4B891"/>
   <ellipse cx="65" cy="82" rx="22" ry="24" fill="#F5EBD3"/>
-  <g class="blink-eye">
-    <circle cx="55" cy="60" r="6.5" fill="white"/>
-    <circle cx="55.5" cy="60.5" r="3" fill="#2A1F15"/>
-  </g>
-  <g class="blink-eye">
-    <circle cx="75" cy="60" r="6.5" fill="white"/>
-    <circle cx="75.5" cy="60.5" r="3" fill="#2A1F15"/>
-  </g>
+  <path d="M50 60 Q55 56 60 60" stroke="#2A1F15" stroke-width="1.8" stroke-linecap="round" fill="none"/>
+  <path d="M70 60 Q75 56 80 60" stroke="#2A1F15" stroke-width="1.8" stroke-linecap="round" fill="none"/>
   <path d="M65 67 L61 73 L69 73 Z" fill="#C87A4A"/>
-  <ellipse cx="48" cy="72" rx="5" ry="3.2" fill="#E8B894" opacity="0.75"/>
-  <ellipse cx="82" cy="72" rx="5" ry="3.2" fill="#E8B894" opacity="0.75"/>
+  <ellipse cx="48" cy="72" rx="5" ry="3.2" fill="#E8B894" opacity="0.6"/>
+  <ellipse cx="82" cy="72" rx="5" ry="3.2" fill="#E8B894" opacity="0.6"/>
+  <path d="M105 36 Q108 32 111 36 Q113 40 109 42 L109 46 M109 50 L109 51" stroke="#8B7355" stroke-width="2" stroke-linecap="round" fill="none" opacity="0.5"/>
   <path d="M55 109 L52 114 M55 109 L55 115 M55 109 L58 114" stroke="#8B7355" stroke-width="2.2" stroke-linecap="round"/>
   <path d="M75 109 L72 114 M75 109 L75 115 M75 109 L78 114" stroke="#8B7355" stroke-width="2.2" stroke-linecap="round"/>
 </svg>
