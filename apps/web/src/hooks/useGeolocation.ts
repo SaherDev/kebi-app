@@ -3,6 +3,7 @@
 import { useEffect } from 'react';
 import { LocationSchema, type Location } from '@kebi-app/shared';
 import { useLocationStore } from '../store/locationStore';
+import { enrichLocation } from '../lib/location';
 
 /**
  * Geolocation provider protocol — ADR-033 / ADR-038.
@@ -85,9 +86,21 @@ export function useGeolocation(options: UseGeolocationOptions = {}): void {
     if (!enabled || resolved) return;
 
     let cancelled = false;
-    provider.getCurrentPosition().then((location) => {
-      if (!cancelled) setLocation(location);
-    });
+    provider
+      .getCurrentPosition()
+      .then(async (location) => {
+        if (cancelled) return;
+        if (location === null) {
+          setLocation(null);
+          return;
+        }
+        // Enrich with city/neighborhood/district/country before it
+        // reaches the store (and therefore every outbound chat/consult
+        // request). Enrichment never throws and is best-effort: on
+        // failure `context` is null.
+        const enriched = await enrichLocation(location.lat, location.lng);
+        if (!cancelled) setLocation(enriched);
+      });
 
     return () => {
       cancelled = true;

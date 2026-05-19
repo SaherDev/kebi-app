@@ -1,7 +1,7 @@
 'use client';
 
 import { create } from 'zustand';
-import type { Location } from '@kebi-app/shared';
+import type { EnrichedLocation } from '../lib/location';
 
 /**
  * Session-only browser geolocation store.
@@ -22,11 +22,16 @@ import type { Location } from '@kebi-app/shared';
  * `resolved` flips to `true` after the first attempt completes,
  * regardless of outcome. HTTP callers read `location` directly and
  * should always tolerate `null`.
+ *
+ * The stored value is an {@link EnrichedLocation}: raw `lat`/`lng` plus a
+ * best-effort `context` (city/neighborhood/district/country) resolved
+ * client-side. The `context` is `null` when reverse geocoding could not
+ * be performed.
  */
 interface LocationStoreState {
-  location: Location | null;
+  location: EnrichedLocation | null;
   resolved: boolean;
-  setLocation: (location: Location | null) => void;
+  setLocation: (location: EnrichedLocation | null) => void;
 }
 
 export const useLocationStore = create<LocationStoreState>((set) => ({
@@ -39,6 +44,6 @@ export const useLocationStore = create<LocationStoreState>((set) => ({
  * Non-hook accessor for use outside React (HttpClient, Server Actions
  * invoked from client callers, etc.). Reads the current snapshot.
  */
-export function getLocationSnapshot(): Location | null {
+export function getLocationSnapshot(): EnrichedLocation | null {
   return useLocationStore.getState().location;
 }
