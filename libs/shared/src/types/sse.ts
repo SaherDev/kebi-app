@@ -4,7 +4,6 @@ export interface SseReasoningStep {
   step: string;
   summary: string;
   source?: 'tool' | 'agent' | 'fallback';
-  tool_name?: 'recall' | 'save' | 'consult' | null;
   visibility?: 'user' | 'debug';
   duration_ms?: number;
   timestamp?: string;

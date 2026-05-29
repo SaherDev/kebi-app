@@ -1,5 +1,9 @@
 import type { Location } from "../schemas/location.js";
-import type { PlaceCategory, PlaceTag } from "./place-taxonomy.js";
+import type {
+  LiteralUnion,
+  PlaceCategory,
+  PlaceTag,
+} from "./place-taxonomy.js";
 
 /**
  * Chat request body the gateway sends to kebi (POST /v1/chat,
@@ -22,94 +26,21 @@ export interface ChatRequestDto {
   movement_profile: MovementProfile | null;
 }
 
-export type ClientIntent = "consult" | "recall" | "save" | "assistant";
-
+/**
+ * A user-visible step the agent emitted this turn. Mirrors `api-contract.md`
+ * (POST /v1/chat → `data.reasoning_steps`, and the `reasoning_step` SSE frame).
+ * Tool identity is NOT here — it travels on {@link ToolResult.tool}.
+ */
 export interface ReasoningStep {
   step: string;
   summary: string;
   source?: "tool" | "agent" | "fallback";
-  tool_name?: "recall" | "save" | "consult" | null;
   visibility?: "user" | "debug";
   duration_ms?: number;
   timestamp?: string;
 }
 
-// ── Unified place shape (ADR-054) ────────────────────────────────────────────
-
-export type PlaceType =
-  | "food_and_drink"
-  | "things_to_do"
-  | "shopping"
-  | "services"
-  | "accommodation";
-
-export type PlaceSource =
-  | "tiktok"
-  | "instagram"
-  | "youtube"
-  | "google_maps"
-  | "manual";
-
-export interface PlaceLocationContext {
-  neighborhood: string | null;
-  city: string | null;
-  country: string | null;
-}
-
-export interface PlaceAttributes {
-  cuisine: string | null;
-  price_hint: string | null;
-  ambiance: string | null;
-  dietary: string[];
-  good_for: string[];
-  location_context: PlaceLocationContext | null;
-}
-
-export interface PlaceHours {
-  sunday?: string | null;
-  monday?: string | null;
-  tuesday?: string | null;
-  wednesday?: string | null;
-  thursday?: string | null;
-  friday?: string | null;
-  saturday?: string | null;
-  timezone: string;
-}
-
-/**
- * Unified place object returned by every read and write path (ADR-054).
- * Tier 1 fields from PostgreSQL are always present; Tier 2 (Redis geo) and
- * Tier 3 (Redis enrichment) populate only when `enrich_batch` ran.
- */
-export interface PlaceObject {
-  // Tier 1 — always present
-  place_id: string;
-  place_name: string;
-  place_type: PlaceType;
-  subcategory: string | null;
-  tags: string[];
-  attributes: PlaceAttributes;
-  source_url: string | null;
-  source: PlaceSource | null;
-  provider_id: string | null;
-  created_at: string | null;
-
-  // Tier 2 — Redis geo cache
-  lat: number | null;
-  lng: number | null;
-  address: string | null;
-  geo_fresh: boolean;
-
-  // Tier 3 — Redis enrichment
-  hours: PlaceHours | null;
-  rating: number | null;
-  phone: string | null;
-  photo_url: string | null;
-  popularity: number | null;
-  enriched: boolean;
-}
-
-// ── PlaceCore — canonical place shape on the new kebi contract ───────────────
+// ── PlaceCore — canonical place shape on the kebi contract ───────────────────
 // Returned inside chat `tool_results` and by POST /v1/extract. Static catalog
 // fields only (no live rating/hours). `categories` and `tags` use the enum
 // vocabularies in ./place-taxonomy, which mirror kebi's PlaceCategory / TagType
@@ -141,66 +72,62 @@ export interface PlaceCore {
   refreshed_at: string | null;
 }
 
-// ── Consult (POST /v1/chat, type="consult") ──────────────────────────────────
+// ── Chat response (POST /v1/chat) ────────────────────────────────────────────
+// The agent runs a LangGraph turn with the consult-family tools. Each tool
+// returns a ConsultResult surfaced in `data.tool_results`. The top-level
+// `type` is only ever "agent" or "error" — all downstream failures are caught
+// and returned as type="error" with HTTP 200 (see api-contract.md).
 
-export type ConsultResultSource = "saved" | "discovered" | "suggested";
+export type ConsultTool = "find_saved" | "suggest_places" | "discover_places";
+
+export type ConsultCandidateSource = "saved" | "suggested" | "discovered";
+
+/** Why a tool produced no candidates (e.g. "no_location", "no_match"). */
+export type ConsultEmptyReason = LiteralUnion<"no_location" | "no_match">;
+
+export interface ConsultCandidate {
+  place: PlaceCore;
+  source: ConsultCandidateSource;
+  /** Namer's rationale, present for suggested/discovered candidates. */
+  reason?: string | null;
+}
 
 export interface ConsultResult {
-  place: PlaceObject;
-  source: ConsultResultSource;
+  candidates: ConsultCandidate[];
+  empty_reason?: ConsultEmptyReason | null;
 }
 
-export interface ConsultResponseData {
-  recommendation_id: string | null;
-  results: ConsultResult[];
+export interface ToolResult {
+  tool: ConsultTool;
+  tool_call_id: string;
+  payload: ConsultResult;
+}
+
+export interface AgentResponseData {
   reasoning_steps: ReasoningStep[];
+  tool_results: ToolResult[];
 }
 
-// ── Recall (POST /v1/chat, type="recall") ────────────────────────────────────
-
-export type RecallMatchReason =
-  | "filter"
-  | "semantic"
-  | "keyword"
-  | "semantic + keyword";
-
-export type RecallScoreType = "rrf" | "ts_rank";
-
-export interface RecallResult {
-  place: PlaceObject;
-  match_reason: RecallMatchReason;
-  relevance_score: number | null;
-  score_type: RecallScoreType | null;
+export interface ErrorResponseData {
+  detail: string;
 }
 
-export interface RecallResponseData {
-  results: RecallResult[];
-  total_count: number;
-  empty_state: boolean;
-}
+/** Discriminated on `type`. `tool_calls_used` feeds rate-limit accounting. */
+export type ChatResponse =
+  | {
+      type: "agent";
+      message: string;
+      data: AgentResponseData | null;
+      tool_calls_used: number;
+    }
+  | {
+      type: "error";
+      message: string;
+      data: ErrorResponseData | null;
+      tool_calls_used: number;
+    };
 
-// ── Extract place (POST /v1/chat, type="extract-place") ──────────────────────
-
-export type ExtractPlaceStatus =
-  | "saved"
-  | "needs_review"
-  | "duplicate"
-  | "pending"
-  | "failed";
-
-export interface ExtractPlaceItem {
-  place: PlaceObject | null;
-  confidence: number | null;
-  status: ExtractPlaceStatus;
-}
-
-export interface ExtractPlaceData {
-  results: ExtractPlaceItem[];
-  source_url: string | null;
-  request_id: string | null;
-}
-
-// ── Extract place — new contract (POST /v1/extract, ADR-073) ─────────────────
+// ── Extract place (POST /v1/extract, ADR-073) ────────────────────────────────
 // Synchronous. `results` is non-empty iff status === "completed". No per-item
 // status (ADR-071) and no evidence trail (ADR-093).
 
@@ -223,24 +150,6 @@ export interface ExtractPlaceResponse {
   request_id: string | null;
   failure_reason: string | null;
   failure_message: string | null;
-}
-
-// ── Local UI/storage types (not on the wire) ─────────────────────────────────
-
-export interface SavedPlaceStub {
-  place_id: string;
-  place_name: string;
-  address: string;
-  saved_at: string;
-  source_url: string | null;
-  thumbnail_url?: string;
-}
-
-export interface SaveSheetPlace {
-  name: string;
-  source: string;
-  location: string;
-  thumbnail_url?: string;
 }
 
 // ── Auth, plan & mobility types ──────────────────────────────────────────────
