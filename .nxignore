@@ -1,0 +1,7 @@
+# Parked: web is dead at the moment (see docs/plans/2026-05-29-mobile-rn.md).
+# These are excluded from the Nx graph so a broken typecheck during the
+# mobile build + libs/shared cleanup does not block lint/test/build.
+# Nothing imports apps/web or libs/ui, so dropping them is safe.
+# To un-park, delete the relevant line.
+apps/web
+libs/ui
