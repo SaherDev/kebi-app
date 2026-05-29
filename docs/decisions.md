@@ -15,6 +15,16 @@ Format:
 
 ---
 
+## ADR-040: Park apps/web and libs/ui pending the native mobile rebuild
+
+**Date:** 2026-05-29\
+**Status:** accepted\
+**Context:** The product is pivoting to a native React Native (Expo) app (`apps/mobile`) as the primary client; `apps/web` is frozen ("dead for now"). Per ADR-037, `apps/web` still renders the removed pre-`PlaceCore` surface and no longer compiles after `libs/shared` was stripped to the live contract types. Left in the Nx project graph, its broken typecheck blocks `lint`/`test`/`build` for the active projects (`shared`, `api`) during the cleanup and the mobile build.\
+**Decision:** Park `apps/web` and `libs/ui` (the Radix/DOM design-system lib, consumed only by `apps/web`) by listing them in `.nxignore`, removing them from the Nx graph. The code stays in-tree as a reference implementation; nothing imports either project, so `shared` and `api` are unaffected. `libs/shared` simultaneously dropped its dead pre-`PlaceCore` type generation and now carries only live contract types. Web is **not** deleted — it is removed once `apps/mobile` reaches parity, or revived if the pivot reverses. Un-park by deleting the relevant line in `.nxignore`.\
+**Consequences:** `apps/web` + `libs/ui` are intentionally non-compiling and excluded from CI/lint/test/build. The go-forward client is `apps/mobile` (Expo managed, Clerk via `@clerk/clerk-expo`, NativeWind, primitives in a new `libs/ui-native`); the design system in `docs/kebi-app-design-system` already targets the Expo build. Build sequence tracked in `docs/plans/2026-05-29-mobile-rn.md`.
+
+---
+
 ## ADR-037: Gateway speaks the hardened kebi contract; movement_profile rides the token
 
 **Date:** 2026-05-29\

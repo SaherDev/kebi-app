@@ -14,26 +14,26 @@ import { UserEntity } from './user.entity';
 @Entity('user_settings')
 export class UserSettingsEntity {
   @PrimaryColumn({ type: 'varchar' })
-  id: string;
+  id!: string;
 
   @Column({ name: 'userId', unique: true })
-  userId: string;
+  userId!: string;
 
   @OneToOne(() => UserEntity, (user) => user.settings)
   @JoinColumn({ name: 'userId' })
-  user: UserEntity;
+  user!: UserEntity;
 
   @Column({ default: 'en' })
-  locale: string;
+  locale!: string;
 
   @Column({ default: 'system' })
-  theme: string;
+  theme!: string;
 
   @CreateDateColumn({ name: 'createdAt' })
-  createdAt: Date;
+  createdAt!: Date;
 
   @UpdateDateColumn({ name: 'updatedAt' })
-  updatedAt: Date;
+  updatedAt!: Date;
 
   @BeforeInsert()
   generateId() {

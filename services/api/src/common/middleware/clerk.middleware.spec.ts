@@ -2,7 +2,7 @@ import 'reflect-metadata';
 import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
 import { UnauthorizedException } from '@nestjs/common';
-import { ClerkMiddleware, ClerkUser } from './clerk.middleware';
+import { ClerkMiddleware } from './clerk.middleware';
 import * as clerkBackend from '@clerk/backend';
 
 // Mock the @clerk/backend module
@@ -10,7 +10,6 @@ jest.mock('@clerk/backend');
 
 describe('ClerkMiddleware', () => {
   let middleware: ClerkMiddleware;
-  let configService: ConfigService;
   let mockVerifyToken: jest.Mock;
 
   beforeEach(async () => {
@@ -36,7 +35,6 @@ describe('ClerkMiddleware', () => {
     }).compile();
 
     middleware = module.get<ClerkMiddleware>(ClerkMiddleware);
-    configService = module.get<ConfigService>(ConfigService);
   });
 
   afterEach(() => {

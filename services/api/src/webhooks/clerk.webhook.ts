@@ -1,14 +1,14 @@
 import {
   Controller,
   Post,
-  RawBodyRequest,
   Req,
   Logger,
   BadRequestException,
 } from "@nestjs/common";
+import type { RawBodyRequest } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { createClerkClient } from "@clerk/backend";
-import { Request } from "express";
+import type { Request } from "express";
 import { Webhook } from "svix";
 import { RateLimitService } from "../rate-limit/rate-limit.service";
 
@@ -34,7 +34,8 @@ export class ClerkWebhookController {
     const event = this.verifySignature(req);
 
     if (event.type === "user.created") {
-      await this.onUserCreated(event.data.id as string);
+      const userId = event.data?.id as string | undefined;
+      if (userId) await this.onUserCreated(userId);
     } else if (event.type === "session.created") {
       const userId = event.data?.user_id as string;
       if (userId) await this.backfillMissingMetadata(userId);

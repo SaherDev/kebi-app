@@ -13,16 +13,16 @@ import { UserSettingsEntity } from './user-settings.entity';
 @Entity('users')
 export class UserEntity {
   @PrimaryColumn({ type: 'varchar' })
-  id: string;
+  id!: string;
 
   @Column({ unique: true })
-  email: string;
+  email!: string;
 
   @CreateDateColumn({ name: 'createdAt' })
-  createdAt: Date;
+  createdAt!: Date;
 
   @UpdateDateColumn({ name: 'updatedAt' })
-  updatedAt: Date;
+  updatedAt!: Date;
 
   @OneToOne(() => UserSettingsEntity, (settings) => settings.user, {
     cascade: true,
