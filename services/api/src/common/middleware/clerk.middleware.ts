@@ -2,11 +2,12 @@ import { Injectable, NestMiddleware, UnauthorizedException, Logger } from '@nest
 import { Request, Response, NextFunction } from 'express';
 import { ConfigService } from '@nestjs/config';
 import { verifyToken } from '@clerk/backend';
-import { AuthUser, PlanTier } from '@kebi-app/shared';
+import { AuthUser, MovementProfile, PlanTier } from '@kebi-app/shared';
 
 interface ClerkPublicMetadata {
   ai_enabled?: boolean;
   plan?: PlanTier;
+  movement_profile?: MovementProfile;
 }
 
 declare global {
@@ -77,11 +78,16 @@ export class ClerkMiddleware implements NestMiddleware {
       const publicMetadata = (verifiedSession.public_metadata ?? {}) as ClerkPublicMetadata;
       const ai_enabled = publicMetadata.ai_enabled ?? aiEnabledDefault;
       const plan = publicMetadata.plan;
+      // Mobility setting carried as a token claim (like plan). Absent when the
+      // user hasn't set one — the gateway forwards undefined and kebi applies a
+      // neutral fallback. Never fabricated here.
+      const movement_profile = publicMetadata.movement_profile;
 
       req.user = {
         id: userId,
         ai_enabled,
         ...(plan !== undefined && { plan }),
+        ...(movement_profile !== undefined && { movement_profile }),
       };
 
       next();

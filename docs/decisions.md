@@ -15,6 +15,16 @@ Format:
 
 ---
 
+## ADR-037: Gateway speaks the hardened kebi contract; movement_profile rides the token
+
+**Date:** 2026-05-29\
+**Status:** accepted\
+**Context:** kebi hardened its HTTP contract: every protected route now requires service-to-service auth headers (`X-Gateway-Token` shared secret + `X-Gateway-User-Id`, the verified Clerk subject), `user_id` is no longer a body field, extraction is a synchronous `POST /v1/extract`, `POST /v1/signal` narrowed to recommendation accept/reject keyed by `place_core_id`, `DELETE /v1/user/data` dropped its user-id path segment, and the onboarding/tier surface (`GET /v1/user/context`, the `signal_tier` chat hint, the `chip_confirm` signal) was removed. The gateway was still on the pre-hardening contract and could not authenticate to kebi at all — every call would 401. Separately, `movement_profile` (a user mobility setting kebi consumes per chat turn) needed a home; it should be carried like the existing `plan`, which is a Clerk `publicMetadata` token claim.\
+**Decision:** Align `services/api` with the current kebi contract. `AiServiceClient` attaches the gateway-auth headers on every protected call (fail-closed when `GATEWAY_SHARED_SECRET` is unset; it must match kebi byte-for-byte) and takes the verified `userId` per call instead of embedding it in bodies. Add `POST /api/v1/extract`. Reshape signal to accept/reject + `place_core_id`. Point delete at `/v1/user/data`. Remove `GET /api/v1/user/context`, `signal_tier`, and `chip_confirm` entirely. `movement_profile` becomes a Clerk `publicMetadata` claim extracted by `ClerkMiddleware` into `req.user` (exactly like `plan`); the gateway injects it into the kebi-bound chat body — the client never sends it. `plan` stays gateway-local (rate limits) and is not forwarded to kebi. Contract types (`MovementProfile`, `PlaceCore` plus the full category/tag taxonomy mirroring kebi, `ExtractPlaceResponse`, the narrowed signal types) live in `libs/shared` so the Next.js web client and the forthcoming React Native client share one source of truth.\
+**Consequences:** Gateway auth is a coordinated cross-repo change — `GATEWAY_SHARED_SECRET` must be set identically on both kebi and the gateway and rotated together, and the hardened endpoints must deploy in lockstep with the kebi schema. `apps/web` consumers of the removed surface (`user/context`, `signal_tier`, `chip_confirm`) and the old `PlaceObject` rendering shape will not compile/run until a follow-up migrates them to `PlaceCore` — accepted and tracked separately. A user-facing write path to set `movement_profile` in Clerk metadata (a settings flow) is still owed; until then the field is absent and kebi applies its neutral fallback. The place category/tag unions in `libs/shared` mirror kebi's enums and must be kept in sync as that taxonomy evolves.
+
+---
+
 ## ADR-036: Single POST /v1/chat endpoint replaces three-endpoint AI contract
 
 **Date:** 2026-04-09\
