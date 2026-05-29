@@ -1,25 +1,25 @@
 import type { Location } from "../schemas/location.js";
+import type { PlaceCategory, PlaceTag } from "./place-taxonomy.js";
 
 /**
- * Chat request DTO — matches POST /v1/chat wire body.
+ * Chat request body the gateway sends to kebi (POST /v1/chat,
+ * /v1/chat/stream).
  *
- * `user_id` is injected by NestJS from the Clerk token; the frontend
- * never supplies it. The frontend still references this type as the
- * shape of fixture inputs (it just ignores user_id).
+ * Identity is NOT in the body — the gateway forwards the verified Clerk
+ * subject as the `X-Gateway-User-Id` header.
  *
- * `location` is always present. The frontend attaches it in the
- * HttpClient layer from a session-only store. When the user denied
- * geolocation or the API is unavailable, the value is explicitly `null`.
+ * `location` is the user's actual position. The frontend attaches it from
+ * a session-only store; `null` when geolocation was denied/unavailable.
  *
- * `signal_tier` is an optional hint forwarded from GET /v1/user/context
- * (ADR-061). The AI service uses it for tier-aware consult behavior.
- * When omitted/null, the AI service defaults to "active".
+ * `movement_profile` is a user mobility setting carried as a Clerk
+ * `publicMetadata` token claim (like `plan`). The gateway reads it from the
+ * verified token and injects it here — the client never sends it. `null`
+ * when the user has no profile set; kebi then applies a neutral fallback.
  */
 export interface ChatRequestDto {
-  user_id: string;
   message: string;
   location: Location | null;
-  signal_tier?: SignalTier | null;
+  movement_profile: MovementProfile | null;
 }
 
 export type ClientIntent = "consult" | "recall" | "save" | "assistant";
@@ -109,6 +109,38 @@ export interface PlaceObject {
   enriched: boolean;
 }
 
+// ── PlaceCore — canonical place shape on the new kebi contract ───────────────
+// Returned inside chat `tool_results` and by POST /v1/extract. Static catalog
+// fields only (no live rating/hours). `categories` and `tags` use the enum
+// vocabularies in ./place-taxonomy, which mirror kebi's PlaceCategory / TagType
+// and tag-value enums.
+
+export interface PlaceNameAlias {
+  value: string;
+  source: string;
+}
+
+export interface PlaceCoreLocation {
+  lat: number | null;
+  lng: number | null;
+  address: string | null;
+  neighborhood: string | null;
+  city: string | null;
+  country: string | null;
+}
+
+export interface PlaceCore {
+  id: string | null;
+  provider_id: string | null;
+  place_name: string;
+  place_name_aliases: PlaceNameAlias[];
+  categories: PlaceCategory[];
+  tags: PlaceTag[];
+  location: PlaceCoreLocation | null;
+  created_at: string | null;
+  refreshed_at: string | null;
+}
+
 // ── Consult (POST /v1/chat, type="consult") ──────────────────────────────────
 
 export type ConsultResultSource = "saved" | "discovered" | "suggested";
@@ -168,6 +200,31 @@ export interface ExtractPlaceData {
   request_id: string | null;
 }
 
+// ── Extract place — new contract (POST /v1/extract, ADR-073) ─────────────────
+// Synchronous. `results` is non-empty iff status === "completed". No per-item
+// status (ADR-071) and no evidence trail (ADR-093).
+
+export type ExtractStatus = "pending" | "completed" | "failed";
+
+/** Request body for POST /v1/extract. Identity is the X-Gateway-User-Id header. */
+export interface ExtractPlaceRequest {
+  raw_input: string;
+}
+
+export interface ExtractPlaceResult {
+  place: PlaceCore;
+  confidence: number;
+}
+
+export interface ExtractPlaceResponse {
+  status: ExtractStatus;
+  results: ExtractPlaceResult[];
+  raw_input: string | null;
+  request_id: string | null;
+  failure_reason: string | null;
+  failure_message: string | null;
+}
+
 // ── Local UI/storage types (not on the wire) ─────────────────────────────────
 
 export interface SavedPlaceStub {
@@ -186,82 +243,79 @@ export interface SaveSheetPlace {
   thumbnail_url?: string;
 }
 
-// ── Auth & plan types (016-gateway-rate-limit) ───────────────────────────────
+// ── Auth, plan & mobility types ──────────────────────────────────────────────
 
 export type PlanTier = "homebody" | "explorer" | "local_legend";
+
+/**
+ * How the user can get around — a stable per-user capability (licence, owned
+ * vehicles, comfort), NOT a per-city availability list. kebi pairs it with the
+ * working location's density each turn to resolve an effective mode. Mirrors
+ * kebi's MovementMode vocabulary.
+ */
+export type MovementMode =
+  | "walking"
+  | "cycling"
+  | "motorbike"
+  | "driving"
+  | "transit"
+  | "rideshare";
+
+export const MOVEMENT_MODES: readonly MovementMode[] = [
+  "walking",
+  "cycling",
+  "motorbike",
+  "driving",
+  "transit",
+  "rideshare",
+] as const;
+
+/** Willingness-to-travel baseline; shifts kebi's scope tier ±1. */
+export type Reach = "compact" | "normal" | "far";
+
+export const REACH_VALUES: readonly Reach[] = [
+  "compact",
+  "normal",
+  "far",
+] as const;
+
+/**
+ * User mobility setting. Owned by the product as a Clerk `publicMetadata`
+ * claim (like `plan`); the gateway forwards it to kebi in the chat body.
+ */
+export interface MovementProfile {
+  available_modes: MovementMode[];
+  reach: Reach;
+}
 
 export interface AuthUser {
   id: string;
   ai_enabled: boolean;
   plan?: PlanTier;
+  movement_profile?: MovementProfile;
 }
 
-// Signal types
+// Signal types — recommendation accept/reject only (kebi ADR-076/078).
 export type SignalType =
   | "recommendation_accepted"
-  | "recommendation_rejected"
-  | "chip_confirm";
+  | "recommendation_rejected";
 
-// Chip types
-export type ChipStatus = "pending" | "confirmed" | "rejected";
-
-export interface ChipItem {
-  label: string;
-  source_field: string;
-  source_value: string;
-  signal_count: number;
-  query?: string;
-  status: ChipStatus;
-  selection_round: string | null;
-}
-
-// Signal request variants
-export interface SignalRequestAccepted {
-  signal_type: "recommendation_accepted";
+/**
+ * Behavioral signal body the gateway sends to kebi (POST /v1/signal).
+ * `place_core_id` is kebi's `places.id` (ADR-077). Identity travels in the
+ * `X-Gateway-User-Id` header, never the body.
+ */
+export interface SignalRequest {
+  signal_type: SignalType;
   recommendation_id: string;
-  place_id: string;
-  metadata?: Record<string, unknown>;
+  place_core_id: string;
 }
-
-export interface SignalRequestRejected {
-  signal_type: "recommendation_rejected";
-  recommendation_id: string;
-  place_id: string;
-  metadata?: Record<string, unknown>;
-}
-
-export interface SignalRequestChipConfirm {
-  signal_type: "chip_confirm";
-  metadata: {
-    chips: ChipItem[];
-  };
-}
-
-export type SignalRequest =
-  | SignalRequestAccepted
-  | SignalRequestRejected
-  | SignalRequestChipConfirm;
-
-export type SignalRequestWithUser = SignalRequest & { user_id: string };
 
 export interface SignalResponse {
   status: string;
 }
 
-// User context
-export type SignalTier = "cold" | "warming" | "chip_selection" | "active";
-
-export interface AiUserContext {
-  saved_places_count: number;
-  signal_tier: SignalTier;
-  chips: ChipItem[];
-}
-
-export interface UserContextResponse extends AiUserContext {
-  plan: PlanTier | null;
-}
-
-// User data deletion scope (DELETE /v1/user/{user_id}/data?scope=...)
+// User data deletion scope (DELETE /v1/user/data?scope=...)
 export type DataScope = "all" | "chat_history";
 
 export const DATA_SCOPES: readonly DataScope[] = ["all", "chat_history"] as const;
