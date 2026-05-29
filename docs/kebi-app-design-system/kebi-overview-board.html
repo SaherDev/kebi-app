@@ -1,0 +1,833 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Kebi Design System — Overview</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --canvas: #0F0E0D;
+    --board: #1A1816;
+    --panel: #221F1C;
+    --line: #2A2622;
+    --text: #F5F1EA;
+    --muted: #8A857E;
+    --soft: #5C5852;
+    --accent: #E8B894;
+  }
+
+  html, body {
+    background: var(--canvas);
+    color: var(--text);
+    font-family: 'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+  }
+
+  .board {
+    max-width: 1480px;
+    margin: 0 auto;
+    padding: 64px 48px 120px;
+  }
+
+  /* Header */
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-bottom: 32px;
+    border-bottom: 1px solid var(--line);
+    margin-bottom: 48px;
+  }
+
+  .header-left {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .mascot-mini { width: 44px; height: 44px; }
+
+  .header h1 {
+    font-size: 28px;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+  }
+
+  .header-meta {
+    font-size: 12px;
+    color: var(--muted);
+    letter-spacing: -0.005em;
+    margin-top: 2px;
+  }
+
+  .header-right {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 4px;
+    font-size: 11px;
+    color: var(--muted);
+    text-align: right;
+    letter-spacing: -0.005em;
+  }
+
+  .header-right strong {
+    color: var(--text);
+    font-weight: 600;
+    letter-spacing: -0.005em;
+  }
+
+  /* Sections */
+  .section {
+    margin-bottom: 64px;
+  }
+
+  .section-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 24px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .section-title {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+  }
+
+  .section-num {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--soft);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    font-family: 'SF Mono', Menlo, Consolas, monospace;
+  }
+
+  .section-name {
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--text);
+  }
+
+  .section-count {
+    font-size: 12px;
+    color: var(--muted);
+    letter-spacing: -0.005em;
+  }
+
+  .section-desc {
+    font-size: 13px;
+    color: var(--muted);
+    letter-spacing: -0.005em;
+    line-height: 1.6;
+    max-width: 720px;
+    margin-bottom: 24px;
+    margin-top: -8px;
+  }
+
+  /* Grid */
+  .grid {
+    display: grid;
+    gap: 24px;
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  .grid.three { grid-template-columns: repeat(3, 1fr); }
+  .grid.two { grid-template-columns: repeat(2, 1fr); }
+
+  /* Screen card */
+  .screen {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .screen-frame {
+    background: var(--panel);
+    border-radius: 16px;
+    padding: 12px;
+    border: 1px solid var(--line);
+    overflow: hidden;
+    position: relative;
+  }
+
+  .screen-img {
+    width: 100%;
+    height: auto;
+    display: block;
+    border-radius: 8px;
+  }
+
+  /* Variant tag */
+  .variant-tag {
+    position: absolute;
+    top: 16px;
+    left: 16px;
+    background: rgba(15, 14, 13, 0.7);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    color: var(--text);
+    padding: 4px 9px;
+    border-radius: 6px;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    z-index: 2;
+  }
+
+  .variant-tag.dark {
+    background: rgba(245, 241, 234, 0.12);
+    color: var(--text);
+  }
+
+  /* Screen meta */
+  .screen-meta {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 0 4px;
+  }
+
+  .screen-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+    letter-spacing: -0.005em;
+  }
+
+  .screen-tag {
+    font-size: 10px;
+    color: var(--soft);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    font-family: 'SF Mono', Menlo, Consolas, monospace;
+  }
+
+  .screen-desc {
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: -0.005em;
+    line-height: 1.5;
+    padding: 0 4px;
+  }
+
+  /* Pair (light + dark side by side) */
+  .pair {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+
+  .pair .screen-frame {
+    padding: 10px;
+  }
+
+  /* Flow / arrow connector for sequences */
+  .flow-arrow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--soft);
+    font-size: 14px;
+  }
+
+  /* Wide screens (tokens, toasts list) */
+  .wide-screen {
+    grid-column: span 2;
+  }
+
+  .wide-screen .screen-frame {
+    padding: 12px;
+  }
+
+  /* Stats footer */
+  .stats {
+    margin-top: 40px;
+    padding: 24px;
+    background: var(--panel);
+    border-radius: 14px;
+    border: 1px solid var(--line);
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 24px;
+  }
+
+  .stat {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .stat-num {
+    font-size: 28px;
+    font-weight: 800;
+    letter-spacing: -0.025em;
+    color: var(--text);
+  }
+
+  .stat-label {
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: -0.005em;
+  }
+
+  .footer {
+    margin-top: 80px;
+    padding-top: 32px;
+    border-top: 1px solid var(--line);
+    font-size: 12px;
+    color: var(--soft);
+    text-align: center;
+    letter-spacing: -0.005em;
+    line-height: 1.7;
+  }
+
+  .footer code {
+    font-family: 'SF Mono', Menlo, Consolas, monospace;
+    background: var(--panel);
+    padding: 2px 6px;
+    border-radius: 4px;
+    color: var(--muted);
+  }
+
+  /* Print-friendly */
+  @media print {
+    body { background: white; color: black; }
+    .screen-frame { break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+
+<div class="board">
+
+  <div class="header">
+    <div class="header-left">
+      <svg class="mascot-mini" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+        <ellipse cx="32" cy="38" rx="20" ry="20" fill="#D4B891"/>
+        <ellipse cx="32" cy="42" rx="13" ry="13" fill="#F5EBD3"/>
+        <ellipse cx="13" cy="34" rx="3.5" ry="6" fill="#A89070" transform="rotate(-25 13 34)"/>
+        <ellipse cx="51" cy="34" rx="3.5" ry="6" fill="#A89070" transform="rotate(25 51 34)"/>
+        <ellipse cx="22" cy="36" rx="3" ry="2" fill="#E8B894" opacity="0.6"/>
+        <ellipse cx="42" cy="36" rx="3" ry="2" fill="#E8B894" opacity="0.6"/>
+        <circle cx="25" cy="30" r="3.5" fill="white"/>
+        <circle cx="39" cy="30" r="3.5" fill="white"/>
+        <circle cx="25" cy="30" r="1.7" fill="#1A1A1A"/>
+        <circle cx="39" cy="30" r="1.7" fill="#1A1A1A"/>
+        <circle cx="25.6" cy="29.4" r="0.6" fill="white"/>
+        <circle cx="39.6" cy="29.4" r="0.6" fill="white"/>
+        <path d="M30 33 L34 33 L32 36 Z" fill="#C87A4A"/>
+        <path d="M30 14 Q32 10 34 14" stroke="#8B7355" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+      </svg>
+      <div>
+        <h1>Kebi Design System</h1>
+        <div class="header-meta">v0.4.2 — every screen, every variant, one board</div>
+      </div>
+    </div>
+    <div class="header-right">
+      <div><strong>15</strong> screens · <strong>32</strong> renders</div>
+      <div>Linear visual base · Gen Z voice</div>
+      <div>iPhone 15-class · 390 × 844</div>
+    </div>
+  </div>
+
+  <!-- ============================================
+       AUTH & ENTRY
+       ============================================ -->
+  <div class="section">
+    <div class="section-head">
+      <div class="section-title">
+        <span class="section-num">01</span>
+        <span class="section-name">auth & entry</span>
+      </div>
+      <span class="section-count">3 screens · 6 renders</span>
+    </div>
+    <p class="section-desc">app boot through first frame. splash plays once on launch, login captures auth, loading covers post-auth syncs.</p>
+
+    <div class="grid three">
+      <div class="screen">
+        <div class="screen-frame">
+          <span class="variant-tag">light</span>
+          <img class="screen-img" src="kebi-splash-mockup.png" alt="splash light">
+        </div>
+        <div class="screen-meta">
+          <span class="screen-name">splash</span>
+          <span class="screen-tag">animated</span>
+        </div>
+        <p class="screen-desc">mascot fades up, wordmark types, tagline + dots after. ~2.5s total.</p>
+      </div>
+
+      <div class="screen">
+        <div class="screen-frame">
+          <span class="variant-tag">light</span>
+          <img class="screen-img" src="kebi-login-mockup.png" alt="login light">
+        </div>
+        <div class="screen-meta">
+          <span class="screen-name">login</span>
+          <span class="screen-tag">clerk</span>
+        </div>
+        <p class="screen-desc">google + apple, email code, mascot pitch as kebi chat turn.</p>
+      </div>
+
+      <div class="screen">
+        <div class="screen-frame">
+          <span class="variant-tag">light</span>
+          <img class="screen-img" src="kebi-loading-mockup.png" alt="loading light">
+        </div>
+        <div class="screen-meta">
+          <span class="screen-name">loading</span>
+          <span class="screen-tag">reusable</span>
+        </div>
+        <p class="screen-desc">mascot breathing + status text. reassurance at 5s, cancel at 15s.</p>
+      </div>
+
+      <div class="screen">
+        <div class="screen-frame">
+          <span class="variant-tag dark">dark</span>
+          <img class="screen-img" src="kebi-splash-dark-mockup.png" alt="splash dark">
+        </div>
+        <div class="screen-meta">
+          <span class="screen-name">splash</span>
+          <span class="screen-tag">dark</span>
+        </div>
+      </div>
+
+      <div class="screen">
+        <div class="screen-frame">
+          <span class="variant-tag dark">dark</span>
+          <img class="screen-img" src="kebi-login-dark-mockup.png" alt="login dark">
+        </div>
+        <div class="screen-meta">
+          <span class="screen-name">login</span>
+          <span class="screen-tag">dark</span>
+        </div>
+      </div>
+
+      <div class="screen">
+        <div class="screen-frame">
+          <span class="variant-tag dark">dark</span>
+          <img class="screen-img" src="kebi-loading-dark-mockup.png" alt="loading dark">
+        </div>
+        <div class="screen-meta">
+          <span class="screen-name">loading</span>
+          <span class="screen-tag">dark</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================
+       CORE FLOW
+       ============================================ -->
+  <div class="section">
+    <div class="section-head">
+      <div class="section-title">
+        <span class="section-num">02</span>
+        <span class="section-name">core flow</span>
+      </div>
+      <span class="section-count">4 screens · 8 renders</span>
+    </div>
+    <p class="section-desc">the everyday loop. home is the entry point. library holds your stash. place is the deep view. chat is where the agent runs.</p>
+
+    <div class="grid">
+      <div class="screen">
+        <div class="screen-frame">
+          <span class="variant-tag">light</span>
+          <img class="screen-img" src="kebi-home-mockup.png" alt="home light">
+        </div>
+        <div class="screen-meta">
+          <span class="screen-name">home</span>
+          <span class="screen-tag">entry</span>
+        </div>
+        <p class="screen-desc">3-icon pill: save / library / settings. quick prompts, history, stash preview with show all link.</p>
+      </div>
+
+      <div class="screen">
+        <div class="screen-frame">
+          <span class="variant-tag">light</span>
+          <img class="screen-img" src="kebi-library-mockup.png" alt="library light">
+        </div>
+        <div class="screen-meta">
+          <span class="screen-name">library</span>
+          <span class="screen-tag">stash</span>
+        </div>
+        <p class="screen-desc">7 places across 6 categories. search + save in pill. swipe-to-delete on every card.</p>
+      </div>
+
+      <div class="screen">
+        <div class="screen-frame">
+          <span class="variant-tag">light</span>
+          <img class="screen-img" src="kebi-place-mockup.png" alt="place light">
+        </div>
+        <div class="screen-meta">
+          <span class="screen-name">place</span>
+          <span class="screen-tag">deep view</span>
+        </div>
+        <p class="screen-desc">title + dietary, atmosphere, features, accessibility. ••• menu opens with remove from stash.</p>
+      </div>
+
+      <div class="screen">
+        <div class="screen-frame">
+          <span class="variant-tag">light</span>
+          <img class="screen-img" src="kebi-chat-mockup.png" alt="chat light">
+        </div>
+        <div class="screen-meta">
+          <span class="screen-name">chat</span>
+          <span class="screen-tag">agent</span>
+        </div>
+        <p class="screen-desc">multi-turn editor. greeting → drinks → food. place card with good pick / save it / not it actions.</p>
+      </div>
+
+      <div class="screen">
+        <div class="screen-frame">
+          <span class="variant-tag dark">dark</span>
+          <img class="screen-img" src="kebi-home-dark-mockup.png" alt="home dark">
+        </div>
+        <div class="screen-meta">
+          <span class="screen-name">home</span>
+          <span class="screen-tag">dark</span>
+        </div>
+      </div>
+
+      <div class="screen">
+        <div class="screen-frame">
+          <span class="variant-tag dark">dark</span>
+          <img class="screen-img" src="kebi-library-dark-mockup.png" alt="library dark">
+        </div>
+        <div class="screen-meta">
+          <span class="screen-name">library</span>
+          <span class="screen-tag">dark</span>
+        </div>
+      </div>
+
+      <div class="screen">
+        <div class="screen-frame">
+          <span class="variant-tag dark">dark</span>
+          <img class="screen-img" src="kebi-place-dark-mockup.png" alt="place dark">
+        </div>
+        <div class="screen-meta">
+          <span class="screen-name">place</span>
+          <span class="screen-tag">dark</span>
+        </div>
+      </div>
+
+      <div class="screen">
+        <div class="screen-frame">
+          <span class="variant-tag dark">dark</span>
+          <img class="screen-img" src="kebi-chat-dark-mockup.png" alt="chat dark">
+        </div>
+        <div class="screen-meta">
+          <span class="screen-name">chat</span>
+          <span class="screen-tag">dark</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================
+       ACCOUNT & MONEY
+       ============================================ -->
+  <div class="section">
+    <div class="section-head">
+      <div class="section-title">
+        <span class="section-num">03</span>
+        <span class="section-name">account & money</span>
+      </div>
+      <span class="section-count">3 screens · 6 renders</span>
+    </div>
+    <p class="section-desc">settings hub plus the two money pages. plans for upgrading, billing for managing what you already have.</p>
+
+    <div class="grid three">
+      <div class="screen">
+        <div class="screen-frame">
+          <span class="variant-tag">light</span>
+          <img class="screen-img" src="kebi-settings-mockup.png" alt="settings light">
+        </div>
+        <div class="screen-meta">
+          <span class="screen-name">settings</span>
+          <span class="screen-tag">hub</span>
+        </div>
+        <p class="screen-desc">profile, subscription, appearance, data, account.</p>
+      </div>
+
+      <div class="screen">
+        <div class="screen-frame">
+          <span class="variant-tag">light</span>
+          <img class="screen-img" src="kebi-plans-mockup.png" alt="plans light">
+        </div>
+        <div class="screen-meta">
+          <span class="screen-name">plans</span>
+          <span class="screen-tag">upgrade</span>
+        </div>
+        <p class="screen-desc">homebody / explorer / local legend. monthly + yearly toggle.</p>
+      </div>
+
+      <div class="screen">
+        <div class="screen-frame">
+          <span class="variant-tag">light</span>
+          <img class="screen-img" src="kebi-billing-mockup.png" alt="billing light">
+        </div>
+        <div class="screen-meta">
+          <span class="screen-name">billing</span>
+          <span class="screen-tag">manage</span>
+        </div>
+        <p class="screen-desc">payment method, invoices, pause, cancel.</p>
+      </div>
+
+      <div class="screen">
+        <div class="screen-frame">
+          <span class="variant-tag dark">dark</span>
+          <img class="screen-img" src="kebi-settings-dark-mockup.png" alt="settings dark">
+        </div>
+        <div class="screen-meta">
+          <span class="screen-name">settings</span>
+          <span class="screen-tag">dark</span>
+        </div>
+      </div>
+
+      <div class="screen">
+        <div class="screen-frame">
+          <span class="variant-tag dark">dark</span>
+          <img class="screen-img" src="kebi-plans-dark-mockup.png" alt="plans dark">
+        </div>
+        <div class="screen-meta">
+          <span class="screen-name">plans</span>
+          <span class="screen-tag">dark</span>
+        </div>
+      </div>
+
+      <div class="screen">
+        <div class="screen-frame">
+          <span class="variant-tag dark">dark</span>
+          <img class="screen-img" src="kebi-billing-dark-mockup.png" alt="billing dark">
+        </div>
+        <div class="screen-meta">
+          <span class="screen-name">billing</span>
+          <span class="screen-tag">dark</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================
+       INTERACTIONS — sheets, overlays, transient UI
+       ============================================ -->
+  <div class="section">
+    <div class="section-head">
+      <div class="section-title">
+        <span class="section-num">04</span>
+        <span class="section-name">interactions</span>
+      </div>
+      <span class="section-count">3 patterns · save · delete · menu</span>
+    </div>
+    <p class="section-desc">overlays and gestures. save sheet captures new places. swipe-to-delete on library cards is the fast destructive path. overflow menu on place page is the deliberate path.</p>
+
+    <div class="grid three">
+      <div class="screen">
+        <div class="screen-frame">
+          <span class="variant-tag">light</span>
+          <img class="screen-img" src="kebi-save-sheet-empty-mockup.png" alt="save sheet empty light">
+        </div>
+        <div class="screen-meta">
+          <span class="screen-name">save · empty</span>
+          <span class="screen-tag">sheet</span>
+        </div>
+        <p class="screen-desc">placeholder state. cta disabled until input has content.</p>
+      </div>
+
+      <div class="screen">
+        <div class="screen-frame">
+          <span class="variant-tag">light</span>
+          <img class="screen-img" src="kebi-save-sheet-mockup.png" alt="save sheet filled light">
+        </div>
+        <div class="screen-meta">
+          <span class="screen-name">save · filled</span>
+          <span class="screen-tag">sheet</span>
+        </div>
+        <p class="screen-desc">url pasted. source detection row confirms what kebi recognized.</p>
+      </div>
+
+      <div class="screen">
+        <div class="screen-frame">
+          <span class="variant-tag">light</span>
+          <img class="screen-img" src="kebi-save-sheet-saving-mockup.png" alt="save sheet saving light">
+        </div>
+        <div class="screen-meta">
+          <span class="screen-name">save · saving</span>
+          <span class="screen-tag">sheet</span>
+        </div>
+        <p class="screen-desc">cta inverts to spinner + "saving". sheet dismisses on success, toast confirms.</p>
+      </div>
+
+      <div class="screen">
+        <div class="screen-frame">
+          <span class="variant-tag dark">dark</span>
+          <img class="screen-img" src="kebi-save-sheet-empty-dark-mockup.png" alt="save sheet empty dark">
+        </div>
+        <div class="screen-meta">
+          <span class="screen-name">save · empty</span>
+          <span class="screen-tag">dark</span>
+        </div>
+      </div>
+
+      <div class="screen">
+        <div class="screen-frame">
+          <span class="variant-tag dark">dark</span>
+          <img class="screen-img" src="kebi-save-sheet-dark-mockup.png" alt="save sheet filled dark">
+        </div>
+        <div class="screen-meta">
+          <span class="screen-name">save · filled</span>
+          <span class="screen-tag">dark</span>
+        </div>
+      </div>
+
+      <div class="screen">
+        <div class="screen-frame">
+          <span class="variant-tag dark">dark</span>
+          <img class="screen-img" src="kebi-save-sheet-saving-dark-mockup.png" alt="save sheet saving dark">
+        </div>
+        <div class="screen-meta">
+          <span class="screen-name">save · saving</span>
+          <span class="screen-tag">dark</span>
+        </div>
+      </div>
+    </div>
+
+    <p class="section-desc" style="margin-top: 32px;">delete patterns: swipe a library card left → red action revealed → tap to fire delete + undo toast. on the place page, tap ••• → menu drops with destructive "remove from stash" at the bottom.</p>
+
+    <div class="grid two">
+      <div class="screen">
+        <div class="screen-frame">
+          <span class="variant-tag">light</span>
+          <img class="screen-img" src="kebi-library-mockup.png" alt="library swipe light">
+        </div>
+        <div class="screen-meta">
+          <span class="screen-name">library · swipe</span>
+          <span class="screen-tag">cards wrapped in swipe-row</span>
+        </div>
+        <p class="screen-desc">every card sits inside a swipe-row. red delete action reveals on horizontal pan past threshold.</p>
+      </div>
+
+      <div class="screen">
+        <div class="screen-frame">
+          <span class="variant-tag">light</span>
+          <img class="screen-img" src="kebi-place-mockup.png" alt="place overflow menu light">
+        </div>
+        <div class="screen-meta">
+          <span class="screen-name">place · overflow</span>
+          <span class="screen-tag">menu open</span>
+        </div>
+        <p class="screen-desc">share, add note, mark as been, remove from stash. destructive item separated by divider.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================
+       SYSTEM
+       ============================================ -->
+  <div class="section">
+    <div class="section-head">
+      <div class="section-title">
+        <span class="section-num">05</span>
+        <span class="section-name">system</span>
+      </div>
+      <span class="section-count">2 specs · 4 renders</span>
+    </div>
+    <p class="section-desc">design tokens spec and toast notifications. the foundation everything else inherits.</p>
+
+    <div class="grid two">
+      <div class="screen">
+        <div class="screen-frame">
+          <span class="variant-tag">light</span>
+          <img class="screen-img" src="kebi-tokens-mockup.png" alt="tokens light">
+        </div>
+        <div class="screen-meta">
+          <span class="screen-name">tokens</span>
+          <span class="screen-tag">spec</span>
+        </div>
+        <p class="screen-desc">colors, type, spacing, radius, components, motion. 16 sections, single source of truth.</p>
+      </div>
+
+      <div class="screen">
+        <div class="screen-frame">
+          <span class="variant-tag">light</span>
+          <img class="screen-img" src="kebi-toasts-mockup.png" alt="toasts light">
+        </div>
+        <div class="screen-meta">
+          <span class="screen-name">toasts</span>
+          <span class="screen-tag">notifications</span>
+        </div>
+        <p class="screen-desc">six variants. confirmation, copy, undo, action, destructive, error.</p>
+      </div>
+
+      <div class="screen">
+        <div class="screen-frame">
+          <span class="variant-tag dark">dark</span>
+          <img class="screen-img" src="kebi-tokens-dark-mockup.png" alt="tokens dark">
+        </div>
+        <div class="screen-meta">
+          <span class="screen-name">tokens</span>
+          <span class="screen-tag">dark</span>
+        </div>
+      </div>
+
+      <div class="screen">
+        <div class="screen-frame">
+          <span class="variant-tag dark">dark</span>
+          <img class="screen-img" src="kebi-toasts-dark-mockup.png" alt="toasts dark">
+        </div>
+        <div class="screen-meta">
+          <span class="screen-name">toasts</span>
+          <span class="screen-tag">dark</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================
+       STATS
+       ============================================ -->
+  <div class="stats">
+    <div class="stat">
+      <span class="stat-num">15</span>
+      <span class="stat-label">unique screens</span>
+    </div>
+    <div class="stat">
+      <span class="stat-num">32</span>
+      <span class="stat-label">renders (light + dark)</span>
+    </div>
+    <div class="stat">
+      <span class="stat-num">16</span>
+      <span class="stat-label">design tokens sections</span>
+    </div>
+    <div class="stat">
+      <span class="stat-num">12</span>
+      <span class="stat-label">component patterns</span>
+    </div>
+    <div class="stat">
+      <span class="stat-num">6</span>
+      <span class="stat-label">toast variants</span>
+    </div>
+  </div>
+
+  <div class="footer">
+    Kebi v0.4.2 · design system overview · pair with <code>design-system.md</code> for the rules<br>
+    every screen built on iPhone 15-class viewport · 390 × 844 · linear visual base · Gen Z voice
+  </div>
+
+</div>
+
+</body>
+</html>

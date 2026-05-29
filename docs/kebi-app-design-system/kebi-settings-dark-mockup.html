@@ -1,0 +1,807 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Kebi Settings — Linear Style</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #13110F;
+    --surface: #1C1A17;
+    --surface-2: #26231F;
+    --text: #F5F1EA;
+    --text-muted: #9A938A;
+    --text-soft: #6E6862;
+    --success: #A8C293;
+    --like: #E8B894;
+    --warn: #E5C078;
+    --danger: #E89090;
+  }
+
+  html, body {
+    background: #0A0908;
+    font-family: 'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 16px;
+  }
+
+  .phone {
+    width: 390px;
+    height: 844px;
+    background: var(--bg);
+    border-radius: 48px;
+    overflow: hidden;
+    position: relative;
+    box-shadow: 0 0 0 12px #000, 0 0 0 14px #0A0908, 0 40px 80px rgba(0,0,0,0.5);
+    display: flex;
+    flex-direction: column;
+  }
+
+  .status-bar {
+    height: 50px;
+    padding: 18px 32px 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text);
+    flex-shrink: 0;
+  }
+
+  .status-right { display: flex; gap: 6px; align-items: center; }
+
+  .top-bar {
+    padding: 12px 16px 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-shrink: 0;
+  }
+
+  .icon-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--surface);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    cursor: pointer;
+  }
+
+  .icon-btn svg {
+    width: 18px;
+    height: 18px;
+    stroke: var(--text);
+    stroke-width: 1.8;
+    fill: none;
+  }
+
+  .top-pill {
+    display: flex;
+    align-items: center;
+    background: var(--surface);
+    border-radius: 999px;
+    padding: 0 4px;
+  }
+
+  .top-pill button {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: transparent;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+  }
+
+  .top-pill svg {
+    width: 18px;
+    height: 18px;
+    stroke: var(--text);
+    stroke-width: 1.8;
+    fill: none;
+  }
+
+  .scroll {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px 24px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  .scroll::-webkit-scrollbar { display: none; }
+
+  .turn {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .turn-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-soft);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .hero {
+    font-size: 36px;
+    font-weight: 700;
+    color: var(--text);
+    letter-spacing: -0.03em;
+    line-height: 1.05;
+    margin-top: 4px;
+  }
+
+  /* Profile block */
+  .profile {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 4px 0;
+  }
+
+  .profile-avatar {
+    width: 56px;
+    height: 56px;
+    border-radius: 14px;
+    background: var(--surface-2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--text);
+    letter-spacing: -0.02em;
+    flex-shrink: 0;
+  }
+
+  .profile-body {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .profile-name {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text);
+    letter-spacing: -0.015em;
+  }
+
+  .profile-email {
+    font-size: 13px;
+    color: var(--text-muted);
+    letter-spacing: -0.005em;
+  }
+
+  .profile-edit {
+    background: var(--surface);
+    border: none;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+
+  .profile-edit svg {
+    width: 14px;
+    height: 14px;
+    stroke: var(--text);
+    stroke-width: 1.8;
+    fill: none;
+  }
+
+  /* Plan card — Linear group style */
+  .plan-card {
+    background: var(--surface);
+    border-radius: 14px;
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .plan-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 4px 4px 8px;
+    gap: 12px;
+  }
+
+  .plan-header-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .plan-icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 7px;
+    background: var(--surface-2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .plan-icon svg {
+    width: 14px;
+    height: 14px;
+    stroke: var(--text);
+    stroke-width: 1.8;
+    fill: none;
+  }
+
+  .plan-name {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text);
+    letter-spacing: -0.01em;
+  }
+
+  .plan-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 9px;
+    border-radius: 999px;
+    background: #3A1F12;
+    color: var(--like);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: -0.005em;
+  }
+
+  .plan-pill::before {
+    content: '';
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--like);
+  }
+
+  .plan-meta {
+    padding: 8px 4px;
+    font-size: 13px;
+    color: var(--text-muted);
+    line-height: 1.5;
+    letter-spacing: -0.005em;
+    border-top: 1px solid var(--surface-2);
+  }
+
+  .plan-meta strong {
+    color: var(--text);
+    font-weight: 600;
+  }
+
+  /* Setting rows group */
+  .section-head {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-soft);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 0 4px 4px;
+  }
+
+  .group {
+    background: var(--surface);
+    border-radius: 14px;
+    padding: 4px;
+  }
+
+  .row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 12px;
+    cursor: pointer;
+    border-radius: 10px;
+    transition: background 120ms ease-out;
+  }
+
+  .row:hover { background: var(--surface-2); }
+
+  .row + .row {
+    border-top: 1px solid var(--surface-2);
+  }
+
+  .row-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: var(--surface-2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .row-icon svg {
+    width: 15px;
+    height: 15px;
+    stroke: var(--text);
+    stroke-width: 1.8;
+    fill: none;
+  }
+
+  .row-icon.danger {
+    background: #3A1818;
+  }
+
+  .row-icon.danger svg {
+    stroke: var(--danger);
+  }
+
+  .row-body {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+  }
+
+  .row-label {
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--text);
+    letter-spacing: -0.005em;
+  }
+
+  .row-label.danger {
+    color: var(--danger);
+  }
+
+  .row-sublabel {
+    font-size: 12px;
+    color: var(--text-muted);
+    letter-spacing: -0.005em;
+  }
+
+  .row-value {
+    font-size: 13px;
+    color: var(--text-muted);
+    letter-spacing: -0.005em;
+    flex-shrink: 0;
+  }
+
+  .row-chevron {
+    width: 14px;
+    height: 14px;
+    stroke: var(--text-soft);
+    stroke-width: 2;
+    fill: none;
+    flex-shrink: 0;
+  }
+
+  /* Theme segmented control */
+  .theme-row {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 14px 12px;
+  }
+
+  .theme-row-head {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .theme-segment {
+    display: flex;
+    background: var(--surface-2);
+    border-radius: 999px;
+    padding: 3px;
+    margin-left: 44px;
+  }
+
+  .seg-btn {
+    flex: 1;
+    padding: 8px 12px;
+    background: transparent;
+    border: none;
+    border-radius: 999px;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-muted);
+    letter-spacing: -0.005em;
+    cursor: pointer;
+    transition: background 160ms ease-out, color 160ms ease-out;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+  }
+
+  .seg-btn svg {
+    width: 13px;
+    height: 13px;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    fill: none;
+  }
+
+  .seg-btn.active {
+    background: var(--text);
+    color: var(--bg);
+  }
+
+  .footer-meta {
+    text-align: center;
+    font-size: 12px;
+    color: var(--text-soft);
+    letter-spacing: -0.005em;
+    line-height: 1.5;
+    padding: 8px 0;
+  }
+
+  /* Bottom Kebi button */
+  .tab-bar {
+    margin: 8px 16px 12px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    flex-shrink: 0;
+  }
+
+  .kebi-ai-btn {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: var(--text);
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+  }
+
+  .kebi-ai-btn svg {
+    width: 36px;
+    height: 36px;
+  }
+
+  .home-indicator {
+    width: 134px;
+    height: 5px;
+    background: var(--text);
+    border-radius: 3px;
+    margin: 4px auto 8px;
+    flex-shrink: 0;
+  }
+
+  /* Confirm sheet for destructive actions */
+  .sheet-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: none;
+    align-items: flex-end;
+    z-index: 10;
+  }
+
+  .sheet-overlay.open { display: flex; }
+
+  .sheet {
+    width: 100%;
+    background: var(--bg);
+    border-radius: 24px 24px 0 0;
+    padding: 16px 20px 28px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .sheet-handle {
+    width: 36px;
+    height: 4px;
+    border-radius: 2px;
+    background: var(--surface-2);
+    margin: 0 auto;
+  }
+
+  .sheet-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text);
+    letter-spacing: -0.015em;
+  }
+
+  .sheet-body {
+    font-size: 14px;
+    color: var(--text-muted);
+    line-height: 1.5;
+    letter-spacing: -0.005em;
+  }
+
+  .sheet-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 4px;
+  }
+
+  .sheet-btn {
+    flex: 1;
+    padding: 12px 16px;
+    border: none;
+    border-radius: 12px;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    letter-spacing: -0.005em;
+  }
+
+  .sheet-btn.secondary {
+    background: var(--surface);
+    color: var(--text);
+  }
+
+  .sheet-btn.danger {
+    background: var(--danger);
+    color: white;
+  }
+</style>
+</head>
+<body>
+
+<div class="phone">
+
+  <div class="status-bar">
+    <span>9:41</span>
+    <div class="status-right">
+      <svg width="17" height="11" viewBox="0 0 17 11" fill="currentColor"><path d="M1 7h2v3H1zM5 5h2v5H5zM9 3h2v7H9zM13 1h2v9h-2z"/></svg>
+      <svg width="15" height="11" viewBox="0 0 15 11" fill="currentColor"><path d="M7.5 2C9.7 2 11.7 2.8 13.3 4.2L14.5 3C12.6 1.2 10.1.2 7.5.2S2.4 1.2.5 3l1.2 1.2C3.3 2.8 5.3 2 7.5 2zM7.5 5.5c1.4 0 2.7.5 3.7 1.4l1.2-1.2c-1.4-1.3-3.2-2-5-2s-3.6.7-5 2l1.2 1.2c1-.9 2.3-1.4 3.7-1.4z"/></svg>
+      <svg width="24" height="11" viewBox="0 0 24 11" fill="none"><rect x="0.5" y="0.5" width="20" height="10" rx="2.5" stroke="currentColor"/><rect x="2" y="2" width="17" height="7" rx="1" fill="currentColor"/><rect x="21" y="3.5" width="1.5" height="4" rx="0.5" fill="currentColor"/></svg>
+    </div>
+  </div>
+
+  <div class="top-bar">
+    <button class="icon-btn" aria-label="Back">
+      <svg viewBox="0 0 24 24"><polyline points="15 6 9 12 15 18"/></svg>
+    </button>
+    <div class="top-pill">
+      <button aria-label="More">
+        <svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.5" fill="currentColor"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/><circle cx="19" cy="12" r="1.5" fill="currentColor"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <div class="scroll">
+
+    <div class="turn">
+      <div class="turn-label">settings</div>
+      <h1 class="hero">you, basically</h1>
+    </div>
+
+    <div class="profile">
+      <div class="profile-avatar">S</div>
+      <div class="profile-body">
+        <div class="profile-name">saher</div>
+        <div class="profile-email">saher@kebi.app</div>
+      </div>
+      <button class="profile-edit" aria-label="Edit">
+        <svg viewBox="0 0 24 24"><path d="M12 20h9M16.5 3.5a2.12 2.12 0 113 3L7 19l-4 1 1-4z"/></svg>
+      </button>
+    </div>
+
+    <!-- Subscription -->
+    <div>
+      <div class="section-head">subscription</div>
+      <div class="group">
+        <div class="row">
+          <div class="row-icon">
+            <span style="font-size:16px;line-height:1;">🌟</span>
+          </div>
+          <div class="row-body">
+            <div class="row-label">your plan</div>
+            <div class="row-sublabel">local legend · $10/mo</div>
+          </div>
+          <span class="plan-pill">active</span>
+          <svg class="row-chevron" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>
+        </div>
+        <div class="row">
+          <div class="row-icon">
+            <svg viewBox="0 0 24 24"><path d="M3 8a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><line x1="3" y1="11" x2="21" y2="11"/></svg>
+          </div>
+          <div class="row-body">
+            <div class="row-label">billing</div>
+            <div class="row-sublabel">payment, invoices, cancel</div>
+          </div>
+          <svg class="row-chevron" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>
+        </div>
+      </div>
+    </div>
+
+    <!-- Theme -->
+    <div>
+      <div class="section-head">appearance</div>
+      <div class="group">
+        <div class="theme-row">
+          <div class="theme-row-head">
+            <div class="row-icon">
+              <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+            </div>
+            <div class="row-body">
+              <div class="row-label">vibe</div>
+              <div class="row-sublabel">match your phone or pick a side</div>
+            </div>
+          </div>
+          <div class="theme-segment" id="theme-segment">
+            <button class="seg-btn" data-theme="light">
+              <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/></svg>
+              light
+            </button>
+            <button class="seg-btn" data-theme="dark">
+              <svg viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
+              dark
+            </button>
+            <button class="seg-btn active" data-theme="system">
+              <svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+              system
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Data -->
+    <div>
+      <div class="section-head">your data</div>
+      <div class="group">
+        <div class="row">
+          <div class="row-icon">
+            <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          </div>
+          <div class="row-body">
+            <div class="row-label">export my places</div>
+            <div class="row-sublabel">json, csv</div>
+          </div>
+          <svg class="row-chevron" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>
+        </div>
+        <div class="row" id="clear-data">
+          <div class="row-icon danger">
+            <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6M10 11v6M14 11v6"/></svg>
+          </div>
+          <div class="row-body">
+            <div class="row-label danger">nuke my data</div>
+            <div class="row-sublabel">wipes places, taste model, history</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Account -->
+    <div>
+      <div class="section-head">account</div>
+      <div class="group">
+        <div class="row" id="logout">
+          <div class="row-icon">
+            <svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          </div>
+          <div class="row-body">
+            <div class="row-label">log out</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer-meta">
+      kebi v0.4.2 · <a href="#" style="color: var(--text-muted); text-decoration: underline;">terms</a> · <a href="#" style="color: var(--text-muted); text-decoration: underline;">privacy</a>
+    </div>
+
+  </div>
+
+  <div class="tab-bar">
+    <button class="kebi-ai-btn" aria-label="Ask Kebi">
+      <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+        <ellipse cx="32" cy="38" rx="20" ry="20" fill="#D4B891"/>
+        <ellipse cx="32" cy="42" rx="13" ry="13" fill="#F5EBD3"/>
+        <ellipse cx="13" cy="34" rx="3.5" ry="6" fill="#A89070" transform="rotate(-25 13 34)"/>
+        <ellipse cx="51" cy="34" rx="3.5" ry="6" fill="#A89070" transform="rotate(25 51 34)"/>
+        <ellipse cx="22" cy="36" rx="3" ry="2" fill="#E8B894" opacity="0.6"/>
+        <ellipse cx="42" cy="36" rx="3" ry="2" fill="#E8B894" opacity="0.6"/>
+        <circle cx="25" cy="30" r="3.5" fill="white"/>
+        <circle cx="39" cy="30" r="3.5" fill="white"/>
+        <circle cx="25" cy="30" r="1.7" fill="#1A1A1A"/>
+        <circle cx="39" cy="30" r="1.7" fill="#1A1A1A"/>
+        <circle cx="25.6" cy="29.4" r="0.6" fill="white"/>
+        <circle cx="39.6" cy="29.4" r="0.6" fill="white"/>
+        <path d="M30 33 L34 33 L32 36 Z" fill="#C87A4A"/>
+        <path d="M30 14 Q32 10 34 14" stroke="#8B7355" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+      </svg>
+    </button>
+  </div>
+
+  <div class="home-indicator"></div>
+
+  <!-- Clear data sheet -->
+  <div class="sheet-overlay" id="clear-sheet">
+    <div class="sheet">
+      <div class="sheet-handle"></div>
+      <div class="sheet-title">nuke everything?</div>
+      <div class="sheet-body">
+        wipes your saved places, taste model, and history. your account stays. no take-backs.
+      </div>
+      <div class="sheet-actions">
+        <button class="sheet-btn secondary" data-close>nvm</button>
+        <button class="sheet-btn danger">do it</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Logout sheet -->
+  <div class="sheet-overlay" id="logout-sheet">
+    <div class="sheet">
+      <div class="sheet-handle"></div>
+      <div class="sheet-title">log out?</div>
+      <div class="sheet-body">
+        your stuff stays safe. log back in whenever.
+      </div>
+      <div class="sheet-actions">
+        <button class="sheet-btn secondary" data-close>nvm</button>
+        <button class="sheet-btn danger">log out</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+(function() {
+  // Theme segmented control
+  const segs = document.querySelectorAll('#theme-segment .seg-btn');
+  segs.forEach(s => s.addEventListener('click', () => {
+    segs.forEach(x => x.classList.remove('active'));
+    s.classList.add('active');
+  }));
+
+  // Confirm sheets
+  const clearRow = document.getElementById('clear-data');
+  const logoutRow = document.getElementById('logout');
+  const clearSheet = document.getElementById('clear-sheet');
+  const logoutSheet = document.getElementById('logout-sheet');
+
+  clearRow.addEventListener('click', () => clearSheet.classList.add('open'));
+  logoutRow.addEventListener('click', () => logoutSheet.classList.add('open'));
+
+  document.querySelectorAll('.sheet-overlay').forEach(overlay => {
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay || e.target.hasAttribute('data-close')) {
+        overlay.classList.remove('open');
+      }
+    });
+  });
+})();
+</script>
+
+</body>
+</html>

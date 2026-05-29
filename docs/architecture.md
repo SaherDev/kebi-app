@@ -24,7 +24,7 @@ Kebi is split across two repositories. This repo (kebi-app) is the product layer
 │  - Forwards all user messages to kebi          │
 │  - No database writes                               │
 └─────────────────────────────┬───────────────────────┘
-                              │ HTTP (JSON) POST /v1/chat
+                              │ HTTP (JSON) — signed /v1 calls
                               ▼
 ┌──────────────────────┐  ┌──────────────────────────┐
 │  PostgreSQL           │  │  kebi (FastAPI)     │
@@ -32,11 +32,11 @@ Kebi is split across two repositories. This repo (kebi-app) is the product layer
 │                       │  │  - Runs agent pipeline   │
 │  FastAPI writes:      │  │  - Generates embeddings  │
 │  - places             │  │  - Owns all DB writes    │
-│  - embeddings         │  │                          │
+│  - place_embeddings   │  │                          │
+│  - user_places        │  │                          │
 │  - taste_model        │  │                          │
-│  - consult_logs       │  │                          │
+│  - interactions       │  │                          │
 │  - user_memories      │  │                          │
-│  - interaction_log    │  │                          │
 └──────────────────────┘  └──────────────────────────┘
 ```
 
@@ -44,7 +44,7 @@ Kebi is split across two repositories. This repo (kebi-app) is the product layer
 
 - All user-facing UI (Next.js)
 - Authentication and authorization (Clerk)
-- HTTP gateway: receives user messages, forwards to kebi via `POST /v1/chat`, returns the response
+- HTTP gateway: verifies the Clerk session, forwards to kebi's `/v1` endpoints (chat, extract, signal, user-data) over signed service-to-service requests, returns the response
 
 ## What This Repo Does NOT Do
 
@@ -55,40 +55,45 @@ Kebi is split across two repositories. This repo (kebi-app) is the product layer
 - Write place records or embeddings (FastAPI owns these)
 - Touch Redis
 
-## Data Flow: All User Interactions
+## Data Flow: User Interactions
 
-All user messages — save, consult, recall — flow through a single endpoint (ADR-036):
+Conversational turns and saves use different kebi endpoints — the chat path is
+conversation-only and never writes saves:
 
-1. User submits input in apps/web.
-2. apps/web sends the message to services/api via `POST /api/v1/chat`.
-3. services/api verifies auth (Clerk), then forwards to kebi via `POST /v1/chat` with user_id and message.
-4. kebi classifies intent (save / consult / recall / assistant / clarification) and handles the full pipeline autonomously.
-5. kebi returns a typed `ChatResponseDto` with a discriminated `type` field.
-6. services/api returns HTTP 200 with the response. The frontend reads the `type` field to determine what happened.
-7. apps/web renders the appropriate UI based on response type.
+1. User submits input in the client app.
+2. The client calls services/api — `POST /api/v1/chat` for a conversational turn, `POST /api/v1/extract` to save a URL or place name.
+3. services/api verifies the Clerk session, then forwards to kebi over HTTP, signing each request with `X-Gateway-Token` (shared secret) and `X-Gateway-User-Id` (the verified Clerk subject). `user_id` is never a body field. For chat it also injects `movement_profile`, read from the Clerk `publicMetadata` claim.
+4. kebi handles the request autonomously — for chat, a LangGraph agent turn driven by the consult-family tools (`find_saved`, `suggest_places`, `discover_places`).
+5. kebi returns a typed response — chat: `ChatResponse` with `type` `"agent"` or `"error"` plus `data.tool_results`; extract: `ExtractPlaceResponse`.
+6. services/api returns HTTP 200. Downstream failures arrive as `type: "error"` with HTTP 200; real HTTP codes (401/403/429/503) are reserved for transport failures only.
+7. The client renders UI from the response.
 
-One HTTP call to kebi. Intent classification is the AI service's responsibility. NestJS never inspects response content — it forwards and returns. HTTP error codes (401, 403, 503) are reserved for transport failures only.
+NestJS never inspects AI response content — it forwards and returns.
 
-## Intent Classification
+## Chat Response Shape
 
-Classification happens in kebi as the first step of request handling — not in NestJS, not in the frontend.
+The chat endpoint returns no intent taxonomy. A turn is an autonomous agent run
+inside kebi; the top-level `type` is only ever `agent` or `error`. What the
+agent did surfaces in `data.tool_results` — each a `ConsultResult` produced by
+one of the consult-family tools (`find_saved`, `suggest_places`,
+`discover_places`) — and in the user-visible `data.reasoning_steps`. Saving a
+place is a separate endpoint (`POST /v1/extract`), not a chat intent.
 
-Intent types returned in `type` field:
-- `extract-place` — URL or place name was saved
-- `consult` — natural language intent query was answered
-- `recall` — memory fragment search was performed
-- `assistant` — general assistant reply
-- `clarification` — AI needs more information
-
-Empty state rule: the system always returns something. At zero saves, a consult query returns nearby popular options. A recall with no matches returns the closest consult result with a note that nothing was found in saves. Never return a zero-result response.
+Empty state: a tool that finds nothing returns a `ConsultResult` carrying an
+`empty_reason` (e.g. `no_location`, `no_match`) rather than a zero-result error.
 
 ## API Contract (NestJS to kebi)
 
-| Endpoint       | Purpose                      | NestJS Sends                   | kebi Returns                    |
-| -------------- | ---------------------------- | ------------------------------ | ------------------------------------ |
-| POST /v1/chat  | All user interactions        | message, user_id, location?    | typed ChatResponseDto (discriminated union) |
+All protected calls carry `X-Gateway-Token` + `X-Gateway-User-Id` headers (identity is never a body field). See `docs/api-contract.md` for the full request/response schemas.
 
-See `docs/api-contract.md` for the full request/response schema.
+| Endpoint              | Purpose                         | kebi Returns                                          |
+| --------------------- | ------------------------------- | ----------------------------------------------------- |
+| POST /v1/chat         | Conversational agent turn       | `ChatResponse` (`type` `agent`\|`error`)              |
+| POST /v1/chat/stream  | SSE streaming chat              | `reasoning_step` / `tool_result` / `message` / `done` |
+| POST /v1/extract      | Save a URL or place name        | `ExtractPlaceResponse`                                |
+| POST /v1/signal       | Recommendation accept/reject    | `202 { status }`                                      |
+| DELETE /v1/user/data  | Wipe AI-owned data              | `204`                                                 |
+| GET /v1/health        | Health probe (unauthenticated)  | `{ status, db }`                                      |
 
 ## Database Ownership
 
@@ -96,8 +101,8 @@ kebi (FastAPI) owns all database writes. Alembic in kebi owns all migrations. Ne
 
 FastAPI writes and reads:
 
-- places, embeddings, taste_model
-- consult_logs, user_memories, interaction_log
+- places, place_embeddings, user_places, taste_model
+- interactions, user_memories
 
 NestJS has no database write responsibilities. It reads nothing from the DB directly — all data it needs comes from kebi responses or Clerk.
 

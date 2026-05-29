@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Kebi Mascot Design</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #FAFAF9;
+    font-family: 'Inter', -apple-system, system-ui, sans-serif;
+    padding: 48px 32px;
+    min-height: 100vh;
+  }
+
+  .page {
+    max-width: 980px;
+    margin: 0 auto;
+  }
+
+  h1 {
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: -0.025em;
+    margin-bottom: 6px;
+  }
+
+  .subtitle {
+    color: #8A8A87;
+    font-size: 14px;
+    letter-spacing: -0.005em;
+    margin-bottom: 48px;
+  }
+
+  .row {
+    display: flex;
+    gap: 32px;
+    align-items: center;
+    margin-bottom: 56px;
+  }
+
+  .stage {
+    background: white;
+    border: 1px solid #E8E8E5;
+    border-radius: 16px;
+    padding: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 200px;
+  }
+
+  .stage.dark {
+    background: #13110F;
+    border-color: #26231F;
+  }
+
+  .label {
+    font-size: 11px;
+    font-weight: 600;
+    color: #B5B5B1;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 8px;
+  }
+
+  .name {
+    font-size: 16px;
+    font-weight: 600;
+    color: #1A1A1A;
+    letter-spacing: -0.005em;
+    margin-bottom: 4px;
+  }
+
+  .desc {
+    font-size: 13px;
+    color: #8A8A87;
+    letter-spacing: -0.005em;
+    line-height: 1.5;
+  }
+
+  .grid-sizes {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 16px;
+    background: white;
+    border: 1px solid #E8E8E5;
+    border-radius: 16px;
+    padding: 32px;
+  }
+
+  .size-cell {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    text-align: center;
+  }
+
+  .size-cell-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: #8A8A87;
+    letter-spacing: -0.005em;
+  }
+
+  .compare {
+    display: flex;
+    gap: 32px;
+    align-items: center;
+  }
+
+  .compare-cell {
+    flex: 1;
+    background: white;
+    border: 1px solid #E8E8E5;
+    border-radius: 16px;
+    padding: 40px;
+    text-align: center;
+  }
+
+  .compare-cell h3 {
+    font-size: 18px;
+    font-weight: 700;
+    margin-top: 24px;
+    letter-spacing: -0.015em;
+  }
+
+  .compare-cell p {
+    font-size: 13px;
+    color: #8A8A87;
+    letter-spacing: -0.005em;
+    margin-top: 6px;
+  }
+
+  .swatch-row {
+    display: flex;
+    gap: 12px;
+    margin-top: 16px;
+  }
+
+  .swatch {
+    flex: 1;
+    background: white;
+    border: 1px solid #E8E8E5;
+    border-radius: 10px;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .swatch-color {
+    height: 40px;
+    border-radius: 6px;
+  }
+
+  .swatch-name {
+    font-size: 11px;
+    font-weight: 600;
+    color: #1A1A1A;
+  }
+
+  .swatch-hex {
+    font-family: 'SF Mono', Menlo, monospace;
+    font-size: 10px;
+    color: #8A8A87;
+  }
+</style>
+</head>
+<body>
+
+<div class="page">
+
+  <h1>Kebi — mascot design</h1>
+  <p class="subtitle">a small round bird. warm cream + soft brown. perched, alert, and remembers everything.</p>
+
+  <!-- Hero size comparison -->
+  <div class="compare">
+    <div class="compare-cell">
+      <svg width="120" height="120" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+        <!-- Body -->
+        <ellipse cx="32" cy="38" rx="20" ry="20" fill="#D4B891"/>
+        <!-- Belly highlight -->
+        <ellipse cx="32" cy="42" rx="13" ry="13" fill="#F5EBD3"/>
+        <!-- Wing line left (single curve, same family as body) -->
+        <ellipse cx="13" cy="34" rx="3.5" ry="6" fill="#A89070" transform="rotate(-25 13 34)"/>
+        <!-- Wing line right -->
+        <ellipse cx="51" cy="34" rx="3.5" ry="6" fill="#A89070" transform="rotate(25 51 34)"/>
+        <!-- Cheek blush left -->
+        <ellipse cx="22" cy="36" rx="3" ry="2" fill="#E8B894" opacity="0.6"/>
+        <!-- Cheek blush right -->
+        <ellipse cx="42" cy="36" rx="3" ry="2" fill="#E8B894" opacity="0.6"/>
+        <!-- Eye left -->
+        <circle cx="25" cy="30" r="3.5" fill="white"/>
+        <!-- Eye right -->
+        <circle cx="39" cy="30" r="3.5" fill="white"/>
+        <!-- Pupil left -->
+        <circle cx="25" cy="30" r="1.7" fill="#1A1A1A"/>
+        <!-- Pupil right -->
+        <circle cx="39" cy="30" r="1.7" fill="#1A1A1A"/>
+        <!-- Eye sparkle -->
+        <circle cx="25.6" cy="29.4" r="0.6" fill="white"/>
+        <circle cx="39.6" cy="29.4" r="0.6" fill="white"/>
+        <!-- Beak -->
+        <path d="M30 33 L34 33 L32 36 Z" fill="#C87A4A"/>
+        <!-- Foot left -->
+        <path d="M27 56 L25 59 M27 56 L27 59 M27 56 L29 59" stroke="#A89070" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+        <!-- Foot right -->
+        <path d="M37 56 L35 59 M37 56 L37 59 M37 56 L39 59" stroke="#A89070" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+        <!-- Tuft on head -->
+        <path d="M30 14 Q32 10 34 14" stroke="#8B7355" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+      </svg>
+      <h3>Kebi</h3>
+      <p>round bird, cream + warm brown</p>
+    </div>
+
+    <div class="compare-cell" style="background: #13110F; border-color: #26231F;">
+      <svg width="120" height="120" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+        <!-- Body -->
+        <ellipse cx="32" cy="38" rx="20" ry="20" fill="#D4B891"/>
+        <!-- Belly highlight -->
+        <ellipse cx="32" cy="42" rx="13" ry="13" fill="#F5EBD3"/>
+        <!-- Happy open wing left -->
+        <ellipse cx="13" cy="34" rx="3.5" ry="6" fill="#A89070" transform="rotate(-25 13 34)"/>
+        <!-- Happy open wing right -->
+        <ellipse cx="51" cy="34" rx="3.5" ry="6" fill="#A89070" transform="rotate(25 51 34)"/>
+        <!-- Cheek blush -->
+        <ellipse cx="22" cy="36" rx="3" ry="2" fill="#E8B894" opacity="0.6"/>
+        <ellipse cx="42" cy="36" rx="3" ry="2" fill="#E8B894" opacity="0.6"/>
+        <!-- Eyes -->
+        <circle cx="25" cy="30" r="3.5" fill="white"/>
+        <circle cx="39" cy="30" r="3.5" fill="white"/>
+        <circle cx="25" cy="30" r="1.7" fill="#1A1A1A"/>
+        <circle cx="39" cy="30" r="1.7" fill="#1A1A1A"/>
+        <circle cx="25.6" cy="29.4" r="0.6" fill="white"/>
+        <circle cx="39.6" cy="29.4" r="0.6" fill="white"/>
+        <!-- Beak -->
+        <path d="M30 33 L34 33 L32 36 Z" fill="#C87A4A"/>
+        <!-- Feet -->
+        <path d="M27 56 L25 59 M27 56 L27 59 M27 56 L29 59" stroke="#A89070" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+        <path d="M37 56 L35 59 M37 56 L37 59 M37 56 L39 59" stroke="#A89070" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+        <!-- Tuft -->
+        <path d="M30 14 Q32 10 34 14" stroke="#8B7355" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+      </svg>
+      <h3 style="color: #F5F1EA;">Kebi · dark</h3>
+      <p style="color: #9A938A;">same colors work in both themes</p>
+    </div>
+  </div>
+
+  <!-- Color palette -->
+  <p class="label" style="margin-top: 48px;">color palette</p>
+  <div class="swatch-row">
+    <div class="swatch">
+      <div class="swatch-color" style="background: #D4B891;"></div>
+      <div class="swatch-name">body</div>
+      <div class="swatch-hex">#D4B891</div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-color" style="background: #F5EBD3;"></div>
+      <div class="swatch-name">belly</div>
+      <div class="swatch-hex">#F5EBD3</div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-color" style="background: #A89070;"></div>
+      <div class="swatch-name">wings</div>
+      <div class="swatch-hex">#A89070</div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-color" style="background: #8B7355;"></div>
+      <div class="swatch-name">tuft + tail</div>
+      <div class="swatch-hex">#8B7355</div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-color" style="background: #C87A4A;"></div>
+      <div class="swatch-name">beak</div>
+      <div class="swatch-hex">#C87A4A</div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-color" style="background: #E8B894;"></div>
+      <div class="swatch-name">cheek blush</div>
+      <div class="swatch-hex">#E8B894</div>
+    </div>
+  </div>
+
+  <!-- Size scale -->
+  <p class="label" style="margin-top: 48px;">scales — 18px to 88px</p>
+  <div class="grid-sizes">
+    <div class="size-cell">
+      <svg width="18" height="18" viewBox="0 0 64 64">
+        <ellipse cx="32" cy="38" rx="20" ry="20" fill="#D4B891"/>
+        <ellipse cx="32" cy="42" rx="13" ry="13" fill="#F5EBD3"/>
+        <!-- Happy open wing left (raised + spread) -->
+        <ellipse cx="13" cy="34" rx="3.5" ry="6" fill="#A89070" transform="rotate(-25 13 34)"/>
+        <!-- Happy open wing right -->
+        <ellipse cx="51" cy="34" rx="3.5" ry="6" fill="#A89070" transform="rotate(25 51 34)"/>
+        <circle cx="25" cy="30" r="3.5" fill="white"/>
+        <circle cx="39" cy="30" r="3.5" fill="white"/>
+        <circle cx="25" cy="30" r="1.7" fill="#1A1A1A"/>
+        <circle cx="39" cy="30" r="1.7" fill="#1A1A1A"/>
+        <path d="M30 33 L34 33 L32 36 Z" fill="#C87A4A"/>
+      </svg>
+      <span class="size-cell-label">18px · chat</span>
+    </div>
+    <div class="size-cell">
+      <svg width="24" height="24" viewBox="0 0 64 64">
+        <ellipse cx="32" cy="38" rx="20" ry="20" fill="#D4B891"/>
+        <ellipse cx="32" cy="42" rx="13" ry="13" fill="#F5EBD3"/>
+        <!-- Happy open wing left (raised + spread) -->
+        <ellipse cx="13" cy="34" rx="3.5" ry="6" fill="#A89070" transform="rotate(-25 13 34)"/>
+        <!-- Happy open wing right -->
+        <ellipse cx="51" cy="34" rx="3.5" ry="6" fill="#A89070" transform="rotate(25 51 34)"/>
+        <circle cx="25" cy="30" r="3.5" fill="white"/>
+        <circle cx="39" cy="30" r="3.5" fill="white"/>
+        <circle cx="25" cy="30" r="1.7" fill="#1A1A1A"/>
+        <circle cx="39" cy="30" r="1.7" fill="#1A1A1A"/>
+        <path d="M30 33 L34 33 L32 36 Z" fill="#C87A4A"/>
+      </svg>
+      <span class="size-cell-label">24px · cards</span>
+    </div>
+    <div class="size-cell">
+      <svg width="36" height="36" viewBox="0 0 64 64">
+        <ellipse cx="32" cy="38" rx="20" ry="20" fill="#D4B891"/>
+        <ellipse cx="32" cy="42" rx="13" ry="13" fill="#F5EBD3"/>
+        <!-- Happy open wing left (raised + spread) -->
+        <ellipse cx="13" cy="34" rx="3.5" ry="6" fill="#A89070" transform="rotate(-25 13 34)"/>
+        <!-- Happy open wing right -->
+        <ellipse cx="51" cy="34" rx="3.5" ry="6" fill="#A89070" transform="rotate(25 51 34)"/>
+        <ellipse cx="22" cy="36" rx="3" ry="2" fill="#E8B894" opacity="0.6"/>
+        <ellipse cx="42" cy="36" rx="3" ry="2" fill="#E8B894" opacity="0.6"/>
+        <circle cx="25" cy="30" r="3.5" fill="white"/>
+        <circle cx="39" cy="30" r="3.5" fill="white"/>
+        <circle cx="25" cy="30" r="1.7" fill="#1A1A1A"/>
+        <circle cx="39" cy="30" r="1.7" fill="#1A1A1A"/>
+        <path d="M30 33 L34 33 L32 36 Z" fill="#C87A4A"/>
+      </svg>
+      <span class="size-cell-label">36px · ai button</span>
+    </div>
+    <div class="size-cell">
+      <svg width="56" height="56" viewBox="0 0 64 64">
+        <ellipse cx="32" cy="38" rx="20" ry="20" fill="#D4B891"/>
+        <ellipse cx="32" cy="42" rx="13" ry="13" fill="#F5EBD3"/>
+        <!-- Happy open wing left (raised + spread) -->
+        <ellipse cx="13" cy="34" rx="3.5" ry="6" fill="#A89070" transform="rotate(-25 13 34)"/>
+        <!-- Happy open wing right -->
+        <ellipse cx="51" cy="34" rx="3.5" ry="6" fill="#A89070" transform="rotate(25 51 34)"/>
+        <ellipse cx="22" cy="36" rx="3" ry="2" fill="#E8B894" opacity="0.6"/>
+        <ellipse cx="42" cy="36" rx="3" ry="2" fill="#E8B894" opacity="0.6"/>
+        <circle cx="25" cy="30" r="3.5" fill="white"/>
+        <circle cx="39" cy="30" r="3.5" fill="white"/>
+        <circle cx="25" cy="30" r="1.7" fill="#1A1A1A"/>
+        <circle cx="39" cy="30" r="1.7" fill="#1A1A1A"/>
+        <circle cx="25.6" cy="29.4" r="0.6" fill="white"/>
+        <circle cx="39.6" cy="29.4" r="0.6" fill="white"/>
+        <path d="M30 33 L34 33 L32 36 Z" fill="#C87A4A"/>
+        <path d="M30 14 Q32 10 34 14" stroke="#8B7355" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+      </svg>
+      <span class="size-cell-label">56px · home</span>
+    </div>
+    <div class="size-cell">
+      <svg width="88" height="88" viewBox="0 0 64 64">
+        <ellipse cx="32" cy="38" rx="20" ry="20" fill="#D4B891"/>
+        <ellipse cx="32" cy="42" rx="13" ry="13" fill="#F5EBD3"/>
+        <!-- Happy open wing left (raised + spread) -->
+        <ellipse cx="13" cy="34" rx="3.5" ry="6" fill="#A89070" transform="rotate(-25 13 34)"/>
+        <!-- Happy open wing right -->
+        <ellipse cx="51" cy="34" rx="3.5" ry="6" fill="#A89070" transform="rotate(25 51 34)"/>
+        <ellipse cx="22" cy="36" rx="3" ry="2" fill="#E8B894" opacity="0.6"/>
+        <ellipse cx="42" cy="36" rx="3" ry="2" fill="#E8B894" opacity="0.6"/>
+        <circle cx="25" cy="30" r="3.5" fill="white"/>
+        <circle cx="39" cy="30" r="3.5" fill="white"/>
+        <circle cx="25" cy="30" r="1.7" fill="#1A1A1A"/>
+        <circle cx="39" cy="30" r="1.7" fill="#1A1A1A"/>
+        <circle cx="25.6" cy="29.4" r="0.6" fill="white"/>
+        <circle cx="39.6" cy="29.4" r="0.6" fill="white"/>
+        <path d="M30 33 L34 33 L32 36 Z" fill="#C87A4A"/>
+        <path d="M27 56 L25 59 M27 56 L27 59 M27 56 L29 59" stroke="#A89070" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+        <path d="M37 56 L35 59 M37 56 L37 59 M37 56 L39 59" stroke="#A89070" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+        <path d="M30 14 Q32 10 34 14" stroke="#8B7355" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+      </svg>
+      <span class="size-cell-label">88px · login</span>
+    </div>
+  </div>
+
+  <!-- Anatomy -->
+  <p class="label" style="margin-top: 48px;">anatomy</p>
+  <div class="row">
+    <div class="stage" style="padding: 48px;">
+      <svg width="180" height="180" viewBox="-20 -20 104 104" xmlns="http://www.w3.org/2000/svg">
+        <!-- Anatomy labels -->
+        <text x="-15" y="14" font-family="Inter" font-size="3.2" fill="#8A8A87">tuft</text>
+        <line x1="-2" y1="13" x2="29" y2="13.5" stroke="#B5B5B1" stroke-width="0.3"/>
+
+        <text x="-15" y="32" font-family="Inter" font-size="3.2" fill="#8A8A87">eye</text>
+        <line x1="-2" y1="31" x2="22" y2="30" stroke="#B5B5B1" stroke-width="0.3"/>
+
+        <text x="-15" y="36" font-family="Inter" font-size="3.2" fill="#8A8A87">cheek</text>
+        <line x1="-2" y1="35" x2="20" y2="36" stroke="#B5B5B1" stroke-width="0.3"/>
+
+        <text x="68" y="34" font-family="Inter" font-size="3.2" fill="#8A8A87">beak</text>
+        <line x1="67" y1="33" x2="35" y2="34" stroke="#B5B5B1" stroke-width="0.3"/>
+
+        <text x="-15" y="46" font-family="Inter" font-size="3.2" fill="#8A8A87">wing</text>
+        <line x1="-2" y1="45" x2="14" y2="38" stroke="#B5B5B1" stroke-width="0.3"/>
+
+        <text x="68" y="44" font-family="Inter" font-size="3.2" fill="#8A8A87">belly</text>
+        <line x1="67" y1="43" x2="42" y2="44" stroke="#B5B5B1" stroke-width="0.3"/>
+
+        <text x="-15" y="62" font-family="Inter" font-size="3.2" fill="#8A8A87">feet</text>
+        <line x1="-2" y1="61" x2="25" y2="58" stroke="#B5B5B1" stroke-width="0.3"/>
+
+        <!-- Mascot -->
+        <ellipse cx="32" cy="38" rx="20" ry="20" fill="#D4B891"/>
+        <ellipse cx="32" cy="42" rx="13" ry="13" fill="#F5EBD3"/>
+        <!-- Happy open wing left (raised + spread) -->
+        <ellipse cx="13" cy="34" rx="3.5" ry="6" fill="#A89070" transform="rotate(-25 13 34)"/>
+        <!-- Happy open wing right -->
+        <ellipse cx="51" cy="34" rx="3.5" ry="6" fill="#A89070" transform="rotate(25 51 34)"/>
+        <ellipse cx="22" cy="36" rx="3" ry="2" fill="#E8B894" opacity="0.6"/>
+        <ellipse cx="42" cy="36" rx="3" ry="2" fill="#E8B894" opacity="0.6"/>
+        <circle cx="25" cy="30" r="3.5" fill="white"/>
+        <circle cx="39" cy="30" r="3.5" fill="white"/>
+        <circle cx="25" cy="30" r="1.7" fill="#1A1A1A"/>
+        <circle cx="39" cy="30" r="1.7" fill="#1A1A1A"/>
+        <circle cx="25.6" cy="29.4" r="0.6" fill="white"/>
+        <circle cx="39.6" cy="29.4" r="0.6" fill="white"/>
+        <path d="M30 33 L34 33 L32 36 Z" fill="#C87A4A"/>
+        <path d="M27 56 L25 59 M27 56 L27 59 M27 56 L29 59" stroke="#A89070" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+        <path d="M37 56 L35 59 M37 56 L37 59 M37 56 L39 59" stroke="#A89070" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+        <path d="M30 14 Q32 10 34 14" stroke="#8B7355" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <div style="flex: 1;">
+      <h3 style="font-size: 18px; margin-bottom: 12px; letter-spacing: -0.015em;">design notes</h3>
+      <ul style="font-size: 14px; line-height: 1.7; color: #1A1A1A; padding-left: 18px;">
+        <li><strong>round body</strong> — huggable, friendly silhouette</li>
+        <li><strong>cream + warm brown</strong> — replaces gray. distinct from ghibli but keeps the warmth</li>
+        <li><strong>large white eyes</strong> — emotional anchor, works at every size</li>
+        <li><strong>orange beak</strong> — the warmth signal that anchors the face</li>
+        <li><strong>head tuft</strong> — signature detail. one curve mark above the head</li>
+        <li><strong>visible feet</strong> — only at 56px+, gives it perched personality</li>
+        <li><strong>cheek blush</strong> — only at 36px+, adds sweetness without childishness</li>
+      </ul>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>
