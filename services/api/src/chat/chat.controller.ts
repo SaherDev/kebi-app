@@ -30,6 +30,6 @@ export class ChatController {
     @Req() req: IncomingMessage,
     @Res() res: Response,
   ): Promise<void> {
-    await this.chatService.pipeStream(user.id, dto, req, res);
+    await this.chatService.pipeStream(user, dto, req, res);
   }
 }

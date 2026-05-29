@@ -19,7 +19,7 @@ describe('SignalController', () => {
     const dto: SignalRequestDto = {
       signal_type: 'recommendation_accepted',
       recommendation_id: 'rec_1',
-      place_id: 'google:abc',
+      place_core_id: 'c0ffee00-1111-2222-3333-444455556666',
     };
     const user: AuthUser = { id: 'user_clerk_123', ai_enabled: true };
 

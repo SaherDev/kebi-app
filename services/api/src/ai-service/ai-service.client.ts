@@ -4,10 +4,11 @@ import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
 import { Readable } from 'stream';
 import {
-  AiUserContext,
   ChatRequestDto,
   DataScope,
-  SignalRequestWithUser,
+  ExtractPlaceRequest,
+  ExtractPlaceResponse,
+  SignalRequest,
   SignalResponse,
 } from '@kebi-app/shared';
 import { IAiServiceClient } from './ai-service-client.interface';
@@ -15,78 +16,118 @@ import { IAiServiceClient } from './ai-service-client.interface';
 const AI_SERVICE_TIMEOUT_MS = 30000;
 
 /**
- * HTTP client for communicating with the AI service (kebi)
+ * HTTP client for communicating with the AI service (kebi).
  *
- * ADR-036: Single chatStream() method — pipes raw SSE from FastAPI straight through.
- * No parsing, no transformation. responseType: 'stream' keeps Axios out of the data path.
- * Lets AxiosError propagate raw; AllExceptionsFilter handles translation to HTTP errors.
+ * Service-to-service auth: every protected call carries the shared-secret
+ * `X-Gateway-Token` plus the verified `X-Gateway-User-Id`. kebi fails closed
+ * without them, so a missing `GATEWAY_SHARED_SECRET` aborts startup.
  *
- * ADR-033: Injected via IAiServiceClient interface, not this class directly
+ * ADR-036: chatStream() pipes raw SSE from FastAPI straight through —
+ * responseType: 'stream' keeps Axios out of the data path. Lets AxiosError
+ * propagate raw; AllExceptionsFilter handles translation to HTTP errors.
+ * ADR-033: Injected via IAiServiceClient interface, not this class directly.
  */
 @Injectable()
 export class AiServiceClient implements IAiServiceClient {
   private readonly logger = new Logger(AiServiceClient.name);
   private readonly baseUrl: string;
+  private readonly gatewaySecret: string;
 
   constructor(
     configService: ConfigService,
     private readonly httpService: HttpService
   ) {
-    this.baseUrl = configService.get<string>('AI_SERVICE_BASE_URL');
-    if (!this.baseUrl) {
+    const baseUrl = configService.get<string>('AI_SERVICE_BASE_URL');
+    if (!baseUrl) {
       throw new Error('AI_SERVICE_BASE_URL is not configured');
     }
+    this.baseUrl = baseUrl;
+
+    const gatewaySecret = configService.get<string>('GATEWAY_SHARED_SECRET');
+    if (!gatewaySecret) {
+      // Fail closed — kebi rejects every protected call without this header,
+      // and it must match kebi's GATEWAY_SHARED_SECRET byte-for-byte.
+      throw new Error('GATEWAY_SHARED_SECRET is not configured');
+    }
+    this.gatewaySecret = gatewaySecret;
 
     this.logger.debug(`Initialized with base URL: ${this.baseUrl}`);
   }
 
+  /** Service-to-service auth headers kebi requires on every protected route. */
+  private gatewayHeaders(userId: string): Record<string, string> {
+    return {
+      'X-Gateway-Token': this.gatewaySecret,
+      'X-Gateway-User-Id': userId,
+    };
+  }
+
   /**
    * Open a raw SSE stream to the AI service at /v1/chat/stream.
-   * Uses responseType: 'stream' so Axios returns the body as a Node.js Readable
-   * without buffering or parsing. Passing signal aborts the upstream connection
-   * when the client disconnects. Lets AxiosError propagate raw to callers.
+   * responseType: 'stream' returns the body as a Node.js Readable without
+   * buffering. `signal` aborts the upstream connection on client disconnect.
+   * Lets AxiosError propagate raw to callers.
    */
-  async chatStream(payload: ChatRequestDto, signal?: AbortSignal): Promise<Readable> {
+  async chatStream(
+    payload: ChatRequestDto,
+    userId: string,
+    signal?: AbortSignal
+  ): Promise<Readable> {
     const response = await firstValueFrom(
       this.httpService.post<Readable>(
         `${this.baseUrl}/v1/chat/stream`,
         payload,
-        { responseType: 'stream', timeout: AI_SERVICE_TIMEOUT_MS, signal }
+        {
+          responseType: 'stream',
+          timeout: AI_SERVICE_TIMEOUT_MS,
+          signal,
+          headers: this.gatewayHeaders(userId),
+        }
       )
     );
     return response.data;
   }
 
-  async postSignal(payload: SignalRequestWithUser): Promise<SignalResponse> {
+  async postSignal(
+    payload: SignalRequest,
+    userId: string
+  ): Promise<SignalResponse> {
     const response = await firstValueFrom(
       this.httpService.post<SignalResponse>(
         `${this.baseUrl}/v1/signal`,
         payload,
-        { timeout: AI_SERVICE_TIMEOUT_MS }
+        { timeout: AI_SERVICE_TIMEOUT_MS, headers: this.gatewayHeaders(userId) }
       )
     );
     return response.data;
   }
 
-  async getUserContext(userId: string): Promise<AiUserContext> {
+  async extractPlace(
+    payload: ExtractPlaceRequest,
+    userId: string
+  ): Promise<ExtractPlaceResponse> {
     const response = await firstValueFrom(
-      this.httpService.get<AiUserContext>(
-        `${this.baseUrl}/v1/user/context`,
-        { params: { user_id: userId }, timeout: AI_SERVICE_TIMEOUT_MS }
+      this.httpService.post<ExtractPlaceResponse>(
+        `${this.baseUrl}/v1/extract`,
+        payload,
+        { timeout: AI_SERVICE_TIMEOUT_MS, headers: this.gatewayHeaders(userId) }
       )
     );
     return response.data;
   }
 
   async deleteUserData(userId: string, scopes?: DataScope[]): Promise<void> {
-    let url = `${this.baseUrl}/v1/user/${encodeURIComponent(userId)}/data`;
+    let url = `${this.baseUrl}/v1/user/data`;
     if (scopes && scopes.length > 0) {
       const qs = new URLSearchParams();
       for (const scope of scopes) qs.append('scope', scope);
       url += `?${qs.toString()}`;
     }
     await firstValueFrom(
-      this.httpService.delete<void>(url, { timeout: AI_SERVICE_TIMEOUT_MS })
+      this.httpService.delete<void>(url, {
+        timeout: AI_SERVICE_TIMEOUT_MS,
+        headers: this.gatewayHeaders(userId),
+      })
     );
   }
 }

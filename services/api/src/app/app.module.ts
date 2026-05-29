@@ -17,6 +17,7 @@ import { UserEntity } from '../database/entities/user.entity';
 import { UserSettingsEntity } from '../database/entities/user-settings.entity';
 import { DatabaseModule } from '../database/database.module';
 import { ChatModule } from '../chat/chat.module';
+import { ExtractModule } from '../extract/extract.module';
 import { RateLimitModule } from '../rate-limit/rate-limit.module';
 import { SignalModule } from '../signal/signal.module';
 import { UserModule } from '../user/user.module';
@@ -59,6 +60,7 @@ function loadAppYaml(): Record<string, unknown> {
     }),
     DatabaseModule,
     ChatModule,
+    ExtractModule,
     RateLimitModule,
     SignalModule,
     UserModule,

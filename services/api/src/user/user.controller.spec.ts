@@ -1,4 +1,4 @@
-import type { AuthUser, UserContextResponse } from '@kebi-app/shared';
+import type { AuthUser } from '@kebi-app/shared';
 import { UserController } from './user.controller';
 import { UserService } from './user.service';
 import { DeleteUserDataQueryDto } from './dto/delete-user-data.query.dto';
@@ -9,29 +9,9 @@ describe('UserController', () => {
 
   beforeEach(() => {
     service = {
-      getContext: jest.fn(),
       deleteData: jest.fn(),
     } as unknown as jest.Mocked<UserService>;
     controller = new UserController(service);
-  });
-
-  describe('GET /user/context', () => {
-    it('is a facade — one service call with the authed user, return value forwarded', async () => {
-      const body: UserContextResponse = {
-        saved_places_count: 0,
-        signal_tier: 'cold',
-        chips: [],
-        plan: 'homebody',
-      };
-      service.getContext.mockResolvedValueOnce(body);
-      const user: AuthUser = { id: 'user_clerk_123', ai_enabled: true, plan: 'homebody' };
-
-      const result = await controller.getContext(user);
-
-      expect(service.getContext).toHaveBeenCalledTimes(1);
-      expect(service.getContext).toHaveBeenCalledWith(user);
-      expect(result).toEqual(body);
-    });
   });
 
   describe('DELETE /user/data', () => {

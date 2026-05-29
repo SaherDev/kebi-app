@@ -1,8 +1,9 @@
 import { Injectable, Inject, Logger } from '@nestjs/common';
 import { IncomingMessage } from 'http';
 import type { Response } from 'express';
+import type { AuthUser } from '@kebi-app/shared';
 import {
-  IAiServiceClient,
+  type IAiServiceClient,
   AI_SERVICE_CLIENT,
 } from '../ai-service/ai-service-client.interface';
 import { RateLimitService } from '../rate-limit/rate-limit.service';
@@ -25,22 +26,22 @@ export class ChatService {
   ) {}
 
   async pipeStream(
-    userId: string,
+    user: AuthUser,
     dto: ChatRequestBodyDto,
     req: IncomingMessage,
     res: Response,
   ): Promise<void> {
-    this.rateLimitService.incrementTurns(userId);
+    this.rateLimitService.incrementTurns(user.id);
 
     const controller = new AbortController();
 
     const stream = await this.aiClient.chatStream(
       {
-        user_id: userId,
         message: dto.message,
         location: dto.location ?? null,
-        signal_tier: dto.signal_tier ?? null,
+        movement_profile: user.movement_profile ?? null,
       },
+      user.id,
       controller.signal,
     );
 
