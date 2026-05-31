@@ -1,27 +1,28 @@
-const { withNxMetro } = require('@nx/expo');
 const { getDefaultConfig } = require('@expo/metro-config');
 const { mergeConfig } = require('metro-config');
+const path = require('path');
+
+// Keep projectRoot as apps/mobile so Babel and asset resolution work correctly.
+// Add libs/shared to watchFolders so Metro picks up live source changes.
+const monorepoRoot = path.resolve(__dirname, '../..');
 
 const defaultConfig = getDefaultConfig(__dirname);
 const { assetExts, sourceExts } = defaultConfig.resolver;
 
-/**
- * Metro configuration
- * https://reactnative.dev/docs/metro
- *
- * @type {import('metro-config').MetroConfig}
- */
 const customConfig = {
-  cacheVersion: "mobile",
+  cacheVersion: 'mobile',
+  watchFolders: [
+    path.join(monorepoRoot, 'libs/shared'),
+    path.join(monorepoRoot, 'node_modules'),
+  ],
   transformer: {
     babelTransformerPath: require.resolve('react-native-svg-transformer'),
   },
   resolver: {
     assetExts: assetExts.filter((ext) => ext !== 'svg'),
     sourceExts: [...sourceExts, 'cjs', 'mjs', 'svg'],
-    // Resolve @kebi-app/shared (and other workspace libs) via their source
-    // using the @kebi-app/source export condition (same as the TS custom condition
-    // in tsconfig.base.json). Without this, Metro falls back to dist/index.js.
+    // Resolve @kebi-app/shared via the @kebi-app/source export condition
+    // (same custom condition as tsconfig.base.json) so Metro reads src/ directly.
     unstable_enablePackageExports: true,
     unstable_conditionNames: [
       '@kebi-app/source',
@@ -31,16 +32,11 @@ const customConfig = {
       'browser',
       'default',
     ],
+    nodeModulesPaths: [
+      path.join(monorepoRoot, 'node_modules'),
+      path.join(__dirname, 'node_modules'),
+    ],
   },
 };
 
-
-module.exports = withNxMetro(mergeConfig(defaultConfig, customConfig), {
-  // Change this to true to see debugging info.
-  // Useful if you have issues resolving modules
-  debug: false,
-  // all the file extensions used for imports other than 'ts', 'tsx', 'js', 'jsx', 'json'
-  extensions: [],
-  // Specify folders to watch, in addition to Nx defaults (workspace libraries and node_modules)
-  watchFolders: [],
-});
+module.exports = mergeConfig(defaultConfig, customConfig);
