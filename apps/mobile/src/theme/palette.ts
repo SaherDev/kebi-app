@@ -24,6 +24,9 @@ export const MASCOT = {
   /** cheek: use with opacity 0.6 */
   cheek:  '#E8B894',
   cheekOpacity: 0.6,
+  /** eye whites + pupils (the mascot keeps its own eyes in both themes) */
+  eye:    '#FFFFFF',
+  pupil:  '#1A1A1A',
 } as const;
 
 /**

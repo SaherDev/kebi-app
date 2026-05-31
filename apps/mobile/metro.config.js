@@ -12,7 +12,7 @@ const defaultConfig = getDefaultConfig(__dirname);
 const { assetExts, sourceExts } = defaultConfig.resolver;
 
 const customConfig = {
-  cacheVersion: 'mobile-a2',
+  cacheVersion: 'mobile-a3-rev',
   watchFolders: [
     path.join(monorepoRoot, 'libs/shared'),
     path.join(monorepoRoot, 'node_modules'),

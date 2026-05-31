@@ -32,7 +32,13 @@
           "backgroundColor": "#ffffff"
         }
       ],
-      "expo-font"
+      "expo-font",
+      [
+        "expo-router",
+        {
+          "root": "./src/app"
+        }
+      ]
     ]
   }
 }
