@@ -15,6 +15,16 @@ Format:
 
 ---
 
+## ADR-041: No dummy data — contract-first data flow
+
+**Date:** 2026-05-31\
+**Status:** accepted\
+**Context:** The native client (`apps/mobile`) is built against an evolving kebi HTTP contract. Without a binding rule, the temptation is to stub or mock API responses in the frontend while backend fields are missing or unimplemented. This produces throwaway code that drifts from the live shape kebi and the gateway actually return, silently hides contract gaps, and means screens are never truly validated against the real system.\
+**Decision:** No dummy, mock, placeholder, or stub data is permitted in `apps/mobile` (or any other frontend in this repo) for product flows. When a screen needs a field or endpoint that does not yet exist end-to-end, the implementation order is strictly: (1) add or update the endpoint/field in `docs/api-contract.md`, (2) add the corresponding type to `libs/shared`, (3) implement the change in `services/api` (gateway) and kebi — then build the frontend against the live response. Frontend work that would require fabricated data is parked until the contract and server provide it. Test fixtures inside `*.spec` and `*.test` files are exempt — unit and integration tests may use mock data for isolated assertions.\
+**Consequences:** Screens may take longer to start because server-side contract work is a prerequisite. Every screen that ships is backed by a real, tested contract — no silent drift. This becomes a Constitution Check item: any plan proposing fixture or mock data for a product flow must be flagged and revised before implementation begins. The rule applies to all future features in `apps/mobile` and any revived `apps/web`.
+
+---
+
 ## ADR-040: Park apps/web and libs/ui pending the native mobile rebuild
 
 **Date:** 2026-05-29\
