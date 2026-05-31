@@ -7,8 +7,7 @@
   },
   "packageManager": "pnpm@10.28.2",
   "scripts": {
-    "dev": "sh -c 'set -a && . ../kebi-config/.env.shared && . ../kebi-config/.env.kebi-app && . ../kebi-config/.env.kebi && set +a && nx run-many -t dev serve -p web api'",
-    "dev:web": "sh -c 'set -a && . ../kebi-config/.env.shared && . ../kebi-config/.env.kebi-app && set +a && nx dev web'",
+    "dev:mobile": "nx run mobile:start",
     "dev:api": "sh -c 'set -a && . ../kebi-config/.env.shared && . ../kebi-config/.env.kebi-app && set +a && nx serve api'"
   },
   "devDependencies": {
