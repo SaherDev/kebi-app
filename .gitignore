@@ -157,3 +157,19 @@ test-output
 apps/web/ios/App/Pods/
 apps/web/ios/DerivedData/
 apps/web/ios/App/App/public/
+
+# Expo
+node_modules/
+.expo/
+.yarn/
+dist/
+npm-debug.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.orig.*
+web-build/
+cache/
+
