@@ -37,7 +37,13 @@
     --pill-danger-bg: #FCEEEE;
   }
 
-  .dark {
+  /*
+    NativeWind requires the dark overrides on `.dark:root` (or `:root[class~="dark"]`)
+    so react-native-css-interop registers them as global root/dark variables that
+    swap on setColorScheme. A bare `.dark { }` block is treated as a class rule
+    scoped to an element with className="dark" (which never exists) and does nothing.
+  */
+  .dark:root {
     /* Canvas */
     --bg:        #13110F;
     --surface:   #1C1A17;
