@@ -12,23 +12,30 @@
     ]
   },
   "dependencies": {
+    "@expo-google-fonts/inter": "^0.4.2",
     "@expo/metro-config": "^56.0.13",
     "@expo/metro-runtime": "~56.0.13",
     "@kebi-app/shared": "workspace:*",
     "@testing-library/react-native": "*",
     "babel-preset-expo": "~56.0.14",
     "expo": "^56.0.8",
+    "expo-font": "~56.0.5",
     "expo-splash-screen": "^56.0.10",
     "expo-status-bar": "^56.0.4",
     "expo-system-ui": "^56.0.5",
     "jest-expo": "^56.0.4",
     "metro-config": "*",
     "metro-resolver": "*",
+    "nativewind": "^4.2.4",
     "react": "^19.2.3",
     "react-native": "^0.85.3",
+    "react-native-reanimated": "4.3.1",
     "react-native-safe-area-context": "~5.7.0",
     "react-native-svg": "^15.15.4",
     "react-native-svg-transformer": "*",
     "react-native-web": "*"
+  },
+  "devDependencies": {
+    "tailwindcss": "^3.4.19"
   }
 }

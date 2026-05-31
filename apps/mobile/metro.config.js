@@ -1,16 +1,18 @@
 const { getDefaultConfig } = require('@expo/metro-config');
 const { mergeConfig } = require('metro-config');
+const { withNativeWind } = require('nativewind/metro');
 const path = require('path');
 
 // Keep projectRoot as apps/mobile so Babel and asset resolution work correctly.
 // Add libs/shared to watchFolders so Metro picks up live source changes.
+// withNativeWind wraps the merged config to compile global.css via Tailwind v3.
 const monorepoRoot = path.resolve(__dirname, '../..');
 
 const defaultConfig = getDefaultConfig(__dirname);
 const { assetExts, sourceExts } = defaultConfig.resolver;
 
 const customConfig = {
-  cacheVersion: 'mobile',
+  cacheVersion: 'mobile-a2',
   watchFolders: [
     path.join(monorepoRoot, 'libs/shared'),
     path.join(monorepoRoot, 'node_modules'),
@@ -39,4 +41,6 @@ const customConfig = {
   },
 };
 
-module.exports = mergeConfig(defaultConfig, customConfig);
+module.exports = withNativeWind(mergeConfig(defaultConfig, customConfig), {
+  input: './src/global.css',
+});
