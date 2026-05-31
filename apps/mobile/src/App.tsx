@@ -54,6 +54,42 @@ function Section({ label, children }: SectionProps) {
   );
 }
 
+// ── Theme toggle (segmented control — matches .theme-toggle in the mockup) ─────
+// Pill container (surface bg, 3px padding) with two segments; the active one
+// is filled with `--text` on `--bg`, inactive is transparent / text-muted.
+
+interface ThemeToggleProps {
+  isDark: boolean;
+  onSelect: (scheme: 'light' | 'dark') => void;
+}
+
+function ThemeToggle({ isDark, onSelect }: ThemeToggleProps) {
+  const segments = ['light', 'dark'] as const;
+  return (
+    <View className="flex-row bg-surface rounded-full p-[3px]">
+      {segments.map((segment) => {
+        const active = (segment === 'dark') === isDark;
+        return (
+          <TouchableOpacity
+            key={segment}
+            onPress={() => onSelect(segment)}
+            className={`rounded-full px-3 py-[6px] ${active ? 'bg-text' : 'bg-transparent'}`}
+            accessibilityRole="button"
+            accessibilityState={{ selected: active }}
+            accessibilityLabel={`${segment} mode`}
+          >
+            <Text
+              className={`font-medium text-[12px] ${active ? 'text-bg' : 'text-text-muted'}`}
+            >
+              {segment}
+            </Text>
+          </TouchableOpacity>
+        );
+      })}
+    </View>
+  );
+}
+
 // ── Token-preview screen ──────────────────────────────────────────────────────
 
 function TokenPreview() {
@@ -61,9 +97,12 @@ function TokenPreview() {
   const { colorScheme, setColorScheme } = useColorScheme();
   const isDark = colorScheme === 'dark';
 
-  const toggleScheme = useCallback(() => {
-    setColorScheme(isDark ? 'light' : 'dark');
-  }, [isDark, setColorScheme]);
+  const selectScheme = useCallback(
+    (scheme: 'light' | 'dark') => {
+      setColorScheme(scheme);
+    },
+    [setColorScheme],
+  );
 
   return (
     <View className="flex-1 bg-bg">
@@ -77,16 +116,7 @@ function TokenPreview() {
         <Text className="font-bold text-title text-text tracking-[-0.70px]">
           kebi tokens
         </Text>
-        <TouchableOpacity
-          onPress={toggleScheme}
-          className="bg-surface rounded-full px-4 py-2"
-          accessibilityRole="button"
-          accessibilityLabel={`Switch to ${isDark ? 'light' : 'dark'} mode`}
-        >
-          <Text className="font-semibold text-small text-text-muted">
-            {isDark ? 'light' : 'dark'}
-          </Text>
-        </TouchableOpacity>
+        <ThemeToggle isDark={isDark} onSelect={selectScheme} />
       </View>
 
       <ScrollView
