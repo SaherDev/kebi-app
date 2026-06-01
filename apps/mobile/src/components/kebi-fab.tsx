@@ -8,7 +8,7 @@ interface KebiFabProps {
 }
 
 /**
- * The single floating AI button — 56px circle, 16px from the right and sitting
+ * The single floating AI button — 64px circle, 16px from the right and sitting
  * just above the home indicator (anchored at the bottom safe-area edge, matching
  * the home mockup — NOT `insets.bottom + 16`, which floats it too high).
  * Brightest spot on screen: pure white in light mode (border-only), cream-filled
@@ -24,12 +24,12 @@ export function KebiFab({ onPress }: KebiFabProps) {
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel="ask kebi"
-      className={`absolute h-14 w-14 items-center justify-center rounded-full ${
+      className={`absolute h-16 w-16 items-center justify-center rounded-full ${
         dark ? 'bg-text' : 'border border-surface-2 bg-white'
       }`}
       style={{ right: 16, bottom: insets.bottom }}
     >
-      <Mascot size={36} />
+      <Mascot size={42} />
     </Pressable>
   );
 }
