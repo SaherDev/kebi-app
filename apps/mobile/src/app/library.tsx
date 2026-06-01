@@ -15,7 +15,7 @@ export default function LibraryScreen() {
           right={
             <TopPill>
               <IconButton icon="search" label="search" />
-              <IconButton icon="bookmark" label="save a place" />
+              <IconButton icon="share-in" label="save a place" />
             </TopPill>
           }
         />

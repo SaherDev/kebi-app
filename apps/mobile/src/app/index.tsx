@@ -17,7 +17,7 @@ export default function HomeScreen() {
           left={<Icon name="pin" size={13} className="text-text-muted" />}
           right={
             <TopPill>
-              <IconButton icon="bookmark" label="save a place" />
+              <IconButton icon="share-in" label="save a place" />
               <IconButton icon="book" label="library" onPress={() => router.push('/library')} />
               <IconButton icon="gear" label="settings" onPress={() => router.push('/settings')} />
             </TopPill>

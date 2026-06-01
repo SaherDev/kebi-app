@@ -16,7 +16,7 @@ cssInterop(Svg, {
 export type IconName =
   | 'back'
   | 'close'
-  | 'bookmark'
+  | 'share-in'
   | 'book'
   | 'gear'
   | 'search'
@@ -33,7 +33,14 @@ export type IconName =
 const ICONS: Record<IconName, ReactNode> = {
   back: <Polyline points="15 6 9 12 15 18" />,
   close: <Path d="M18 6L6 18M6 6l12 12" />,
-  bookmark: <Path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z" />,
+  // share-in: tray + arrow dropping in — the save trigger. "drop it in" voice.
+  'share-in': (
+    <>
+      <Path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
+      <Polyline points="8 11 12 15 16 11" />
+      <Line x1={12} y1={3} x2={12} y2={15} />
+    </>
+  ),
   book: (
     <>
       <Path d="M4 19.5A2.5 2.5 0 016.5 17H20" />
