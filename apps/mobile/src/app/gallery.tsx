@@ -43,7 +43,9 @@ function B({ children }: { children: React.ReactNode }) {
   return <Text className="font-semibold">{children}</Text>;
 }
 
-// Sample PlaceCore.tags to demo PlaceChip mapping tag.type → variant, value → label.
+// Sample PlaceCore.tags covering all 9 TagTypes, to demo PlaceChip mapping
+// tag.type → variant (atmosphere = emoji vibe; everything else = feature) and
+// tag.value → label (snake_case → spaced).
 const DEMO_TAGS: PlaceTag[] = [
   { type: 'atmosphere', value: 'intimate', source: 'llm' },
   { type: 'atmosphere', value: 'romantic', source: 'llm' },
@@ -52,6 +54,12 @@ const DEMO_TAGS: PlaceTag[] = [
   { type: 'feature', value: 'dog_friendly', source: 'google' },
   { type: 'feature', value: 'open_late', source: 'google' },
   { type: 'cuisine', value: 'Japanese', source: 'llm' },
+  { type: 'dietary', value: 'vegan', source: 'llm' },
+  { type: 'service', value: 'reservable', source: 'google' },
+  { type: 'price', value: 'moderate', source: 'google' },
+  { type: 'accessibility', value: 'wheelchair_entrance', source: 'google' },
+  { type: 'time', value: 'late_night', source: 'llm' },
+  { type: 'season', value: 'summer', source: 'llm' },
 ];
 
 export default function GalleryScreen() {
@@ -124,7 +132,7 @@ export default function GalleryScreen() {
           </View>
         </Section>
 
-        <Section title="Chips — feature (from place.tags)">
+        <Section title="Chips — feature + other types (from place.tags)">
           <View className="flex-row flex-wrap items-center gap-2">
             {DEMO_TAGS.filter((t) => t.type !== 'atmosphere').map((t) => (
               <PlaceChip key={String(t.value)} tag={t} />
