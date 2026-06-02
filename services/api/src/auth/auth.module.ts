@@ -1,7 +1,11 @@
 import { Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { IDENTITY_PROVIDER } from './identity-provider.interface';
+import {
+  IDENTITY_PROVIDER,
+  IdentityProvider,
+} from './identity-provider.interface';
 import { ClerkIdentityProvider } from './providers/clerk-identity.provider';
+import { SupabaseIdentityProvider } from './providers/supabase-identity.provider';
 import { UserIdentityRepository } from './user-identity.repository';
 import { UserIdentityService } from './user-identity.service';
 
@@ -14,14 +18,20 @@ import { UserIdentityService } from './user-identity.service';
 @Module({
   providers: [
     ClerkIdentityProvider,
+    SupabaseIdentityProvider,
     UserIdentityRepository,
     UserIdentityService,
     {
       provide: IDENTITY_PROVIDER,
-      inject: [ConfigService, ClerkIdentityProvider],
-      useFactory: (config: ConfigService, clerk: ClerkIdentityProvider) => {
-        const registry: Record<string, ClerkIdentityProvider> = {
+      inject: [ConfigService, ClerkIdentityProvider, SupabaseIdentityProvider],
+      useFactory: (
+        config: ConfigService,
+        clerk: ClerkIdentityProvider,
+        supabase: SupabaseIdentityProvider,
+      ) => {
+        const registry: Record<string, IdentityProvider> = {
           [clerk.name]: clerk,
+          [supabase.name]: supabase,
         };
         const name = config.get<string>('auth.provider', 'clerk');
         const provider = registry[name];
