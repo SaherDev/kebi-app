@@ -22,6 +22,7 @@ import { useColorScheme } from "nativewind";
 import { useEffect } from "react";
 
 import { I18nProvider } from "../i18n/context";
+import { ToastProvider } from "../components/toast-context";
 
 // Keep the splash visible until the Inter weights are loaded.
 SplashScreen.preventAutoHideAsync();
@@ -49,9 +50,11 @@ export default function RootLayout() {
   return (
     <I18nProvider>
       <SafeAreaProvider>
-        <StatusBar style={colorScheme === "dark" ? "light" : "dark"} />
-        {/* Native header off — every screen renders the custom TopBar instead. */}
-        <Stack screenOptions={{ headerShown: false }} />
+        <ToastProvider>
+          <StatusBar style={colorScheme === "dark" ? "light" : "dark"} />
+          {/* Native header off — every screen renders the custom TopBar instead. */}
+          <Stack screenOptions={{ headerShown: false }} />
+        </ToastProvider>
       </SafeAreaProvider>
     </I18nProvider>
   );

@@ -35,6 +35,20 @@
     --pill-warm-bg:   #FEE4D4;
     --pill-amber-bg:  #FEF3C7;
     --pill-danger-bg: #FCEEEE;
+
+    /* Toast — inverts vs the page, so a dark pill in light mode (cream text).
+       Icon-circle tones sit on the dark pill: deep tint bg + light stroke. */
+    --toast-bg:    #1A1A1A;
+    --toast-fg:    #F5F1EA;
+    --toast-muted: rgba(245, 241, 234, 0.5);
+    --toast-success-bg: #1F2E1A;
+    --toast-success-fg: #A8C293;
+    --toast-warm-bg:    #3A1F12;
+    --toast-warm-fg:    #E8B894;
+    --toast-danger-bg:  #3A1818;
+    --toast-danger-fg:  #E89090;
+    --toast-neutral-bg: rgba(245, 241, 234, 0.10);
+    --toast-neutral-fg: #F5F1EA;
   }
 
   /*
@@ -65,5 +79,19 @@
     --pill-warm-bg:   #3A1F12;
     --pill-amber-bg:  #3A2A0E;
     --pill-danger-bg: #3A1818;
+
+    /* Toast — cream pill in dark mode (kebi-toasts-dark-mockup). Icon tones
+       sit on the cream pill: light tint bg + saturated stroke. */
+    --toast-bg:    #F5F1EA;
+    --toast-fg:    #1A1A1A;
+    --toast-muted: rgba(26, 26, 26, 0.5);
+    --toast-success-bg: #DCEAD3;
+    --toast-success-fg: #4A7C3A;
+    --toast-warm-bg:    #FBE0CE;
+    --toast-warm-fg:    #C2410C;
+    --toast-danger-bg:  #FCDEDE;
+    --toast-danger-fg:  #D14343;
+    --toast-neutral-bg: rgba(26, 26, 26, 0.08);
+    --toast-neutral-fg: #1A1A1A;
   }
 }

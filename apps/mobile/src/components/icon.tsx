@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { cssInterop } from 'nativewind';
-import Svg, { Path, Polyline, Circle, Line } from 'react-native-svg';
+import Svg, { Path, Polyline, Circle, Line, Rect } from 'react-native-svg';
 
 // Lift the NativeWind text color onto react-native-svg's `color` prop so that
 // `stroke="currentColor"` / `fill="currentColor"` resolve to a semantic token.
@@ -25,7 +25,11 @@ export type IconName =
   | 'chevron-right'
   | 'check'
   | 'plus'
-  | 'pin';
+  | 'pin'
+  | 'copy'
+  | 'eye'
+  | 'trash'
+  | 'alert';
 
 // Path data verbatim from docs/kebi-app-design-system mockups (top-bar icons)
 // and kebi-tokens-mockup.html §15. viewBox 0 0 24 24, 1.8px stroke, fill none —
@@ -79,6 +83,32 @@ const ICONS: Record<IconName, ReactNode> = {
     <>
       <Circle cx={12} cy={10} r={3} />
       <Path d="M12 2a8 8 0 00-8 8c0 6 8 12 8 12s8-6 8-12a8 8 0 00-8-8z" />
+    </>
+  ),
+  // Toast glyphs (kebi-toasts-dark-mockup.html).
+  copy: (
+    <>
+      <Rect x={9} y={9} width={13} height={13} rx={2} />
+      <Path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
+    </>
+  ),
+  eye: (
+    <>
+      <Path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+      <Circle cx={12} cy={12} r={3} />
+    </>
+  ),
+  trash: (
+    <>
+      <Polyline points="3 6 5 6 21 6" />
+      <Path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" />
+    </>
+  ),
+  alert: (
+    <>
+      <Circle cx={12} cy={12} r={10} />
+      <Line x1={12} y1={8} x2={12} y2={12} />
+      <Line x1={12} y1={16} x2={12.01} y2={16} />
     </>
   ),
 };

@@ -40,6 +40,19 @@ module.exports = {
         'pill-warm-bg': 'var(--pill-warm-bg)',
         'pill-amber-bg': 'var(--pill-amber-bg)',
         'pill-danger-bg': 'var(--pill-danger-bg)',
+
+        // Toast (inverts vs page) + per-tone icon circles
+        'toast-bg': 'var(--toast-bg)',
+        'toast-fg': 'var(--toast-fg)',
+        'toast-muted': 'var(--toast-muted)',
+        'toast-success-bg': 'var(--toast-success-bg)',
+        'toast-success-fg': 'var(--toast-success-fg)',
+        'toast-warm-bg': 'var(--toast-warm-bg)',
+        'toast-warm-fg': 'var(--toast-warm-fg)',
+        'toast-danger-bg': 'var(--toast-danger-bg)',
+        'toast-danger-fg': 'var(--toast-danger-fg)',
+        'toast-neutral-bg': 'var(--toast-neutral-bg)',
+        'toast-neutral-fg': 'var(--toast-neutral-fg)',
       },
 
       // ── Border radii (from kebi-tokens-mockup.html §07) ────────────────────
