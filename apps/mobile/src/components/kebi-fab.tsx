@@ -2,6 +2,7 @@ import { Pressable } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColorScheme } from 'nativewind';
 import { Mascot } from './mascot';
+import { useTranslation } from '../i18n/context';
 
 interface KebiFabProps {
   onPress?: () => void;
@@ -16,6 +17,7 @@ interface KebiFabProps {
  * not via `dark:`. (kebi-tokens-mockup.html §09 + §18.)
  */
 export function KebiFab({ onPress }: KebiFabProps) {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const { colorScheme } = useColorScheme();
   const dark = colorScheme === 'dark';
@@ -23,7 +25,7 @@ export function KebiFab({ onPress }: KebiFabProps) {
     <Pressable
       onPress={onPress}
       accessibilityRole="button"
-      accessibilityLabel="ask kebi"
+      accessibilityLabel={t('nav.askKebi')}
       className={`absolute h-16 w-16 items-center justify-center rounded-full ${
         dark ? 'bg-text' : 'border border-surface-2 bg-white'
       }`}

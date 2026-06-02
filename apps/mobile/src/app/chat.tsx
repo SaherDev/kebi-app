@@ -5,15 +5,17 @@ import { TopBar } from '../components/top-bar';
 import { IconButton } from '../components/icon-button';
 import { Mascot } from '../components/mascot';
 import { ScreenTitle } from '../components/screen-title';
+import { useTranslation } from '../i18n/context';
 
 export default function ChatScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
   return (
     <ScreenScaffold
       showFab={false}
       topBar={
         <TopBar
-          left={<IconButton icon="close" label="close" onPress={() => router.back()} />}
+          left={<IconButton icon="close" label={t('common.close')} onPress={() => router.back()} />}
           // Chat title-pill: mascot avatar + brand wordmark (kebi-chat-mockup).
           right={
             <View className="flex-row items-center gap-2 rounded-full bg-surface py-2 pe-3.5 ps-2">
@@ -26,7 +28,7 @@ export default function ChatScreen() {
         />
       }
     >
-      <ScreenTitle title="chat" />
+      <ScreenTitle title={t('titles.chat')} />
     </ScreenScaffold>
   );
 }

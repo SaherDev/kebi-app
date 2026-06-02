@@ -24,6 +24,8 @@ module.exports = {
     // safe-area-context wrapper (jest-expo mocks the native module; we just
     // need the JS wrapper to return usable stubs).
     '^react-native-safe-area-context$': '<rootDir>/src/test-utils/safe-area-mock.js',
+    // expo-localization is a native module the i18n catalog reads at import time.
+    '^expo-localization$': '<rootDir>/src/test-utils/expo-localization-mock.js',
   },
   transform: {
     '\\.[jt]sx?$': [

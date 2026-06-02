@@ -8,6 +8,7 @@
     "rootDir": "src",
     "jsx": "react-jsx",
     "noUnusedLocals": false,
+    "resolveJsonModule": true,
     "tsBuildInfoFile": "dist/tsconfig.app.tsbuildinfo"
   },
   "files": [
@@ -38,6 +39,7 @@
     "**/*.tsx",
     "**/*.js",
     "**/*.jsx",
+    "src/**/*.json",
     ".expo/types/**/*.ts",
     "expo-env.d.ts"
   ],

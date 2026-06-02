@@ -1,0 +1,24 @@
+{
+  "common": {
+    "back": "back",
+    "more": "more",
+    "edit": "edit",
+    "search": "search",
+    "close": "close"
+  },
+  "nav": {
+    "savePlace": "save a place",
+    "library": "library",
+    "settings": "settings",
+    "askKebi": "ask kebi"
+  },
+  "titles": {
+    "home": "home",
+    "library": "library",
+    "place": "place",
+    "settings": "settings",
+    "plans": "plans",
+    "billing": "billing",
+    "chat": "chat"
+  }
+}
