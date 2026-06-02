@@ -11,6 +11,11 @@ import { createClerkClient } from "@clerk/backend";
 import type { Request } from "express";
 import { Webhook } from "svix";
 import { RateLimitService } from "../rate-limit/rate-limit.service";
+import { UserIdentityService } from "../auth/user-identity.service";
+
+// This webhook is intrinsically Clerk's, so the mapping it writes is always
+// keyed under the 'clerk' provider regardless of the active auth.provider.
+const CLERK_PROVIDER = "clerk";
 
 interface ClerkWebhookEvent {
   type: string;
@@ -24,6 +29,7 @@ export class ClerkWebhookController {
   constructor(
     private configService: ConfigService,
     private rateLimitService: RateLimitService,
+    private userIdentity: UserIdentityService,
   ) {}
 
   @Post("clerk")
@@ -92,16 +98,28 @@ export class ClerkWebhookController {
     const clerk = createClerkClient({ secretKey });
     const user = await clerk.users.getUser(userId);
     const meta = user.publicMetadata as Record<string, unknown>;
-    if (!force && meta.plan !== undefined) return;
+    // Nothing to do once every managed claim is present (now incl. internal_id).
+    if (!force && meta.plan !== undefined && meta.internal_id !== undefined) return;
     const defaultPlan = this.configService.get<string>("rate_limits.default_plan", "homebody");
     const aiEnabled = this.configService.get<boolean>("ai.enabled_default", true);
+    // The single DB hit per user: resolve-or-create the stable internal id and
+    // stamp it into the signed token claim so the request path stays DB-free.
+    const email = user.emailAddresses?.[0]?.emailAddress;
+    const internalId = await this.userIdentity.resolve(CLERK_PROVIDER, {
+      externalId: userId,
+      email,
+      claims: {},
+    });
     await clerk.users.updateUser(userId, {
       publicMetadata: {
         ...meta,
         ai_enabled: meta.ai_enabled ?? aiEnabled,
         plan: meta.plan ?? defaultPlan,
+        internal_id: meta.internal_id ?? internalId,
       },
     });
-    this.logger.log(`Ensured metadata for user ${userId}: plan=${meta.plan ?? defaultPlan}`);
+    this.logger.log(
+      `Ensured metadata for user ${userId}: plan=${meta.plan ?? defaultPlan}, internal_id=${meta.internal_id ?? internalId}`,
+    );
   }
 }

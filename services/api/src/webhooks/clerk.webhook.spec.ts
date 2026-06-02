@@ -5,6 +5,7 @@ import { Request } from 'express';
 import { Webhook } from 'svix';
 import { ClerkWebhookController } from './clerk.webhook';
 import { RateLimitService } from '../rate-limit/rate-limit.service';
+import { UserIdentityService } from '../auth/user-identity.service';
 
 // Mock svix Webhook class
 jest.mock('svix', () => {
@@ -30,6 +31,8 @@ const mockConfigService = {
   }),
 };
 
+const mockResolve = jest.fn().mockResolvedValue('user_internal_abc');
+
 describe('ClerkWebhookController', () => {
   let controller: ClerkWebhookController;
 
@@ -39,6 +42,7 @@ describe('ClerkWebhookController', () => {
       providers: [
         { provide: ConfigService, useValue: mockConfigService },
         { provide: RateLimitService, useValue: { resetTurns: jest.fn() } },
+        { provide: UserIdentityService, useValue: { resolve: mockResolve } },
       ],
     }).compile();
 
@@ -76,6 +80,34 @@ describe('ClerkWebhookController', () => {
 
       expect(result).toEqual({ success: true });
       expect(mockVerify).toHaveBeenCalledWith(JSON.stringify(mockPayload), mockReq.headers);
+    });
+
+    it('should resolve and stamp internal_id into publicMetadata on user.created', async () => {
+      const mockPayload = { type: 'user.created', data: { id: 'user_123' } };
+      const mockReq = {
+        rawBody: JSON.stringify(mockPayload),
+        body: mockPayload,
+        headers: { 'svix-id': 'msg_test' },
+      } as unknown as Request;
+      (Webhook as jest.Mock).mockImplementation(() => ({
+        verify: jest.fn().mockReturnValue(mockPayload),
+      }));
+
+      await controller.handleClerkWebhook(
+        mockReq as Parameters<typeof controller.handleClerkWebhook>[0],
+      );
+
+      expect(mockResolve).toHaveBeenCalledWith('clerk', {
+        externalId: 'user_123',
+        email: undefined,
+        claims: {},
+      });
+      expect(mockUpdateUser).toHaveBeenCalledWith(
+        'user_123',
+        expect.objectContaining({
+          publicMetadata: expect.objectContaining({ internal_id: 'user_internal_abc' }),
+        }),
+      );
     });
 
     it('should verify webhook signature and pass through other event types', async () => {

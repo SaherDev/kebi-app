@@ -3,7 +3,7 @@ import type { AuthUser } from '@kebi-app/shared';
 
 /**
  * Decorator to inject the current authenticated user
- * Extracts req.user (populated by ClerkMiddleware) — id, ai_enabled, plan.
+ * Extracts req.user (populated by AuthMiddleware) — id, ai_enabled, plan.
  *
  * Usage:
  * @Post()
