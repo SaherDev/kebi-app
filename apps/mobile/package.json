@@ -17,6 +17,8 @@
     "@expo/metro-config": "~54.0.9",
     "@expo/metro-runtime": "~6.1.2",
     "@kebi-app/shared": "workspace:*",
+    "@react-native-async-storage/async-storage": "2.2.0",
+    "@supabase/supabase-js": "^2.106.2",
     "@testing-library/react-native": "*",
     "babel-preset-expo": "~54.0.7",
     "expo": "~54.0.0",
@@ -39,9 +41,10 @@
     "react-native-safe-area-context": "~5.6.0",
     "react-native-screens": "~4.16.0",
     "react-native-svg": "15.12.1",
-    "react-native-worklets": "0.5.1",
     "react-native-svg-transformer": "*",
-    "react-native-web": "*"
+    "react-native-url-polyfill": "^3.0.0",
+    "react-native-web": "*",
+    "react-native-worklets": "0.5.1"
   },
   "devDependencies": {
     "tailwindcss": "^3.4.19"

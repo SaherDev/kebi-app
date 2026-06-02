@@ -34,7 +34,10 @@ export class UserEntity {
   @Column({ name: 'externalId', type: 'varchar' })
   externalId!: string;
 
-  @Column({ unique: true })
+  // Descriptive only — identity is keyed by (authProvider, externalId), never
+  // by email. Not unique: phone/SMS users have no email and store '', which
+  // would otherwise collide on a unique constraint after the first such user.
+  @Column()
   email!: string;
 
   @CreateDateColumn({ name: 'createdAt' })

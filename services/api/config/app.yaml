@@ -6,6 +6,10 @@ app:
 auth:
   provider: clerk # active identity provider (registry key in AuthModule)
   user_id_prefix: user_ # typed prefix for generated internal user ids
+  # Supabase verification params (consumed when provider: supabase). issuer
+  # derives from SUPABASE_PROJECT_URL when omitted; audience defaults below.
+  supabase:
+    audience: authenticated
   public_paths:
     - /health
     - /webhooks/clerk

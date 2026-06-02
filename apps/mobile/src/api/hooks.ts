@@ -1,17 +1,16 @@
-import { createApiClient } from './client';
+import { createApiClient } from "./client";
+import { supabase } from "../lib/supabase";
 
 /**
- * Returns an API client for use in components.
- *
- * Token seam: until @clerk/clerk-expo is wired (separate follow-up task),
- * the token getter resolves an empty string. The only endpoint used so far
- * is the public GET /v1/health, which needs no auth, so this is correct and
- * live — not a stub.
- *
- * TODO(clerk-expo): replace the placeholder getter with
- * `const { getToken } = useAuth()` from '@clerk/clerk-expo' and return
- * `(await getToken()) ?? ''`.
+ * Returns an API client for use in components. The Bearer token is the current
+ * Supabase access token; `getSession()` returns the cached session and triggers
+ * a refresh when needed (auto-refresh is enabled on the client). Resolves to an
+ * empty string when signed out — the gateway rejects unauthenticated calls to
+ * protected routes, and the public GET /v1/health needs no token.
  */
 export function useApiClient() {
-  return createApiClient(async () => '');
+  return createApiClient(async () => {
+    const { data } = await supabase.auth.getSession();
+    return data.session?.access_token ?? "";
+  });
 }
