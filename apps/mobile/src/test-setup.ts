@@ -22,6 +22,21 @@ jest.mock('expo/src/winter/ImportMetaRegistry', () => ({
   },
 }));
 
+// Same lazy-getter problem as `fetch` above: Expo's winter runtime installs
+// `global.__ExpoImportMetaRegistry` as a lazy getter that requires a file
+// outside Jest's module scope on first access. Pre-define it with a direct
+// value so the getter never fires.
+Object.defineProperty(global, '__ExpoImportMetaRegistry', {
+  value: {
+    get url() {
+      return null;
+    },
+  },
+  configurable: true,
+  writable: true,
+  enumerable: false,
+});
+
 if (typeof global.structuredClone === 'undefined') {
   global.structuredClone = (object: unknown) => JSON.parse(JSON.stringify(object));
 }
