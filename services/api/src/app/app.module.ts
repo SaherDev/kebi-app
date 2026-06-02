@@ -10,8 +10,9 @@ import * as yaml from 'yaml';
 import * as fs from 'fs';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { ClerkMiddleware } from '../common/middleware/clerk.middleware';
+import { AuthMiddleware } from '../common/middleware/auth.middleware';
 import { ClerkWebhookController } from '../webhooks/clerk.webhook';
+import { AuthModule } from '../auth/auth.module';
 import { AiEnabledGuard } from '../common/guards/ai-enabled.guard';
 import { UserEntity } from '../database/entities/user.entity';
 import { UserSettingsEntity } from '../database/entities/user-settings.entity';
@@ -55,10 +56,13 @@ function loadAppYaml(): Record<string, unknown> {
         type: 'postgres',
         url: config.get<string>('DATABASE_URL'),
         entities: [UserEntity, UserSettingsEntity],
-        synchronize: false,
+        // Product tables (users, user_settings) are owned here; TypeORM keeps the
+        // schema in sync. AI tables are owned by kebi (Alembic) and never touched.
+        synchronize: true,
       }),
     }),
     DatabaseModule,
+    AuthModule,
     ChatModule,
     ExtractModule,
     RateLimitModule,
@@ -70,6 +74,6 @@ function loadAppYaml(): Record<string, unknown> {
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
-    consumer.apply(ClerkMiddleware).forRoutes('*');
+    consumer.apply(AuthMiddleware).forRoutes('*');
   }
 }

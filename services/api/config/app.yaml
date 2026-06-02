@@ -4,6 +4,8 @@ app:
   api_prefix: api/v1
 
 auth:
+  provider: clerk # active identity provider (registry key in AuthModule)
+  user_id_prefix: user_ # typed prefix for generated internal user ids
   public_paths:
     - /health
     - /webhooks/clerk

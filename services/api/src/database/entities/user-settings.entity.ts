@@ -7,6 +7,7 @@ import {
   OneToOne,
   JoinColumn,
   BeforeInsert,
+  Relation,
 } from 'typeorm';
 import { createId } from '@paralleldrive/cuid2';
 import { UserEntity } from './user.entity';
@@ -21,7 +22,7 @@ export class UserSettingsEntity {
 
   @OneToOne(() => UserEntity, (user) => user.settings)
   @JoinColumn({ name: 'userId' })
-  user!: UserEntity;
+  user!: Relation<UserEntity>;
 
   @Column({ default: 'en' })
   locale!: string;

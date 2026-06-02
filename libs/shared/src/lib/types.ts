@@ -204,6 +204,31 @@ export interface AuthUser {
   movement_profile?: MovementProfile;
 }
 
+/**
+ * Product-level claims the gateway reads from an auth provider. Each provider
+ * reads these from its own claim location (Clerk `public_metadata` today) and
+ * returns them in a provider-agnostic shape.
+ */
+export interface IdentityClaims {
+  ai_enabled?: boolean;
+  plan?: PlanTier;
+  movement_profile?: MovementProfile;
+  // Our stable internal user id, stamped into the signed token claim so the
+  // request path resolves identity without a DB lookup. Absent until stamped.
+  internal_id?: string;
+}
+
+/**
+ * Provider-agnostic identity returned by any auth provider after verifying a
+ * token. `externalId` is the provider's subject (Clerk `sub`) — the lookup key
+ * for the stable internal id, never forwarded to kebi.
+ */
+export interface NormalizedIdentity {
+  externalId: string;
+  email?: string;
+  claims: IdentityClaims;
+}
+
 // Signal types — recommendation accept/reject only (kebi ADR-076/078).
 export type SignalType =
   | "recommendation_accepted"
