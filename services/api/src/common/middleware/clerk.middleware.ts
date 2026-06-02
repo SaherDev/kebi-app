@@ -29,8 +29,16 @@ export class ClerkMiddleware implements NestMiddleware {
     // Skip auth for public routes (by path pattern)
     // Note: Middleware runs before routing, so we check paths instead of decorators
     const publicPaths = this.configService.get<string[]>('auth.public_paths', ['/health', '/webhooks/clerk']);
-    // Use originalUrl which includes the full path with query string
-    const requestUrl = (req.originalUrl || req.url || '').split('?')[0]; // Remove query string
+    // originalUrl includes the global prefix (e.g. /api/v1/health) but public_paths
+    // are written relative to the API (e.g. /health), so strip the configured prefix
+    // before matching. Without this, no public path ever matches.
+    const apiPrefix = this.configService.get<string>('app.api_prefix', '');
+    const normalizedPrefix = apiPrefix ? `/${apiPrefix.replace(/^\/+|\/+$/g, '')}` : '';
+    const fullPath = (req.originalUrl || req.url || '').split('?')[0]; // Remove query string
+    const requestUrl =
+      normalizedPrefix && fullPath.startsWith(normalizedPrefix)
+        ? fullPath.slice(normalizedPrefix.length) || '/'
+        : fullPath;
     if (publicPaths.some(path => requestUrl === path || requestUrl.startsWith(path + '/'))) {
       return next();
     }

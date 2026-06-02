@@ -66,6 +66,24 @@ describe('ClerkMiddleware', () => {
       expect(next).toHaveBeenCalled();
       expect(mockVerifyToken).not.toHaveBeenCalled();
     });
+
+    it('should skip verification for a public route under the global api prefix', async () => {
+      // originalUrl carries the global prefix; public_paths are prefix-relative.
+      const middlewareWithPrefix = new ClerkMiddleware({
+        get: jest.fn((key: string, defaultValue?: any) => {
+          const values: Record<string, any> = { 'app.api_prefix': 'api/v1' };
+          return values[key] ?? defaultValue;
+        }),
+      } as any);
+
+      const req = { originalUrl: '/api/v1/health', headers: {} } as any;
+      const next = jest.fn();
+
+      await middlewareWithPrefix.use(req, {} as any, next);
+
+      expect(next).toHaveBeenCalled();
+      expect(mockVerifyToken).not.toHaveBeenCalled();
+    });
   });
 
   describe('authorization header validation', () => {
