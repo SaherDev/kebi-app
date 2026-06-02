@@ -5,6 +5,10 @@ import { TopBar } from '../components/top-bar';
 import { StatusPill } from '../components/status-pill';
 import { Button } from '../components/button';
 import { Group } from '../components/group';
+import { PlaceAvatar } from '../components/place-avatar';
+import { PlaceChip } from '../components/place-chip';
+import { useToast } from '../components/toast-context';
+import type { PlaceTag } from '@kebi-app/shared';
 
 /**
  * Component gallery — a dev-only route (`/gallery`) for eyeballing the
@@ -22,23 +26,37 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
-// Demo row for the Group section — emoji avatar + name + trailing status pill,
-// mirroring the mockup's group rows. (A real PlaceRow/avatar component is
-// separate, out of scope here.)
+// Demo row for the Group section — PlaceAvatar + name + trailing status pill,
+// mirroring the mockup's group rows.
 function GalleryRow({ emoji, name, pill }: { emoji: string; name: string; pill: React.ReactNode }) {
   return (
     <View className="flex-row items-center py-2">
-      <View className="h-7 w-7 items-center justify-center rounded-small bg-surface-2">
-        <Text className="text-[15px]">{emoji}</Text>
-      </View>
+      <PlaceAvatar emoji={emoji} size="card" />
       <Text className="ms-3 flex-1 text-body text-text">{name}</Text>
       {pill}
     </View>
   );
 }
 
+// Bold span inside toast text — inherits the toast's text colour (nested Text).
+function B({ children }: { children: React.ReactNode }) {
+  return <Text className="font-semibold">{children}</Text>;
+}
+
+// Sample PlaceCore.tags to demo PlaceChip mapping tag.type → variant, value → label.
+const DEMO_TAGS: PlaceTag[] = [
+  { type: 'atmosphere', value: 'intimate', source: 'llm' },
+  { type: 'atmosphere', value: 'romantic', source: 'llm' },
+  { type: 'atmosphere', value: 'hidden_gem', source: 'llm' },
+  { type: 'feature', value: 'private_room', source: 'google' },
+  { type: 'feature', value: 'dog_friendly', source: 'google' },
+  { type: 'feature', value: 'open_late', source: 'google' },
+  { type: 'cuisine', value: 'Japanese', source: 'llm' },
+];
+
 export default function GalleryScreen() {
   const { toggleColorScheme, colorScheme } = useColorScheme();
+  const toast = useToast();
   return (
     <ScreenScaffold
       showFab={false}
@@ -84,6 +102,131 @@ export default function GalleryScreen() {
             <GalleryRow emoji="🍷" name="Saint Jardim" pill={<StatusPill variant="warm">new</StatusPill>} />
             <GalleryRow emoji="⛩️" name="Nezu Shrine" pill={<StatusPill variant="green">went</StatusPill>} />
           </Group>
+        </Section>
+
+        <Section title="Place avatar">
+          <View className="flex-row items-center gap-3">
+            <PlaceAvatar categories={['cafe']} size="card" />
+            <PlaceAvatar categories={['bar']} size="card" />
+            <PlaceAvatar categories={['restaurant']} size="row" />
+            {/* empty categories → 📍 fallback */}
+            <PlaceAvatar categories={[]} size="row" />
+            {/* per-place override */}
+            <PlaceAvatar emoji="🍣" size="row" />
+          </View>
+        </Section>
+
+        <Section title="Chips — atmosphere (from place.tags)">
+          <View className="flex-row flex-wrap items-center gap-2">
+            {DEMO_TAGS.filter((t) => t.type === 'atmosphere').map((t) => (
+              <PlaceChip key={String(t.value)} tag={t} />
+            ))}
+          </View>
+        </Section>
+
+        <Section title="Chips — feature (from place.tags)">
+          <View className="flex-row flex-wrap items-center gap-2">
+            {DEMO_TAGS.filter((t) => t.type !== 'atmosphere').map((t) => (
+              <PlaceChip key={String(t.value)} tag={t} />
+            ))}
+          </View>
+        </Section>
+
+        <Section title="Toast">
+          <View className="flex-row flex-wrap items-center gap-2">
+            <Button
+              variant="primary"
+              label="save"
+              onPress={() =>
+                toast.show({
+                  tone: 'success',
+                  icon: 'check',
+                  text: (
+                    <>
+                      saved <B>Saint Jardim</B> to your stash
+                    </>
+                  ),
+                })
+              }
+            />
+            <Button
+              variant="outlined"
+              label="copy"
+              onPress={() => toast.show({ tone: 'neutral', icon: 'copy', text: 'link copied' })}
+            />
+            <Button
+              variant="outlined"
+              label="approve"
+              onPress={() =>
+                toast.show({
+                  emoji: '🌟',
+                  text: (
+                    <>
+                      approved <B>Saint Jardim</B>
+                    </>
+                  ),
+                  action: { label: 'undo', onPress: () => undefined },
+                })
+              }
+            />
+            <Button
+              variant="outlined"
+              label="been"
+              onPress={() =>
+                toast.show({
+                  tone: 'success',
+                  icon: 'eye',
+                  text: (
+                    <>
+                      marked <B>Kamachiku</B> as been
+                    </>
+                  ),
+                  action: { label: 'undo', onPress: () => undefined },
+                })
+              }
+            />
+            <Button
+              variant="danger"
+              label="remove"
+              onPress={() =>
+                toast.show({
+                  tone: 'danger',
+                  icon: 'trash',
+                  text: (
+                    <>
+                      <B>Bar Trench</B> removed
+                    </>
+                  ),
+                  action: { label: 'undo', onPress: () => undefined },
+                })
+              }
+            />
+            <Button
+              variant="outlined"
+              label="error"
+              onPress={() =>
+                toast.show({
+                  tone: 'danger',
+                  icon: 'alert',
+                  text: "couldn't save that one",
+                  action: { label: 'retry', onPress: () => undefined },
+                })
+              }
+            />
+            <Button
+              variant="outlined"
+              label="stack ×3"
+              onPress={() => {
+                toast.show({ tone: 'success', icon: 'check', text: 'saved' });
+                toast.show({ tone: 'neutral', icon: 'copy', text: 'link copied' });
+                toast.show({
+                  emoji: '🌟',
+                  text: 'approved',
+                  action: { label: 'undo', onPress: () => undefined },
+                });
+              }}
+            />
+          </View>
         </Section>
       </ScrollView>
     </ScreenScaffold>
