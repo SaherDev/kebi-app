@@ -106,13 +106,13 @@ Three variants only: primary (filled dark), outlined (transparent + surface-2 bo
 
 ### AI button
 
-The 56px circular floating button at bottom-right of every screen.
+The 64px circular floating button at bottom-right of every screen.
 
 **Always:**
 - White fill in light mode (border-only)
 - Cream-filled in dark mode (no border, brightest spot on screen)
 - 16px from bottom edge, 16px from right edge
-- Mascot SVG at 36px inside
+- Mascot SVG at 42px inside
 
 **Only purpose:** open the chat / consult agent. Don't repurpose for other actions. Don't put it on the chat page itself.
 
