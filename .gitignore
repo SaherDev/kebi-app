@@ -173,3 +173,6 @@ npm-debug.*
 web-build/
 cache/
 
+# Playwright MCP (screenshots/snapshots from local browser tooling)
+.playwright-mcp/
+
