@@ -16,8 +16,9 @@ export default function ChatScreen() {
       topBar={
         <TopBar
           left={<IconButton icon="close" label={t('common.close')} onPress={() => router.back()} />}
-          // Chat title-pill: mascot avatar + brand wordmark (kebi-chat-mockup).
-          right={
+          // Chat title-pill: mascot avatar + brand wordmark, screen-centered
+          // between the close button and a balancing spacer (kebi-chat-mockup).
+          center={
             <View className="flex-row items-center gap-2 rounded-full bg-surface py-2 pe-3.5 ps-2">
               <View className="h-[22px] w-[22px] items-center justify-center overflow-hidden rounded-small">
                 <Mascot size={22} />
@@ -25,6 +26,7 @@ export default function ChatScreen() {
               <Text className="font-semibold text-[14px] text-text">kebi</Text>
             </View>
           }
+          right={<View className="w-10" />}
         />
       }
     >
