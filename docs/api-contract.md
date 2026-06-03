@@ -266,7 +266,7 @@ data: {"tool_calls_used": 1}
 | ------------- | ----------------------- | ----------------------------- | -------------------------------------------------------- |
 | `id`          | stable step id          | same `id` as the active frame | e.g. `find_saved#0`, `agent.tool_decision#0`; upsert key |
 | `status`      | `"active"`              | `"done"`                      | lifecycle marker                                         |
-| `title`       | set                     | same `title`                  | bold action line; known at step start, so it's on both  |
+| `title`       | set (in-progress)       | set (completed)               | bold action line; on BOTH frames. May shift tense active→done ("searching nearby" → "searched nearby") — client renders the latest |
 | `summary`     | `null`                  | filled                        | result detail; client shows a skeleton while `null`      |
 | `duration_ms` | `null`                  | set                           | node latency on completion                               |
 | `source`      | `"agent" \| "fallback"` | same                          | ADR-075 narrowed this; no `"tool"` value                 |
