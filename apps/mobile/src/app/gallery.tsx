@@ -48,46 +48,50 @@ function B({ children }: { children: React.ReactNode }) {
 // Reasoning-block demos: a finished turn (all done, with a duration tally) and a
 // live turn (one done step + one active step still streaming → shimmer skeleton).
 const DONE_STEPS: ReasoningBlockStep[] = [
-  { id: 's1', status: 'done', summary: 'drinks, somewhere lively — bar or club, not a quiet wine spot' },
-  { id: 's2', status: 'done', summary: '2 bars you liked from past nights out' },
-  { id: 's3', status: 'done', summary: '7 more in shibuya/shimokitazawa, busy on a friday night' },
-  { id: 's4', status: 'done', summary: 'leaning on energy first, then walking distance' },
+  { id: 's1', status: 'done', title: 'parsed your intent', summary: 'drinks, somewhere lively, not a quiet wine spot' },
+  { id: 's2', status: 'done', title: 'searched your stash', summary: '2 bars you liked from past nights out' },
+  { id: 's3', status: 'done', title: 'found nearby spots', summary: '7 more in shibuya/shimokitazawa, busy on a friday night' },
+  { id: 's4', status: 'done', title: 'ranked 9 candidates', summary: 'leaning on energy first, then walking distance' },
 ];
 
 const RUNNING_STEPS: ReasoningBlockStep[] = [
-  { id: 'r1', status: 'done', summary: "post-club food, late night, near where you'll be coming from shibuya" },
-  { id: 'r2', status: 'active', summary: null },
+  { id: 'r1', status: 'done', title: 'picked up the context', summary: "post-club food, late night, near where you'll be coming from shibuya" },
+  { id: 'r2', status: 'active', title: 'scanning late-night spots', summary: null },
 ];
 
-// A scripted "stream" of the drinks turn — the narration each step resolves to.
-// The driver replays it the way the chat screen will consume SSE: each step
-// shows up active (skeleton) first, then resolves to done as its summary lands.
-const STREAM_NARRATION = [
-  'drinks, somewhere lively, not a quiet wine spot',
-  '2 bars you liked from past nights out',
-  '7 more in shibuya/shimokitazawa, busy on a friday night',
-  'leaning on energy first, then walking distance',
+// A scripted "stream" of the drinks turn — the title (bold action, known at step
+// start) and the detail each step resolves to. The driver replays it the way the
+// chat screen consumes SSE: a step shows up active (title + skeleton), then
+// resolves to done as its detail lands.
+const STREAM_SCRIPT: { title: string; summary: string }[] = [
+  { title: 'parsed your intent', summary: 'drinks, somewhere lively, not a quiet wine spot' },
+  { title: 'searched your stash', summary: '2 bars you liked from past nights out' },
+  { title: 'found nearby spots', summary: '7 more in shibuya/shimokitazawa, busy on a friday night' },
+  { title: 'ranked 9 candidates', summary: 'leaning on energy first, then walking distance' },
 ];
 
-// Snapshot per tick: the first k steps done, plus the (k+1)-th still active —
-// then a final snapshot with every step done and the run complete.
+// Snapshot per tick: the first k steps done, plus the (k+1)-th still active
+// (title shown, detail still a skeleton) — then a final snapshot with every step
+// done and the run complete.
 const STREAM_SNAPSHOTS: { steps: ReasoningBlockStep[]; done: boolean }[] = [
-  ...STREAM_NARRATION.map((_, k) => ({
+  ...STREAM_SCRIPT.map((_, k) => ({
     steps: [
-      ...STREAM_NARRATION.slice(0, k).map<ReasoningBlockStep>((summary, i) => ({
+      ...STREAM_SCRIPT.slice(0, k).map<ReasoningBlockStep>((s, i) => ({
         id: `n${i}`,
         status: 'done',
-        summary,
+        title: s.title,
+        summary: s.summary,
       })),
-      { id: `n${k}`, status: 'active', summary: null } as ReasoningBlockStep,
+      { id: `n${k}`, status: 'active', title: STREAM_SCRIPT[k].title, summary: null } as ReasoningBlockStep,
     ],
     done: false,
   })),
   {
-    steps: STREAM_NARRATION.map<ReasoningBlockStep>((summary, i) => ({
+    steps: STREAM_SCRIPT.map<ReasoningBlockStep>((s, i) => ({
       id: `n${i}`,
       status: 'done',
-      summary,
+      title: s.title,
+      summary: s.summary,
     })),
     done: true,
   },
@@ -126,16 +130,18 @@ function StreamingReasoningDemo() {
 // Real long/raw summaries from a live stream (the halal-dinner turn) — verifies
 // the narration clamp holds: a model-list line and a multi-paragraph draft.
 const LONG_STEPS: ReasoningBlockStep[] = [
-  { id: 'l1', status: 'done', summary: 'Looking around Izumi 2, Suginami, Japan.' },
+  { id: 'l1', status: 'done', title: 'found your location', summary: 'around Izumi 2, Suginami, Japan.' },
   {
     id: 'l2',
     status: 'done',
+    title: 'searched nearby',
     summary:
       'Found 5 options: Wagyu Steak & Hamburger (Halal Vegan Gluten free) Shibuya, Wagyu Hamburger Steak & Ramen Shinjuku Kabukicho, HALAL RAMEN & WAGYU SAMURAI SOUL, HALAL AND VEGAN RAMEN DATTEBAYO Asakusa, Wagyu & Vegan Hamburger Ginza (5 didn’t fit your requirements).',
   },
   {
     id: 'l3',
     status: 'done',
+    title: 'ranked the options',
     summary:
       'Wagyu Steak & Hamburger in Shibuya — halal, vegan, and vegetarian options, serves all day.\n\nWagyu Hamburger Steak & Ramen in Shinjuku — halal and vegetarian, lunch and dinner.\n\nHALAL RAMEN & WAGYU SAMURAI SOUL in Asakusa — halal and vegetarian, family-friendly.',
   },

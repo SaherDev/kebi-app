@@ -33,7 +33,9 @@ export interface ReasoningBlockStep {
   /** Stable id (upsert key) — used as the React key. */
   id: string;
   status: ReasoningStepStatus;
-  /** The step narration (contract `summary`); `null` while active → skeleton. */
+  /** Short action — the bold line (contract `title`). Omit for a one-tier step. */
+  title?: string;
+  /** Result detail — the muted line (contract `summary`); `null` while active → skeleton. */
   summary: string | null;
 }
 
@@ -210,17 +212,28 @@ function StepRow({
         <StatusNode status={step.status} />
       </View>
       <View className="min-w-0 flex-1 gap-[3px]">
+        {/* Bold action line (the step title), when present. */}
+        {step.title ? (
+          <Text numberOfLines={1} className="text-[13px] font-medium text-text">
+            {step.title}
+          </Text>
+        ) : null}
         {step.summary ? (
-          <Text numberOfLines={summaryLines} className="text-[13px] text-text" style={{ lineHeight: 19 }}>
+          // Result detail — muted under a title, primary when there's no title.
+          <Text
+            numberOfLines={summaryLines}
+            className={step.title ? 'text-[12px] text-text-muted' : 'text-[13px] text-text'}
+            style={{ lineHeight: step.title ? 18 : 19 }}
+          >
             {step.summary}
           </Text>
-        ) : (
-          // Active & still streaming → shimmer bars in place of the narration.
+        ) : step.status === 'active' ? (
+          // Active & still streaming → shimmer bars in place of the detail.
           <>
             <Shimmer width="80%" />
             <Shimmer width="40%" />
           </>
-        )}
+        ) : null}
       </View>
     </Animated.View>
   );
