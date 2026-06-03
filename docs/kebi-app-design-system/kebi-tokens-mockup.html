@@ -1191,25 +1191,27 @@
       <span class="section-count">swipe-to-delete</span>
     </div>
     <h2 class="section-h2">swipe-to-delete</h2>
-    <p class="section-desc">native iOS gesture for destructive actions on list rows. card translates -104px on horizontal pan, revealing a red action underneath. tap red strip → delete + undo toast.</p>
+    <p class="section-desc">iOS-native gesture for removing list rows. card pans left to reveal a soft tinted action button. tap → delete fires + undo toast appears. action uses danger tint (not full red) to stay warm-palette consistent.</p>
 
     <div class="component-row">
       <div class="component-preview" style="background: var(--bg); padding: 24px; flex-direction: column; gap: 8px; align-items: stretch;">
-        <div style="position: relative; height: 64px;">
-          <div style="position: absolute; top: 0; bottom: 0; right: 0; width: 104px; background: var(--danger); display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 14px; gap: 8px; letter-spacing: -0.005em; border-radius: 0 14px 14px 0;">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
-            delete
+        <!-- Row in swiped state — card shifted, action button revealed -->
+        <div style="position: relative; height: 60px;">
+          <div style="position: absolute; top: 0; bottom: 0; right: 0; width: 88px; background: var(--pill-danger-bg); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; border-radius: 14px;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--danger)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+            <span style="font-size: 11px; font-weight: 600; color: var(--danger); letter-spacing: -0.005em;">delete</span>
           </div>
-          <div style="position: relative; z-index: 1; background: var(--surface); border-radius: 14px; padding: 14px; display: flex; align-items: center; gap: 10px; transform: translateX(-104px); height: 100%; box-sizing: border-box;">
+          <div style="position: relative; z-index: 1; background: var(--surface); border-radius: 14px; padding: 12px 14px; display: flex; align-items: center; gap: 10px; transform: translateX(-96px); height: 100%; box-sizing: border-box;">
             <div class="demo-avatar">☕</div>
             <span class="demo-title">Fuglen</span>
           </div>
         </div>
+        <!-- Row in resting state for comparison -->
         <div style="position: relative;">
-          <div style="background: var(--surface); border-radius: 14px; padding: 14px; display: flex; align-items: center; gap: 10px;">
+          <div style="background: var(--surface); border-radius: 14px; padding: 12px 14px; display: flex; align-items: center; gap: 10px;">
             <div class="demo-avatar">⛩️</div>
             <span class="demo-title">Nezu Shrine</span>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-soft)" stroke-width="2" style="margin-left: auto;"><polyline points="9 6 15 12 9 18"/></svg>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-soft)" stroke-width="1.8" style="margin-left: auto;"><polyline points="9 6 15 12 9 18"/></svg>
           </div>
         </div>
       </div>
@@ -1225,27 +1227,32 @@
       <span class="section-count">overflow menu</span>
     </div>
     <h2 class="section-h2">overflow menu</h2>
-    <p class="section-desc">drop-down menu anchored under the ••• icon in any top pill. used for non-primary actions including destructive delete. items separated by hairline divider before any destructive group.</p>
+    <p class="section-desc">drop-down anchored under the ••• icon in any top pill. dense, minimal chrome, white bg with thin border. linear/notion style. items use natural-language place actions: approve, like, mark as visited, forget. destructive item separated by hairline divider.</p>
 
     <div class="component-row">
-      <div class="component-preview" style="background: var(--bg); padding: 32px; justify-content: center;">
-        <div style="background: var(--bg); border-radius: 14px; padding: 6px; min-width: 220px; box-shadow: 0 8px 32px rgba(0,0,0,0.10), 0 2px 8px rgba(0,0,0,0.06); border: 1px solid var(--surface-2); display: flex; flex-direction: column;">
-          <button style="display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 8px; background: transparent; border: none; cursor: pointer; font-family: inherit; font-size: 14px; font-weight: 500; color: var(--text); letter-spacing: -0.005em; text-align: left;">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="1.8"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
-            share
+      <div class="component-preview" style="background: var(--bg); padding: 40px; justify-content: center;">
+        <div style="background: white; border-radius: 10px; padding: 4px; min-width: 220px; box-shadow: 0 4px 16px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04); border: 1px solid var(--surface-2); display: flex; flex-direction: column; gap: 1px;">
+
+          <button style="display: flex; align-items: center; gap: 10px; padding: 7px 10px; border-radius: 6px; background: transparent; border: none; cursor: pointer; font-family: inherit; font-size: 13px; font-weight: 500; color: var(--text); letter-spacing: -0.005em; text-align: left;">
+            <span style="font-size: 15px; line-height: 1; width: 16px; text-align: center;">👍</span>
+            looks right
           </button>
-          <button style="display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 8px; background: transparent; border: none; cursor: pointer; font-family: inherit; font-size: 14px; font-weight: 500; color: var(--text); letter-spacing: -0.005em; text-align: left;">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="1.8"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
-            add a note
+
+          <button style="display: flex; align-items: center; gap: 10px; padding: 7px 10px; border-radius: 6px; background: transparent; border: none; cursor: pointer; font-family: inherit; font-size: 13px; font-weight: 500; color: var(--text); letter-spacing: -0.005em; text-align: left;">
+            <span style="font-size: 15px; line-height: 1; width: 16px; text-align: center;">❤️</span>
+            i like this one
           </button>
-          <button style="display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 8px; background: transparent; border: none; cursor: pointer; font-family: inherit; font-size: 14px; font-weight: 500; color: var(--text); letter-spacing: -0.005em; text-align: left;">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-            mark as been
+
+          <button style="display: flex; align-items: center; gap: 10px; padding: 7px 10px; border-radius: 6px; background: transparent; border: none; cursor: pointer; font-family: inherit; font-size: 13px; font-weight: 500; color: var(--text); letter-spacing: -0.005em; text-align: left;">
+            <span style="font-size: 15px; line-height: 1; width: 16px; text-align: center;">✅</span>
+            been there
           </button>
-          <div style="height: 1px; background: var(--surface-2); margin: 4px 8px;"></div>
-          <button style="display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 8px; background: transparent; border: none; cursor: pointer; font-family: inherit; font-size: 14px; font-weight: 500; color: var(--danger); letter-spacing: -0.005em; text-align: left;">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--danger)" stroke-width="1.8"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
-            remove from stash
+
+          <div style="height: 1px; background: var(--surface-2); margin: 4px 6px;"></div>
+
+          <button style="display: flex; align-items: center; gap: 10px; padding: 7px 10px; border-radius: 6px; background: transparent; border: none; cursor: pointer; font-family: inherit; font-size: 13px; font-weight: 500; color: var(--danger); letter-spacing: -0.005em; text-align: left;">
+            <span style="font-size: 15px; line-height: 1; width: 16px; text-align: center;">🗑️</span>
+            forget this place
           </button>
         </div>
       </div>
