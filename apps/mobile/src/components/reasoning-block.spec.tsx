@@ -21,9 +21,9 @@ describe('ReasoningBlock', () => {
     expect(getByText('got it')).toBeTruthy(); // header switches to the done state
   });
 
-  it('shows "on it" while running, with the active step title in the body', () => {
+  it('shows "working on it" while running, with the active step title in the body', () => {
     const { getByText } = render(<ReasoningBlock steps={RUNNING} />);
-    expect(getByText('on it')).toBeTruthy(); // header state, not the step title
+    expect(getByText('working on it')).toBeTruthy(); // header state, not the step title
     expect(getByText('step 1 · streaming…')).toBeTruthy();
     expect(getByText('scanning late-night spots')).toBeTruthy(); // active step's bold line
     expect(getByText('post-club food, late night')).toBeTruthy();

@@ -45,7 +45,7 @@ export interface ReasoningBlockProps {
   done?: boolean;
   /** Turn duration in ms for the "· 1.8s" tally (summed `duration_ms` or wall-clock). */
   durationMs?: number;
-  /** Override the header label. Defaults to "on it" while running, "got it" when done. */
+  /** Override the header label. Defaults to "working on it" while running, "got it" when done. */
   label?: string;
   /** Override the derived meta line verbatim (e.g. a translated string). */
   meta?: string;
@@ -70,7 +70,7 @@ const ENTER_EASE = Easing.out(Easing.ease);
 const SUMMARY_LINES = 2;
 
 /** Header label while the run is in flight. */
-const RUNNING_LABEL = 'on it';
+const RUNNING_LABEL = 'working on it';
 /** Header label once the run has finished. */
 const DONE_LABEL = 'got it';
 
@@ -100,8 +100,8 @@ export function ReasoningBlock({
   // later fade in immediately as they arrive, not after a growing delay.
   const initialCount = useRef(steps.length).current;
 
-  // Header shows the state, not the per-step title: "on it" while the run is in
-  // flight, "got it" once it's done. The step titles live in the body rows.
+  // Header shows the state, not the per-step title: "working on it" while the run
+  // is in flight, "got it" once it's done. The step titles live in the body rows.
   const headerLabel = label ?? (done ? DONE_LABEL : RUNNING_LABEL);
 
   const doneCount = steps.filter((s) => s.status === 'done').length;

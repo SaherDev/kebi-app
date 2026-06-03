@@ -10,7 +10,7 @@ import { PlaceAvatar } from '../components/place-avatar';
 import { PlaceChip } from '../components/place-chip';
 import { ReasoningBlock, type ReasoningBlockStep } from '../components/reasoning-block';
 import { useToast } from '../components/toast-context';
-import type { PlaceTag } from '@kebi-app/shared';
+import type { PlaceTag, ReasoningStepStatus } from '@kebi-app/shared';
 
 /**
  * Component gallery — a dev-only route (`/gallery`) for eyeballing the
@@ -59,69 +59,75 @@ const RUNNING_STEPS: ReasoningBlockStep[] = [
   { id: 'r2', status: 'active', title: 'scanning late-night spots', summary: null },
 ];
 
-// A scripted "stream" of the drinks turn — the title (bold action, known at step
-// start) and the detail each step resolves to. The driver replays it the way the
-// chat screen consumes SSE: a step shows up active (title + skeleton), then
-// resolves to done as its detail lands.
-const STREAM_SCRIPT: { title: string; summary: string }[] = [
-  { title: 'parsed your intent', summary: 'drinks, somewhere lively, not a quiet wine spot' },
-  { title: 'searched your stash', summary: '2 bars you liked from past nights out' },
-  { title: 'found nearby spots', summary: '7 more in shibuya/shimokitazawa, busy on a friday night' },
-  { title: 'ranked 9 candidates', summary: 'leaning on energy first, then walking distance' },
+// The actual halal-dinner turn, captured frame-by-frame with each frame's real
+// offset (ms from the first frame). This is the reference the chat-screen reducer
+// follows: drop `debug` frames, upsert reasoning steps by `id`, flip `done` on the
+// done frame. The gaps between user steps are the hidden "thinking" the agent did
+// between tool calls — so the panel sits on its done steps for ~5s before "got it".
+type ReplayFrame =
+  | { at: number; vis: 'user' | 'debug'; id: string; title: string; summary: string | null; status: ReasoningStepStatus }
+  | { at: number; done: true };
+
+const REAL_STREAM: ReplayFrame[] = [
+  { at: 0, vis: 'user', id: 'agent.location#0', title: 'found your location', summary: null, status: 'active' },
+  { at: 1715, vis: 'user', id: 'agent.location#0', title: 'found your location', summary: 'around Izumi 2, Suginami, Japan', status: 'done' },
+  { at: 1721, vis: 'debug', id: 'agent.tool_decision#0', title: 'thinking', summary: null, status: 'active' },
+  { at: 3261, vis: 'debug', id: 'agent.tool_decision#0', title: 'thinking', summary: 'thinking…', status: 'done' },
+  { at: 3264, vis: 'user', id: 'find_saved#0', title: 'searched your saved spots', summary: null, status: 'active' },
+  { at: 3291, vis: 'user', id: 'find_saved#0', title: 'searched your saved spots', summary: 'nothing saved matched that', status: 'done' },
+  { at: 3293, vis: 'debug', id: 'agent.tool_decision#1', title: 'thinking', summary: null, status: 'active' },
+  { at: 6443, vis: 'debug', id: 'agent.tool_decision#1', title: 'thinking', summary: 'thinking…', status: 'done' },
+  { at: 6447, vis: 'user', id: 'discover_places#1', title: 'searched nearby', summary: null, status: 'active' },
+  { at: 6447, vis: 'debug', id: 'discover_places#1.start', title: '', summary: null, status: 'active' },
+  { at: 6447, vis: 'debug', id: 'discover_places#1.start', title: '', summary: 'checking nearby', status: 'done' },
+  { at: 6996, vis: 'user', id: 'discover_places#1', title: 'searched nearby', summary: "5 spots — Wagyu Steak & Hamburger, Wagyu, +3 more (5 didn't fit)", status: 'done' },
+  { at: 6999, vis: 'debug', id: 'agent.tool_decision#2', title: 'thinking', summary: null, status: 'active' },
+  { at: 11796, vis: 'debug', id: 'agent.tool_decision#2', title: 'thinking', summary: 'drafting the reply…', status: 'done' },
+  { at: 11800, done: true },
 ];
 
-// Snapshot per tick: the first k steps done, plus the (k+1)-th still active
-// (title shown, detail still a skeleton) — then a final snapshot with every step
-// done and the run complete.
-const STREAM_SNAPSHOTS: { steps: ReasoningBlockStep[]; done: boolean }[] = [
-  ...STREAM_SCRIPT.map((_, k) => ({
-    steps: [
-      ...STREAM_SCRIPT.slice(0, k).map<ReasoningBlockStep>((s, i) => ({
-        id: `n${i}`,
-        status: 'done',
-        title: s.title,
-        summary: s.summary,
-      })),
-      { id: `n${k}`, status: 'active', title: STREAM_SCRIPT[k].title, summary: null } as ReasoningBlockStep,
-    ],
-    done: false,
-  })),
-  {
-    steps: STREAM_SCRIPT.map<ReasoningBlockStep>((s, i) => ({
-      id: `n${i}`,
-      status: 'done',
-      title: s.title,
-      summary: s.summary,
-    })),
-    done: true,
-  },
-];
-
-const STREAM_TICK_MS = 750;
-
-// Drives a ReasoningBlock through STREAM_SNAPSHOTS on a timer; "replay" restarts.
-function StreamingReasoningDemo() {
-  const [tick, setTick] = useState(0);
+// Replays REAL_STREAM at real wall-clock timing through the same reducer the chat
+// screen will use; "replay" restarts. durationMs uses wall-clock (~11.8s) — what
+// the user actually waited — not the sum of the visible steps' latencies.
+function RealStreamDemo() {
   const [runId, setRunId] = useState(0);
+  const [steps, setSteps] = useState<ReasoningBlockStep[]>([]);
+  const [done, setDone] = useState(false);
+  const [durationMs, setDurationMs] = useState<number | undefined>(undefined);
 
   useEffect(() => {
-    setTick(0);
-    const timer = setInterval(() => {
-      setTick((t) => {
-        if (t >= STREAM_SNAPSHOTS.length - 1) {
-          clearInterval(timer);
-          return t;
+    setSteps([]);
+    setDone(false);
+    setDurationMs(undefined);
+    const timers = REAL_STREAM.map((f) =>
+      setTimeout(() => {
+        if ('done' in f) {
+          setDone(true);
+          setDurationMs(f.at);
+          return;
         }
-        return t + 1;
-      });
-    }, STREAM_TICK_MS);
-    return () => clearInterval(timer);
+        if (f.vis === 'debug') return; // reducer drops debug frames
+        setSteps((prev) => {
+          const step: ReasoningBlockStep = {
+            id: f.id,
+            status: f.status,
+            title: f.title || undefined,
+            summary: f.summary,
+          };
+          const i = prev.findIndex((s) => s.id === f.id);
+          if (i === -1) return [...prev, step];
+          const next = prev.slice();
+          next[i] = step;
+          return next;
+        });
+      }, f.at),
+    );
+    return () => timers.forEach(clearTimeout);
   }, [runId]);
 
-  const snap = STREAM_SNAPSHOTS[tick];
   return (
     <View className="gap-3">
-      <ReasoningBlock steps={snap.steps} done={snap.done} durationMs={snap.done ? 3000 : undefined} />
+      <ReasoningBlock steps={steps} done={done} durationMs={durationMs} />
       <Button variant="outlined" label="replay" onPress={() => setRunId((r) => r + 1)} />
     </View>
   );
@@ -244,8 +250,8 @@ export default function GalleryScreen() {
           </View>
         </Section>
 
-        <Section title="Reasoning block — live stream (simulated)">
-          <StreamingReasoningDemo />
+        <Section title="Reasoning block — real stream (replay, real timing)">
+          <RealStreamDemo />
         </Section>
 
         <Section title="Reasoning block — running">
