@@ -45,7 +45,7 @@ export interface ReasoningBlockProps {
   done?: boolean;
   /** Turn duration in ms for the "· 1.8s" tally (summed `duration_ms` or wall-clock). */
   durationMs?: number;
-  /** Status label beside the dot. Defaults to "thinking". */
+  /** Override the header label. Defaults to "on it" while running, "got it" when done. */
   label?: string;
   /** Override the derived meta line verbatim (e.g. a translated string). */
   meta?: string;
@@ -69,11 +69,16 @@ const ENTER_EASE = Easing.out(Easing.ease);
  */
 const SUMMARY_LINES = 2;
 
+/** Header label while the run is in flight. */
+const RUNNING_LABEL = 'on it';
+/** Header label once the run has finished. */
+const DONE_LABEL = 'got it';
+
 export function ReasoningBlock({
   steps,
   done = false,
   durationMs,
-  label = 'thinking',
+  label,
   meta,
   collapsed,
   defaultCollapsed = false,
@@ -95,6 +100,10 @@ export function ReasoningBlock({
   // later fade in immediately as they arrive, not after a growing delay.
   const initialCount = useRef(steps.length).current;
 
+  // Header shows the state, not the per-step title: "on it" while the run is in
+  // flight, "got it" once it's done. The step titles live in the body rows.
+  const headerLabel = label ?? (done ? DONE_LABEL : RUNNING_LABEL);
+
   const doneCount = steps.filter((s) => s.status === 'done').length;
   const total = steps.length;
   const tally = durationMs != null ? ` · ${(durationMs / 1000).toFixed(1)}s` : '';
@@ -110,13 +119,15 @@ export function ReasoningBlock({
         onPress={toggle}
         accessibilityRole="button"
         accessibilityState={{ expanded: !isCollapsed }}
-        accessibilityLabel={`${label}, ${metaText}`}
+        accessibilityLabel={`${headerLabel}, ${metaText}`}
         className="flex-row items-center justify-between gap-2.5"
       >
         <View className="min-w-0 flex-row items-center gap-2.5">
-          <View className="flex-row items-center gap-2">
+          <View className="shrink flex-row items-center gap-2">
             <LiveDot done={done} />
-            <Text className="text-[12px] font-medium lowercase text-text-muted">{label}</Text>
+            <Text numberOfLines={1} className="shrink text-[12px] font-medium lowercase text-text-muted">
+              {headerLabel}
+            </Text>
           </View>
           <Text numberOfLines={1} className="shrink text-[12px] text-text-soft">
             {metaText}
@@ -207,14 +218,16 @@ function StepRow({
 
   return (
     <Animated.View style={style} className="relative flex-row items-start gap-3 ps-[18px]">
-      {/* Node disc: a bg-coloured circle masks the rail, holding the status node. */}
-      <View className="absolute -left-2.5 -top-[3px] h-5 w-5 items-center justify-center rounded-full bg-bg">
+      {/* Node disc: a bg-coloured circle masks the rail, holding the status node.
+          top-0 centres the 14px node ~3px down inside the 20px disc, so its
+          centre lines up with the title's first line (lineHeight 20 → centre 10). */}
+      <View className="absolute -left-2.5 top-0 h-5 w-5 items-center justify-center rounded-full bg-bg">
         <StatusNode status={step.status} />
       </View>
       <View className="min-w-0 flex-1 gap-[3px]">
         {/* Bold action line (the step title), when present. */}
         {step.title ? (
-          <Text numberOfLines={1} className="text-[13px] font-medium text-text">
+          <Text numberOfLines={1} className="text-[13px] font-medium text-text" style={{ lineHeight: 20 }}>
             {step.title}
           </Text>
         ) : null}
@@ -223,7 +236,7 @@ function StepRow({
           <Text
             numberOfLines={summaryLines}
             className={step.title ? 'text-[12px] text-text-muted' : 'text-[13px] text-text'}
-            style={{ lineHeight: step.title ? 18 : 19 }}
+            style={{ lineHeight: step.title ? 18 : 20 }}
           >
             {step.summary}
           </Text>
