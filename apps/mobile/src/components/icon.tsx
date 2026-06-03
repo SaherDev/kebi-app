@@ -119,9 +119,12 @@ interface IconProps {
   size?: number;
   /** Tailwind text-* class picking the stroke/fill tone. */
   className?: string;
+  /** Stroke width on the 24×24 viewBox. Defaults to 1.8 (feather weight); the
+   *  reasoning done-node check is drawn heavier (3) at its small 8px size. */
+  strokeWidth?: number;
 }
 
-export function Icon({ name, size = 18, className = 'text-text' }: IconProps) {
+export function Icon({ name, size = 18, className = 'text-text', strokeWidth = 1.8 }: IconProps) {
   return (
     <Svg
       width={size}
@@ -130,7 +133,7 @@ export function Icon({ name, size = 18, className = 'text-text' }: IconProps) {
       className={className}
       stroke="currentColor"
       fill="none"
-      strokeWidth={1.8}
+      strokeWidth={strokeWidth}
     >
       {ICONS[name]}
     </Svg>

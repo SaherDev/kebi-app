@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { ScrollView, View, Text, Pressable } from 'react-native';
 import { useColorScheme } from 'nativewind';
 import { ScreenScaffold } from '../components/screen-scaffold';
@@ -7,6 +8,7 @@ import { Button } from '../components/button';
 import { Group } from '../components/group';
 import { PlaceAvatar } from '../components/place-avatar';
 import { PlaceChip } from '../components/place-chip';
+import { ReasoningBlock, type ReasoningBlockStep } from '../components/reasoning-block';
 import { useToast } from '../components/toast-context';
 import type { PlaceTag } from '@kebi-app/shared';
 
@@ -41,6 +43,84 @@ function GalleryRow({ emoji, name, pill }: { emoji: string; name: string; pill: 
 // Bold span inside toast text — inherits the toast's text colour (nested Text).
 function B({ children }: { children: React.ReactNode }) {
   return <Text className="font-semibold">{children}</Text>;
+}
+
+// Reasoning-block demos: a finished turn (all done, with a duration tally) and a
+// live turn (one done step + one active step still streaming → shimmer skeleton).
+const DONE_STEPS: ReasoningBlockStep[] = [
+  { id: 's1', status: 'done', summary: 'drinks, somewhere lively — bar or club, not a quiet wine spot' },
+  { id: 's2', status: 'done', summary: '2 bars you liked from past nights out' },
+  { id: 's3', status: 'done', summary: '7 more in shibuya/shimokitazawa, busy on a friday night' },
+  { id: 's4', status: 'done', summary: 'leaning on energy first, then walking distance' },
+];
+
+const RUNNING_STEPS: ReasoningBlockStep[] = [
+  { id: 'r1', status: 'done', summary: "post-club food, late night, near where you'll be coming from shibuya" },
+  { id: 'r2', status: 'active', summary: null },
+];
+
+// A scripted "stream" of the drinks turn — the narration each step resolves to.
+// The driver replays it the way the chat screen will consume SSE: each step
+// shows up active (skeleton) first, then resolves to done as its summary lands.
+const STREAM_NARRATION = [
+  'drinks, somewhere lively, not a quiet wine spot',
+  '2 bars you liked from past nights out',
+  '7 more in shibuya/shimokitazawa, busy on a friday night',
+  'leaning on energy first, then walking distance',
+];
+
+// Snapshot per tick: the first k steps done, plus the (k+1)-th still active —
+// then a final snapshot with every step done and the run complete.
+const STREAM_SNAPSHOTS: { steps: ReasoningBlockStep[]; done: boolean }[] = [
+  ...STREAM_NARRATION.map((_, k) => ({
+    steps: [
+      ...STREAM_NARRATION.slice(0, k).map<ReasoningBlockStep>((summary, i) => ({
+        id: `n${i}`,
+        status: 'done',
+        summary,
+      })),
+      { id: `n${k}`, status: 'active', summary: null } as ReasoningBlockStep,
+    ],
+    done: false,
+  })),
+  {
+    steps: STREAM_NARRATION.map<ReasoningBlockStep>((summary, i) => ({
+      id: `n${i}`,
+      status: 'done',
+      summary,
+    })),
+    done: true,
+  },
+];
+
+const STREAM_TICK_MS = 750;
+
+// Drives a ReasoningBlock through STREAM_SNAPSHOTS on a timer; "replay" restarts.
+function StreamingReasoningDemo() {
+  const [tick, setTick] = useState(0);
+  const [runId, setRunId] = useState(0);
+
+  useEffect(() => {
+    setTick(0);
+    const timer = setInterval(() => {
+      setTick((t) => {
+        if (t >= STREAM_SNAPSHOTS.length - 1) {
+          clearInterval(timer);
+          return t;
+        }
+        return t + 1;
+      });
+    }, STREAM_TICK_MS);
+    return () => clearInterval(timer);
+  }, [runId]);
+
+  const snap = STREAM_SNAPSHOTS[tick];
+  return (
+    <View className="gap-3">
+      <ReasoningBlock steps={snap.steps} done={snap.done} durationMs={snap.done ? 3000 : undefined} />
+      <Button variant="outlined" label="replay" onPress={() => setRunId((r) => r + 1)} />
+    </View>
+  );
 }
 
 // Sample PlaceCore.tags covering all 9 TagTypes, to demo PlaceChip mapping
@@ -138,6 +218,18 @@ export default function GalleryScreen() {
               <PlaceChip key={String(t.value)} tag={t} />
             ))}
           </View>
+        </Section>
+
+        <Section title="Reasoning block — live stream (simulated)">
+          <StreamingReasoningDemo />
+        </Section>
+
+        <Section title="Reasoning block — running">
+          <ReasoningBlock steps={RUNNING_STEPS} />
+        </Section>
+
+        <Section title="Reasoning block — done (tap to collapse)">
+          <ReasoningBlock steps={DONE_STEPS} done durationMs={1800} />
         </Section>
 
         <Section title="Toast">
