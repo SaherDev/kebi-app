@@ -32,11 +32,17 @@ export interface ChatRequestDto {
  * step is already complete: `summary` is always set and the SSE-only lifecycle
  * fields (`id`, `status`) are absent. The streaming variant — with `id`,
  * `status`, and a nullable `summary` on the `active` frame — is
- * {@link SseReasoningStep} in `types/sse`. Tool identity is NOT here — it
- * travels on {@link ToolResult.tool} (ADR-075 removed the `"tool"` source).
+ * {@link SseReasoningStep} in `types/sse`.
+ *
+ * Two human-readable tiers (the trace renders both): `title` is the short
+ * third-person action (the bold line — "searched nearby") and `summary` is the
+ * result detail (the muted line). `step` is a machine identifier, never shown.
+ * Tool identity is NOT here — it travels on {@link ToolResult.tool} (ADR-075
+ * removed the `"tool"` source).
  */
 export interface ReasoningStep {
   step: string;
+  title: string;
   summary: string;
   source?: "agent" | "fallback";
   visibility?: "user" | "debug";

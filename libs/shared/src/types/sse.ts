@@ -18,7 +18,9 @@ export interface SseReasoningStep {
   /** Stable across the `active` + `done` frames of the same step; upsert key. */
   id: string;
   step: string;
-  /** `null` only on the `active` frame; filled on `done`. */
+  /** Short third-person action — the bold line. Present on both frames. */
+  title: string;
+  /** Result detail (the muted line); `null` on the `active` frame, filled on `done`. */
   summary: string | null;
   status: ReasoningStepStatus;
   source?: 'agent' | 'fallback';
