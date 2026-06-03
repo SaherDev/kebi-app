@@ -154,11 +154,6 @@ to `POST /v1/extract` — the chat path never writes to `user_places`.
 > `user_id` is **no longer a body field**. kebi reads the caller from
 > `X-Gateway-User-Id` after the shared-secret check passes.
 
-> `movement_profile` is sourced by the NestJS gateway from the verified
-> Clerk token (a `publicMetadata` claim, carried like `plan`) and injected
-> into this body server-side — the end-user client never sends it. No claim
-> → field omitted → kebi's neutral fallback.
-
 **Response:**
 
 ```json
@@ -190,15 +185,15 @@ to `POST /v1/extract` — the chat path never writes to `user_places`.
 
 `ReasoningStep` shape:
 
-| Field         | Type                    | Notes                                                                                                                                |
-| ------------- | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| `step`        | `string`                | Identifier, e.g. `agent.tool_decision`, `find_saved.summary`, `fallback`. Machine id — never displayed                              |
-| `title`       | `string`                | Short third-person action — the bold line ("searched nearby"). Present on both SSE frames and JSON-path steps                       |
-| `summary`     | `string \| null`        | Result detail — the muted line (no tool names / internal keys). `null` only on an `active` SSE frame; always set on JSON-path steps  |
-| `source`      | `"agent" \| "fallback"` | Which node produced it (ADR-075 removed the `"tool"` source)                                                                         |
-| `visibility`  | `"user" \| "debug"`     | Only `"user"` steps appear in the JSON response; `"debug"` → Langfuse/SSE                                                            |
-| `timestamp`   | `ISO-8601 string`       | UTC; when the step was recorded                                                                                                      |
-| `duration_ms` | `float \| null`         | Node latency; non-null in persisted steps                                                                                            |
+| Field         | Type                    | Notes                                                                                                                                                                      |
+| ------------- | ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `step`        | `string`                | Identifier, e.g. `agent.tool_decision`, `find_saved.summary`, `fallback`                                                                                                   |
+| `title`       | `string`                | Bold action line (ADR-103), e.g. `searched nearby`. Short, lowercase, carries the verb. Same string on the `active` and `done` SSE frames                                  |
+| `summary`     | `string \| null`        | Result line under the title — plain narration, never repeats the verb (no tool names / internal keys). `null` only on an `active` SSE frame; always set on JSON-path steps |
+| `source`      | `"agent" \| "fallback"` | Which node produced it (ADR-075 removed the `"tool"` source)                                                                                                               |
+| `visibility`  | `"user" \| "debug"`     | Only `"user"` steps appear in the JSON response; `"debug"` → Langfuse/SSE                                                                                                  |
+| `timestamp`   | `ISO-8601 string`       | UTC; when the step was recorded                                                                                                                                            |
+| `duration_ms` | `float \| null`         | Node latency; non-null in persisted steps                                                                                                                                  |
 
 > The SSE step-lifecycle fields `id` and `status` (ADR-102) are **not** part of
 > this non-stream shape — they appear only on `/v1/chat/stream` frames (below).
@@ -238,10 +233,10 @@ SSE streaming variant. Emits reasoning steps as they happen, then a final messag
 
 ```
 event: reasoning_step
-data: {"id":"find_saved#0","step":"find_saved","title":"searched your saved places","summary":null,"status":"active","source":"agent","visibility":"user","duration_ms":null}
+data: {"id":"find_saved#0","step":"find_saved","title":"searched your saved spots","summary":null,"status":"active","source":"agent","visibility":"user","duration_ms":null}
 
 event: reasoning_step
-data: {"id":"find_saved#0","step":"find_saved.summary","title":"searched your saved places","summary":"Found 2 saved spots — …","status":"done","source":"agent","visibility":"user","duration_ms":420.0}
+data: {"id":"find_saved#0","step":"find_saved.summary","title":"searched your saved spots","summary":"2 spots — Wagyu, Beef Tei","status":"done","source":"agent","visibility":"user","duration_ms":420.0}
 
 event: tool_result
 data: <ToolResult JSON>
@@ -262,14 +257,15 @@ data: {"tool_calls_used": 1}
 
 **Step lifecycle (ADR-102).** Each reasoning step is emitted as **two** `reasoning_step` frames keyed by a stable `id`: an `active` frame when the step starts and a `done` frame when it finishes. The frontend upserts by `id`. On the SSE stream `ReasoningStep` carries two fields beyond the JSON-path shape, and relaxes one:
 
-| Field         | On `active` frame       | On `done` frame               | Notes                                                    |
-| ------------- | ----------------------- | ----------------------------- | -------------------------------------------------------- |
-| `id`          | stable step id          | same `id` as the active frame | e.g. `find_saved#0`, `agent.tool_decision#0`; upsert key |
-| `status`      | `"active"`              | `"done"`                      | lifecycle marker                                         |
-| `title`       | set (in-progress)       | set (completed)               | bold action line; on BOTH frames. May shift tense active→done ("searching nearby" → "searched nearby") — client renders the latest |
-| `summary`     | `null`                  | filled                        | result detail; client shows a skeleton while `null`      |
-| `duration_ms` | `null`                  | set                           | node latency on completion                               |
-| `source`      | `"agent" \| "fallback"` | same                          | ADR-075 narrowed this; no `"tool"` value                 |
+| Field         | On `active` frame       | On `done` frame               | Notes                                                             |
+| ------------- | ----------------------- | ----------------------------- | ----------------------------------------------------------------- |
+| `id`          | stable step id          | same `id` as the active frame | e.g. `find_saved#0`, `agent.tool_decision#0`; upsert key          |
+| `status`      | `"active"`              | `"done"`                      | lifecycle marker                                                  |
+| `title`       | set                     | same string                   | bold action line; known before the result, so present on `active` |
+| `summary`     | `null`                  | filled                        | client shows a skeleton while `null`                              |
+| `visibility`  | set                     | same value                    | must not change across a step's lifecycle (client keys on `id`)   |
+| `duration_ms` | `null`                  | set                           | node latency on completion                                        |
+| `source`      | `"agent" \| "fallback"` | same                          | ADR-075 narrowed this; no `"tool"` value                          |
 
 Rules: every `done` frame is preceded by an `active` frame with the same `id`; an interrupted step (e.g. a tool that times out mid-phase) may emit `active` with no `done` (renders as a step left in its skeleton). `visibility:"debug"` steps ride the stream too — the client filters them. There is **no** "step N of M" total: the agent decides tools dynamically, so the client shows a live "step N" and a "N steps · time" meta line on completion, no greyed pending rows.
 
