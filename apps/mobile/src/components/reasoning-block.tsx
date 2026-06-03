@@ -53,9 +53,19 @@ export interface ReasoningBlockProps {
   defaultCollapsed?: boolean;
   /** Fired with the next collapsed value when the header is tapped. */
   onToggle?: (next: boolean) => void;
+  /** Max lines per step narration before truncating. Defaults to {@link SUMMARY_LINES}. */
+  summaryLines?: number;
 }
 
 const ENTER_EASE = Easing.out(Easing.ease);
+
+/**
+ * Reasoning summaries are process narration, not the answer — keep them terse.
+ * Real streams can send long, raw model monologue (a paragraph, or a list of
+ * place names); clamp the rendered detail so the trace stays scannable. The
+ * full content lives in the answer + place cards, never the thinking panel.
+ */
+const SUMMARY_LINES = 2;
 
 export function ReasoningBlock({
   steps,
@@ -66,6 +76,7 @@ export function ReasoningBlock({
   collapsed,
   defaultCollapsed = false,
   onToggle,
+  summaryLines = SUMMARY_LINES,
 }: ReasoningBlockProps) {
   const isControlled = collapsed !== undefined;
   const [internal, setInternal] = useState(defaultCollapsed);
@@ -122,6 +133,7 @@ export function ReasoningBlock({
                 key={step.id}
                 step={step}
                 enterDelay={i < initialCount ? i * STAGGER_MS : 0}
+                summaryLines={summaryLines}
               />
             ))}
           </View>
@@ -172,7 +184,15 @@ function Chevron({ expanded }: { expanded: boolean }) {
 }
 
 /** One step: node on the rail + narration, or a shimmer skeleton while active. */
-function StepRow({ step, enterDelay }: { step: ReasoningBlockStep; enterDelay: number }) {
+function StepRow({
+  step,
+  enterDelay,
+  summaryLines,
+}: {
+  step: ReasoningBlockStep;
+  enterDelay: number;
+  summaryLines: number;
+}) {
   const enter = useSharedValue(0);
   useEffect(() => {
     // Fade + slide-down entrance (mockup step-in): translateY -3 → 0.
@@ -191,7 +211,7 @@ function StepRow({ step, enterDelay }: { step: ReasoningBlockStep; enterDelay: n
       </View>
       <View className="min-w-0 flex-1 gap-[3px]">
         {step.summary ? (
-          <Text className="text-[13px] text-text" style={{ lineHeight: 19 }}>
+          <Text numberOfLines={summaryLines} className="text-[13px] text-text" style={{ lineHeight: 19 }}>
             {step.summary}
           </Text>
         ) : (

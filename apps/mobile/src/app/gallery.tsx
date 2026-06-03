@@ -123,6 +123,24 @@ function StreamingReasoningDemo() {
   );
 }
 
+// Real long/raw summaries from a live stream (the halal-dinner turn) — verifies
+// the narration clamp holds: a model-list line and a multi-paragraph draft.
+const LONG_STEPS: ReasoningBlockStep[] = [
+  { id: 'l1', status: 'done', summary: 'Looking around Izumi 2, Suginami, Japan.' },
+  {
+    id: 'l2',
+    status: 'done',
+    summary:
+      'Found 5 options: Wagyu Steak & Hamburger (Halal Vegan Gluten free) Shibuya, Wagyu Hamburger Steak & Ramen Shinjuku Kabukicho, HALAL RAMEN & WAGYU SAMURAI SOUL, HALAL AND VEGAN RAMEN DATTEBAYO Asakusa, Wagyu & Vegan Hamburger Ginza (5 didn’t fit your requirements).',
+  },
+  {
+    id: 'l3',
+    status: 'done',
+    summary:
+      'Wagyu Steak & Hamburger in Shibuya — halal, vegan, and vegetarian options, serves all day.\n\nWagyu Hamburger Steak & Ramen in Shinjuku — halal and vegetarian, lunch and dinner.\n\nHALAL RAMEN & WAGYU SAMURAI SOUL in Asakusa — halal and vegetarian, family-friendly.',
+  },
+];
+
 // Sample PlaceCore.tags covering all 9 TagTypes, to demo PlaceChip mapping
 // tag.type → variant (atmosphere = emoji vibe; everything else = feature) and
 // tag.value → label (snake_case → spaced).
@@ -230,6 +248,10 @@ export default function GalleryScreen() {
 
         <Section title="Reasoning block — done (tap to collapse)">
           <ReasoningBlock steps={DONE_STEPS} done durationMs={1800} />
+        </Section>
+
+        <Section title="Reasoning block — long/raw detail (clamped to 2 lines)">
+          <ReasoningBlock steps={LONG_STEPS} done durationMs={7100} />
         </Section>
 
         <Section title="Toast">
