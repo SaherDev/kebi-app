@@ -27,14 +27,18 @@ export interface ChatRequestDto {
 }
 
 /**
- * A user-visible step the agent emitted this turn. Mirrors `api-contract.md`
- * (POST /v1/chat → `data.reasoning_steps`, and the `reasoning_step` SSE frame).
- * Tool identity is NOT here — it travels on {@link ToolResult.tool}.
+ * A user-visible step the agent emitted this turn. Mirrors the non-stream
+ * `api-contract.md` shape (POST /v1/chat → `data.reasoning_steps`), where every
+ * step is already complete: `summary` is always set and the SSE-only lifecycle
+ * fields (`id`, `status`) are absent. The streaming variant — with `id`,
+ * `status`, and a nullable `summary` on the `active` frame — is
+ * {@link SseReasoningStep} in `types/sse`. Tool identity is NOT here — it
+ * travels on {@link ToolResult.tool} (ADR-075 removed the `"tool"` source).
  */
 export interface ReasoningStep {
   step: string;
   summary: string;
-  source?: "tool" | "agent" | "fallback";
+  source?: "agent" | "fallback";
   visibility?: "user" | "debug";
   duration_ms?: number;
   timestamp?: string;
