@@ -84,3 +84,15 @@ export const BLUR_INTENSITY = {
   light: 24,
   dark:  32,
 } as const;
+
+/**
+ * Boot-splash halo — the soft radial glow behind the mascot
+ * (kebi-splash-mockup.html `.halo`). The cream stop colour is constant; only
+ * its opacity differs by theme (0.55 light / 0.10 dark). Fed to the inner stop
+ * of a react-native-svg `<RadialGradient>`; the outer stop is the same hue at 0.
+ */
+export const SPLASH_HALO = {
+  /** cream gradient hue shared by both themes (rgb of #F2EBDB). */
+  color: 'rgb(242, 235, 219)',
+  innerOpacity: { light: 0.55, dark: 0.1 },
+} as const;

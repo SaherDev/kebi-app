@@ -20,17 +20,21 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useColorScheme } from "nativewind";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 import { I18nProvider } from "../i18n/context";
 import { ToastProvider } from "../components/toast-context";
 import { ContextMenuProvider } from "../components/context-menu/context-menu-context";
+import { Splash } from "../components/splash";
 
 // Keep the splash visible until the Inter weights are loaded.
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   const { colorScheme } = useColorScheme();
+  // Boot-only: the animated splash overlays the app on cold start, then unmounts
+  // for good — never re-shown on in-app navigation (design-system Loading #1).
+  const [splashDone, setSplashDone] = useState(false);
   const [fontsLoaded, fontError] = useFonts({
     Inter_400Regular,
     Inter_500Medium,
@@ -60,6 +64,9 @@ export default function RootLayout() {
               <StatusBar style={colorScheme === "dark" ? "light" : "dark"} />
               {/* Native header off — every screen renders the custom TopBar instead. */}
               <Stack screenOptions={{ headerShown: false }} />
+              {/* Above the Stack, matching --bg, so the native splash hands off
+                  without a flash; fades out to reveal home, then unmounts. */}
+              {!splashDone && <Splash onDone={() => setSplashDone(true)} />}
             </ToastProvider>
           </ContextMenuProvider>
         </SafeAreaProvider>

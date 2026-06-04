@@ -11,6 +11,7 @@ import { PlaceAvatar } from '../components/place-avatar';
 import { PlaceCard } from '../components/place-card';
 import { PlaceChip } from '../components/place-chip';
 import { Mascot } from '../components/mascot';
+import { Splash } from '../components/splash';
 import { KebiFab } from '../components/kebi-fab';
 import { ReasoningBlock, type ReasoningBlockStep } from '../components/reasoning-block';
 import { ActionSheet } from '../components/action-sheet';
@@ -224,7 +225,11 @@ const DEMO_TAGS: PlaceTag[] = [
 export default function GalleryScreen() {
   const { toggleColorScheme, colorScheme } = useColorScheme();
   const toast = useToast();
+  // Replay the boot splash on demand — it mounts full-screen over the gallery
+  // and unmounts itself when its timeline finishes.
+  const [replaySplash, setReplaySplash] = useState(false);
   return (
+    <>
     <ScreenScaffold
       showFab={false}
       topBar={
@@ -287,6 +292,13 @@ export default function GalleryScreen() {
             <MascotTile size={24} label="24 · card" />
             <MascotTile size={18} label="18 · chat" />
             <MascotTile size={42} label="42 · breathe" breathe />
+          </View>
+        </Section>
+
+        <Section title="Splash — app-boot screen (replays full-screen)">
+          <View className="flex-row items-center justify-between rounded-large bg-surface px-3.5 py-1.5">
+            <Text className="text-body font-medium text-text">boot splash</Text>
+            <Button variant="outlined" label="▶ replay" onPress={() => setReplaySplash(true)} />
           </View>
         </Section>
 
@@ -439,5 +451,7 @@ export default function GalleryScreen() {
           its press feedback can be felt in isolation. */}
       <KebiFab onPress={() => toast.show({ emoji: '🐤', text: 'kebi tapped' })} />
     </ScreenScaffold>
+    {replaySplash && <Splash onDone={() => setReplaySplash(false)} />}
+    </>
   );
 }

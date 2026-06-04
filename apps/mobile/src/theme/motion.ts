@@ -99,6 +99,46 @@ export const PRESS =
   'transition-transform duration-200 ease-out active:scale-[0.96] active:opacity-90';
 
 /**
+ * App-boot splash timeline (kebi-splash-mockup.html / kebi-splash-dark-mockup.html).
+ * Every literal the splash animation needs lives here so none are typed inline in
+ * the component (zero-hardcoding). Delays are measured from overlay mount; loop
+ * durations are half-cycles consumed by `withRepeat(..., -1, true)` (reverse), so
+ * the full cycle is twice the value. Springs reuse `SPRING_CONFIG.entrance`.
+ *
+ * `holdMs` is how long the fully-revealed splash sits before the fade-out begins;
+ * `out.duration` is the fade. Total on-screen ≈ holdMs + out.duration. The
+ * reduced-motion path skips the timeline and holds `reducedHoldMs` instead.
+ */
+export const SPLASH = {
+  /** Mascot render size (px) — `.mascot` 140×140 in the mockup. */
+  mascotSize: 140,
+  /** Radial halo diameter (px) — mascot stage 140 + 20px bleed each side. */
+  haloSize: 180,
+  /** Mascot entrance: from these resting offsets up to 0 / 1, via a spring. */
+  mascot: { delay: 200, fromTranslateY: 8, fromScale: 0.92 },
+  /** Halo opacity fade-in. */
+  halo: { delay: 300, duration: 900 },
+  /** Mascot float loop after entrance: translateY 0 → this → 0 (half-cycle). */
+  float: { delay: 1100, halfDuration: 1800, translateY: -4 },
+  /**
+   * Wordmark typewriter: reveal one character at a time over `duration` (a real
+   * keystroke feel, like the mockup's `steps()`), with the cursor blinking on a
+   * `cursorBlinkHalf` half-cycle. `cursorHeight` matches the text-title 28px box.
+   */
+  wordmark: { delay: 900, duration: 700, cursorBlinkHalf: 500, cursorHeight: 28 },
+  /** Tagline fade + rise. */
+  tagline: { delay: 1700, duration: 500, fromTranslateY: 4 },
+  /** Loading dots: container fade-in, then each dot pulses (half-cycle), staggered. */
+  dots: { delay: 1900, fadeDuration: 400, pulseHalf: 700, stagger: 180, count: 3 },
+  /** Fade + scale-up as the splash hands off to home. */
+  out: { duration: 400, scale: 1.04 },
+  /** Fully-revealed dwell before the fade-out starts (→ 3.0s total with `out`). */
+  holdMs: 2600,
+  /** Reduced-motion: skip the timeline, show the rested state this long, then route. */
+  reducedHoldMs: 1200,
+} as const;
+
+/**
  * Toast auto-dismiss durations.
  */
 export const TOAST_DISMISS_MS = {
