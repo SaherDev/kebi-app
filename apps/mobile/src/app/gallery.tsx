@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ScrollView, View, Text, Pressable } from 'react-native';
 import { useColorScheme } from 'nativewind';
 import { ScreenScaffold } from '../components/screen-scaffold';
@@ -6,13 +6,18 @@ import { TopBar } from '../components/top-bar';
 import { StatusPill } from '../components/status-pill';
 import { Button } from '../components/button';
 import { Group } from '../components/group';
+import { IconButton } from '../components/icon-button';
 import { PlaceAvatar } from '../components/place-avatar';
+import { PlaceCard } from '../components/place-card';
 import { PlaceChip } from '../components/place-chip';
 import { Mascot } from '../components/mascot';
 import { KebiFab } from '../components/kebi-fab';
 import { ReasoningBlock, type ReasoningBlockStep } from '../components/reasoning-block';
+import { OverflowMenu } from '../components/context-menu/overflow-menu';
+import { usePlaceMenuItems } from '../components/use-place-menu-items';
 import { useToast } from '../components/toast-context';
 import { triggerHaptic } from '../lib/haptics';
+import { makeSamplePlace } from '../lib/sample-place';
 import type { PlaceTag, ReasoningStepStatus } from '@kebi-app/shared';
 
 /**
@@ -46,6 +51,36 @@ function GalleryRow({ emoji, name, pill }: { emoji: string; name: string; pill: 
 // Bold span inside toast text — inherits the toast's text colour (nested Text).
 function B({ children }: { children: React.ReactNode }) {
   return <Text className="font-semibold">{children}</Text>;
+}
+
+// Context-menu demo: a PlaceCard to long-press (lift + blur) and a ••• button
+// that opens the same menu list as an overflow drop-down. Both share the place
+// action set via usePlaceMenuItems. Demo labels are dev-only, not i18n copy.
+const CTX_MENU_PLACE = makeSamplePlace('Fuglen', ['cafe']);
+
+function ContextMenuDemo() {
+  const moreRef = useRef<View>(null);
+  const [open, setOpen] = useState(false);
+  const items = usePlaceMenuItems(CTX_MENU_PLACE);
+  return (
+    <View className="gap-3">
+      <PlaceCard place={CTX_MENU_PLACE} />
+      <Text className="text-small text-text-muted">↑ long-press the card to lift the menu</Text>
+      <View className="flex-row items-center justify-between rounded-large bg-surface px-3.5 py-1.5">
+        <Text className="text-body font-medium text-text">overflow ••• menu</Text>
+        <View ref={moreRef} collapsable={false}>
+          <IconButton icon="ellipsis" label="more" variant="pill" onPress={() => setOpen(true)} />
+        </View>
+      </View>
+      <OverflowMenu
+        open={open}
+        onClose={() => setOpen(false)}
+        items={items}
+        triggerRef={moreRef}
+        closeLabel="close"
+      />
+    </View>
+  );
 }
 
 // One labelled mascot tile for the Mascot section — the bird at a real usage
@@ -256,6 +291,10 @@ export default function GalleryScreen() {
             <MascotTile size={18} label="18 · chat" />
             <MascotTile size={42} label="42 · breathe" breathe />
           </View>
+        </Section>
+
+        <Section title="Context menu — long-press + overflow">
+          <ContextMenuDemo />
         </Section>
 
         <Section title="Place avatar">

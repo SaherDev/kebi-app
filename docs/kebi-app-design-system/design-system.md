@@ -192,26 +192,41 @@ Bottom sheet for capturing new places. Triggered from the bookmark icon in any t
 - Don't dismiss on backdrop tap during the saving state — wait until the request resolves
 - Don't trigger the AI button from inside the sheet — the AI button is hidden while sheet is open
 
-### Swipe-to-delete row
+### Long-press context menu
 
-Wraps any list row that supports destructive deletion. Gestural pattern, native iOS feel.
+Wraps any card that has per-item actions. iOS "lift + blur" pattern (iMessage,
+Notion, Apple Notes). Generic — any card supplies its own visual and action
+list; place cards are the first consumer. Replaces the old swipe-to-delete row.
+Visual source of truth: `kebi-context-menu-mockup.html`.
 
 **Required structure:**
-- Row content lives inside a `swipe-row` wrapper with `position: relative; overflow: hidden`
-- Red `swipe-action` element sits underneath at z-index 0, full width and height of the wrapper
-- Card translates -104px on horizontal pan past 40px threshold, snaps back if released early
-- Tap on revealed action → fires delete + undo toast (5s timer)
-- Only one row can be in the swiped state at a time — opening another snaps the first closed
+- Long-press (500ms hold) on a card; a short tap stays the card's normal tap
+- At the moment the menu appears, the card lifts (scale 1.03 + lift shadow) above
+  a frosted-blur, dimmed backdrop; the menu floats next to the lifted card
+- Menu **always opens directly below** the card (10px gap). When the card sits too
+  low for the menu to fit, the **card slides up** so the stack fits — the menu
+  never flips. The slide **clamps at the top safe area**; if the menu is still
+  taller than the screen, the **menu scrolls**
+- Items: non-destructive first, a hairline divider before the first destructive
+  item, destructive in `--danger` (place set: 👍 looks right · ❤️ i like this one ·
+  ✅ been there · 🗑️ forget this place)
+- Tap an item → runs its action, then closes; tap the backdrop → dismiss
+- Only one menu open at a time
+- Haptic `Impact.Medium` fires as the menu appears (see Haptics)
 
-**Always pair with:**
+**Always pair destructive items with:**
 - Toast confirmation: "{place name} removed" + Undo button (5s)
 - Optimistic UI: row disappears immediately, backend confirms in background
 - If backend fails, restore the row and show error toast: "couldn't remove that one"
 
+**Overflow menu (`•••`) is the same menu list, different trigger:** tapped open
+from a button, anchored under it — **no lift, no blur, no scrim**, tap-outside to
+close. Use it where a card isn't long-pressed (e.g. the place page top pill).
+
 **Don't:**
-- Don't use this pattern for non-destructive actions (favoriting, archiving) — use long-press menu or swipe-from-right
-- Don't make the threshold smaller than 40px — accidental triggers from scrolling
+- Don't blur the backdrop for the overflow (`•••`) menu — blur is long-press only
 - Don't omit the undo path — destructive actions always need recovery
+- Don't put a long-press menu on the place page itself — that's the `•••` menu's job
 
 ### Overflow menu
 
@@ -345,7 +360,7 @@ iOS exposes three haptic families through `expo-haptics`:
 | "save it" on chat place card | `Impact.Light` | Quiet acknowledgement, place tucked into stash |
 | "not it" on chat place card | `Selection` | Reversible commit, no celebration needed |
 | Save button in save sheet | `Notification.Success` | Place captured, sheet dismisses |
-| Swipe library card past delete threshold (40px) | `Impact.Medium` | Danger zone reached, red action revealed |
+| Long-press a card → context menu lifts | `Impact.Medium` | Card picked up, menu surfaced — a deliberate lift, not a tap |
 | Tap red action to confirm delete | `Notification.Warning` | Destructive action firing |
 | Place actually removed after undo timer | none | Background, not user-triggered |
 | "forget this place" in overflow menu | `Notification.Warning` | About to destroy data |

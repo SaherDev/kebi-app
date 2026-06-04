@@ -70,7 +70,7 @@ describe('triggerHaptic', () => {
     expect(mockImpactAsync).toHaveBeenLastCalledWith('light');
 
     jest.advanceTimersByTime(300);
-    trigger('library-swipe-threshold');
+    trigger('long-press-open');
     expect(mockImpactAsync).toHaveBeenLastCalledWith('medium');
 
     jest.advanceTimersByTime(300);

@@ -62,3 +62,25 @@ export const SHADOW_MENU = {
   shadowRadius:  16,
   elevation:     6,
 } as const;
+
+/**
+ * Lift shadow for the long-press context-menu card as it rises off the list
+ * (kebi-context-menu-mockup.html — `0 18px 50px rgba(0,0,0,0.22)`). Stronger
+ * than the resting card so the pickup reads as floating above the blur.
+ */
+export const SHADOW_LIFT = {
+  shadowColor:   '#000000',
+  shadowOffset:  { width: 0, height: 16 },
+  shadowOpacity: 0.22,
+  shadowRadius:  24,
+  elevation:     16,
+} as const;
+
+/**
+ * expo-blur intensity behind the lifted long-press menu (frosted backdrop).
+ * Dark needs a touch more to read against the near-black canvas.
+ */
+export const BLUR_INTENSITY = {
+  light: 24,
+  dark:  32,
+} as const;

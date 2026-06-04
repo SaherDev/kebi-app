@@ -26,7 +26,7 @@ export type HapticEvent =
   | 'save-it' // "save it" on chat place card
   | 'not-it' // "not it" on chat place card
   | 'save-sheet-confirm' // Save button in save sheet
-  | 'library-swipe-threshold' // Swipe library card past delete threshold (40px)
+  | 'long-press-open' // Long-press a card → context menu lifts (menu appears)
   | 'confirm-delete' // Tap red action to confirm delete
   | 'forget-place' // "forget this place" in overflow menu
   | 'toast-undo' // Undo on a toast
@@ -44,7 +44,7 @@ const HAPTIC_MAP: Record<HapticEvent, () => Promise<void>> = {
   'save-it': () => Haptics.impactAsync(ImpactFeedbackStyle.Light),
   'not-it': () => Haptics.selectionAsync(),
   'save-sheet-confirm': () => Haptics.notificationAsync(NotificationFeedbackType.Success),
-  'library-swipe-threshold': () => Haptics.impactAsync(ImpactFeedbackStyle.Medium),
+  'long-press-open': () => Haptics.impactAsync(ImpactFeedbackStyle.Medium),
   'confirm-delete': () => Haptics.notificationAsync(NotificationFeedbackType.Warning),
   'forget-place': () => Haptics.notificationAsync(NotificationFeedbackType.Warning),
   'toast-undo': () => Haptics.impactAsync(ImpactFeedbackStyle.Light),

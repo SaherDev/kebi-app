@@ -20,5 +20,15 @@
     "plans": "plans",
     "billing": "billing",
     "chat": "chat"
+  },
+  "placeMenu": {
+    "looksRight": "looks right",
+    "like": "i like this one",
+    "beenThere": "been there",
+    "forget": "forget this place"
+  },
+  "toast": {
+    "undo": "undo",
+    "removed": "{{name}} removed"
   }
 }
