@@ -1,5 +1,5 @@
-import type { ReactNode } from 'react';
 import { Pressable, Text } from 'react-native';
+import { PRESS } from '../theme/motion';
 
 /**
  * The shared button (kebi-tokens-mockup.html `.btn` + `.btn.primary/.outlined/
@@ -37,7 +37,7 @@ export function Button({ label, variant = 'primary', onPress, disabled = false }
       accessibilityRole="button"
       accessibilityLabel={label}
       accessibilityState={{ disabled }}
-      className={`items-center justify-center rounded-card px-4 py-2.5 ${v.box} ${
+      className={`items-center justify-center rounded-card px-4 py-2.5 ${PRESS} ${v.box} ${
         disabled ? 'opacity-40' : ''
       }`}
     >

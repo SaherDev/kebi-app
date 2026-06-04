@@ -8,6 +8,8 @@ import { Button } from '../components/button';
 import { Group } from '../components/group';
 import { PlaceAvatar } from '../components/place-avatar';
 import { PlaceChip } from '../components/place-chip';
+import { Mascot } from '../components/mascot';
+import { KebiFab } from '../components/kebi-fab';
 import { ReasoningBlock, type ReasoningBlockStep } from '../components/reasoning-block';
 import { useToast } from '../components/toast-context';
 import type { PlaceTag, ReasoningStepStatus } from '@kebi-app/shared';
@@ -43,6 +45,20 @@ function GalleryRow({ emoji, name, pill }: { emoji: string; name: string; pill: 
 // Bold span inside toast text — inherits the toast's text colour (nested Text).
 function B({ children }: { children: React.ReactNode }) {
   return <Text className="font-semibold">{children}</Text>;
+}
+
+// One labelled mascot tile for the Mascot section — the bird at a real usage
+// size with its px/context caption. `breathe` wraps it in the animate-breathe
+// loop so the keyframe can be eyeballed.
+function MascotTile({ size, label, breathe }: { size: number; label: string; breathe?: boolean }) {
+  return (
+    <View className="items-center gap-1">
+      <View className={breathe ? 'animate-breathe' : undefined}>
+        <Mascot size={size} />
+      </View>
+      <Text className="text-eyebrow text-text-soft">{label}</Text>
+    </View>
+  );
 }
 
 // Reasoning-block demos: a finished turn (all done, with a duration tally) and a
@@ -194,7 +210,7 @@ export default function GalleryScreen() {
         />
       }
     >
-      <ScrollView className="flex-1 px-6 pt-2" contentContainerClassName="pb-16">
+      <ScrollView className="flex-1 px-6 pt-2" contentContainerClassName="pb-24">
         <Section title="Status pills">
           <View className="flex-row flex-wrap items-center gap-2">
             <StatusPill variant="green">saved</StatusPill>
@@ -220,6 +236,22 @@ export default function GalleryScreen() {
             <GalleryRow emoji="🍷" name="Saint Jardim" pill={<StatusPill variant="warm">new</StatusPill>} />
             <GalleryRow emoji="⛩️" name="Nezu Shrine" pill={<StatusPill variant="green">went</StatusPill>} />
           </Group>
+        </Section>
+
+        <Section title="Mascot — design-system sizes (last tile breathes)">
+          {/* Real usage sizes per the mockup: §17 mascot (96 hero / 56 home /
+              36 header / 24 card / 18 chat-title) + §09 AI-button mascot (42px,
+              inside the 64px FAB). The breathing tile eyeballs the breathe
+              keyframe at FAB size. */}
+          <View className="flex-row flex-wrap items-end gap-5">
+            <MascotTile size={96} label="96 · hero" />
+            <MascotTile size={56} label="56 · home" />
+            <MascotTile size={42} label="42 · FAB" />
+            <MascotTile size={36} label="36 · header" />
+            <MascotTile size={24} label="24 · card" />
+            <MascotTile size={18} label="18 · chat" />
+            <MascotTile size={42} label="42 · breathe" breathe />
+          </View>
         </Section>
 
         <Section title="Place avatar">
@@ -363,6 +395,9 @@ export default function GalleryScreen() {
           </View>
         </Section>
       </ScrollView>
+      {/* Real FAB, tappable here (fires a toast instead of routing to chat) so
+          its press feedback can be felt in isolation. */}
+      <KebiFab onPress={() => toast.show({ emoji: '🐤', text: 'kebi tapped' })} />
     </ScreenScaffold>
   );
 }

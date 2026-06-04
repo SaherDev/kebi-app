@@ -26,6 +26,12 @@ export const DURATION = {
   entrance: 300,
   /** Skeleton shimmer (linear loop): 1400ms */
   shimmer: 1400,
+  /** Header live-dot pulse, one direction (reverse loop → 1.4s full cycle). */
+  pulse: 700,
+  /** Active-node inner-dot pulse, one direction (reverse loop → 1.2s full cycle). */
+  pulseFast: 600,
+  /** Shimmer half-cycle (= shimmer / 2) for the reverse linear loop. */
+  shimmerHalf: 700,
 } as const;
 
 /**
@@ -80,14 +86,17 @@ export const SPRING_CONFIG = {
 export const STAGGER_MS = 350;
 
 /**
- * Mascot breathing animation parameters (2.4s ease-in-out, scale 1→1.02 + -2px translateY).
- * Usage: `withRepeat(withTiming(1.02, { duration: MASCOT_BREATHE.duration, easing: ... }), -1, true)`
+ * Press-feedback className (NativeWind). A single source for the ease-out scale +
+ * opacity dip every tappable surface shares, so the values are never retyped
+ * per component. Append to a Pressable's `className`:
+ *
+ *   <Pressable className={`... ${PRESS}`} />
+ *
+ * ease-out @ 200ms (state-change curve, design-system §16). The mascot breathing
+ * loop lives as the `animate-breathe` keyframe in global.css / tailwind.config.js.
  */
-export const MASCOT_BREATHE = {
-  scaleMax:     1.02,
-  translateYPx: -2,
-  duration:     2400,
-} as const;
+export const PRESS =
+  'transition-transform duration-200 ease-out active:scale-[0.96] active:opacity-90';
 
 /**
  * Toast auto-dismiss durations.

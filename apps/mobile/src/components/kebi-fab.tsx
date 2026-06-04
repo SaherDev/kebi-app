@@ -3,6 +3,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColorScheme } from 'nativewind';
 import { Mascot } from './mascot';
 import { useTranslation } from '../i18n/context';
+import { PRESS } from '../theme/motion';
 
 interface KebiFabProps {
   onPress?: () => void;
@@ -26,7 +27,7 @@ export function KebiFab({ onPress }: KebiFabProps) {
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={t('nav.askKebi')}
-      className={`absolute h-16 w-16 items-center justify-center rounded-full ${
+      className={`absolute h-16 w-16 items-center justify-center rounded-full ${PRESS} ${
         dark ? 'bg-text' : 'border border-surface-2 bg-white'
       }`}
       style={{ right: 16, bottom: insets.bottom }}

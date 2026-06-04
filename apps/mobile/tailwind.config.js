@@ -93,6 +93,14 @@ module.exports = {
       // ── Spacing — Tailwind defaults already cover the fixed scale ───────────
       // Scale: 4/8/12/14/16/24/32 == Tailwind 1/2/3/3.5/4/6/8 (1rem=16px).
       // NO custom spacing — discipline rule: only use p-1 p-2 p-3 p-3.5 p-4 p-6 p-8.
+
+      // ── Motion (from kebi-tokens-mockup.html §16) ──────────────────────────
+      // `animate-breathe` → the mascot breathing loop (@keyframes in global.css).
+      // 2.4s ease-in-out, infinite. Press feedback is the PRESS className token
+      // in src/theme/motion.ts (NativeWind transition/active: utilities).
+      animation: {
+        breathe: 'breathe 2400ms ease-in-out infinite',
+      },
     },
   },
 

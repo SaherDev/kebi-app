@@ -95,3 +95,15 @@
     --toast-neutral-fg: #1A1A1A;
   }
 }
+
+/*
+  Mascot breathing loop (kebi-tokens-mockup.html §16 motion, §17 mascot).
+  scale 1→1.02 + translateY 0→-2px and back — expressed at 0/50/100% so it
+  returns to rest without relying on animation-direction: alternate. Driven via
+  the `animate-breathe` utility (animation defined in tailwind.config.js).
+*/
+@keyframes breathe {
+  0%   { transform: scale(1)    translateY(0); }
+  50%  { transform: scale(1.02) translateY(-2px); }
+  100% { transform: scale(1)    translateY(0); }
+}
