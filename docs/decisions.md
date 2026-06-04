@@ -17,6 +17,16 @@ Format:
 
 ---
 
+## ADR-043: Haptics governed by a single required map
+
+**Date:** 2026-06-04\
+**Status:** accepted\
+**Context:** The mobile app shipped with no haptic feedback. Without a rule, haptics get sprinkled in per-component and per-developer taste, and the effect erodes — every extra vibration makes the device feel noisy rather than alive. Haptics also have accessibility and platform constraints (reduced-motion, app backgrounded) that are easy to forget at an individual call site.\
+**Decision:** All mobile haptics come from a single required map maintained in the design system (`docs/kebi-app-design-system/design-system.md` → Behavior → Haptics) and are delivered through `expo-haptics` behind one app utility (`apps/mobile/src/lib/haptics.ts`). Constraints the utility enforces: never `Impact.Heavy` (reads as an error); never stack (within a 200ms window only one fires); suppressed when reduced motion is enabled or the app is backgrounded; only user-initiated actions vibrate — navigation and passive/incoming events (toasts appearing, streaming, background removals) are silent. New triggers are added to the map first, never invented at the call site.\
+**Consequences:** One dependency (`expo-haptics`) is added to `apps/mobile`; the web app is unaffected. New interactive features wire their haptic by referencing the map. Changing what vibrates is a design-system edit plus a doc version bump, not a scattered code change. The map is the contract; the utility is the only place that touches the haptics API.
+
+---
+
 ## ADR-042: Switch auth from Clerk to Supabase
 
 **Date:** 2026-06-02\

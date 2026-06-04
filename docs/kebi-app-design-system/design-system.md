@@ -326,6 +326,46 @@ Every transition uses one of four timing functions:
 
 Don't invent new easing curves. Don't use 100ms (too fast). Don't use 500ms+ (too slow).
 
+### Haptics
+
+Haptic feedback makes Kebi feel alive. Use sparingly — every tap that vibrates dilutes the effect. The rule: **vibrate when something you did registered, never for incoming or passive events.**
+
+iOS exposes three haptic families through `expo-haptics`:
+
+- **Impact** — Soft, Light, Medium, Rigid. Physical-feeling interactions (button press, threshold crossed). **Never Heavy** — Heavy reads as an error and Kebi has no use for it.
+- **Notification** — Success, Warning, Error. Outcomes (action confirmed, danger acknowledged).
+- **Selection** — a single tick. Picker-like selections and reversible commits.
+
+**Required haptic map.** Every haptic in the app comes from this table. Don't invent new ones — add a row here first.
+
+| Trigger | Haptic | Why |
+|---|---|---|
+| Tap Kebi AI button (floating mascot) | `Impact.Soft` | Kebi waking up — warm, creature-like, not mechanical |
+| "good pick" on chat place card | `Notification.Success` | Recommendation accepted, taste model updated |
+| "save it" on chat place card | `Impact.Light` | Quiet acknowledgement, place tucked into stash |
+| "not it" on chat place card | `Selection` | Reversible commit, no celebration needed |
+| Save button in save sheet | `Notification.Success` | Place captured, sheet dismisses |
+| Swipe library card past delete threshold (40px) | `Impact.Medium` | Danger zone reached, red action revealed |
+| Tap red action to confirm delete | `Notification.Warning` | Destructive action firing |
+| Place actually removed after undo timer | none | Background, not user-triggered |
+| "forget this place" in overflow menu | `Notification.Warning` | About to destroy data |
+| Undo on a toast | `Impact.Light` | Recovery, quiet ack |
+| Pull-to-refresh past threshold | `Impact.Light` | Threshold confirmation |
+| Filter chip selected | `Selection` | Reversible choice |
+| Theme toggle (light ↔ dark) | `Impact.Soft` | Mood shift, organic |
+| Tab or top-pill icon tap | none | Navigation is silent |
+| Toast appears | none | Visual is enough; you didn't trigger it directly |
+| Streaming chat message starts | none | Passive incoming |
+| Error toast appears | none | Visual is enough; the user didn't request the error |
+
+**Don't:**
+- Don't haptic on every tap. The Kebi button is the only tab-bar-level button that vibrates.
+- Don't haptic on scroll, hover, or focus.
+- Don't haptic on passive events (incoming toasts, streaming content, background syncs).
+- Don't use `Impact.Heavy` anywhere.
+- Don't stack haptics. If multiple events fire within 200ms, only the most important one fires.
+- Don't haptic when the app is backgrounded or when reduced motion is enabled — respect the accessibility setting.
+
 ### Loading states
 
 Three loading states. Pick the right one:
@@ -445,4 +485,4 @@ If you're building a new screen, the order of operations is:
 
 ## Versioning
 
-This doc is versioned with the app. v0.4.2 matches Kebi v0.4.2. Breaking changes to the design system require an ADR and a version bump. Patches (typo fixes, copy updates) don't.
+This doc is versioned with the app. v0.4.3 matches Kebi v0.4.3. Breaking changes to the design system require an ADR and a version bump. Patches (typo fixes, copy updates) don't.
