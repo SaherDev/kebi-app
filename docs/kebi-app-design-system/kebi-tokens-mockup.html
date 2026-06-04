@@ -1191,7 +1191,7 @@
       <span class="section-count">long-press context menu</span>
     </div>
     <h2 class="section-h2">long-press context menu</h2>
-    <p class="section-desc">iOS lift + blur (iMessage / Notion). long-press a card (500ms) → it lifts over a frosted, dimmed backdrop and a menu floats beneath it; haptic Impact.Medium fires as it appears. generic — any card supplies its own items. non-destructive first, hairline divider, destructive (forget) in danger tint. the ••• overflow menu (§14) is the same list without the lift/blur. full mockup with placement + dark mode: kebi-context-menu-mockup.html.</p>
+    <p class="section-desc">iOS lift + blur (iMessage / Notion). long-press a card (500ms) → it lifts over a frosted, dimmed backdrop and a menu floats beneath it; haptic Impact.Medium fires as it appears. generic — any card supplies its own items. non-destructive first, hairline divider, destructive (forget) in danger tint. the place page ••• opens a bottom action sheet (§14) instead of a long-press. full mockup with placement + dark mode: kebi-context-menu-mockup.html.</p>
 
     <div class="component-row">
       <div class="component-preview" style="padding: 0; justify-content: center;">
@@ -1224,41 +1224,37 @@
   </div>
 
   <!-- ============================================
-       14. OVERFLOW MENU
+       14. PLACE ACTION SHEET
        ============================================ -->
   <div class="section">
     <div class="section-head">
       <span class="section-title">14 — components</span>
-      <span class="section-count">overflow menu</span>
+      <span class="section-count">place ••• action sheet</span>
     </div>
-    <h2 class="section-h2">overflow menu</h2>
-    <p class="section-desc">drop-down anchored under the ••• icon in any top pill. dense, minimal chrome, white bg with thin border. linear/notion style. items use natural-language place actions: approve, like, mark as visited, forget. destructive item separated by hairline divider.</p>
+    <h2 class="section-h2">place action sheet</h2>
+    <p class="section-desc">tap the ••• on the place page → a bottom sheet springs up (save-sheet language: grabber, 22px top radius, dim+blur scrim, spring). place header, then natural-language actions on a surface group — positives grouped, destructive (forget) set apart in its own group below. cards use the long-press context menu (§13); this is the place page's equivalent. full mockup: kebi-context-menu-mockup.html.</p>
 
     <div class="component-row">
-      <div class="component-preview" style="background: var(--bg); padding: 40px; justify-content: center;">
-        <div style="background: white; border-radius: 10px; padding: 4px; min-width: 220px; box-shadow: 0 4px 16px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04); border: 1px solid var(--surface-2); display: flex; flex-direction: column; gap: 1px;">
-
-          <button style="display: flex; align-items: center; gap: 10px; padding: 7px 10px; border-radius: 6px; background: transparent; border: none; cursor: pointer; font-family: inherit; font-size: 13px; font-weight: 500; color: var(--text); letter-spacing: -0.005em; text-align: left;">
-            <span style="font-size: 15px; line-height: 1; width: 16px; text-align: center;">👍</span>
-            looks right
-          </button>
-
-          <button style="display: flex; align-items: center; gap: 10px; padding: 7px 10px; border-radius: 6px; background: transparent; border: none; cursor: pointer; font-family: inherit; font-size: 13px; font-weight: 500; color: var(--text); letter-spacing: -0.005em; text-align: left;">
-            <span style="font-size: 15px; line-height: 1; width: 16px; text-align: center;">❤️</span>
-            i like this one
-          </button>
-
-          <button style="display: flex; align-items: center; gap: 10px; padding: 7px 10px; border-radius: 6px; background: transparent; border: none; cursor: pointer; font-family: inherit; font-size: 13px; font-weight: 500; color: var(--text); letter-spacing: -0.005em; text-align: left;">
-            <span style="font-size: 15px; line-height: 1; width: 16px; text-align: center;">✅</span>
-            been there
-          </button>
-
-          <div style="height: 1px; background: var(--surface-2); margin: 4px 6px;"></div>
-
-          <button style="display: flex; align-items: center; gap: 10px; padding: 7px 10px; border-radius: 6px; background: transparent; border: none; cursor: pointer; font-family: inherit; font-size: 13px; font-weight: 500; color: var(--danger); letter-spacing: -0.005em; text-align: left;">
-            <span style="font-size: 15px; line-height: 1; width: 16px; text-align: center;">🗑️</span>
-            forget this place
-          </button>
+      <div class="component-preview" style="background: var(--surface-2); padding: 0; align-items: flex-end; justify-content: center; height: 400px; overflow: hidden;">
+        <!-- the sheet, anchored to the bottom -->
+        <div style="width: 100%; max-width: 340px; background: var(--bg); border-radius: 24px 24px 0 0; padding: 10px 16px 16px; display: flex; flex-direction: column; gap: 12px; box-shadow: 0 -16px 48px rgba(0,0,0,0.16);">
+          <div style="width: 36px; height: 4px; border-radius: 2px; background: var(--surface-2); margin: 0 auto 2px;"></div>
+          <div style="display: flex; align-items: center; gap: 11px; padding: 2px 4px 4px;">
+            <div class="demo-avatar" style="width: 36px; height: 36px; border-radius: 9px; font-size: 19px;">☕</div>
+            <div>
+              <div style="font-size: 10px; font-weight: 600; color: var(--text-soft); text-transform: uppercase; letter-spacing: 0.08em;">this place</div>
+              <div style="font-size: 18px; font-weight: 700; color: var(--text); letter-spacing: -0.02em;">Fuglen</div>
+            </div>
+          </div>
+          <div style="background: var(--surface); border-radius: 14px; overflow: hidden;">
+            <div style="display: flex; align-items: center; gap: 12px; padding: 14px 14px; font-size: 15px; font-weight: 500; color: var(--text);"><span style="width: 20px; text-align: center; font-size: 17px;">👍</span>looks right</div>
+            <div style="display: flex; align-items: center; gap: 12px; padding: 14px 14px; font-size: 15px; font-weight: 500; color: var(--text); border-top: 1px solid var(--bg);"><span style="width: 20px; text-align: center; font-size: 17px;">❤️</span>i like this one</div>
+            <div style="display: flex; align-items: center; gap: 12px; padding: 14px 14px; font-size: 15px; font-weight: 500; color: var(--text); border-top: 1px solid var(--bg);"><span style="width: 20px; text-align: center; font-size: 17px;">✅</span>been there</div>
+          </div>
+          <div style="background: var(--surface); border-radius: 14px; overflow: hidden;">
+            <div style="display: flex; align-items: center; gap: 12px; padding: 14px 14px; font-size: 15px; font-weight: 500; color: var(--danger);"><span style="width: 20px; text-align: center; font-size: 17px;">🗑️</span>forget this place</div>
+          </div>
+          <div style="width: 120px; height: 5px; border-radius: 999px; background: var(--text); opacity: 0.85; margin: 6px auto 0;"></div>
         </div>
       </div>
     </div>

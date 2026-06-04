@@ -22,6 +22,7 @@
     "chat": "chat"
   },
   "placeMenu": {
+    "thisPlace": "this place",
     "looksRight": "looks right",
     "like": "i like this one",
     "beenThere": "been there",

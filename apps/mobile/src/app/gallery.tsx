@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ScrollView, View, Text, Pressable } from 'react-native';
 import { useColorScheme } from 'nativewind';
 import { ScreenScaffold } from '../components/screen-scaffold';
@@ -13,7 +13,7 @@ import { PlaceChip } from '../components/place-chip';
 import { Mascot } from '../components/mascot';
 import { KebiFab } from '../components/kebi-fab';
 import { ReasoningBlock, type ReasoningBlockStep } from '../components/reasoning-block';
-import { OverflowMenu } from '../components/context-menu/overflow-menu';
+import { ActionSheet } from '../components/action-sheet';
 import { usePlaceMenuItems } from '../components/use-place-menu-items';
 import { useToast } from '../components/toast-context';
 import { triggerHaptic } from '../lib/haptics';
@@ -54,12 +54,11 @@ function B({ children }: { children: React.ReactNode }) {
 }
 
 // Context-menu demo: a PlaceCard to long-press (lift + blur) and a ••• button
-// that opens the same menu list as an overflow drop-down. Both share the place
-// action set via usePlaceMenuItems. Demo labels are dev-only, not i18n copy.
+// that opens the place action sheet. Both share the place action set via
+// usePlaceMenuItems. Demo labels are dev-only, not i18n copy.
 const CTX_MENU_PLACE = makeSamplePlace('Fuglen', ['cafe']);
 
 function ContextMenuDemo() {
-  const moreRef = useRef<View>(null);
   const [open, setOpen] = useState(false);
   const items = usePlaceMenuItems(CTX_MENU_PLACE);
   return (
@@ -67,16 +66,14 @@ function ContextMenuDemo() {
       <PlaceCard place={CTX_MENU_PLACE} />
       <Text className="text-small text-text-muted">↑ long-press the card to lift the menu</Text>
       <View className="flex-row items-center justify-between rounded-large bg-surface px-3.5 py-1.5">
-        <Text className="text-body font-medium text-text">overflow ••• menu</Text>
-        <View ref={moreRef} collapsable={false}>
-          <IconButton icon="ellipsis" label="more" variant="pill" onPress={() => setOpen(true)} />
-        </View>
+        <Text className="text-body font-medium text-text">place ••• action sheet</Text>
+        <IconButton icon="ellipsis" label="more" variant="pill" onPress={() => setOpen(true)} />
       </View>
-      <OverflowMenu
+      <ActionSheet
         open={open}
         onClose={() => setOpen(false)}
+        header={{ emoji: '☕', eyebrow: 'this place', title: 'Fuglen' }}
         items={items}
-        triggerRef={moreRef}
         closeLabel="close"
       />
     </View>

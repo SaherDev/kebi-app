@@ -46,7 +46,9 @@ export function ContextMenuList({ items, onSelect, maxHeight }: ContextMenuListP
         }}
         className="flex-row items-center gap-2.5 rounded-medium px-2.5 py-2 active:bg-surface"
       >
-        <Text className="w-4 text-center text-small leading-none">{item.emoji}</Text>
+        <View className="w-5 items-center">
+          <Text className="text-[15px]">{item.emoji}</Text>
+        </View>
         <Text
           className={`text-small font-medium ${item.destructive ? 'text-danger' : 'text-text'}`}
         >

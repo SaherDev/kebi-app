@@ -172,7 +172,7 @@
   .menu-divider { height: 1px; background: var(--surface-2); margin: 4px 8px; }
   .menu.anchor-right { left: auto; right: 16px; }
 
-  /* place-page top pill (for overflow-menu demo) */
+  /* place-page top pill (for the action-sheet demo) */
   .pill-bar { display: flex; align-items: center; justify-content: space-between; padding: 6px 16px 16px; }
   .pill {
     display: flex; align-items: center; gap: 7px;
@@ -197,6 +197,33 @@
   }
   .caption b { color: var(--text); font-weight: 600; }
   .kbd { font-size: 12px; background: var(--surface-2); border-radius: 5px; padding: 1px 6px; }
+
+  /* ••• bottom action sheet — matches kebi-save-sheet-mockup.html */
+  .sheet-scrim {
+    position: absolute; inset: 0; z-index: 5;
+    background: rgba(15,13,10,0.45);
+    backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px);
+  }
+  .sheet {
+    position: absolute; left: 0; right: 0; bottom: 0; z-index: 6;
+    background: var(--bg); border-radius: 24px 24px 0 0;
+    padding: 10px 16px 16px; display: flex; flex-direction: column; gap: 12px;
+    box-shadow: 0 -16px 48px rgba(0,0,0,0.16);
+  }
+  .grabber { width: 36px; height: 4px; border-radius: 2px; background: var(--surface-2); margin: 0 auto 2px; }
+  .sheet-head { display: flex; align-items: center; gap: 11px; padding: 2px 4px 4px; }
+  .sheet-head .demo-avatar { width: 36px; height: 36px; border-radius: 9px; font-size: 19px; }
+  .sheet-eyebrow { font-size: 10px; font-weight: 600; color: var(--text-soft); text-transform: uppercase; letter-spacing: 0.08em; }
+  .sheet-title { font-size: 18px; font-weight: 700; color: var(--text); letter-spacing: -0.02em; }
+  .sheet-group { background: var(--surface); border-radius: 14px; overflow: hidden; }
+  .sheet-row {
+    display: flex; align-items: center; gap: 12px; padding: 14px 14px;
+    font-size: 15px; font-weight: 500; color: var(--text); letter-spacing: -0.01em;
+  }
+  .sheet-row + .sheet-row { border-top: 1px solid var(--bg); }
+  .sheet-row .glyph { width: 20px; text-align: center; font-size: 17px; line-height: 1; }
+  .sheet-row.destructive { color: var(--danger); }
+  .home-bar { width: 120px; height: 5px; border-radius: 999px; background: var(--text); opacity: 0.85; margin: 6px auto 0; }
 </style>
 </head>
 <body>
@@ -228,7 +255,7 @@
       when the card sits too low for the menu to fit, the <b>card itself slides up</b> so the whole
       stack fits on screen — the menu never flips. the card <b>stops at the top safe area</b> (never
       off-screen); if even then the menu is taller than the screen, the <b>menu scrolls</b>.
-      <i>(blur is long-press only — the overflow menu below has no backdrop.)</i>
+      <i>(blur is long-press only — the place ••• action sheet below uses a plain dim scrim.)</i>
     </p>
 
     <div class="phones">
@@ -357,60 +384,63 @@
   </div>
 
   <!-- ============================================================
-       OVERFLOW MENU — same list, anchored under the ••• button
+       ••• ACTION SHEET — tap the ••• on the place page (options)
        ============================================================ -->
   <div class="section">
     <div class="section-head">
-      <span class="section-title">second trigger</span>
-      <span class="section-count">••• overflow menu</span>
+      <span class="section-title">••• action sheet</span>
+      <span class="section-count">place ••• menu</span>
     </div>
-    <h2 class="section-h2">overflow menu (••• button)</h2>
+    <h2 class="section-h2">place ••• → bottom action sheet</h2>
     <p class="section-desc">
-      the <b>exact same menu list</b> — but tapped open from the ••• button on the place page instead of
-      long-pressed from a card. <b>no lift, no blur, no scrim</b>: it just drops down anchored under the button,
-      tap-outside to close. one shared list component renders both; only the trigger + anchoring differ.
+      the long-press lift+blur menu handles all card actions. on the <b>place page</b> there's no card to
+      long-press, so the ••• <b>taps open a bottom sheet</b> that springs up — same language as the
+      <b>save sheet</b> (grabber, dim+blur scrim, spring 320ms). positives grouped on a <span class="kbd">surface</span>
+      block, <b>forget set apart</b> in its own group below.
     </p>
 
     <div class="phones">
 
-      <!-- overflow open under ••• -->
+      <!-- Option A: grouped (save-sheet style) -->
       <div class="phone-wrap">
         <div class="phone">
           <div class="status-bar"><span>9:41</span><span>􀙇 􀛨 􀋊</span></div>
           <div class="pill-bar">
-            <div class="pill">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
-              back
-            </div>
+            <div class="pill"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>back</div>
             <div class="more-btn"><span></span><span></span><span></span></div>
           </div>
-          <div class="hero">⛩️</div>
-          <div class="hero-title">Nezu Shrine</div>
-          <div class="hero-sub">shrine · garden · quiet · Bunkyo, Tokyo</div>
+          <div class="hero">☕</div>
+          <div class="hero-title">Fuglen</div>
+          <div class="hero-sub">cafe · cozy · oslo-style · Tomigaya, Tokyo</div>
 
-          <!-- menu anchored under the ••• (no scrim, no lift) -->
-          <div class="menu anchor-right" style="top: 78px;">
-            <div class="menu-item"><span class="glyph">👍</span>looks right</div>
-            <div class="menu-item"><span class="glyph">❤️</span>i like this one</div>
-            <div class="menu-item"><span class="glyph">✅</span>been there</div>
-            <div class="menu-divider"></div>
-            <div class="menu-item destructive"><span class="glyph">🗑️</span>forget this place</div>
+          <div class="sheet-scrim"></div>
+          <div class="sheet">
+            <div class="grabber"></div>
+            <div class="sheet-head">
+              <div class="demo-avatar">☕</div>
+              <div><div class="sheet-eyebrow">this place</div><div class="sheet-title">Fuglen</div></div>
+            </div>
+            <div class="sheet-group">
+              <div class="sheet-row"><span class="glyph">👍</span>looks right</div>
+              <div class="sheet-row"><span class="glyph">❤️</span>i like this one</div>
+              <div class="sheet-row"><span class="glyph">✅</span>been there</div>
+            </div>
+            <div class="sheet-group">
+              <div class="sheet-row destructive"><span class="glyph">🗑️</span>forget this place</div>
+            </div>
+            <div class="home-bar"></div>
           </div>
         </div>
-        <div class="phone-label">overflow · ••• menu</div>
-        <div class="phone-sub">drops under the button — no blur, no lift</div>
+        <div class="phone-label">place ••• action sheet</div>
+        <div class="phone-sub">positives grouped · forget set apart · springs up from the bottom</div>
       </div>
 
     </div>
 
     <div class="caption">
-      <b>interaction recap.</b><br>
-      <b>long-press menu</b> — 500ms hold → <b>Impact.Medium</b> haptic as it appears → card lifts over a
-      frosted-blur backdrop → tap item to act &amp; close, or tap backdrop to dismiss.<br>
-      <b>overflow menu</b> — tap ••• → list drops down (no blur, no lift) → tap item or tap-outside to close.<br>
-      both: non-destructive first, hairline divider, destructive (🗑️) in danger tint. 🗑️ <b>forget this place</b>
-      fires a warning haptic + an undo toast. one menu open at a time. generic — any card can supply its own
-      <span class="kbd">renderCard</span> + <span class="kbd">items</span>; the place card is just the first consumer.
+      <b>recap.</b> cards use the <b>long-press</b> lift+blur menu. the place page ••• <b>taps a bottom sheet</b>
+      that springs up over a dim+blur scrim (swipe-down or backdrop to dismiss). same actions everywhere:
+      👍 looks right · ❤️ i like this one · ✅ been there · 🗑️ forget this place (danger + warning haptic + undo toast).
     </div>
   </div>
 

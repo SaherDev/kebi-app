@@ -219,41 +219,35 @@ Visual source of truth: `kebi-context-menu-mockup.html`.
 - Optimistic UI: row disappears immediately, backend confirms in background
 - If backend fails, restore the row and show error toast: "couldn't remove that one"
 
-**Overflow menu (`•••`) is the same menu list, different trigger:** tapped open
-from a button, anchored under it — **no lift, no blur, no scrim**, tap-outside to
-close. Use it where a card isn't long-pressed (e.g. the place page top pill).
+**The place page uses a bottom action sheet, not a long-press:** there's no card
+to press, so the `•••` button opens the **Place action sheet** (below) instead of
+this menu.
 
 **Don't:**
-- Don't blur the backdrop for the overflow (`•••`) menu — blur is long-press only
 - Don't omit the undo path — destructive actions always need recovery
-- Don't put a long-press menu on the place page itself — that's the `•••` menu's job
+- Don't put a long-press menu on the place page itself — that's the `•••` action sheet's job
 
-### Overflow menu
+### Place action sheet
 
-Drop-down menu anchored under the ••• icon in any top pill. Used on the place page, may be added to others.
+Bottom sheet opened by tapping the `•••` on the place page (where there's no card
+to long-press). Same language as the save sheet. Visual source of truth:
+`kebi-context-menu-mockup.html` (action-sheet section) and `kebi-tokens-mockup.html` §14.
 
 **Required structure:**
-- Anchored 80px from top, 16px from right (under the more button)
-- 14px corner radius, 6px internal padding
-- Items at 10×12px padding, 8px row radius, transparent background by default
-- Hover state: `var(--surface)` background
-- Soft shadow: `0 8px 32px rgba(0,0,0,0.10), 0 2px 8px rgba(0,0,0,0.06)`
-- Transparent backdrop catches taps outside to close
-- Destructive items grouped at bottom, separated by 1px divider
-- Destructive item color: `var(--danger)` for both text and icon
-
-**Item order on the place page:**
-1. share
-2. add a note
-3. mark as been
-4. divider
-5. remove from stash (destructive)
+- Springs up from the bottom over a dim scrim (`rgba(15,13,10,0.45)`), 320ms
+  spring — same language as the save sheet
+- 22px top corner radius, grabber handle, home indicator
+- Header: place avatar + "this place" eyebrow + place name
+- Positive actions on one `--surface` group (12px radius): 👍 looks right ·
+  ❤️ i like this one · ✅ been there
+- Destructive (🗑️ forget this place) **set apart** in its own `--surface` group
+  below, in `--danger`
+- Swipe-down or tap the backdrop to dismiss
 
 **Don't:**
-- Don't put more than 6 items in a single menu — split into sections or nest
-- Don't use destructive style for non-destructive items
-- Don't omit the divider before destructive items — it's a visual safety check
-- Don't auto-close before the user releases tap — wait for the action to resolve
+- Don't anchor a plain dropdown to the button — the bottom sheet is the place-page pattern
+- Don't merge "forget" into the positives group — keep it visually separate
+- Don't omit the undo path on forget — destructive always needs recovery
 
 ---
 
@@ -316,7 +310,7 @@ Every screen except the home page uses this pattern:
 **Standard pill contents per screen:**
 - **Home** — bookmark (save) + book (library) + gear (settings)
 - **Library** — search expand + bookmark (save)
-- **Place** — edit + ••• (overflow menu with share, note, mark as been, remove)
+- **Place** — edit + ••• (bottom action sheet: looks right, i like this one, been there, forget)
 - **Settings, Plans, Billing** — single icon variants per screen
 
 The bookmark icon is the universal save trigger. Any screen that should support save adds it to the pill. Library is the exception with an expandable search input that grows from the right side of the pill toward center when tapped.
@@ -363,7 +357,7 @@ iOS exposes three haptic families through `expo-haptics`:
 | Long-press a card → context menu lifts | `Impact.Medium` | Card picked up, menu surfaced — a deliberate lift, not a tap |
 | Tap red action to confirm delete | `Notification.Warning` | Destructive action firing |
 | Place actually removed after undo timer | none | Background, not user-triggered |
-| "forget this place" in overflow menu | `Notification.Warning` | About to destroy data |
+| "forget this place" in action sheet / long-press menu | `Notification.Warning` | About to destroy data |
 | Undo on a toast | `Impact.Light` | Recovery, quiet ack |
 | Pull-to-refresh past threshold | `Impact.Light` | Threshold confirmation |
 | Filter chip selected | `Selection` | Reversible choice |

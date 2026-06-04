@@ -5,7 +5,7 @@
  *   - Toast / menu shadow presets.
  *
  * Source: docs/kebi-app-design-system/kebi-tokens-mockup.html §17 (mascot)
- * and §12 / §14 (toast/overflow-menu shadows).
+ * and §12 / §13 (toast / context-menu shadows).
  *
  * These are used directly as `fill` / `stroke` props on SVG elements and as
  * `shadowColor`/`elevation` props in StyleSheet — not as Tailwind classes.
@@ -52,7 +52,7 @@ export const SHADOW_TOAST = {
 } as const;
 
 /**
- * Overflow-menu shadow: `0 8px 32px rgba(0,0,0,0.10), 0 2px 8px rgba(0,0,0,0.06)`.
+ * Context-menu shadow: `0 8px 32px rgba(0,0,0,0.10), 0 2px 8px rgba(0,0,0,0.06)`.
  * RN supports a single shadow layer; use the dominant (larger) one.
  */
 export const SHADOW_MENU = {
