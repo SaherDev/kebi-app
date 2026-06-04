@@ -4,6 +4,7 @@ import { useColorScheme } from 'nativewind';
 import { Mascot } from './mascot';
 import { useTranslation } from '../i18n/context';
 import { PRESS } from '../theme/motion';
+import { triggerHaptic } from '../lib/haptics';
 
 interface KebiFabProps {
   onPress?: () => void;
@@ -24,7 +25,10 @@ export function KebiFab({ onPress }: KebiFabProps) {
   const dark = colorScheme === 'dark';
   return (
     <Pressable
-      onPress={onPress}
+      onPress={() => {
+        triggerHaptic('fab-tap');
+        onPress?.();
+      }}
       accessibilityRole="button"
       accessibilityLabel={t('nav.askKebi')}
       className={`absolute h-16 w-16 items-center justify-center rounded-full ${PRESS} ${
