@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { View, Text, Pressable, useWindowDimensions } from 'react-native';
 import { Icon, type IconName } from './icon';
 import { SHADOW_TOAST } from '../theme/palette';
+import { triggerHaptic } from '../lib/haptics';
 
 /**
  * The toast pill (kebi-toasts-dark-mockup.html) — presentational only; the
@@ -62,7 +63,10 @@ export function Toast({ text, tone = 'neutral', icon, emoji, action, onClose }: 
 
       {action ? (
         <Pressable
-          onPress={action.onPress}
+          onPress={() => {
+            triggerHaptic('toast-undo');
+            action.onPress();
+          }}
           accessibilityRole="button"
           accessibilityLabel={action.label}
           hitSlop={6}

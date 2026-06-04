@@ -12,6 +12,7 @@ import { Mascot } from '../components/mascot';
 import { KebiFab } from '../components/kebi-fab';
 import { ReasoningBlock, type ReasoningBlockStep } from '../components/reasoning-block';
 import { useToast } from '../components/toast-context';
+import { triggerHaptic } from '../lib/haptics';
 import type { PlaceTag, ReasoningStepStatus } from '@kebi-app/shared';
 
 /**
@@ -199,7 +200,10 @@ export default function GalleryScreen() {
           left={<Text className="font-bold text-subtitle text-text">gallery</Text>}
           right={
             <Pressable
-              onPress={toggleColorScheme}
+              onPress={() => {
+                triggerHaptic('theme-toggle');
+                toggleColorScheme();
+              }}
               accessibilityRole="button"
               accessibilityLabel="toggle theme"
               className="rounded-full bg-surface px-3 py-2"
