@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { memo, useEffect, useRef, useState } from 'react';
 import { View, Text, Pressable, type LayoutChangeEvent } from 'react-native';
 import Animated, {
   Easing,
@@ -196,8 +196,14 @@ function Chevron({ expanded }: { expanded: boolean }) {
   );
 }
 
-/** One step: node on the rail + narration, or a shimmer skeleton while active. */
-function StepRow({
+/**
+ * One step: node on the rail + narration, or a shimmer skeleton while active.
+ *
+ * Memoized: the stream upserts by id, keeping referential identity for unchanged
+ * steps (see the chat reducer), so a new frame only re-renders the row that
+ * actually changed — not every row's `useAnimatedStyle` and looping children.
+ */
+const StepRow = memo(function StepRow({
   step,
   enterDelay,
   summaryLines,
@@ -250,7 +256,7 @@ function StepRow({
       </View>
     </Animated.View>
   );
-}
+});
 
 /** 14px node: filled check when done, ringed pulsing dot while active. */
 function StatusNode({ status }: { status: ReasoningStepStatus }) {
