@@ -13,7 +13,7 @@ import { RateLimitGuard } from '../common/guards/rate-limit.guard';
  * Pure facade pattern (ADR-032) — makes exactly one service call
  *
  * POST /api/v1/chat
- * - Requires valid Clerk token (via AuthMiddleware)
+ * - Requires a valid Supabase token (via AuthMiddleware)
  * - Requires AI enabled (via @RequiresAi() guard per ADR-022)
  * - Pipes raw SSE stream from the AI service to the client; NestJS is transparent
  */

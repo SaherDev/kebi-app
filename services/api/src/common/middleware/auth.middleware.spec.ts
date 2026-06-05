@@ -8,6 +8,7 @@ import {
   IDENTITY_PROVIDER,
   IdentityProvider,
 } from '../../auth/identity-provider.interface';
+import { IDENTITY_METADATA_WRITER } from '../../auth/identity-metadata.writer';
 import { UserIdentityService } from '../../auth/user-identity.service';
 
 function makeConfig(overrides: Record<string, unknown> = {}) {
@@ -15,6 +16,7 @@ function makeConfig(overrides: Record<string, unknown> = {}) {
     get: jest.fn((key: string, defaultValue?: unknown) => {
       const config: Record<string, unknown> = {
         'ai.enabled_default': true,
+        'rate_limits.default_plan': 'homebody',
         ...overrides,
       };
       return key in config ? config[key] : defaultValue;
@@ -25,10 +27,12 @@ function makeConfig(overrides: Record<string, unknown> = {}) {
 describe('AuthMiddleware', () => {
   let middleware: AuthMiddleware;
   let provider: jest.Mocked<IdentityProvider>;
+  let metadataWriter: { stamp: jest.Mock };
   let userIdentity: { resolve: jest.Mock };
 
   beforeEach(async () => {
-    provider = { name: 'clerk', verify: jest.fn() };
+    provider = { name: 'supabase', verify: jest.fn() };
+    metadataWriter = { stamp: jest.fn().mockResolvedValue(undefined) };
     userIdentity = { resolve: jest.fn().mockResolvedValue('user_internal_1') };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -36,6 +40,7 @@ describe('AuthMiddleware', () => {
         AuthMiddleware,
         { provide: ConfigService, useValue: makeConfig() },
         { provide: IDENTITY_PROVIDER, useValue: provider },
+        { provide: IDENTITY_METADATA_WRITER, useValue: metadataWriter },
         { provide: UserIdentityService, useValue: userIdentity },
       ],
     }).compile();
@@ -49,6 +54,7 @@ describe('AuthMiddleware', () => {
     const mw = new AuthMiddleware(
       makeConfig({ 'app.api_prefix': 'api/v1' }),
       provider,
+      metadataWriter,
       userIdentity as unknown as UserIdentityService,
     );
     const req = { originalUrl: '/api/v1/health', headers: {} } as any;
@@ -86,6 +92,7 @@ describe('AuthMiddleware', () => {
     expect(req.user?.ai_enabled).toBe(false);
     expect(req.user?.plan).toBe('explorer');
     expect(userIdentity.resolve).not.toHaveBeenCalled(); // claim present → no DB
+    expect(metadataWriter.stamp).not.toHaveBeenCalled(); // already stamped
     expect(next).toHaveBeenCalled();
   });
 
@@ -95,11 +102,24 @@ describe('AuthMiddleware', () => {
     const req = { headers: { authorization: 'Bearer tok' } } as any;
     await middleware.use(req, {} as any, jest.fn());
 
-    expect(userIdentity.resolve).toHaveBeenCalledWith('clerk', {
+    expect(userIdentity.resolve).toHaveBeenCalledWith('supabase', {
       externalId: 'user_123',
       claims: {},
     });
     expect(req.user?.id).toBe('user_internal_1'); // value returned by resolve()
+  });
+
+  it('stamps the resolved id + default plan back into token metadata on fallback', async () => {
+    provider.verify.mockResolvedValue({ externalId: 'user_123', claims: {} });
+
+    const req = { headers: { authorization: 'Bearer tok' } } as any;
+    await middleware.use(req, {} as any, jest.fn());
+
+    expect(metadataWriter.stamp).toHaveBeenCalledWith('user_123', {
+      internal_id: 'user_internal_1',
+      ai_enabled: true,
+      plan: 'homebody', // rate_limits.default_plan
+    });
   });
 
   it('defaults ai_enabled to true when the claim is absent', async () => {

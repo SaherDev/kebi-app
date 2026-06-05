@@ -4,15 +4,17 @@ app:
   api_prefix: api/v1
 
 auth:
-  provider: clerk # active identity provider (registry key in AuthModule)
+  provider: supabase # active identity provider (registry key in AuthModule)
   user_id_prefix: user_ # typed prefix for generated internal user ids
   # Supabase verification params (consumed when provider: supabase). issuer
   # derives from SUPABASE_PROJECT_URL when omitted; audience defaults below.
   supabase:
     audience: authenticated
+    # Admin-API app_metadata stamping (SupabaseMetadataWriter).
+    stamp_timeout_ms: 5000 # admin PUT request timeout
+    stamp_dedupe_ttl_ms: 3600000 # re-stamp a user at most once per window (≈ token TTL)
   public_paths:
     - /health
-    - /webhooks/clerk
 
 ai:
   enabled_default: true

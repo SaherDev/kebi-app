@@ -32,11 +32,11 @@ describe('ExtractService', () => {
       raw_input: 'https://www.tiktok.com/@user/video/123',
     };
 
-    const result = await service.extract('user_clerk_123', dto);
+    const result = await service.extract('user_test_123', dto);
 
     expect(aiClient.extractPlace).toHaveBeenCalledWith(
       { raw_input: 'https://www.tiktok.com/@user/video/123' },
-      'user_clerk_123'
+      'user_test_123'
     );
     expect(result).toEqual(response);
   });
@@ -46,7 +46,7 @@ describe('ExtractService', () => {
     aiClient.extractPlace.mockRejectedValueOnce(err);
 
     await expect(
-      service.extract('user_clerk_123', { raw_input: 'a place' })
+      service.extract('user_test_123', { raw_input: 'a place' })
     ).rejects.toBe(err);
   });
 });

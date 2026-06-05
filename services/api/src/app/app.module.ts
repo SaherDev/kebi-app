@@ -11,7 +11,6 @@ import * as fs from 'fs';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthMiddleware } from '../common/middleware/auth.middleware';
-import { ClerkWebhookController } from '../webhooks/clerk.webhook';
 import { AuthModule } from '../auth/auth.module';
 import { AiEnabledGuard } from '../common/guards/ai-enabled.guard';
 import { UserEntity } from '../database/entities/user.entity';
@@ -69,7 +68,7 @@ function loadAppYaml(): Record<string, unknown> {
     SignalModule,
     UserModule,
   ],
-  controllers: [AppController, ClerkWebhookController],
+  controllers: [AppController],
   providers: [AppService, AiEnabledGuard],
 })
 export class AppModule implements NestModule {

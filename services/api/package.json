@@ -90,7 +90,6 @@
     ]
   },
   "dependencies": {
-    "@clerk/backend": "^1.0.0",
     "@kebi-app/shared": "workspace:*",
     "@nestjs/axios": "^3.0.0",
     "@nestjs/common": "^11.0.0",
@@ -106,7 +105,6 @@
     "pg": "^8.0.0",
     "reflect-metadata": "^0.1.13",
     "rxjs": "^7.8.0",
-    "svix": "^1.0.0",
     "tslib": "^2.3.0",
     "typeorm": "^0.3.0",
     "yaml": "^2.0.0"

@@ -8,25 +8,33 @@ import {
 } from 'jose';
 import { MovementProfile, NormalizedIdentity, PlanTier } from '@kebi-app/shared';
 import { IdentityProvider } from '../identity-provider.interface';
+import { AppMetadataCipher } from '../app-metadata.cipher';
 
 /**
- * Shape of the product claims the gateway/AuthUser care about. Supabase injects
- * these at the top level of the access token via a Custom Access Token Hook
- * (the Supabase analogue of Clerk's `public_metadata`).
+ * Product claims the gateway/AuthUser care about. Supabase carries these inside
+ * the token's `app_metadata` (server-write-only, auto-embedded in every JWT).
+ * We write them via the Admin API (see SupabaseMetadataWriter), sealed as a
+ * single encrypted blob
+ * under `app_metadata.<APP_METADATA_FIELD>` so they stay opaque to the token
+ * holder; this provider decrypts that blob to recover them.
  */
-interface SupabaseClaims extends JWTPayload {
+interface SupabaseAppMetadata {
   ai_enabled?: boolean;
   plan?: PlanTier;
   movement_profile?: MovementProfile;
   internal_id?: string;
 }
 
+interface SupabaseTokenPayload extends JWTPayload {
+  email?: string;
+  app_metadata?: Record<string, unknown>;
+}
+
 /**
  * Supabase implementation of IdentityProvider. Contains all Supabase-specific
  * knowledge: asymmetric (RS256/ES256) JWT verification against the project's
- * JWKS endpoint, the `sub` → externalId mapping, and the top-level custom-claim
- * locations written by the Custom Access Token Hook. Mirrors the Clerk provider
- * — business code depends only on the IdentityProvider interface.
+ * JWKS endpoint, the `sub` → externalId mapping, and the `app_metadata` claim
+ * location. Business code depends only on the IdentityProvider interface.
  */
 @Injectable()
 export class SupabaseIdentityProvider implements IdentityProvider {
@@ -39,14 +47,17 @@ export class SupabaseIdentityProvider implements IdentityProvider {
    */
   private jwks?: JWTVerifyGetKey;
 
-  constructor(private readonly configService: ConfigService) {}
+  constructor(
+    private readonly configService: ConfigService,
+    private readonly cipher: AppMetadataCipher,
+  ) {}
 
   async verify(token: string): Promise<NormalizedIdentity> {
     const { jwks, issuer, audience } = this.resolveVerification();
 
-    let payload: SupabaseClaims;
+    let payload: SupabaseTokenPayload;
     try {
-      ({ payload } = await jwtVerify<SupabaseClaims>(token, jwks, {
+      ({ payload } = await jwtVerify<SupabaseTokenPayload>(token, jwks, {
         issuer,
         audience,
       }));
@@ -66,14 +77,21 @@ export class SupabaseIdentityProvider implements IdentityProvider {
       true,
     );
 
+    // Our product claims ride `app_metadata` as a single encrypted blob
+    // (Admin-API-written). Decrypt it; an absent/undecryptable blob yields no
+    // claims, so the middleware takes the DB fallback and re-stamps.
+    const blob = payload.app_metadata?.[this.cipher.field];
+    const meta: SupabaseAppMetadata =
+      (typeof blob === 'string' ? this.cipher.decrypt(blob) : null) ?? {};
+
     return {
       externalId,
       email: typeof payload.email === 'string' ? payload.email : undefined,
       claims: {
-        ai_enabled: payload.ai_enabled ?? aiEnabledDefault,
-        plan: payload.plan,
-        movement_profile: payload.movement_profile,
-        internal_id: payload.internal_id,
+        ai_enabled: meta.ai_enabled ?? aiEnabledDefault,
+        plan: meta.plan,
+        movement_profile: meta.movement_profile,
+        internal_id: meta.internal_id,
       },
     };
   }
@@ -89,11 +107,9 @@ export class SupabaseIdentityProvider implements IdentityProvider {
     issuer: string;
     audience: string;
   } {
-    const projectUrl = this.configService
-      .get<string>('SUPABASE_PROJECT_URL')
-      ?.replace(/\/+$/, '');
+    const projectUrl = this.config('SUPABASE_PROJECT_URL')?.replace(/\/+$/, '');
     const jwksUrl =
-      this.configService.get<string>('SUPABASE_JWKS_URL') ??
+      this.config('SUPABASE_JWKS_URL') ??
       (projectUrl ? `${projectUrl}/auth/v1/.well-known/jwks.json` : undefined);
     if (!jwksUrl) {
       throw new Error(
@@ -102,7 +118,7 @@ export class SupabaseIdentityProvider implements IdentityProvider {
     }
 
     const issuer =
-      this.configService.get<string>('auth.supabase.issuer') ??
+      this.config('auth.supabase.issuer') ??
       (projectUrl ? `${projectUrl}/auth/v1` : undefined);
     const audience = this.configService.get<string>(
       'auth.supabase.audience',
@@ -114,5 +130,15 @@ export class SupabaseIdentityProvider implements IdentityProvider {
     }
 
     return { jwks: this.jwks, issuer: issuer as string, audience };
+  }
+
+  /**
+   * Read a config string, treating empty/whitespace values as unset. `.env`
+   * files load blank keys (e.g. `SUPABASE_JWKS_URL=`) as `''`, which would
+   * defeat `??` fallbacks — coalesce them to `undefined` so derived defaults win.
+   */
+  private config(key: string): string | undefined {
+    const value = this.configService.get<string>(key);
+    return typeof value === 'string' && value.trim() !== '' ? value : undefined;
   }
 }

@@ -10,7 +10,7 @@ function makeIdentity(externalId = 'ext_1'): NormalizedIdentity {
 }
 
 function makeRow(id: string, externalId: string): UserEntity {
-  return { id, authProvider: 'clerk', externalId, email: 'a@b.com' } as UserEntity;
+  return { id, authProvider: 'supabase', externalId, email: 'a@b.com' } as UserEntity;
 }
 
 describe('UserIdentityService', () => {
@@ -35,7 +35,7 @@ describe('UserIdentityService', () => {
   it('returns the existing internal id without creating', async () => {
     repo.findByExternal.mockResolvedValue(makeRow('user_existing', 'ext_1'));
 
-    const id = await service.resolve('clerk', makeIdentity());
+    const id = await service.resolve('supabase', makeIdentity());
 
     expect(id).toBe('user_existing');
     expect(repo.create).not.toHaveBeenCalled();
@@ -47,12 +47,12 @@ describe('UserIdentityService', () => {
       Promise.resolve(makeRow(id, 'ext_1')),
     );
 
-    const id = await service.resolve('clerk', makeIdentity());
+    const id = await service.resolve('supabase', makeIdentity());
 
     expect(id).toMatch(/^user_/);
     expect(repo.create).toHaveBeenCalledWith(
       expect.stringMatching(/^user_/),
-      'clerk',
+      'supabase',
       'ext_1',
       'a@b.com',
     );
@@ -64,7 +64,7 @@ describe('UserIdentityService', () => {
       .mockResolvedValueOnce(makeRow('user_winner', 'ext_1')); // post-conflict re-read
     repo.create.mockRejectedValue(new Error('duplicate key'));
 
-    const id = await service.resolve('clerk', makeIdentity());
+    const id = await service.resolve('supabase', makeIdentity());
 
     expect(id).toBe('user_winner');
   });
@@ -73,7 +73,7 @@ describe('UserIdentityService', () => {
     repo.findByExternal.mockResolvedValue(null);
     repo.create.mockRejectedValue(new Error('db down'));
 
-    await expect(service.resolve('clerk', makeIdentity())).rejects.toThrow(
+    await expect(service.resolve('supabase', makeIdentity())).rejects.toThrow(
       'db down',
     );
   });

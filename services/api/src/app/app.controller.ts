@@ -21,7 +21,7 @@ export class AppController {
   }
 
   /**
-   * Protected route (requires valid Clerk token)
+   * Protected route (requires a valid Supabase token)
    */
   @Get('protected')
   protected(@Request() req: ExpressRequest) {

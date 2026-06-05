@@ -11,7 +11,7 @@ export class LocationDto {
 
 /**
  * Client→gateway chat body. `movement_profile` is NOT a client field — the
- * gateway sources it from the verified Clerk token and injects it into the
+ * gateway sources it from the verified Supabase token and injects it into the
  * kebi-bound body. Identity travels in the X-Gateway-User-Id header.
  */
 export class ChatRequestBodyDto {

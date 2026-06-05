@@ -27,7 +27,7 @@ describe('SignalService', () => {
       place_core_id: 'c0ffee00-1111-2222-3333-444455556666',
     };
 
-    const result = await service.submit('user_clerk_123', dto);
+    const result = await service.submit('user_test_123', dto);
 
     expect(aiClient.postSignal).toHaveBeenCalledWith(
       {
@@ -35,7 +35,7 @@ describe('SignalService', () => {
         recommendation_id: 'rec_1',
         place_core_id: 'c0ffee00-1111-2222-3333-444455556666',
       },
-      'user_clerk_123'
+      'user_test_123'
     );
     expect(result).toEqual(body);
   });
@@ -49,11 +49,11 @@ describe('SignalService', () => {
       place_core_id: 'c0ffee00-2222-3333-4444-555566667777',
     };
 
-    await service.submit('user_clerk_456', dto);
+    await service.submit('user_test_456', dto);
 
     expect(aiClient.postSignal).toHaveBeenCalledWith(
       expect.objectContaining({ signal_type: 'recommendation_rejected' }),
-      'user_clerk_456'
+      'user_test_456'
     );
   });
 
@@ -62,7 +62,7 @@ describe('SignalService', () => {
     aiClient.postSignal.mockRejectedValueOnce(upstream);
 
     await expect(
-      service.submit('user_clerk_123', {
+      service.submit('user_test_123', {
         signal_type: 'recommendation_accepted',
         recommendation_id: 'bogus',
         place_core_id: 'c0ffee00-9999-0000-1111-222233334444',

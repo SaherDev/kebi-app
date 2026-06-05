@@ -9,7 +9,7 @@ import { ExtractService } from './extract.service';
  * Canonical place-extraction endpoint (kebi ADR-073). Facade (ADR-032) — one
  * service call. Synchronous; a cold video URL can take ~60s on kebi's side.
  *
- * POST /api/v1/extract — requires a valid Clerk token + AI enabled.
+ * POST /api/v1/extract — requires a valid Supabase token + AI enabled.
  */
 @Controller('extract')
 export class ExtractController {

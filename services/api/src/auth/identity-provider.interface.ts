@@ -3,7 +3,7 @@ import { NormalizedIdentity } from '@kebi-app/shared';
 /**
  * Interface for an authentication provider.
  * Abstracts token verification behind a provider-agnostic contract so the auth
- * provider (Clerk today) can be swapped via config without touching the request
+ * provider (Supabase today) can be swapped via config without touching the request
  * path. Mirrors the IAiServiceClient / AI_SERVICE_CLIENT reference pattern.
  *
  * Implementations contain ALL provider-specific knowledge (SDK calls, claim

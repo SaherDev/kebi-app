@@ -15,7 +15,7 @@ describe('UserController', () => {
   });
 
   describe('DELETE /user/data', () => {
-    const user: AuthUser = { id: 'user_clerk_123', ai_enabled: true };
+    const user: AuthUser = { id: 'user_test_123', ai_enabled: true };
 
     it('forwards undefined scopes when the query is empty', async () => {
       service.deleteData.mockResolvedValueOnce(undefined);
@@ -24,7 +24,7 @@ describe('UserController', () => {
       const result = await controller.deleteData(user, query);
 
       expect(service.deleteData).toHaveBeenCalledTimes(1);
-      expect(service.deleteData).toHaveBeenCalledWith('user_clerk_123', undefined);
+      expect(service.deleteData).toHaveBeenCalledWith('user_test_123', undefined);
       expect(result).toBeUndefined();
     });
 
@@ -34,7 +34,7 @@ describe('UserController', () => {
 
       await controller.deleteData(user, query);
 
-      expect(service.deleteData).toHaveBeenCalledWith('user_clerk_123', ['chat_history']);
+      expect(service.deleteData).toHaveBeenCalledWith('user_test_123', ['chat_history']);
     });
 
     it('forwards repeated scopes', async () => {
@@ -43,7 +43,7 @@ describe('UserController', () => {
 
       await controller.deleteData(user, query);
 
-      expect(service.deleteData).toHaveBeenCalledWith('user_clerk_123', ['chat_history', 'all']);
+      expect(service.deleteData).toHaveBeenCalledWith('user_test_123', ['chat_history', 'all']);
     });
   });
 });
