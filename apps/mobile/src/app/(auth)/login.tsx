@@ -168,9 +168,11 @@ export default function LoginScreen() {
             accessibilityRole="button"
             accessibilityLabel={t('auth.sendCode')}
             accessibilityState={{ disabled: sending }}
-            className={`flex-row items-center justify-center gap-2 rounded-card bg-text px-4 py-3.5 ${PRESS} ${
-              sending ? 'opacity-60' : ''
-            }`}
+            // Opacity via style (not a toggled className): NativeWind doesn't
+            // reliably clear a conditionally-removed `opacity-*` utility, which
+            // left the button stuck grey after a send.
+            style={{ opacity: sending ? 0.6 : 1 }}
+            className={`flex-row items-center justify-center gap-2 rounded-card bg-text px-4 py-3.5 ${PRESS}`}
           >
             <Text className="text-body font-semibold text-bg">
               {sending ? t('auth.sendingCode') : t('auth.sendCode')}
