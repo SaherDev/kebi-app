@@ -29,23 +29,23 @@ export default function LoginScreen() {
 
   const [identifier, setIdentifier] = useState('');
   const [sending, setSending] = useState(false);
-  // The exact value an in-flight send is for; the CTA is "busy" only while the
-  // input still equals it, so editing to anything else instantly re-enables the
-  // button even if the request never resolves (e.g. a hung/invalid number).
-  const [pendingValue, setPendingValue] = useState<string | null>(null);
   const [googleBusy, setGoogleBusy] = useState(false);
   // Inline message shown on-screen (no toasts on the auth screens).
   const [message, setMessage] = useState<{ text: string; tone: 'danger' | 'muted' } | null>(null);
   const inputRef = useRef<SmartInputHandle>(null);
   const scrollRef = useRef<ScrollView>(null);
+  // Live mirror of `identifier` so an in-flight send can detect that the user
+  // edited the field and ignore its now-stale result.
+  const identifierRef = useRef(identifier);
+  identifierRef.current = identifier;
   const channel = detectChannel(identifier);
-  const busy = sending && identifier === pendingValue;
 
-  // Editing the field dismisses any inline message (the CTA re-enables on its own
-  // once the value differs from the one being sent).
+  // Any edit returns the CTA to its normal (enabled, black) state immediately
+  // and clears the inline message — never leave the button stuck disabled.
   const handleChangeText = (text: string) => {
     setIdentifier(text);
     setMessage(null);
+    setSending(false);
   };
 
   // On focus, scroll the input + send button fully above the keyboard. The delay
@@ -56,7 +56,7 @@ export default function LoginScreen() {
   };
 
   const handleSend = async () => {
-    if (busy) return;
+    if (sending) return;
     setMessage(null);
     // Validate before firing a doomed request. Ambiguous/invalid email → just a
     // shake (kebi-auth-flow.md §Errors); a phone missing its country code gets a
@@ -74,9 +74,12 @@ export default function LoginScreen() {
       setMessage({ text: t('auth.invalidPhone'), tone: 'danger' });
       return;
     }
-    setPendingValue(identifier);
+    const sent = identifier;
     setSending(true);
-    const result = await requestOtp(identifier);
+    const result = await requestOtp(sent);
+    // The user edited the field while this was in flight — drop the stale result
+    // (handleChangeText already reset the button) instead of re-disabling it.
+    if (identifierRef.current !== sent) return;
     setSending(false);
     if (result.ok) {
       router.push('/verify');
@@ -161,18 +164,18 @@ export default function LoginScreen() {
           />
           <Pressable
             onPress={() => void handleSend()}
-            disabled={busy}
+            disabled={sending}
             accessibilityRole="button"
             accessibilityLabel={t('auth.sendCode')}
-            accessibilityState={{ disabled: busy }}
+            accessibilityState={{ disabled: sending }}
             className={`flex-row items-center justify-center gap-2 rounded-card bg-text px-4 py-3.5 ${PRESS} ${
-              busy ? 'opacity-60' : ''
+              sending ? 'opacity-60' : ''
             }`}
           >
             <Text className="text-body font-semibold text-bg">
-              {busy ? t('auth.sendingCode') : t('auth.sendCode')}
+              {sending ? t('auth.sendingCode') : t('auth.sendCode')}
             </Text>
-            {!busy && <Icon name="arrow-right" size={14} className="text-bg" />}
+            {!sending && <Icon name="arrow-right" size={14} className="text-bg" />}
           </Pressable>
         </View>
 
