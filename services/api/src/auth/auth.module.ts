@@ -15,6 +15,8 @@ import { NoopMetadataWriter } from './providers/noop-metadata.writer';
 import { SupabaseMetadataWriter } from './providers/supabase-metadata.writer';
 import { UserIdentityRepository } from './user-identity.repository';
 import { UserIdentityService } from './user-identity.service';
+import { AuthController } from './auth.controller';
+import { AuthService } from './auth.service';
 
 const DEFAULT_PROVIDER = 'supabase';
 
@@ -26,6 +28,7 @@ const DEFAULT_PROVIDER = 'supabase';
  */
 @Module({
   imports: [HttpModule],
+  controllers: [AuthController],
   providers: [
     AppMetadataCipher,
     SupabaseIdentityProvider,
@@ -33,6 +36,7 @@ const DEFAULT_PROVIDER = 'supabase';
     SupabaseMetadataWriter,
     UserIdentityRepository,
     UserIdentityService,
+    AuthService,
     {
       provide: IDENTITY_PROVIDER,
       inject: [ConfigService, SupabaseIdentityProvider],

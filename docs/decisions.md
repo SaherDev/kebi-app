@@ -17,6 +17,16 @@ Format:
 
 ---
 
+## ADR-044: Client is blind to identity — session and user data stay server-side
+
+**Date:** 2026-06-06\
+**Status:** accepted\
+**Context:** With Supabase Auth in place (ADR-042), we have to decide how much the client app knows about the authenticated user. If the app can read the session object and user/profile fields, identity logic spreads across the client, the UI starts trusting client-held values, and screens couple to auth internals — all of which weaken the rule that the server is authoritative over identity.\
+**Decision:** The client stays blind to identity. It never reads the session object or any user data. It holds only (1) an opaque bearer credential, managed by the auth SDK and read in exactly one place — the API layer — solely to attach to requests, and (2) a coarse auth *status* (loading / authenticated / unauthenticated) used for routing. All identity is server-side: the gateway owns the internal user id and product/user data; the provider's external id and the gateway's internal id never reach the client. Provisioning a user is a server concern — the client triggers it on sign-in via a dedicated endpoint that returns no user data — not something the client computes or inspects.\
+**Consequences:** The mobile auth context exposes status + actions only, never the session. UI cannot branch on user fields locally; anything user-specific must arrive in a server response intended for that purpose. The token lives behind the API client's getter as a credential, not as app state. Identity stays authoritative on the server and the client remains thin and auditable.
+
+---
+
 ## ADR-043: Haptics governed by a single required map
 
 **Date:** 2026-06-04\

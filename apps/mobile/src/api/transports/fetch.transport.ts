@@ -56,6 +56,11 @@ export class FetchClient implements HttpClient {
       throw new HttpError(res.status, res.statusText, await this.errorBody(res));
     }
 
+    // 204 No Content (e.g. the provisioning call) has no body to parse.
+    if (res.status === 204) {
+      return undefined as T;
+    }
+
     return res.json();
   }
 

@@ -9,8 +9,10 @@ import {
 } from 'react';
 import * as WebBrowser from 'expo-web-browser';
 import * as Linking from 'expo-linking';
-import type { AuthError, Session } from '@supabase/supabase-js';
+import type { AuthError } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
+import { createApiClient } from '../api/client';
+import { API_ROUTES } from '../api/routes';
 import { detectChannel } from './detect-channel';
 import { AUTH } from './constants';
 
@@ -44,7 +46,8 @@ export type AuthResult = { ok: true } | { ok: false; reason: AuthErrorReason };
 type AuthStatus = 'loading' | 'authenticated' | 'unauthenticated';
 
 interface AuthContextValue {
-  session: Session | null;
+  /** Only an auth *status* is exposed — never the session or any user data
+   *  (ADR-044: the client stays blind to identity). */
   status: AuthStatus;
   pendingOtp: PendingOtp | null;
   /** Send an OTP to an email or phone (channel auto-detected). Sets pendingOtp on success. */
@@ -60,6 +63,16 @@ interface AuthContextValue {
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
+
+/**
+ * Pulls the current access token for the Authorization header. This is the only
+ * place the opaque credential is read; the session object and user data are
+ * never surfaced to the app (ADR-044: the client stays blind to identity).
+ */
+async function getAccessToken(): Promise<string> {
+  const { data } = await supabase.auth.getSession();
+  return data.session?.access_token ?? '';
+}
 
 /** Strip spaces/dashes/parens so the value is closer to E.164 for Supabase. */
 function normalizePhone(value: string): string {
@@ -85,23 +98,30 @@ function reasonFromError(error: AuthError | null): AuthErrorReason {
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [session, setSession] = useState<Session | null>(null);
   const [status, setStatus] = useState<AuthStatus>('loading');
   const [pendingOtp, setPendingOtp] = useState<PendingOtp | null>(null);
 
   useEffect(() => {
     let mounted = true;
+    // Derive auth status only — the session object never enters app state.
     supabase.auth.getSession().then(({ data }) => {
-      if (!mounted) return;
-      setSession(data.session);
-      setStatus(data.session ? 'authenticated' : 'unauthenticated');
+      if (mounted) setStatus(data.session ? 'authenticated' : 'unauthenticated');
     });
-    // Claim-first note: the gateway lazy-stamps internal_id/plan into the token's
-    // app_metadata on the first authenticated request and falls back to the DB
-    // when the claim is absent, so auth is correct without a client refresh here.
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, next) => {
-      setSession(next);
-      setStatus(next ? 'authenticated' : 'unauthenticated');
+
+    const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
+      setStatus(session ? 'authenticated' : 'unauthenticated');
+      // Provision the product user on sign-in: POST /auth/login makes the gateway
+      // create our internal User row (first sign-in) and stamp internal_id into
+      // the token; refreshSession then pulls the new claim. Event-driven — the
+      // app reads neither the session nor user data; the token is fetched only as
+      // the Bearer credential. refreshSession emits TOKEN_REFRESHED (not
+      // SIGNED_IN), so this never loops.
+      if (event === 'SIGNED_IN') {
+        createApiClient(getAccessToken)
+          .post(API_ROUTES.login, {})
+          .then(() => supabase.auth.refreshSession())
+          .catch(() => undefined);
+      }
     });
     return () => {
       mounted = false;
@@ -198,7 +218,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo<AuthContextValue>(
     () => ({
-      session,
       status,
       pendingOtp,
       requestOtp,
@@ -208,7 +227,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       signOut,
       clearPendingOtp,
     }),
-    [session, status, pendingOtp, requestOtp, verifyOtp, resendOtp, signInWithGoogle, signOut, clearPendingOtp],
+    [status, pendingOtp, requestOtp, verifyOtp, resendOtp, signInWithGoogle, signOut, clearPendingOtp],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

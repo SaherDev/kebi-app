@@ -37,19 +37,20 @@ SplashScreen.preventAutoHideAsync();
  * effect under the boot splash, so there's no flash.
  */
 function AuthGate() {
-  const { status, session } = useAuth();
+  // Routes by auth *status* only — the app never sees the session or user data.
+  const { status } = useAuth();
   const segments = useSegments();
   const router = useRouter();
 
   useEffect(() => {
     if (status === "loading") return;
     const inAuthGroup = segments[0] === "(auth)";
-    if (!session && !inAuthGroup) {
+    if (status === "unauthenticated" && !inAuthGroup) {
       router.replace("/login");
-    } else if (session && inAuthGroup) {
+    } else if (status === "authenticated" && inAuthGroup) {
       router.replace("/");
     }
-  }, [status, session, segments, router]);
+  }, [status, segments, router]);
 
   return null;
 }

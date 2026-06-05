@@ -7,32 +7,33 @@ import {
 } from '@nestjs/common';
 import { Request, Response, NextFunction } from 'express';
 import { ConfigService } from '@nestjs/config';
-import { AuthUser, PlanTier } from '@kebi-app/shared';
+import { AuthUser, NormalizedIdentity } from '@kebi-app/shared';
 import { IDENTITY_PROVIDER } from '../../auth/identity-provider.interface';
 import type { IdentityProvider } from '../../auth/identity-provider.interface';
-import { IDENTITY_METADATA_WRITER } from '../../auth/identity-metadata.writer';
-import type { IdentityMetadataWriter } from '../../auth/identity-metadata.writer';
-import { UserIdentityService } from '../../auth/user-identity.service';
 
 declare global {
   // eslint-disable-next-line @typescript-eslint/no-namespace
   namespace Express {
     interface Request {
       user?: AuthUser;
+      /** The verified provider identity (externalId, email, claims). Used by
+       *  the provisioning endpoint; never forwarded to kebi. */
+      identity?: NormalizedIdentity;
     }
   }
 }
 
 /**
- * Authentication middleware. Verifies the bearer token via the configured
- * IdentityProvider (provider-agnostic) and attaches the resolved AuthUser to the
- * request. Provider-specific verification lives entirely behind the injected
- * IdentityProvider — this middleware contains no SDK knowledge.
+ * Authentication middleware — verify and move on. It verifies the bearer token
+ * via the configured IdentityProvider (provider-agnostic, no SDK knowledge here)
+ * and attaches the verified identity to the request: `req.user` (claim-first —
+ * `id` is the stamped `internal_id` claim, forwarded to kebi) and `req.identity`
+ * (the raw provider identity, used by `POST /auth/login` to provision).
  *
- * Identity value: the stable internal id is resolved claim-first (read from the
- * signed `internal_id` token claim → no DB) with a one-time DB fallback for
- * users not yet stamped. That internal id is what gets forwarded to kebi as
- * `X-Gateway-User-Id` — the provider's `externalId` never leaves the gateway.
+ * It does NOT touch the DB or write token metadata — creating the internal user
+ * and stamping `internal_id` is the explicit job of the provisioning endpoint
+ * (AuthService), run once on sign-in. The provider's `externalId` never leaves
+ * the gateway.
  */
 @Injectable()
 export class AuthMiddleware implements NestMiddleware {
@@ -41,9 +42,6 @@ export class AuthMiddleware implements NestMiddleware {
   constructor(
     private configService: ConfigService,
     @Inject(IDENTITY_PROVIDER) private readonly provider: IdentityProvider,
-    @Inject(IDENTITY_METADATA_WRITER)
-    private readonly metadataWriter: IdentityMetadataWriter,
-    private readonly userIdentity: UserIdentityService,
   ) {}
 
   async use(req: Request, res: Response, next: NextFunction) {
@@ -101,30 +99,13 @@ export class AuthMiddleware implements NestMiddleware {
         identity.claims.ai_enabled ??
         this.configService.get<boolean>('ai.enabled_default', true);
 
-      // Claim-first: the stamped `internal_id` claim avoids a DB hit. Fallback
-      // (not-yet-stamped user / pre-refresh window): resolve once (creating the
-      // mapping row), then stamp the provider's token metadata so the next
-      // refreshed token carries the claim and later requests stay DB-free. The
-      // stamp is a no-op for providers that stamp token metadata out-of-band.
-      // This internal id is forwarded to kebi — externalId never leaves here.
-      let id = identity.claims.internal_id;
-      if (id === undefined) {
-        id = await this.userIdentity.resolve(this.provider.name, identity);
-        const plan =
-          identity.claims.plan ??
-          this.configService.get<PlanTier>('rate_limits.default_plan');
-        await this.metadataWriter.stamp(identity.externalId, {
-          internal_id: id,
-          ai_enabled: aiEnabled,
-          ...(plan !== undefined && { plan }),
-          ...(identity.claims.movement_profile !== undefined && {
-            movement_profile: identity.claims.movement_profile,
-          }),
-        });
-      }
-
+      // Verify and move on: attach the raw identity (for provisioning) and the
+      // claim-first AuthUser. `id` is the stamped `internal_id` claim — present
+      // once the user has signed in (POST /auth/login) and the token refreshed.
+      // No DB read, no metadata write here.
+      req.identity = identity;
       req.user = {
-        id,
+        id: identity.claims.internal_id ?? '',
         ai_enabled: aiEnabled,
         ...(identity.claims.plan !== undefined && { plan: identity.claims.plan }),
         ...(identity.claims.movement_profile !== undefined && {

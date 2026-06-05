@@ -4,4 +4,6 @@
  */
 export const API_ROUTES = {
   health: '/health',
+  /** Provisions the user on sign-in (first authenticated call) — creates the product user server-side. */
+  login: '/auth/login',
 } as const;
