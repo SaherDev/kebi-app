@@ -39,7 +39,8 @@
           "root": "./src/app"
         }
       ],
-      "expo-localization"
+      "expo-localization",
+      "expo-web-browser"
     ]
   }
 }

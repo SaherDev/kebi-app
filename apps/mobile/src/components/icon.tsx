@@ -23,13 +23,16 @@ export type IconName =
   | 'edit'
   | 'ellipsis'
   | 'chevron-right'
+  | 'arrow-right'
   | 'check'
   | 'plus'
   | 'pin'
   | 'copy'
   | 'eye'
   | 'trash'
-  | 'alert';
+  | 'alert'
+  | 'mail'
+  | 'phone';
 
 // Path data verbatim from docs/kebi-app-design-system mockups (top-bar icons)
 // and kebi-tokens-mockup.html §15. viewBox 0 0 24 24, 1.8px stroke, fill none —
@@ -65,6 +68,13 @@ const ICONS: Record<IconName, ReactNode> = {
   ),
   edit: <Path d="M12 20h9M16.5 3.5a2.12 2.12 0 113 3L7 19l-4 1 1-4z" />,
   'chevron-right': <Polyline points="9 6 15 12 9 18" />,
+  // Full arrow → for forward CTAs (the login send-code button).
+  'arrow-right': (
+    <>
+      <Line x1={5} y1={12} x2={19} y2={12} />
+      <Polyline points="12 5 19 12 12 19" />
+    </>
+  ),
   check: <Polyline points="20 6 9 17 4 12" />,
   plus: (
     <>
@@ -110,6 +120,16 @@ const ICONS: Record<IconName, ReactNode> = {
       <Line x1={12} y1={8} x2={12} y2={12} />
       <Line x1={12} y1={16} x2={12.01} y2={16} />
     </>
+  ),
+  // Smart-input meta hints (kebi-login-email-mockup.html `.input-meta`).
+  mail: (
+    <>
+      <Path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+      <Polyline points="22 6 12 13 2 6" />
+    </>
+  ),
+  phone: (
+    <Path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.13.96.36 1.9.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0122 16.92z" />
   ),
 };
 

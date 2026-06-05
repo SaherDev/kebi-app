@@ -28,6 +28,9 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: false,
+    // PKCE so Google OAuth returns a `code` we exchange for a session
+    // (exchangeCodeForSession) — the secure mobile/native OAuth flow.
+    flowType: "pkce",
   },
 });
 

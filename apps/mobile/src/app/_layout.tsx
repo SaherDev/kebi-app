@@ -17,7 +17,7 @@ import {
 
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
-import { Stack } from "expo-router";
+import { Stack, useRouter, useSegments } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useColorScheme } from "nativewind";
 import { useEffect, useState } from "react";
@@ -26,9 +26,33 @@ import { I18nProvider } from "../i18n/context";
 import { ToastProvider } from "../components/toast-context";
 import { ContextMenuProvider } from "../components/context-menu/context-menu-context";
 import { Splash } from "../components/splash";
+import { AuthProvider, useAuth } from "../auth/auth-context";
 
 // Keep the splash visible until the Inter weights are loaded.
 SplashScreen.preventAutoHideAsync();
+
+/**
+ * Route guard. Once auth state resolves, sends signed-out users to the login
+ * group and signed-in users out of it. Renders nothing — the redirect runs in an
+ * effect under the boot splash, so there's no flash.
+ */
+function AuthGate() {
+  const { status, session } = useAuth();
+  const segments = useSegments();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (status === "loading") return;
+    const inAuthGroup = segments[0] === "(auth)";
+    if (!session && !inAuthGroup) {
+      router.replace("/login");
+    } else if (session && inAuthGroup) {
+      router.replace("/");
+    }
+  }, [status, session, segments, router]);
+
+  return null;
+}
 
 export default function RootLayout() {
   const { colorScheme } = useColorScheme();
@@ -57,18 +81,22 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <I18nProvider>
         <SafeAreaProvider>
-          {/* ContextMenuProvider wraps Toast so a long-press overlay (and its
-              frosted blur) renders above the app but below toasts. */}
-          <ContextMenuProvider>
-            <ToastProvider>
-              <StatusBar style={colorScheme === "dark" ? "light" : "dark"} />
-              {/* Native header off — every screen renders the custom TopBar instead. */}
-              <Stack screenOptions={{ headerShown: false }} />
-              {/* Above the Stack, matching --bg, so the native splash hands off
-                  without a flash; fades out to reveal home, then unmounts. */}
-              {!splashDone && <Splash onDone={() => setSplashDone(true)} />}
-            </ToastProvider>
-          </ContextMenuProvider>
+          <AuthProvider>
+            {/* ContextMenuProvider wraps Toast so a long-press overlay (and its
+                frosted blur) renders above the app but below toasts. */}
+            <ContextMenuProvider>
+              <ToastProvider>
+                <StatusBar style={colorScheme === "dark" ? "light" : "dark"} />
+                {/* Redirects between the login group and the app once auth resolves. */}
+                <AuthGate />
+                {/* Native header off — every screen renders the custom TopBar instead. */}
+                <Stack screenOptions={{ headerShown: false }} />
+                {/* Above the Stack, matching --bg, so the native splash hands off
+                    without a flash; fades out to reveal home, then unmounts. */}
+                {!splashDone && <Splash onDone={() => setSplashDone(true)} />}
+              </ToastProvider>
+            </ContextMenuProvider>
+          </AuthProvider>
         </SafeAreaProvider>
       </I18nProvider>
     </GestureHandlerRootView>

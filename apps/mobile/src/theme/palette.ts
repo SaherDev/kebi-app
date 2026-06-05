@@ -30,6 +30,23 @@ export const MASCOT = {
 } as const;
 
 /**
+ * Brand-mark colors for third-party sign-in glyphs. These are the one allowed
+ * hex exception in component-land: the Google mark is a fixed 4-color logo that
+ * must not track the theme (brand-guideline requirement), so it can't be a
+ * semantic token. Apple's mark instead uses `currentColor` (tracks `--text`) and
+ * needs no entry here. Values verbatim from the login mockup SVG
+ * (docs/kebi-app-design-system/kebi-login-mockup.html).
+ */
+export const BRAND = {
+  google: {
+    blue:   '#4285F4',
+    green:  '#34A853',
+    yellow: '#FBBC05',
+    red:    '#EA4335',
+  },
+} as const;
+
+/**
  * Scrim overlay opacity behind bottom sheets, modals.
  * Light: 0.45 · Dark: 0.55 (slightly more opaque against the near-black bg).
  * Usage: `<View style={{ ...StyleSheet.absoluteFillObject, backgroundColor: 'black', opacity: SCRIM.light }}>`

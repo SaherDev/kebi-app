@@ -35,5 +35,38 @@
   "toast": {
     "undo": "undo",
     "removed": "{{name}} removed"
+  },
+  "auth": {
+    "introLead": "save places from tiktok, instagram, wherever. tell me what you want — i find the match.",
+    "introMuted": "no filter panels. one answer. learns your taste.",
+    "continueGoogle": "continue with google",
+    "continueApple": "continue with apple",
+    "divider": "or",
+    "inputPlaceholder": "email or phone number",
+    "looksLikeEmail": "looks like an email",
+    "looksLikePhone": "looks like a phone number",
+    "invalidPhone": "add your country code (e.g. +1…)",
+    "sendCode": "send me a code",
+    "sendingCode": "sending…",
+    "legalPrefix": "by continuing you agree to the",
+    "legalAnd": "and",
+    "terms": "terms",
+    "privacy": "privacy",
+    "soon": "soon",
+    "signOut": "sign out",
+    "checkEmail": "check your email",
+    "checkMessages": "check your messages",
+    "sentCodeTo": "sent a 6-digit code to",
+    "wrongEmail": "wrong email?",
+    "wrongNumber": "wrong number?",
+    "changeIt": "change it",
+    "didntGetIt": "didn't get it?",
+    "resendInLabel": "resend in",
+    "resendCta": "resend",
+    "codeResent": "sent a new code",
+    "errWrongCode": "that's not the code",
+    "errExpired": "code expired — tap resend",
+    "errTooMany": "too many tries — wait a minute",
+    "errNetwork": "couldn't reach us — try again"
   }
 }

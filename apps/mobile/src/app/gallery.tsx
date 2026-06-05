@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ScrollView, View, Text, Pressable } from 'react-native';
 import { useColorScheme } from 'nativewind';
 import { ScreenScaffold } from '../components/screen-scaffold';
@@ -12,6 +12,12 @@ import { PlaceCard } from '../components/place-card';
 import { PlaceChip } from '../components/place-chip';
 import { Mascot } from '../components/mascot';
 import { Splash } from '../components/splash';
+import { SocialButton } from '../components/auth/social-button';
+import { AuthDivider } from '../components/auth/auth-divider';
+import { SmartInput, type SmartInputHandle } from '../components/auth/smart-input';
+import { OtpInput } from '../components/auth/otp-input';
+import { GoogleGlyph, AppleGlyph } from '../components/auth/brand-glyphs';
+import { detectChannel } from '../auth/detect-channel';
 import { KebiFab } from '../components/kebi-fab';
 import { ReasoningBlock, type ReasoningBlockStep } from '../components/reasoning-block';
 import { ActionSheet } from '../components/action-sheet';
@@ -77,6 +83,44 @@ function ContextMenuDemo() {
         items={items}
         closeLabel="close"
       />
+    </View>
+  );
+}
+
+// Auth primitives demo — the login social group, divider, and smart input. The
+// smart input is interactive (type to flip the meta hint email↔phone) and a
+// button triggers the invalid-submit shake. Demo labels are dev-only strings.
+function AuthDemo() {
+  const [value, setValue] = useState('');
+  const inputRef = useRef<SmartInputHandle>(null);
+  const channel = detectChannel(value);
+  return (
+    <View className="gap-4">
+      <View className="gap-1 rounded-large bg-surface p-1.5">
+        <SocialButton glyph={<GoogleGlyph />} label="continue with google" />
+        <SocialButton glyph={<AppleGlyph />} label="continue with apple" />
+      </View>
+      <AuthDivider label="or" />
+      <SmartInput
+        ref={inputRef}
+        value={value}
+        onChangeText={setValue}
+        channel={channel}
+        placeholder="email or phone number"
+        emailHint="looks like an email"
+        phoneHint="looks like a phone number"
+      />
+      <View className="flex-row items-center justify-between">
+        <Text className="text-small text-text-muted">detected: {channel}</Text>
+        <Pressable
+          onPress={() => inputRef.current?.shake()}
+          className="rounded-medium bg-surface-2 px-3 py-1.5"
+        >
+          <Text className="text-small font-medium text-text">trigger shake</Text>
+        </Pressable>
+      </View>
+      <Text className="text-eyebrow uppercase text-text-soft">otp boxes</Text>
+      <OtpInput onComplete={() => undefined} autoFocus={false} />
     </View>
   );
 }
@@ -259,6 +303,10 @@ export default function GalleryScreen() {
             <StatusPill variant="amber">approve?</StatusPill>
             <StatusPill variant="danger">closed</StatusPill>
           </View>
+        </Section>
+
+        <Section title="Auth — login social buttons, divider, smart input">
+          <AuthDemo />
         </Section>
 
         <Section title="Buttons">

@@ -139,6 +139,19 @@ export const SPLASH = {
 } as const;
 
 /**
+ * Invalid-input shake — the quick horizontal wiggle played on a rejected submit
+ * (e.g. the login smart input with ambiguous text). Offsets are fed to
+ * `withSequence(...withTiming(offset, { duration: stepMs }))`; the accompanying
+ * red border is held separately for AUTH.invalidShakeMs (src/auth/constants.ts).
+ */
+export const SHAKE = {
+  /** Horizontal offsets (px), ending at 0 so the field settles back in place. */
+  offsets: [-8, 8, -6, 6, -4, 0],
+  /** Per-step duration (ms). */
+  stepMs: 50,
+} as const;
+
+/**
  * Toast auto-dismiss durations.
  */
 export const TOAST_DISMISS_MS = {
