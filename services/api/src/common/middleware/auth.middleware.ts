@@ -7,7 +7,7 @@ import {
 } from '@nestjs/common';
 import { Request, Response, NextFunction } from 'express';
 import { ConfigService } from '@nestjs/config';
-import { AuthUser, NormalizedIdentity } from '@kebi-app/shared';
+import { AuthUser, IdentityClaims, NormalizedIdentity } from '@kebi-app/shared';
 import { IDENTITY_PROVIDER } from '../../auth/identity-provider.interface';
 import type { IdentityProvider } from '../../auth/identity-provider.interface';
 import { AuthenticatedUser } from '../../auth/authenticated-user';
@@ -24,115 +24,125 @@ declare global {
   }
 }
 
+const BEARER_PREFIX = 'Bearer ';
+
 /**
  * Authentication middleware — verify and move on. It verifies the bearer token
  * via the configured IdentityProvider (provider-agnostic, no SDK knowledge here)
- * and attaches the verified identity to the request: `req.user` (claim-first —
- * `id` is the stamped `internal_id` claim, forwarded to kebi) and `req.identity`
- * (the raw provider identity, used by `POST /auth/login` to provision).
+ * and attaches the verified identity to the request: `req.user` (the provisioned
+ * principal, whose values are read straight from the stamped token claims) and
+ * `req.identity` (the raw provider identity, used by `POST /auth/login`).
  *
- * It does NOT touch the DB or write token metadata — creating the internal user
- * and stamping `internal_id` is the explicit job of the provisioning endpoint
- * (AuthService), run once on sign-in. The provider's `externalId` never leaves
- * the gateway.
+ * It never touches the DB, writes token metadata, or fabricates defaults —
+ * user_settings is the source of truth (ADR-045) and provisioning (AuthService)
+ * is what stamps it into the token. A token that isn't provisioned yet may reach
+ * only the provisioning route; anything else is rejected.
  */
 @Injectable()
 export class AuthMiddleware implements NestMiddleware {
   private readonly logger = new Logger('AuthMiddleware');
 
   constructor(
-    private configService: ConfigService,
+    private readonly configService: ConfigService,
     @Inject(IDENTITY_PROVIDER) private readonly provider: IdentityProvider,
   ) {}
 
-  async use(req: Request, res: Response, next: NextFunction) {
-    // Skip auth for public routes (by path pattern). Middleware runs before
-    // routing, so we match paths instead of decorators.
-    const publicPaths = this.configService.get<string[]>('auth.public_paths', [
-      '/health',
-    ]);
-    // originalUrl includes the global prefix (e.g. /api/v1/health) but
-    // public_paths are prefix-relative (e.g. /health), so strip the configured
-    // prefix before matching. Without this, no public path ever matches.
-    const apiPrefix = this.configService.get<string>('app.api_prefix', '');
-    const normalizedPrefix = apiPrefix
-      ? `/${apiPrefix.replace(/^\/+|\/+$/g, '')}`
-      : '';
-    const fullPath = (req.originalUrl || req.url || '').split('?')[0];
-    const requestUrl =
-      normalizedPrefix && fullPath.startsWith(normalizedPrefix)
-        ? fullPath.slice(normalizedPrefix.length) || '/'
-        : fullPath;
-    if (
-      publicPaths.some(
-        (path) => requestUrl === path || requestUrl.startsWith(path + '/'),
-      )
-    ) {
+  async use(req: Request, res: Response, next: NextFunction): Promise<void> {
+    const path = this.relativePath(req);
+    if (this.matchesConfigured('auth.public_paths', ['/health'], path)) {
       return next();
     }
 
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    const token = this.bearerToken(req);
+
+    const bypassUser = this.devBypassUser(token);
+    if (bypassUser) {
+      req.user = bypassUser;
+      return next();
+    }
+
+    const identity = await this.verifyToken(token);
+    req.identity = identity;
+
+    // A provisioned token carries internal_id → attach the principal from its
+    // stamped claims. Not yet provisioned → only the provisioning route may pass
+    // (it creates the user + stamps the token); everything else fails.
+    if (identity.claims.internal_id !== undefined) {
+      req.user = this.toAuthUser(identity.claims);
+      return next();
+    }
+    if (this.matchesConfigured('auth.provisioning_paths', ['/auth/login'], path)) {
+      return next();
+    }
+    throw new UnauthorizedException('User not provisioned');
+  }
+
+  /** Request path with the global api prefix stripped, so config paths can be
+   *  written prefix-relative (e.g. `/health`, not `/api/v1/health`). */
+  private relativePath(req: Request): string {
+    const prefix = this.configService.get<string>('app.api_prefix', '');
+    const normalized = prefix ? `/${prefix.replace(/^\/+|\/+$/g, '')}` : '';
+    const full = (req.originalUrl || req.url || '').split('?')[0];
+    return normalized && full.startsWith(normalized)
+      ? full.slice(normalized.length) || '/'
+      : full;
+  }
+
+  /** True when `path` matches any entry of the configured list (exact or as a
+   *  leading path segment). */
+  private matchesConfigured(key: string, fallback: string[], path: string): boolean {
+    const paths = this.configService.get<string[]>(key, fallback);
+    return paths.some((p) => path === p || path.startsWith(p + '/'));
+  }
+
+  /** Extract the bearer token, or reject. */
+  private bearerToken(req: Request): string {
+    const header = req.headers.authorization;
+    if (!header || !header.startsWith(BEARER_PREFIX)) {
       this.logger.warn(`Unauthorized access attempt to ${req.method} ${req.path}`);
       throw new UnauthorizedException('Missing or invalid Authorization header');
     }
+    return header.slice(BEARER_PREFIX.length);
+  }
 
-    const token = authHeader.substring(7); // Remove 'Bearer ' prefix
-
-    // Dev bypass: allow a static token for local testing (never enabled in production)
-    const isProd =
-      this.configService.get<string>('app.environment') === 'production';
-    const bypassEnabled =
-      this.configService.get<string>('APP_DEV_BYPASS_ENABLED') === 'true';
+  /** Local-only static-token bypass for testing — never active in production.
+   *  Returns the synthetic principal, or null when the bypass doesn't apply. */
+  private devBypassUser(token: string): AuthenticatedUser | null {
+    const isProd = this.configService.get<string>('app.environment') === 'production';
+    const enabled = this.configService.get<string>('APP_DEV_BYPASS_ENABLED') === 'true';
     const bypassToken = this.configService.get<string>('DEV_BYPASS_TOKEN');
     const bypassUserId = this.configService.get<string>('DEV_BYPASS_USER_ID');
-    if (!isProd && bypassEnabled && bypassToken && token === bypassToken && bypassUserId) {
-      req.user = new AuthenticatedUser({ id: bypassUserId, ai_enabled: true });
-      this.logger.warn(`Dev bypass auth used for user ${bypassUserId} — never enable in production`);
-      return next();
+    if (isProd || !enabled || !bypassToken || !bypassUserId || token !== bypassToken) {
+      return null;
     }
+    this.logger.warn(`Dev bypass auth used for user ${bypassUserId} — never enable in production`);
+    return new AuthenticatedUser({ id: bypassUserId, ai_enabled: true });
+  }
 
-    let identity;
+  /** Verify the token via the provider, mapping any failure to a 401. */
+  private async verifyToken(token: string): Promise<NormalizedIdentity> {
     try {
-      identity = await this.provider.verify(token);
+      return await this.provider.verify(token);
     } catch (error) {
       this.logger.error(
         `Token verification failed: ${error instanceof Error ? error.message : String(error)}`,
       );
       throw new UnauthorizedException('Invalid or expired token');
     }
-
-    req.identity = identity;
-    const { internal_id, ai_enabled, plan, movement_profile } = identity.claims;
-
-    // Provisioned tokens carry the stamped identity — internal_id + the product
-    // claims sourced from user_settings (ADR-045). Attach them straight from the
-    // token, no defaults. The values are the source of truth; the gateway never
-    // fills them in.
-    if (internal_id !== undefined) {
-      if (ai_enabled === undefined) {
-        throw new UnauthorizedException('Token is missing product claims');
-      }
-      req.user = new AuthenticatedUser({ id: internal_id, ai_enabled, plan, movement_profile });
-      return next();
-    }
-
-    // Not provisioned yet (no internal_id). Only the provisioning endpoint may
-    // proceed — it creates the user + stamps the token. Everything else fails:
-    // we never run a request with a placeholder identity.
-    const provisioningPaths = this.configService.get<string[]>(
-      'auth.provisioning_paths',
-      ['/auth/login'],
-    );
-    if (this.matchesPath(provisioningPaths, requestUrl)) {
-      return next();
-    }
-    throw new UnauthorizedException('User not provisioned');
   }
 
-  /** Prefix-relative path match (exact or as a path segment), shared by public
-   *  and provisioning path checks. */
-  private matchesPath(paths: string[], url: string): boolean {
-    return paths.some((path) => url === path || url.startsWith(path + '/'));
+  /** Build the principal from a provisioned token's claims. The product claims
+   *  are stamped together from user_settings, so a provisioned token missing
+   *  them is corrupt — reject rather than default. */
+  private toAuthUser(claims: IdentityClaims): AuthenticatedUser {
+    if (claims.internal_id === undefined || claims.ai_enabled === undefined) {
+      throw new UnauthorizedException('Token is missing required claims');
+    }
+    return new AuthenticatedUser({
+      id: claims.internal_id,
+      ai_enabled: claims.ai_enabled,
+      plan: claims.plan,
+      movement_profile: claims.movement_profile,
+    });
   }
 }
