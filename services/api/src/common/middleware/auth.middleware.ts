@@ -10,6 +10,7 @@ import { ConfigService } from '@nestjs/config';
 import { AuthUser, NormalizedIdentity } from '@kebi-app/shared';
 import { IDENTITY_PROVIDER } from '../../auth/identity-provider.interface';
 import type { IdentityProvider } from '../../auth/identity-provider.interface';
+import { AuthenticatedUser } from '../../auth/authenticated-user';
 
 declare global {
   // eslint-disable-next-line @typescript-eslint/no-namespace
@@ -86,39 +87,52 @@ export class AuthMiddleware implements NestMiddleware {
     const bypassToken = this.configService.get<string>('DEV_BYPASS_TOKEN');
     const bypassUserId = this.configService.get<string>('DEV_BYPASS_USER_ID');
     if (!isProd && bypassEnabled && bypassToken && token === bypassToken && bypassUserId) {
-      const aiEnabledDefault = this.configService.get<boolean>('user_settings.defaults.ai_enabled', true);
-      req.user = { id: bypassUserId, ai_enabled: aiEnabledDefault } satisfies AuthUser;
+      req.user = new AuthenticatedUser({ id: bypassUserId, ai_enabled: true });
       this.logger.warn(`Dev bypass auth used for user ${bypassUserId} — never enable in production`);
       return next();
     }
 
+    let identity;
     try {
-      const identity = await this.provider.verify(token);
-
-      const aiEnabled =
-        identity.claims.ai_enabled ??
-        this.configService.get<boolean>('user_settings.defaults.ai_enabled', true);
-
-      // Verify and move on: attach the raw identity (for provisioning) and the
-      // claim-first AuthUser. `id` is the stamped `internal_id` claim — present
-      // once the user has signed in (POST /auth/login) and the token refreshed.
-      // No DB read, no metadata write here.
-      req.identity = identity;
-      req.user = {
-        id: identity.claims.internal_id ?? '',
-        ai_enabled: aiEnabled,
-        ...(identity.claims.plan !== undefined && { plan: identity.claims.plan }),
-        ...(identity.claims.movement_profile !== undefined && {
-          movement_profile: identity.claims.movement_profile,
-        }),
-      };
-
-      next();
+      identity = await this.provider.verify(token);
     } catch (error) {
       this.logger.error(
         `Token verification failed: ${error instanceof Error ? error.message : String(error)}`,
       );
       throw new UnauthorizedException('Invalid or expired token');
     }
+
+    req.identity = identity;
+    const { internal_id, ai_enabled, plan, movement_profile } = identity.claims;
+
+    // Provisioned tokens carry the stamped identity — internal_id + the product
+    // claims sourced from user_settings (ADR-045). Attach them straight from the
+    // token, no defaults. The values are the source of truth; the gateway never
+    // fills them in.
+    if (internal_id !== undefined) {
+      if (ai_enabled === undefined) {
+        throw new UnauthorizedException('Token is missing product claims');
+      }
+      req.user = new AuthenticatedUser({ id: internal_id, ai_enabled, plan, movement_profile });
+      return next();
+    }
+
+    // Not provisioned yet (no internal_id). Only the provisioning endpoint may
+    // proceed — it creates the user + stamps the token. Everything else fails:
+    // we never run a request with a placeholder identity.
+    const provisioningPaths = this.configService.get<string[]>(
+      'auth.provisioning_paths',
+      ['/auth/login'],
+    );
+    if (this.matchesPath(provisioningPaths, requestUrl)) {
+      return next();
+    }
+    throw new UnauthorizedException('User not provisioned');
+  }
+
+  /** Prefix-relative path match (exact or as a path segment), shared by public
+   *  and provisioning path checks. */
+  private matchesPath(paths: string[], url: string): boolean {
+    return paths.some((path) => url === path || url.startsWith(path + '/'));
   }
 }

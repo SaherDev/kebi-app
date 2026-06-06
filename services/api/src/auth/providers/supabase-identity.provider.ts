@@ -71,14 +71,11 @@ export class SupabaseIdentityProvider implements IdentityProvider {
       throw new UnauthorizedException('Invalid token: missing subject');
     }
 
-    const aiEnabledDefault = this.configService.get<boolean>(
-      'user_settings.defaults.ai_enabled',
-      true,
-    );
-
     // Our product claims ride `app_metadata` as a single encrypted blob
-    // (Admin-API-written). Decrypt it; an absent/undecryptable blob yields no
-    // claims, so the middleware takes the DB fallback and re-stamps.
+    // (Admin-API-written, sourced from user_settings). Decrypt it and pass the
+    // claims through as-is — no defaults. An absent/undecryptable blob yields no
+    // claims (internal_id undefined), so the middleware treats the token as
+    // not-yet-provisioned. user_settings is the source of truth (ADR-045).
     const blob = payload.app_metadata?.[this.cipher.field];
     const meta: SupabaseAppMetadata =
       (typeof blob === 'string' ? this.cipher.decrypt(blob) : null) ?? {};
@@ -86,7 +83,7 @@ export class SupabaseIdentityProvider implements IdentityProvider {
     return {
       externalId,
       claims: {
-        ai_enabled: meta.ai_enabled ?? aiEnabledDefault,
+        ai_enabled: meta.ai_enabled,
         plan: meta.plan,
         movement_profile: meta.movement_profile,
         internal_id: meta.internal_id,

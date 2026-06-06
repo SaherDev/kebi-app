@@ -15,6 +15,11 @@ auth:
     stamp_dedupe_ttl_ms: 3600000 # re-stamp a user at most once per window (≈ token TTL)
   public_paths:
     - /health
+  # Verified but not-yet-provisioned tokens (no internal_id) may hit only these —
+  # the provisioning endpoint that creates the user + stamps the token. Every
+  # other route requires a provisioned token or it fails (no placeholder identity).
+  provisioning_paths:
+    - /auth/login
 
 # Defaults for a new user's user_settings row — the source of truth for the
 # claims stamped into the token (ADR-045). Also used as fallbacks when a token

@@ -81,17 +81,29 @@ describe('AuthMiddleware', () => {
     expect(next).toHaveBeenCalled();
   });
 
-  it('leaves an empty id (and defaults ai_enabled) when the token is not yet provisioned', async () => {
+  it('rejects a not-yet-provisioned token on a protected route (no placeholder identity)', async () => {
     provider.verify.mockResolvedValue({ externalId: 'user_456', claims: {} });
 
-    const req = { headers: { authorization: 'Bearer tok' } } as any;
+    const req = { headers: { authorization: 'Bearer tok' }, originalUrl: '/api/v1/chat' } as any;
     const next = jest.fn();
 
-    await middleware.use(req, {} as any, next);
+    await expect(middleware.use(req, {} as any, next)).rejects.toThrow('User not provisioned');
+    expect(req.user).toBeUndefined();
+    expect(next).not.toHaveBeenCalled();
+  });
 
-    expect(req.user?.id).toBe(''); // no internal_id claim yet → provisioning pending
-    expect(req.user?.ai_enabled).toBe(true);
-    expect(req.identity?.externalId).toBe('user_456');
+  it('allows a not-yet-provisioned token through the provisioning route', async () => {
+    const mw = new AuthMiddleware(makeConfig({ 'app.api_prefix': 'api/v1' }), provider);
+    provider.verify.mockResolvedValue({ externalId: 'user_456', claims: {} });
+
+    const req = { headers: { authorization: 'Bearer tok' }, originalUrl: '/api/v1/auth/login' } as any;
+    const next = jest.fn();
+
+    await mw.use(req, {} as any, next);
+
+    expect(next).toHaveBeenCalled();
+    expect(req.identity?.externalId).toBe('user_456'); // identity attached for provisioning
+    expect(req.user).toBeUndefined(); // no provisioned principal yet
   });
 
   it('throws UnauthorizedException when the provider rejects', async () => {

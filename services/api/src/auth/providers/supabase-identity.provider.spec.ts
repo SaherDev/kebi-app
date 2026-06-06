@@ -123,12 +123,12 @@ describe('SupabaseIdentityProvider', () => {
     );
   });
 
-  it('defaults ai_enabled from config when no sealed blob is present', async () => {
+  it('leaves claims undefined (no defaults) when no sealed blob is present', async () => {
     mockJwtVerify.mockResolvedValue({ payload: { sub: 'uuid-456' } });
 
     const identity = await provider.verify('valid.token');
 
-    expect(identity.claims.ai_enabled).toBe(true);
+    expect(identity.claims.ai_enabled).toBeUndefined();
     expect(identity.claims.internal_id).toBeUndefined();
   });
 
