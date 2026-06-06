@@ -9,6 +9,7 @@ import {
 import { MovementProfile, NormalizedIdentity, PlanTier } from '@kebi-app/shared';
 import { IdentityProvider } from '../identity-provider.interface';
 import { AppMetadataCipher } from '../app-metadata.cipher';
+import { TokenClaims } from '../token-claims';
 
 /**
  * Product claims the gateway/AuthUser care about. Supabase carries these inside
@@ -82,12 +83,12 @@ export class SupabaseIdentityProvider implements IdentityProvider {
 
     return {
       externalId,
-      claims: {
+      claims: new TokenClaims({
         ai_enabled: meta.ai_enabled,
         plan: meta.plan,
         movement_profile: meta.movement_profile,
         internal_id: meta.internal_id,
-      },
+      }),
     };
   }
 
