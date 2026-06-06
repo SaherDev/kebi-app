@@ -50,13 +50,27 @@ describe('AuthService.provision', () => {
     });
   });
 
-  it('is a no-op when the token already carries internal_id', async () => {
+  it('still ensures the row exists but skips the stamp when the claim already matches', async () => {
+    // resolve() finds the existing row → returns the same id the token carries.
     await service.provision({
       externalId: 'user_123',
       claims: { internal_id: 'user_internal_1' },
     });
 
-    expect(userIdentity.resolve).not.toHaveBeenCalled();
-    expect(metadataWriter.stamp).not.toHaveBeenCalled();
+    expect(userIdentity.resolve).toHaveBeenCalled(); // row existence is never assumed
+    expect(metadataWriter.stamp).not.toHaveBeenCalled(); // already matches → no write
+  });
+
+  it('re-stamps when the claim is stale (row was recreated with a new id)', async () => {
+    // Token claims an old id, but resolve() created a fresh row (e.g. after a DB reset).
+    await service.provision({
+      externalId: 'user_123',
+      claims: { internal_id: 'user_OLD' },
+    });
+
+    expect(metadataWriter.stamp).toHaveBeenCalledWith(
+      'user_123',
+      expect.objectContaining({ internal_id: 'user_internal_1' }),
+    );
   });
 });

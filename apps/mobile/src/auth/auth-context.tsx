@@ -110,13 +110,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
       setStatus(session ? 'authenticated' : 'unauthenticated');
-      // Provision the product user on sign-in: POST /auth/login makes the gateway
-      // create our internal User row (first sign-in) and stamp internal_id into
-      // the token; refreshSession then pulls the new claim. Event-driven — the
-      // app reads neither the session nor user data; the token is fetched only as
-      // the Bearer credential. refreshSession emits TOKEN_REFRESHED (not
-      // SIGNED_IN), so this never loops.
-      if (event === 'SIGNED_IN') {
+      // Provision the product user: POST /auth/login makes the gateway ensure our
+      // internal User row exists and stamp internal_id into the token;
+      // refreshSession then pulls the new claim. Fires on a fresh sign-in and on a
+      // restored session at launch, so the row is re-ensured even if an earlier
+      // attempt failed (e.g. backend was down). Idempotent server-side.
+      // Event-driven — the app reads neither the session nor user data; the token
+      // is fetched only as the Bearer credential. refreshSession emits
+      // TOKEN_REFRESHED (not SIGNED_IN/INITIAL_SESSION), so this never loops.
+      if (session && (event === 'SIGNED_IN' || event === 'INITIAL_SESSION')) {
         createApiClient(getAccessToken)
           .post(API_ROUTES.login, {})
           .then(() => supabase.auth.refreshSession())

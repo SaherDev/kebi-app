@@ -12,12 +12,13 @@ import { UserIdentityService } from './user-identity.service';
  * used to be a middleware side-effect. Called once on sign-in by
  * `POST /auth/login`.
  *
- * If the token already carries `internal_id` (returning user, already stamped),
- * provisioning is a no-op. Otherwise it resolves the identity — creating the
- * internal User row on first sight — and stamps `internal_id` (+ plan/ai_enabled
- * /movement_profile) into the provider's token metadata, so the next refreshed
- * token is claim-first and the middleware stays a pure verify. Idempotent: the
- * same call serves first-time signup and returning login.
+ * It always ensures the internal User row exists (find-or-create) — it never
+ * trusts the token's `internal_id` claim alone, because the row could be missing
+ * while the token still carries the claim (e.g. after a DB reset). It re-stamps
+ * `internal_id` (+ plan/ai_enabled/movement_profile) into the provider's token
+ * metadata only when the claim doesn't already match the resolved id, so a
+ * steady-state login skips the Admin API write. Idempotent: the same call serves
+ * first-time signup, returning login, and a row that needs recreating.
  */
 @Injectable()
 export class AuthService {
@@ -30,9 +31,12 @@ export class AuthService {
   ) {}
 
   async provision(identity: NormalizedIdentity): Promise<void> {
-    if (identity.claims.internal_id !== undefined) return;
-
+    // Find-or-create the row; the resolved id is authoritative.
     const id = await this.userIdentity.resolve(this.provider.name, identity);
+
+    // Token already carries the correct id → nothing to stamp.
+    if (identity.claims.internal_id === id) return;
+
     const aiEnabled =
       identity.claims.ai_enabled ??
       this.configService.get<boolean>('ai.enabled_default', true);
