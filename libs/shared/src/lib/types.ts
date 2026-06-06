@@ -236,6 +236,8 @@ export interface IdentityClaims {
 export interface NormalizedIdentity {
   externalId: string;
   email?: string;
+  /** E.164 phone (with leading +), present for phone/SMS sign-ups. */
+  phone?: string;
   claims: IdentityClaims;
 }
 

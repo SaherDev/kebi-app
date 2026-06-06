@@ -40,6 +40,11 @@ export class UserEntity {
   @Column()
   email!: string;
 
+  // E.164 phone for phone/SMS sign-ups; null for email/OAuth users. Descriptive
+  // only, like email — never an identity key.
+  @Column({ type: 'varchar', nullable: true })
+  phone!: string | null;
+
   @CreateDateColumn({ name: 'createdAt' })
   createdAt!: Date;
 

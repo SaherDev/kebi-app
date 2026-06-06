@@ -27,7 +27,15 @@ interface SupabaseAppMetadata {
 
 interface SupabaseTokenPayload extends JWTPayload {
   email?: string;
+  phone?: string;
   app_metadata?: Record<string, unknown>;
+}
+
+/** Supabase stores the phone as bare digits; normalize to E.164 (leading +). */
+function toE164(phone: string): string | undefined {
+  const trimmed = phone.trim();
+  if (trimmed === '') return undefined;
+  return trimmed.startsWith('+') ? trimmed : `+${trimmed}`;
 }
 
 /**
@@ -87,6 +95,7 @@ export class SupabaseIdentityProvider implements IdentityProvider {
     return {
       externalId,
       email: typeof payload.email === 'string' ? payload.email : undefined,
+      phone: typeof payload.phone === 'string' ? toE164(payload.phone) : undefined,
       claims: {
         ai_enabled: meta.ai_enabled ?? aiEnabledDefault,
         plan: meta.plan,

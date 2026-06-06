@@ -5,12 +5,12 @@ import { UserIdentityService } from './user-identity.service';
 import { UserIdentityRepository } from './user-identity.repository';
 import { UserEntity } from '../database/entities/user.entity';
 
-function makeIdentity(externalId = 'ext_1'): NormalizedIdentity {
-  return { externalId, email: 'a@b.com', claims: {} };
+function makeIdentity(externalId = 'ext_1', phone?: string): NormalizedIdentity {
+  return { externalId, email: 'a@b.com', ...(phone !== undefined && { phone }), claims: {} };
 }
 
 function makeRow(id: string, externalId: string): UserEntity {
-  return { id, authProvider: 'supabase', externalId, email: 'a@b.com' } as UserEntity;
+  return { id, authProvider: 'supabase', externalId, email: 'a@b.com', phone: null } as UserEntity;
 }
 
 describe('UserIdentityService', () => {
@@ -41,9 +41,9 @@ describe('UserIdentityService', () => {
     expect(repo.create).not.toHaveBeenCalled();
   });
 
-  it('mints a prefixed id on first sight', async () => {
+  it('mints a prefixed id on first sight and stores email + null phone', async () => {
     repo.findByExternal.mockResolvedValue(null);
-    repo.create.mockImplementation((id) =>
+    repo.create.mockImplementation((id: string) =>
       Promise.resolve(makeRow(id, 'ext_1')),
     );
 
@@ -55,6 +55,24 @@ describe('UserIdentityService', () => {
       'supabase',
       'ext_1',
       'a@b.com',
+      null, // no phone on an email identity
+    );
+  });
+
+  it('captures the phone for an SMS sign-up', async () => {
+    repo.findByExternal.mockResolvedValue(null);
+    repo.create.mockImplementation((id: string) =>
+      Promise.resolve(makeRow(id, 'ext_2')),
+    );
+
+    await service.resolve('supabase', makeIdentity('ext_2', '+123456789'));
+
+    expect(repo.create).toHaveBeenCalledWith(
+      expect.stringMatching(/^user_/),
+      'supabase',
+      'ext_2',
+      'a@b.com',
+      '+123456789',
     );
   });
 
