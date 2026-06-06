@@ -19,7 +19,7 @@ function makeConfig(overrides: Record<string, unknown> = {}) {
     SUPABASE_PROJECT_URL: 'https://ref.supabase.co',
     KEBI_APP_METADATA_KEY: TEST_KEY,
     KEBI_APP_METADATA_FIELD: TEST_FIELD,
-    'ai.enabled_default': true,
+    'user_settings.defaults.ai_enabled': true,
     ...overrides,
   };
   return {
@@ -74,22 +74,9 @@ describe('SupabaseIdentityProvider', () => {
     const identity = await provider.verify('valid.token');
 
     expect(identity.externalId).toBe('uuid-123');
-    expect(identity.email).toBe('user@example.com');
     expect(identity.claims.ai_enabled).toBe(false);
     expect(identity.claims.plan).toBe('explorer');
     expect(identity.claims.internal_id).toBe('user_abc');
-  });
-
-  it('normalizes a bare phone claim to E.164', async () => {
-    mockJwtVerify.mockResolvedValue({
-      payload: { sub: 'uuid-sms', phone: '123456789' }, // Supabase stores phone without +
-    });
-
-    const identity = await provider.verify('valid.token');
-
-    expect(identity.externalId).toBe('uuid-sms');
-    expect(identity.phone).toBe('+123456789');
-    expect(identity.email).toBeUndefined();
   });
 
   it('ignores unencrypted/foreign app_metadata keys (only the sealed field counts)', async () => {

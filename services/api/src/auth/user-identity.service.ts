@@ -43,8 +43,6 @@ export class UserIdentityService {
         id,
         authProvider,
         identity.externalId,
-        identity.email ?? '',
-        identity.phone ?? null,
       );
       return created.id;
     } catch (error) {

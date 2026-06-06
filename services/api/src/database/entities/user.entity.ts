@@ -11,10 +11,12 @@ import {
 import { UserSettingsEntity } from './user-settings.entity';
 
 /**
- * Product user record. `id` is our stable, opaque internal id — the value
- * forwarded to kebi as `X-Gateway-User-Id`. `(authProvider, externalId)` maps
- * the auth provider's subject to that internal id, so swapping providers never
- * changes a user's downstream identity.
+ * Product user record — an opaque identity mapping only. `id` is our stable
+ * internal id (forwarded to kebi as `X-Gateway-User-Id`); `(authProvider,
+ * externalId)` maps the auth provider's subject to it, so swapping providers
+ * never changes a user's downstream identity. No PII lives here: email/phone are
+ * owned by the auth provider (Supabase), our product data by `user_settings`
+ * (ADR-045). Per-user settings hang off the `settings` relation.
  *
  * The id is minted in UserIdentityService (which injects ConfigService to read
  * the `auth.user_id_prefix`), not in a @BeforeInsert hook — entities can't read
@@ -33,17 +35,6 @@ export class UserEntity {
 
   @Column({ name: 'externalId', type: 'varchar' })
   externalId!: string;
-
-  // Descriptive only — identity is keyed by (authProvider, externalId), never
-  // by email. Not unique: phone/SMS users have no email and store '', which
-  // would otherwise collide on a unique constraint after the first such user.
-  @Column()
-  email!: string;
-
-  // E.164 phone for phone/SMS sign-ups; null for email/OAuth users. Descriptive
-  // only, like email — never an identity key.
-  @Column({ type: 'varchar', nullable: true })
-  phone!: string | null;
 
   @CreateDateColumn({ name: 'createdAt' })
   createdAt!: Date;

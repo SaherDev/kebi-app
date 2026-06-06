@@ -23,18 +23,16 @@ export class UserIdentityRepository {
 
   /**
    * Persist a new mapping row. `id` is the pre-built internal id (the caller
-   * mints it from config so the prefix isn't hardcoded here). `email`/`phone`
-   * are descriptive contact fields captured from the verified identity.
+   * mints it from config so the prefix isn't hardcoded here). No PII — email/
+   * phone live in the auth provider, product data in `user_settings` (ADR-045).
    */
   create(
     id: string,
     authProvider: string,
     externalId: string,
-    email: string,
-    phone: string | null,
   ): Promise<UserEntity> {
     return this.repo.save(
-      this.repo.create({ id, authProvider, externalId, email, phone }),
+      this.repo.create({ id, authProvider, externalId }),
     );
   }
 }

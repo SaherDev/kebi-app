@@ -16,8 +16,8 @@ declare global {
   namespace Express {
     interface Request {
       user?: AuthUser;
-      /** The verified provider identity (externalId, email, claims). Used by
-       *  the provisioning endpoint; never forwarded to kebi. */
+      /** The verified provider identity (externalId + claims). Used by the
+       *  provisioning endpoint; never forwarded to kebi. */
       identity?: NormalizedIdentity;
     }
   }
@@ -86,7 +86,7 @@ export class AuthMiddleware implements NestMiddleware {
     const bypassToken = this.configService.get<string>('DEV_BYPASS_TOKEN');
     const bypassUserId = this.configService.get<string>('DEV_BYPASS_USER_ID');
     if (!isProd && bypassEnabled && bypassToken && token === bypassToken && bypassUserId) {
-      const aiEnabledDefault = this.configService.get<boolean>('ai.enabled_default', true);
+      const aiEnabledDefault = this.configService.get<boolean>('user_settings.defaults.ai_enabled', true);
       req.user = { id: bypassUserId, ai_enabled: aiEnabledDefault } satisfies AuthUser;
       this.logger.warn(`Dev bypass auth used for user ${bypassUserId} — never enable in production`);
       return next();
@@ -97,7 +97,7 @@ export class AuthMiddleware implements NestMiddleware {
 
       const aiEnabled =
         identity.claims.ai_enabled ??
-        this.configService.get<boolean>('ai.enabled_default', true);
+        this.configService.get<boolean>('user_settings.defaults.ai_enabled', true);
 
       // Verify and move on: attach the raw identity (for provisioning) and the
       // claim-first AuthUser. `id` is the stamped `internal_id` claim — present

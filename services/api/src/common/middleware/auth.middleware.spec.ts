@@ -12,8 +12,8 @@ function makeConfig(overrides: Record<string, unknown> = {}) {
   return {
     get: jest.fn((key: string, defaultValue?: unknown) => {
       const config: Record<string, unknown> = {
-        'ai.enabled_default': true,
-        'rate_limits.default_plan': 'homebody',
+        'user_settings.defaults.ai_enabled': true,
+        'user_settings.defaults.plan': 'homebody',
         ...overrides,
       };
       return key in config ? config[key] : defaultValue;

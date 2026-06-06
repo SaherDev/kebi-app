@@ -22,7 +22,7 @@ export class RateLimitGuard implements CanActivate {
     const user = request.user as AuthUser;
 
     const planName =
-      user.plan ?? this.configService.get<string>('rate_limits.default_plan', 'homebody');
+      user.plan ?? this.configService.get<string>('user_settings.defaults.plan', 'homebody');
 
     const thresholds = this.configService.get<PlanThresholds>(
       `rate_limits.plans.${planName}`,

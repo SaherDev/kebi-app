@@ -17,6 +17,16 @@ Format:
 
 ---
 
+## ADR-045: Data-ownership boundaries — `users` is a mapping, `user_settings` is our product data
+
+**Date:** 2026-06-06\
+**Status:** accepted\
+**Context:** With Supabase as the identity provider, it's easy for the gateway DB to accumulate copies of user data (email, phone) that Supabase already owns — which means duplication, drift (Supabase is the real source for contact info), and a wider PII leak surface. At the same time we do need a home for *our* per-user product data (plan, movement profile, preferences), and that data was being defaulted from config with nowhere to persist per-user values.\
+**Decision:** Draw clear ownership lines. **Supabase** owns identity/PII (email, phone, linked providers). **kebi** owns AI data (taste model, places, embeddings). Our gateway DB owns exactly two things: `users` — an opaque identity **mapping** only (`id ↔ authProvider + externalId`, no PII) — and `user_settings` — **our product data**, stored as a single JSON document keyed by the internal user id. `user_settings` is the **source of truth** for the plan/ai_enabled/movement_profile claims stamped into the token (the token is a cache; the middleware reads it claim-first). Provisioning (`POST /auth/login`) creates the `user_settings` row with config-seeded defaults on first sign-in. If the gateway ever needs PII (e.g. to email a receipt), it fetches it live from Supabase by `externalId` rather than storing a copy. Extends ADR-044 (client blind to identity) to the server: minimal identity footprint everywhere.\
+**Consequences:** No PII in our DB — less to leak, no drift, Supabase stays authoritative. New per-user settings are a field in the `user_settings` JSON (no migration). The gateway never stores email/phone; needing them later is a Supabase read, not a schema change. kebi and Supabase are untouched by this split.
+
+---
+
 ## ADR-044: Client is blind to identity — session and user data stay server-side
 
 **Date:** 2026-06-06\

@@ -207,11 +207,33 @@ export interface MovementProfile {
   reach: Reach;
 }
 
+/**
+ * Default movement profile for a new user, used until they set their own
+ * (ADR-066 setter owed). The runtime value is config-driven
+ * (`movement.default_profile` in the gateway's app.yaml); this is the code-level
+ * fallback when that key is absent.
+ */
+export const DEFAULT_MOVEMENT_PROFILE: MovementProfile = {
+  available_modes: ["walking", "transit"],
+  reach: "normal",
+};
+
 export interface AuthUser {
   id: string;
   ai_enabled: boolean;
   plan?: PlanTier;
   movement_profile?: MovementProfile;
+}
+
+/**
+ * Our per-user product settings — stored as a single JSON document in
+ * `user_settings.settings` (gateway DB) and the source of truth for the claims
+ * stamped into the token (ADR-045). JSON so new prefs need no migration.
+ */
+export interface UserSettingsData {
+  plan: PlanTier;
+  ai_enabled: boolean;
+  movement_profile: MovementProfile | null;
 }
 
 /**
@@ -235,9 +257,6 @@ export interface IdentityClaims {
  */
 export interface NormalizedIdentity {
   externalId: string;
-  email?: string;
-  /** E.164 phone (with leading +), present for phone/SMS sign-ups. */
-  phone?: string;
   claims: IdentityClaims;
 }
 

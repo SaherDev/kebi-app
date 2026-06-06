@@ -1,76 +1,87 @@
 import 'reflect-metadata';
-import { ConfigService } from '@nestjs/config';
-import { NormalizedIdentity } from '@kebi-app/shared';
+import { NormalizedIdentity, UserSettingsData } from '@kebi-app/shared';
 import { AuthService } from './auth.service';
 import { IdentityProvider } from './identity-provider.interface';
 import { IdentityMetadataWriter } from './identity-metadata.writer';
 import { UserIdentityService } from './user-identity.service';
+import { UserSettingsService } from './user-settings.service';
 
-function makeConfig(overrides: Record<string, unknown> = {}) {
-  return {
-    get: jest.fn((key: string, defaultValue?: unknown) => {
-      const config: Record<string, unknown> = {
-        'ai.enabled_default': true,
-        'rate_limits.default_plan': 'homebody',
-        ...overrides,
-      };
-      return key in config ? config[key] : defaultValue;
-    }),
-  } as unknown as ConfigService;
-}
+const DEFAULT_SETTINGS: UserSettingsData = {
+  plan: 'homebody',
+  ai_enabled: true,
+  movement_profile: null,
+};
 
 describe('AuthService.provision', () => {
   let service: AuthService;
   let provider: IdentityProvider;
   let metadataWriter: { stamp: jest.Mock };
   let userIdentity: { resolve: jest.Mock };
+  let userSettings: { ensureForUser: jest.Mock };
 
-  beforeEach(() => {
+  function setup(settings: UserSettingsData = DEFAULT_SETTINGS) {
     provider = { name: 'supabase', verify: jest.fn() };
     metadataWriter = { stamp: jest.fn().mockResolvedValue(undefined) };
     userIdentity = { resolve: jest.fn().mockResolvedValue('user_internal_1') };
+    userSettings = { ensureForUser: jest.fn().mockResolvedValue(settings) };
     service = new AuthService(
-      makeConfig(),
       provider,
       metadataWriter as unknown as IdentityMetadataWriter,
       userIdentity as unknown as UserIdentityService,
+      userSettings as unknown as UserSettingsService,
     );
-  });
+  }
 
-  it('resolves (creating the user) and stamps when the token has no internal_id claim', async () => {
-    const identity: NormalizedIdentity = { externalId: 'user_123', claims: {} };
+  it('ensures the user + settings and stamps the token from settings when claims are absent', async () => {
+    setup();
+    const identity: NormalizedIdentity = { externalId: 'ext_1', claims: {} };
 
     await service.provision(identity);
 
     expect(userIdentity.resolve).toHaveBeenCalledWith('supabase', identity);
-    expect(metadataWriter.stamp).toHaveBeenCalledWith('user_123', {
+    expect(userSettings.ensureForUser).toHaveBeenCalledWith('user_internal_1');
+    expect(metadataWriter.stamp).toHaveBeenCalledWith('ext_1', {
       internal_id: 'user_internal_1',
       ai_enabled: true,
-      plan: 'homebody', // rate_limits.default_plan
+      plan: 'homebody',
     });
   });
 
-  it('still ensures the row exists but skips the stamp when the claim already matches', async () => {
-    // resolve() finds the existing row → returns the same id the token carries.
+  it('skips the stamp when the token already matches the settings', async () => {
+    setup();
+
     await service.provision({
-      externalId: 'user_123',
-      claims: { internal_id: 'user_internal_1' },
+      externalId: 'ext_1',
+      claims: { internal_id: 'user_internal_1', plan: 'homebody', ai_enabled: true },
     });
 
-    expect(userIdentity.resolve).toHaveBeenCalled(); // row existence is never assumed
-    expect(metadataWriter.stamp).not.toHaveBeenCalled(); // already matches → no write
+    expect(userSettings.ensureForUser).toHaveBeenCalled(); // row is still ensured
+    expect(metadataWriter.stamp).not.toHaveBeenCalled(); // already in sync → no write
   });
 
-  it('re-stamps when the claim is stale (row was recreated with a new id)', async () => {
-    // Token claims an old id, but resolve() created a fresh row (e.g. after a DB reset).
+  it('re-stamps when settings differ from the token (plan changed)', async () => {
+    setup({ ...DEFAULT_SETTINGS, plan: 'explorer' });
+
     await service.provision({
-      externalId: 'user_123',
-      claims: { internal_id: 'user_OLD' },
+      externalId: 'ext_1',
+      claims: { internal_id: 'user_internal_1', plan: 'homebody', ai_enabled: true },
     });
 
     expect(metadataWriter.stamp).toHaveBeenCalledWith(
-      'user_123',
-      expect.objectContaining({ internal_id: 'user_internal_1' }),
+      'ext_1',
+      expect.objectContaining({ plan: 'explorer' }),
+    );
+  });
+
+  it('includes movement_profile in the stamp when settings carry one', async () => {
+    const movement_profile = { available_modes: ['walking' as const], reach: 'far' as const };
+    setup({ ...DEFAULT_SETTINGS, movement_profile });
+
+    await service.provision({ externalId: 'ext_1', claims: {} });
+
+    expect(metadataWriter.stamp).toHaveBeenCalledWith(
+      'ext_1',
+      expect.objectContaining({ movement_profile }),
     );
   });
 });

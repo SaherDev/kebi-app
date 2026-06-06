@@ -16,11 +16,21 @@ auth:
   public_paths:
     - /health
 
-ai:
-  enabled_default: true
+# Defaults for a new user's user_settings row — the source of truth for the
+# claims stamped into the token (ADR-045). Also used as fallbacks when a token
+# claim is absent (pre-provision / pre-refresh). All user-setting defaults live
+# here, in one place.
+user_settings:
+  defaults:
+    plan: homebody
+    ai_enabled: true
+    movement_profile:
+      available_modes:
+        - walking
+        - transit
+      reach: normal
 
 rate_limits:
-  default_plan: homebody
   plans:
     homebody:
       sessions_per_day: 3

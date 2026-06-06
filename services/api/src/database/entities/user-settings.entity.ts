@@ -10,8 +10,15 @@ import {
   Relation,
 } from 'typeorm';
 import { createId } from '@paralleldrive/cuid2';
+import type { UserSettingsData } from '@kebi-app/shared';
 import { UserEntity } from './user.entity';
 
+/**
+ * Our per-user product data, keyed by the internal user id — the source of truth
+ * for the plan/ai_enabled/movement_profile claims stamped into the token
+ * (ADR-045). Stored as one JSON document so new preferences need no migration;
+ * read/written whole, by `userId`.
+ */
 @Entity('user_settings')
 export class UserSettingsEntity {
   @PrimaryColumn({ type: 'varchar' })
@@ -24,11 +31,8 @@ export class UserSettingsEntity {
   @JoinColumn({ name: 'userId' })
   user!: Relation<UserEntity>;
 
-  @Column({ default: 'en' })
-  locale!: string;
-
-  @Column({ default: 'system' })
-  theme!: string;
+  @Column({ type: 'jsonb' })
+  settings!: UserSettingsData;
 
   @CreateDateColumn({ name: 'createdAt' })
   createdAt!: Date;
