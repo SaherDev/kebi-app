@@ -37,9 +37,11 @@ export function Button({ label, variant = 'primary', onPress, disabled = false }
       accessibilityRole="button"
       accessibilityLabel={label}
       accessibilityState={{ disabled }}
-      className={`items-center justify-center rounded-card px-4 py-2.5 ${PRESS} ${v.box} ${
-        disabled ? 'opacity-40' : ''
-      }`}
+      // Disabled dim via inline style, not a toggled `opacity-*` className:
+      // NativeWind doesn't reliably clear a conditionally-removed opacity utility,
+      // so the button can stay stuck dim. Inline opacity always wins.
+      style={{ opacity: disabled ? 0.4 : 1 }}
+      className={`items-center justify-center rounded-card px-4 py-2.5 ${PRESS} ${v.box}`}
     >
       <Text className={`text-small font-semibold ${v.text}`}>{label}</Text>
     </Pressable>

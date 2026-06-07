@@ -30,9 +30,10 @@ export function SocialButton({ glyph, label, onPress, disabled = false, badge }:
       accessibilityRole="button"
       accessibilityLabel={badge ? `${label}, ${badge}` : label}
       accessibilityState={{ disabled }}
-      className={`flex-row items-center gap-3 rounded-medium bg-bg px-4 py-3.5 ${PRESS} ${
-        disabled ? 'opacity-40' : ''
-      }`}
+      // Disabled dim via inline style — see button.tsx: a toggled `opacity-*`
+      // className can stay stuck dim under NativeWind. Inline opacity always wins.
+      style={{ opacity: disabled ? 0.4 : 1 }}
+      className={`flex-row items-center gap-3 rounded-medium bg-bg px-4 py-3.5 ${PRESS}`}
     >
       <View className="size-[18px] items-center justify-center">{glyph}</View>
       <Text className="flex-1 text-body font-semibold text-text">{label}</Text>
