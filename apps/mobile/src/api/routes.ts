@@ -6,4 +6,6 @@ export const API_ROUTES = {
   health: '/health',
   /** Provisions the user on sign-in (first authenticated call) — creates the product user server-side. */
   login: '/auth/login',
+  /** Saves a place: forwards a URL or place name to kebi for extraction (ADR-073). */
+  extract: '/extract',
 } as const;

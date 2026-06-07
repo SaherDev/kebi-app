@@ -40,3 +40,11 @@ Object.defineProperty(global, '__ExpoImportMetaRegistry', {
 if (typeof global.structuredClone === 'undefined') {
   global.structuredClone = (object: unknown) => JSON.parse(JSON.stringify(object));
 }
+
+// AsyncStorage is a native module (null under Jest). Any test that transitively
+// loads the Supabase client (e.g. a screen importing the API client) needs the
+// library's official in-memory mock.
+// https://react-native-async-storage.github.io/async-storage/docs/advanced/jest
+jest.mock('@react-native-async-storage/async-storage', () =>
+  require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
+);

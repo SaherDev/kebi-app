@@ -34,7 +34,14 @@
   },
   "toast": {
     "undo": "undo",
-    "removed": "{{name}} removed"
+    "removed": "{{name}} removed",
+    "saved": "saved {{name}}",
+    "savedMany": "saved {{count}} places",
+    "saveFailed": "couldn't save that — try again",
+    "unsupportedUrl": "that link isn't supported yet"
+  },
+  "library": {
+    "empty": "nothing saved yet — tap save a place to add one."
   },
   "save": {
     "eyebrow": "save",

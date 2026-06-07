@@ -1,28 +1,19 @@
 import { ScrollView, Text, View } from "react-native";
 import { useRouter } from "expo-router";
-import type { PlaceCore } from "@kebi-app/shared";
 import { IconButton } from "../components/icon-button";
 import { PlaceCard } from "../components/place-card";
 import { ScreenScaffold } from "../components/screen-scaffold";
 import { TopBar } from "../components/top-bar";
 import { TopPill } from "../components/top-pill";
-import { makeSamplePlace } from "../lib/sample-place";
 import { useSaveSheet } from "../components/save-sheet-context";
+import { useSavedPlaces } from "../components/saved-places-context";
 import { useTranslation } from "../i18n/context";
-
-// TODO: replace with the real saved-places query — placeholder rows so the
-// long-press context menu can be exercised in the library list.
-const SAMPLE_PLACES: PlaceCore[] = [
-  makeSamplePlace("Fuglen", ["cafe"]),
-  makeSamplePlace("Afuri Ramen", ["restaurant"]),
-  makeSamplePlace("Bar Trench", ["bar"]),
-  makeSamplePlace("Nezu Shrine", ["shrine"]),
-];
 
 export default function LibraryScreen() {
   const { t } = useTranslation();
   const router = useRouter();
   const saveSheet = useSaveSheet();
+  const { items } = useSavedPlaces();
   return (
     <ScreenScaffold
       topBar={
@@ -45,19 +36,25 @@ export default function LibraryScreen() {
     >
       <View className="flex-1 px-6 pt-2">
         <Text className="font-bold text-title text-text">{t("titles.library")}</Text>
-        <ScrollView
-          className="mt-4"
-          showsVerticalScrollIndicator={false}
-          contentContainerClassName="gap-2 pb-28"
-        >
-          {SAMPLE_PLACES.map((place) => (
-            <PlaceCard
-              key={place.id}
-              place={place}
-              onPress={() => router.push("/place")}
-            />
-          ))}
-        </ScrollView>
+        {items.length === 0 ? (
+          <View className="flex-1 items-center justify-center pb-28">
+            <Text className="text-center text-body text-text-soft">{t("library.empty")}</Text>
+          </View>
+        ) : (
+          <ScrollView
+            className="mt-4"
+            showsVerticalScrollIndicator={false}
+            contentContainerClassName="gap-2 pb-28"
+          >
+            {items.map((item) => (
+              <PlaceCard
+                key={item.key}
+                place={item.place}
+                onPress={() => router.push("/place")}
+              />
+            ))}
+          </ScrollView>
+        )}
       </View>
     </ScreenScaffold>
   );
