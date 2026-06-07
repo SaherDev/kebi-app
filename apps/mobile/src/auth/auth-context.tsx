@@ -104,9 +104,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let mounted = true;
     // Derive auth status only — the session object never enters app state.
-    supabase.auth.getSession().then(({ data }) => {
-      if (mounted) setStatus(data.session ? 'authenticated' : 'unauthenticated');
-    });
+    supabase.auth
+      .getSession()
+      .then(({ data }) => {
+        if (mounted) setStatus(data.session ? 'authenticated' : 'unauthenticated');
+      })
+      .catch(() => {
+        // A stale/rotated refresh token makes the launch refresh reject
+        // ("Invalid Refresh Token") — that just means signed out. Surface it as
+        // such and purge the dead local session so the failed refresh doesn't
+        // retry (and re-log) on the next launch. Local scope only: a server
+        // sign-out would hit the same dead token.
+        if (mounted) setStatus('unauthenticated');
+        void supabase.auth.signOut({ scope: 'local' }).catch(() => undefined);
+      });
 
     const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
       setStatus(session ? 'authenticated' : 'unauthenticated');
