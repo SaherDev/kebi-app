@@ -123,8 +123,12 @@ export const CATEGORY_EMOJI: Record<PlaceCategory, string> = {
 /** Fallback avatar when a place has no category or an unmapped one. */
 export const CATEGORY_EMOJI_FALLBACK = "📍";
 
-/** Per-save source identifiers (provenance), not a `PlaceCore` field. */
-export type PlaceSourceLabelKey =
+/**
+ * Per-save source identifiers (provenance), not a `PlaceCore` field. Mirrors the
+ * kebi `PlaceSource` enum 1:1 — the single source-vocabulary truth for both the
+ * "saved from" label and the save sheet's live-detection hint.
+ */
+export type PlaceSource =
   | "tiktok"
   | "instagram"
   | "youtube"
@@ -137,7 +141,7 @@ export type PlaceSourceLabelKey =
  * Resolve the key from the save's source (`user_places.source_label` or a
  * `place_name_aliases[].source` value) — see design-system.md §Sources → labels.
  */
-export const SOURCE_LABEL: Record<PlaceSourceLabelKey, string> = {
+export const SOURCE_LABEL: Record<PlaceSource, string> = {
   tiktok: "saved from tiktok",
   instagram: "saved from instagram",
   youtube: "saved from youtube",
