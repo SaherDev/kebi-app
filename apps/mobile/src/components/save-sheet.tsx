@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import {
-  Modal,
   Pressable,
   StyleSheet,
   Text,
@@ -10,7 +9,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useUnstableNativeVariable } from 'nativewind';
-import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   runOnJS,
   useAnimatedKeyboard,
@@ -23,6 +22,7 @@ import { DURATION, PRESS, SPRING_CONFIG } from '../theme/motion';
 import { detectSource, isLinkSource } from '../lib/detect-source';
 import { triggerHaptic } from '../lib/haptics';
 import { useTranslation } from '../i18n/context';
+import { useToast } from './toast-context';
 import { Icon } from './icon';
 import { Spinner } from './spinner';
 
@@ -61,6 +61,7 @@ const PAN_ACTIVATE_Y = 10;
 
 export function SaveSheet({ open, onClose, onSubmit, status = 'idle' }: SaveSheetProps) {
   const { t } = useTranslation();
+  const { reserveTopAnchor } = useToast();
   const insets = useSafeAreaInsets();
   const { height } = useWindowDimensions();
   const softColor = useUnstableNativeVariable('--text-soft') ?? undefined;
@@ -76,6 +77,13 @@ export function SaveSheet({ open, onClose, onSubmit, status = 'idle' }: SaveShee
   useEffect(() => {
     if (open) setMounted(true);
   }, [open]);
+
+  // While the sheet is up, send toasts to the top so they clear the sheet that
+  // covers the usual bottom spot. Released once the exit animation unmounts it.
+  useEffect(() => {
+    if (!mounted) return;
+    return reserveTopAnchor();
+  }, [mounted, reserveTopAnchor]);
 
   // Each open starts a fresh draft (kebi-save-sheet-empty state).
   useEffect(() => {
@@ -136,75 +144,78 @@ export function SaveSheet({ open, onClose, onSubmit, status = 'idle' }: SaveShee
   };
 
   return (
-    <Modal transparent visible animationType="none" onRequestClose={saving ? undefined : onClose}>
-      <GestureHandlerRootView style={StyleSheet.absoluteFill}>
-        <AnimatedPressable
-          style={[StyleSheet.absoluteFill, scrimStyle, { backgroundColor: SCRIM_COLOR }]}
-          onPress={saving ? undefined : onClose}
-          accessibilityRole="button"
-          accessibilityLabel={t('common.close')}
-        />
+    // An absolute overlay, not a <Modal>: a native Modal renders in its own layer
+    // above the root view, so a toast (rendered in the root tree) would be hidden
+    // behind it. As a sibling under the root the sheet stays below the ToastHost,
+    // letting save success/error toasts show on top. Same pattern as the context
+    // menu overlay. Gestures work via the root GestureHandlerRootView (_layout).
+    <View style={StyleSheet.absoluteFill}>
+      <AnimatedPressable
+        style={[StyleSheet.absoluteFill, scrimStyle, { backgroundColor: SCRIM_COLOR }]}
+        onPress={saving ? undefined : onClose}
+        accessibilityRole="button"
+        accessibilityLabel={t('common.close')}
+      />
 
-        <GestureDetector gesture={pan}>
-          <Animated.View
-            style={[styles.sheet, sheetStyle, { paddingBottom: insets.bottom + 12 }]}
-            className="bg-bg"
+      <GestureDetector gesture={pan}>
+        <Animated.View
+          style={[styles.sheet, sheetStyle, { paddingBottom: insets.bottom + 12 }]}
+          className="bg-bg"
+        >
+          <View className="mx-auto mb-0.5 h-1 w-9 rounded-full bg-surface-2" />
+
+          <View className="gap-1 px-1">
+            <Text className="text-eyebrow font-semibold uppercase text-text-soft">
+              {t('save.eyebrow')}
+            </Text>
+            <Text className="text-subtitle font-bold text-text">{t('save.title')}</Text>
+          </View>
+
+          <View className="rounded-large bg-surface px-3.5 pb-3 pt-3.5">
+            <TextInput
+              value={value}
+              onChangeText={setValue}
+              editable={!saving}
+              placeholder={t('save.placeholder')}
+              placeholderTextColor={softColor}
+              multiline
+              textAlignVertical="top"
+              autoCapitalize="none"
+              autoCorrect={false}
+              className="min-h-14 p-0 text-[16px] leading-6 text-text"
+            />
+            {showMeta ? (
+              <View className="mt-2 flex-row items-center gap-2 border-t border-surface-2 pt-2">
+                <Icon name="link" size={12} className="text-text-muted" />
+                <Text className="text-small text-text-muted">{t(`save.source.${source}`)}</Text>
+              </View>
+            ) : null}
+          </View>
+
+          <Pressable
+            onPress={handleSave}
+            disabled={!canSave}
+            accessibilityRole="button"
+            accessibilityLabel={saving ? t('save.saving') : t('save.cta')}
+            accessibilityState={{ disabled: !canSave, busy: saving }}
+            // Disabled/saving dim via inline style — see button.tsx: a toggled
+            // `opacity-*` className can stay stuck dim under NativeWind.
+            style={{ opacity: canSave ? 1 : 0.4 }}
+            className={`flex-row items-center justify-center gap-2 rounded-card bg-text px-4 py-3.5 ${PRESS}`}
           >
-            <View className="mx-auto mb-0.5 h-1 w-9 rounded-full bg-surface-2" />
+            {saving ? <Spinner /> : null}
+            <Text className="text-small font-semibold text-bg">
+              {saving ? t('save.saving') : t('save.cta')}
+            </Text>
+          </Pressable>
 
-            <View className="gap-1 px-1">
-              <Text className="text-eyebrow font-semibold uppercase text-text-soft">
-                {t('save.eyebrow')}
-              </Text>
-              <Text className="text-subtitle font-bold text-text">{t('save.title')}</Text>
-            </View>
-
-            <View className="rounded-large bg-surface px-3.5 pb-3 pt-3.5">
-              <TextInput
-                value={value}
-                onChangeText={setValue}
-                editable={!saving}
-                placeholder={t('save.placeholder')}
-                placeholderTextColor={softColor}
-                multiline
-                textAlignVertical="top"
-                autoCapitalize="none"
-                autoCorrect={false}
-                className="min-h-14 p-0 text-[16px] leading-6 text-text"
-              />
-              {showMeta ? (
-                <View className="mt-2 flex-row items-center gap-2 border-t border-surface-2 pt-2">
-                  <Icon name="link" size={12} className="text-text-muted" />
-                  <Text className="text-small text-text-muted">{t(`save.source.${source}`)}</Text>
-                </View>
-              ) : null}
-            </View>
-
-            <Pressable
-              onPress={handleSave}
-              disabled={!canSave}
-              accessibilityRole="button"
-              accessibilityLabel={saving ? t('save.saving') : t('save.cta')}
-              accessibilityState={{ disabled: !canSave, busy: saving }}
-              // Disabled/saving dim via inline style — see button.tsx: a toggled
-              // `opacity-*` className can stay stuck dim under NativeWind.
-              style={{ opacity: canSave ? 1 : 0.4 }}
-              className={`flex-row items-center justify-center gap-2 rounded-card bg-text px-4 py-3.5 ${PRESS}`}
-            >
-              {saving ? <Spinner /> : null}
-              <Text className="text-small font-semibold text-bg">
-                {saving ? t('save.saving') : t('save.cta')}
-              </Text>
-            </Pressable>
-
-            <View className="flex-row items-center justify-center gap-1.5">
-              <Icon name="alert" size={11} className="text-text-soft" />
-              <Text className="text-small text-text-soft">{t('save.hint')}</Text>
-            </View>
-          </Animated.View>
-        </GestureDetector>
-      </GestureHandlerRootView>
-    </Modal>
+          <View className="flex-row items-center justify-center gap-1.5">
+            <Icon name="alert" size={11} className="text-text-soft" />
+            <Text className="text-small text-text-soft">{t('save.hint')}</Text>
+          </View>
+        </Animated.View>
+      </GestureDetector>
+    </View>
   );
 }
 
