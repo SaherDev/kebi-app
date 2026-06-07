@@ -96,10 +96,12 @@ module.exports = {
 
       // ── Motion (from kebi-tokens-mockup.html §16) ──────────────────────────
       // `animate-breathe` → the mascot breathing loop (@keyframes in global.css).
-      // 2.4s ease-in-out, infinite. Press feedback is the PRESS className token
-      // in src/theme/motion.ts (NativeWind transition/active: utilities).
+      // 2.4s ease-in-out, infinite. `animate-spin` → the save-sheet "saving"
+      // ring (700ms linear, infinite, matching the mockup spinner). Press
+      // feedback is the PRESS className token in src/theme/motion.ts.
       animation: {
         breathe: 'breathe 2400ms ease-in-out infinite',
+        spin: 'spin 700ms linear infinite',
       },
     },
   },

@@ -21,6 +21,7 @@ import { detectChannel } from '../auth/detect-channel';
 import { KebiFab } from '../components/kebi-fab';
 import { ReasoningBlock, type ReasoningBlockStep } from '../components/reasoning-block';
 import { ActionSheet } from '../components/action-sheet';
+import { SaveSheet } from '../components/save-sheet';
 import { usePlaceMenuItems } from '../components/use-place-menu-items';
 import { useToast } from '../components/toast-context';
 import { triggerHaptic } from '../lib/haptics';
@@ -82,6 +83,39 @@ function ContextMenuDemo() {
         header={{ emoji: '☕', eyebrow: 'this place', title: 'Fuglen' }}
         items={items}
         closeLabel="close"
+      />
+    </View>
+  );
+}
+
+// Save-sheet demo: open the bottom sheet and exercise its three states. Type a
+// tiktok/instagram/youtube/maps URL to surface the source meta hint; "save it"
+// flips to the saving state (here a local toggle — the API is wired separately).
+// Demo labels are dev-only strings, not i18n copy.
+function SaveSheetDemo() {
+  const [open, setOpen] = useState(false);
+  const [status, setStatus] = useState<'idle' | 'saving'>('idle');
+  const openWith = (next: 'idle' | 'saving') => {
+    setStatus(next);
+    setOpen(true);
+  };
+  return (
+    <View className="gap-3">
+      <View className="flex-row gap-2">
+        <Button label="open (empty)" variant="outlined" onPress={() => openWith('idle')} />
+        <Button label="open (saving)" variant="outlined" onPress={() => openWith('saving')} />
+      </View>
+      <Text className="text-small text-text-muted">
+        type a tiktok/instagram/youtube/maps url to see the meta hint; “save it” flips to saving
+      </Text>
+      <SaveSheet
+        open={open}
+        status={status}
+        onClose={() => {
+          setOpen(false);
+          setStatus('idle');
+        }}
+        onSubmit={() => setStatus('saving')}
       />
     </View>
   );
@@ -352,6 +386,10 @@ export default function GalleryScreen() {
 
         <Section title="Context menu — long-press + overflow">
           <ContextMenuDemo />
+        </Section>
+
+        <Section title="Save sheet — empty / filled / saving">
+          <SaveSheetDemo />
         </Section>
 
         <Section title="Place avatar">

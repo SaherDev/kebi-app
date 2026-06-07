@@ -36,6 +36,20 @@
     "undo": "undo",
     "removed": "{{name}} removed"
   },
+  "save": {
+    "eyebrow": "save",
+    "title": "drop it in.",
+    "placeholder": "paste a link or type a place name...",
+    "cta": "save it",
+    "saving": "saving",
+    "hint": "kebi figures out the rest. you can fix anything later.",
+    "source": {
+      "tiktok": "looks like a tiktok link",
+      "instagram": "looks like an instagram link",
+      "youtube": "looks like a youtube link",
+      "google_maps_list": "looks like a maps list"
+    }
+  },
   "auth": {
     "introLead": "save places from tiktok, instagram, wherever. tell me what you want — i find the match.",
     "introMuted": "no filter panels. one answer. learns your taste.",

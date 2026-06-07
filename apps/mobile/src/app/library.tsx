@@ -7,6 +7,7 @@ import { ScreenScaffold } from "../components/screen-scaffold";
 import { TopBar } from "../components/top-bar";
 import { TopPill } from "../components/top-pill";
 import { makeSamplePlace } from "../lib/sample-place";
+import { useSaveSheet } from "../components/save-sheet-context";
 import { useTranslation } from "../i18n/context";
 
 // TODO: replace with the real saved-places query — placeholder rows so the
@@ -21,6 +22,7 @@ const SAMPLE_PLACES: PlaceCore[] = [
 export default function LibraryScreen() {
   const { t } = useTranslation();
   const router = useRouter();
+  const saveSheet = useSaveSheet();
   return (
     <ScreenScaffold
       topBar={
@@ -35,7 +37,7 @@ export default function LibraryScreen() {
           right={
             <TopPill>
               <IconButton icon="search" label={t("common.search")} />
-              <IconButton icon="share-in" label={t("nav.savePlace")} />
+              <IconButton icon="share-in" label={t("nav.savePlace")} onPress={saveSheet.open} />
             </TopPill>
           }
         />

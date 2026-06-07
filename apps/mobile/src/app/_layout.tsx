@@ -24,6 +24,7 @@ import { useEffect, useState } from "react";
 
 import { I18nProvider } from "../i18n/context";
 import { ToastProvider } from "../components/toast-context";
+import { SaveSheetProvider } from "../components/save-sheet-context";
 import { ContextMenuProvider } from "../components/context-menu/context-menu-context";
 import { Splash } from "../components/splash";
 import { AuthProvider, useAuth } from "../auth/auth-context";
@@ -87,14 +88,19 @@ export default function RootLayout() {
                 frosted blur) renders above the app but below toasts. */}
             <ContextMenuProvider>
               <ToastProvider>
-                <StatusBar style={colorScheme === "dark" ? "light" : "dark"} />
-                {/* Redirects between the login group and the app once auth resolves. */}
-                <AuthGate />
-                {/* Native header off — every screen renders the custom TopBar instead. */}
-                <Stack screenOptions={{ headerShown: false }} />
-                {/* Above the Stack, matching --bg, so the native splash hands off
-                    without a flash; fades out to reveal home, then unmounts. */}
-                {!splashDone && <Splash onDone={() => setSplashDone(true)} />}
+                {/* SaveSheetProvider sits under ToastProvider so a future save
+                    toast renders above the sheet; it mounts the save sheet once
+                    and lets home/library raise it via useSaveSheet(). */}
+                <SaveSheetProvider>
+                  <StatusBar style={colorScheme === "dark" ? "light" : "dark"} />
+                  {/* Redirects between the login group and the app once auth resolves. */}
+                  <AuthGate />
+                  {/* Native header off — every screen renders the custom TopBar instead. */}
+                  <Stack screenOptions={{ headerShown: false }} />
+                  {/* Above the Stack, matching --bg, so the native splash hands off
+                      without a flash; fades out to reveal home, then unmounts. */}
+                  {!splashDone && <Splash onDone={() => setSplashDone(true)} />}
+                </SaveSheetProvider>
               </ToastProvider>
             </ContextMenuProvider>
           </AuthProvider>

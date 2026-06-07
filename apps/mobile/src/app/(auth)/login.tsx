@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Mascot } from '../../components/mascot';
 import { Icon } from '../../components/icon';
+import { Spinner } from '../../components/spinner';
 import { SocialButton } from '../../components/auth/social-button';
 import { AuthDivider } from '../../components/auth/auth-divider';
 import { SmartInput, type SmartInputHandle } from '../../components/auth/smart-input';
@@ -174,6 +175,7 @@ export default function LoginScreen() {
             style={{ opacity: sending ? 0.6 : 1 }}
             className={`flex-row items-center justify-center gap-2 rounded-card bg-text px-4 py-3.5 ${PRESS}`}
           >
+            {sending && <Spinner />}
             <Text className="text-body font-semibold text-bg">
               {sending ? t('auth.sendingCode') : t('auth.sendCode')}
             </Text>

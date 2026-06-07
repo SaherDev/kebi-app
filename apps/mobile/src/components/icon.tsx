@@ -31,6 +31,7 @@ export type IconName =
   | 'eye'
   | 'trash'
   | 'alert'
+  | 'link'
   | 'mail'
   | 'phone';
 
@@ -119,6 +120,13 @@ const ICONS: Record<IconName, ReactNode> = {
       <Circle cx={12} cy={12} r={10} />
       <Line x1={12} y1={8} x2={12} y2={12} />
       <Line x1={12} y1={16} x2={12.01} y2={16} />
+    </>
+  ),
+  // Save-sheet source meta hint (kebi-save-sheet-mockup.html `.sheet-input-meta`).
+  link: (
+    <>
+      <Path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71" />
+      <Path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71" />
     </>
   ),
   // Smart-input meta hints (kebi-login-email-mockup.html `.input-meta`).
