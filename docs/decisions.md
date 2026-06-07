@@ -17,6 +17,16 @@ Format:
 
 ---
 
+## ADR-046: The client validates server responses into class models at the API boundary
+
+**Date:** 2026-06-07\
+**Status:** accepted\
+**Context:** The client trusted server payloads as-is — responses reached components unvalidated, so an unexpected or evolving kebi response failed deep in the UI instead of at the edge. `frontend.md` already called for runtime validation of AI responses but left open what the validated value *is*: a plain object, or a domain object. Plain objects spread shape-trusting, identity-less data through the app; the server had already chosen the other way (token claims are a class instance, not a plain object).\
+**Decision:** Validate every server-response contract type at the client's API boundary, and produce each as a **class instance that implements the canonical `libs/shared` interface** — not a plain object. The shared interfaces stay the single source of truth; the client owns the runtime models and their validation. Validation is **fail-closed** — drift raises a typed error rather than falling back silently (ADR-041) — and **forward-compatible** — unknown fields and out-of-vocabulary values are tolerated so kebi can evolve the contract without breaking the client (ADR-019). This refines `frontend.md`'s response-validation guidance.\
+**Consequences:** Components receive real domain objects, and contract drift surfaces loudly at the edge instead of as a confusing downstream failure. New response models follow this pattern. The models live in the client that consumes them (the mobile app today); `apps/web`'s parked plain-object schemas are superseded by this approach if that app is revived. Wiring the validators into each data path is per-feature work, not part of this decision.
+
+---
+
 ## ADR-045: Data-ownership boundaries — `users` is a mapping, `user_settings` is our product data
 
 **Date:** 2026-06-06\
