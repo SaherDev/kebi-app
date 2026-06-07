@@ -48,7 +48,7 @@ export const CATEGORY_EMOJI: Record<PlaceCategory, string> = {
   church: "⛪",
   mosque: "🕌",
   shrine: "⛩️",
-  landmark: "📍",
+  landmark: "📸",
   viewpoint: "👁️",
   // entertainment
   theme_park: "🎡",

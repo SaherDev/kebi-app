@@ -8,9 +8,24 @@ describe('PlaceAvatar', () => {
     expect(getByText(CATEGORY_EMOJI.cafe)).toBeTruthy();
   });
 
-  it('falls back to 📍 when categories are empty', () => {
+  it('falls back to 📍 only when categories are empty', () => {
     const { getByText } = render(<PlaceAvatar categories={[]} />);
     expect(getByText(CATEGORY_EMOJI_FALLBACK)).toBeTruthy();
+  });
+
+  it('skips an unmapped category and uses the first that maps', () => {
+    // 'point_of_interest' isn't in the map; 'beach' is — pin must not win.
+    const { getByText, queryByText } = render(
+      <PlaceAvatar categories={['point_of_interest' as never, 'beach']} />,
+    );
+    expect(getByText(CATEGORY_EMOJI.beach)).toBeTruthy();
+    expect(queryByText(CATEGORY_EMOJI_FALLBACK)).toBeNull();
+  });
+
+  it('landmark renders a real glyph, not the 📍 fallback', () => {
+    const { getByText } = render(<PlaceAvatar categories={['landmark']} />);
+    expect(CATEGORY_EMOJI.landmark).not.toBe(CATEGORY_EMOJI_FALLBACK);
+    expect(getByText(CATEGORY_EMOJI.landmark)).toBeTruthy();
   });
 
   it('honors an explicit emoji override', () => {

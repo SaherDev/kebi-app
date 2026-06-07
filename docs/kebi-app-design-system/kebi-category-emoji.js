@@ -43,7 +43,7 @@ const CATEGORY_EMOJI = {
   church: '⛪',
   mosque: '🕌',
   shrine: '⛩️',
-  landmark: '📍',
+  landmark: '📸',
   viewpoint: '👁️',
 
   // entertainment

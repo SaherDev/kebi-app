@@ -7,10 +7,11 @@ import {
 
 /**
  * A place's avatar — the category emoji on a `--surface-2` rounded square
- * (kebi-tokens-mockup.html `.demo-avatar`). The default emoji comes from the
- * primary category (`CATEGORY_EMOJI[categories[0]]`), falling back to 📍 when
- * categories are empty or unmapped; a caller may override per place via `emoji`.
- * Never a letter avatar. Light/dark is automatic (surface-2 swaps).
+ * (kebi-tokens-mockup.html `.demo-avatar`). The emoji is the first category that
+ * maps to one (categories are ordered most-specific first), so a generic primary
+ * never hides a specific later category. 📍 is the last resort — only when no
+ * category maps (empty or all-unmapped); a caller may override per place via
+ * `emoji`. Never a letter avatar. Light/dark is automatic (surface-2 swaps).
  */
 type AvatarSize = 'card' | 'row';
 
@@ -32,8 +33,9 @@ const SIZE: Record<AvatarSize, { box: number; emoji: number }> = {
 };
 
 export function PlaceAvatar({ categories, emoji, size = 'card', label }: PlaceAvatarProps) {
-  const primary = categories?.[0];
-  const resolved = emoji ?? (primary ? CATEGORY_EMOJI[primary] : undefined) ?? CATEGORY_EMOJI_FALLBACK;
+  // First category that maps to an emoji wins; 📍 only if none do.
+  const fromCategory = categories?.map((c) => CATEGORY_EMOJI[c]).find(Boolean);
+  const resolved = emoji ?? fromCategory ?? CATEGORY_EMOJI_FALLBACK;
   const { box, emoji: emojiSize } = SIZE[size];
   return (
     <View
