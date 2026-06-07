@@ -10,6 +10,11 @@ interface KebiFabProps {
   onPress?: () => void;
 }
 
+/** Diameter (px) of the floating AI button — `h-16 w-16` in the home mockup. */
+export const FAB_SIZE = 64;
+/** Distance (px) from the screen's right edge to the button. */
+export const FAB_EDGE_INSET = 16;
+
 /**
  * The single floating AI button — 64px circle, 16px from the right and sitting
  * just above the home indicator (anchored at the bottom safe-area edge, matching
@@ -31,10 +36,10 @@ export function KebiFab({ onPress }: KebiFabProps) {
       }}
       accessibilityRole="button"
       accessibilityLabel={t('nav.askKebi')}
-      className={`absolute h-16 w-16 items-center justify-center rounded-full ${PRESS} ${
+      className={`absolute items-center justify-center rounded-full ${PRESS} ${
         dark ? 'bg-text' : 'border border-surface-2 bg-white'
       }`}
-      style={{ right: 16, bottom: insets.bottom }}
+      style={{ width: FAB_SIZE, height: FAB_SIZE, right: FAB_EDGE_INSET, bottom: insets.bottom }}
     >
       <Mascot size={42} />
     </Pressable>

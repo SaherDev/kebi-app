@@ -25,6 +25,7 @@ import { useEffect, useState } from "react";
 import { I18nProvider } from "../i18n/context";
 import { ToastProvider } from "../components/toast-context";
 import { SaveSheetProvider } from "../components/save-sheet-context";
+import { ChatProvider } from "../components/chat-context";
 import { ContextMenuProvider } from "../components/context-menu/context-menu-context";
 import { Splash } from "../components/splash";
 import { AuthProvider, useAuth } from "../auth/auth-context";
@@ -95,8 +96,13 @@ export default function RootLayout() {
                   <StatusBar style={colorScheme === "dark" ? "light" : "dark"} />
                   {/* Redirects between the login group and the app once auth resolves. */}
                   <AuthGate />
-                  {/* Native header off — every screen renders the custom TopBar instead. */}
-                  <Stack screenOptions={{ headerShown: false }} />
+                  {/* ChatProvider wraps the Stack so the circular-reveal chat
+                      overlay renders above home (the origin FAB stays behind it),
+                      but below the boot splash and toasts. */}
+                  <ChatProvider>
+                    {/* Native header off — every screen renders the custom TopBar instead. */}
+                    <Stack screenOptions={{ headerShown: false }} />
+                  </ChatProvider>
                   {/* Above the Stack, matching --bg, so the native splash hands off
                       without a flash; fades out to reveal home, then unmounts. */}
                   {!splashDone && <Splash onDone={() => setSplashDone(true)} />}

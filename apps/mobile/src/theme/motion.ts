@@ -80,6 +80,25 @@ export const SPRING_CONFIG = {
 } as const;
 
 /**
+ * Chat open/close transition (kebi-chat-mockup). The chat surface fades in and
+ * scales up out of the FAB's corner (a container-morph feel), with home held in
+ * place behind (no dim, no blur). Close plays the reverse — shrinking and fading
+ * back into the button — shorter. The same bezier drives both directions; feed
+ * it to `Easing.bezier(...CHAT_REVEAL.bezier)` and pass the duration to
+ * `withTiming`. `fromScale` is the size the chat collapses into at the button.
+ */
+export const CHAT_REVEAL = {
+  /** Open: fade + scale up out of the button. */
+  openMs: 300,
+  /** Close: shrink + fade back into the button (faster than open). */
+  closeMs: 220,
+  /** Scale the chat starts at (collapsed) and ends at (closed). */
+  fromScale: 0.92,
+  /** ease-out: quick out of the button, gentle settle (cubic-bezier). */
+  bezier: [0.16, 1, 0.3, 1] as const,
+} as const;
+
+/**
  * Stagger delay between sequential items (reasoning steps, list entrance).
  * Usage: `withDelay(index * STAGGER_MS, withTiming(...))`
  */

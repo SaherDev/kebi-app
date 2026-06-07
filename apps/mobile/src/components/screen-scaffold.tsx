@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { View } from 'react-native';
-import { useRouter } from 'expo-router';
 import { KebiFab } from './kebi-fab';
+import { useChat } from './chat-context';
 
 interface ScreenScaffoldProps {
   /** The top-bar element for this screen. */
@@ -13,16 +13,16 @@ interface ScreenScaffoldProps {
 
 /**
  * Standard screen frame: page background + top bar + content + the floating AI
- * button (overlaid on every screen except chat). The FAB routes to the chat
- * consult screen.
+ * button (overlaid on every screen except chat). The FAB opens the chat overlay,
+ * which reveals in a circular wipe from the button while this screen stays put.
  */
 export function ScreenScaffold({ topBar, children, showFab = true }: ScreenScaffoldProps) {
-  const router = useRouter();
+  const chat = useChat();
   return (
     <View className="flex-1 bg-bg">
       {topBar}
       {children}
-      {showFab ? <KebiFab onPress={() => router.push('/chat')} /> : null}
+      {showFab ? <KebiFab onPress={chat.open} /> : null}
     </View>
   );
 }
