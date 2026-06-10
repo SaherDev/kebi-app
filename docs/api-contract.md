@@ -15,7 +15,7 @@ All requests come from NestJS after auth verification. kebi never receives reque
 
 ## Connection
 
-- Base URL loaded from YAML config: `ai_service.base_url`
+- Base URL loaded from the `KEBI_BASE_URL` env var
 - All endpoints are prefixed with `/v1/`
 - Most requests are JSON over HTTP (`Content-Type: application/json`)
 - `POST /v1/chat/stream` uses Server-Sent Events (`Content-Type: text/event-stream`) — NestJS must forward the stream to the frontend without buffering

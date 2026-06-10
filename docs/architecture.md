@@ -133,18 +133,21 @@ Behavioral and implementation patterns live in docs/decisions.md.
 ### Facade — Controllers
 Controllers are the HTTP entry point only. Each controller method
 makes exactly one service call and returns the result. No TypeORM
-repository calls, no AiServiceClient calls, no business logic appear inside
+repository calls, no kebi client calls, no business logic appear inside
 any controller file. All orchestration lives in the service layer.
 Guards and pipes via decorators do not count as logic inside the
 method body.
 
 ### Interface — Swappable Dependencies
-Any external dependency lives behind a TypeScript interface.
+Any **swappable external** dependency lives behind a TypeScript interface.
 Controllers and services import the interface only, injected via
-NestJS dependency injection. No concrete class is imported directly
+NestJS dependency injection. No concrete swappable class is imported directly
 in business logic. Concrete implementations live in their domain
 module or in a shared provider if used across multiple modules.
-AiServiceClient is the reference example.
+`IdentityProvider` (Supabase today, swappable via config) is the reference
+example. Internal infrastructure wrappers — `KebiHttpClient` over `HttpService`,
+which has exactly one implementation — are injected concretely like
+`HttpService`/`ConfigService`, not interfaced (ADR-047).
 
 ### Strategy — HTTP Transport (apps/web)
 All HTTP calls from apps/web go through the HttpClient interface.

@@ -1,10 +1,10 @@
 import { Module } from '@nestjs/common';
-import { AiServiceModule } from '../ai-service/ai-service.module';
+import { KebiModule } from '../kebi/kebi.module';
 import { ExtractController } from './extract.controller';
 import { ExtractService } from './extract.service';
 
 @Module({
-  imports: [AiServiceModule],
+  imports: [KebiModule],
   controllers: [ExtractController],
   providers: [ExtractService],
 })

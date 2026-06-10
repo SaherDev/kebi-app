@@ -1,57 +1,29 @@
 import type { LibraryResponse, LibraryUserData } from '@kebi-app/shared';
-import type { IAiServiceClient } from '../ai-service/ai-service-client.interface';
+import { KebiHttpClient } from '../kebi/kebi-http.client';
 import type { LibraryQueryDto } from './dto/library-query.dto';
 import type { UpdateUserPlaceDto } from './dto/update-user-place.dto';
 import { UserService } from './user.service';
 
+const USER_ID = 'user_test_123';
+
 describe('UserService', () => {
   let service: UserService;
-  let aiClient: jest.Mocked<IAiServiceClient>;
+  let kebi: jest.Mocked<KebiHttpClient>;
 
   beforeEach(() => {
-    aiClient = {
-      chatStream: jest.fn(),
-      postSignal: jest.fn(),
-      extractPlace: jest.fn(),
-      deleteUserData: jest.fn(),
-      getUserLibrary: jest.fn(),
-      updateUserPlace: jest.fn(),
-      deleteUserPlace: jest.fn(),
-    };
-    service = new UserService(aiClient);
-  });
-
-  describe('deleteData', () => {
-    it('forwards the user id to the AI client with no scopes by default', async () => {
-      aiClient.deleteUserData.mockResolvedValueOnce(undefined);
-
-      await service.deleteData('user_test_123');
-
-      expect(aiClient.deleteUserData).toHaveBeenCalledTimes(1);
-      expect(aiClient.deleteUserData).toHaveBeenCalledWith('user_test_123', undefined);
-    });
-
-    it('forwards scopes when provided', async () => {
-      aiClient.deleteUserData.mockResolvedValueOnce(undefined);
-
-      await service.deleteData('user_test_123', ['chat_history']);
-
-      expect(aiClient.deleteUserData).toHaveBeenCalledWith('user_test_123', ['chat_history']);
-    });
-
-    it('propagates upstream errors to the caller', async () => {
-      const err = new Error('upstream 500');
-      aiClient.deleteUserData.mockRejectedValueOnce(err);
-
-      await expect(service.deleteData('user_test_123')).rejects.toBe(err);
-    });
+    kebi = {
+      get: jest.fn(),
+      patch: jest.fn(),
+      delete: jest.fn(),
+    } as unknown as jest.Mocked<KebiHttpClient>;
+    service = new UserService(kebi);
   });
 
   describe('getLibrary', () => {
     const response: LibraryResponse = { places: [], next_cursor: null };
 
-    it('flattens the validated query and forwards the user id as the header arg', async () => {
-      aiClient.getUserLibrary.mockResolvedValueOnce(response);
+    it('serializes scalars and repeats array params (category/tag), dropping omitted ones', async () => {
+      (kebi.get as jest.Mock).mockResolvedValueOnce(response);
       const query: LibraryQueryDto = {
         category: ['cafe', 'bar'],
         visited: false,
@@ -59,71 +31,122 @@ describe('UserService', () => {
         limit: 20,
       };
 
-      const result = await service.getLibrary('user_test_123', query);
+      const result = await service.getLibrary(USER_ID, query);
 
-      expect(aiClient.getUserLibrary).toHaveBeenCalledTimes(1);
-      expect(aiClient.getUserLibrary).toHaveBeenCalledWith(
-        {
-          category: ['cafe', 'bar'],
-          visited: 'false',
-          sort: 'name',
-          limit: '20',
-        },
-        'user_test_123'
+      expect(kebi.get).toHaveBeenCalledWith(
+        '/v1/user/library?category=cafe&category=bar&visited=false&sort=name&limit=20',
+        USER_ID
       );
       expect(result).toBe(response);
     });
 
-    it('drops omitted params and forwards an empty record for a bare query', async () => {
-      aiClient.getUserLibrary.mockResolvedValueOnce(response);
+    it('GETs with no query string for a bare query', async () => {
+      (kebi.get as jest.Mock).mockResolvedValueOnce(response);
 
-      await service.getLibrary('user_test_123', {});
+      await service.getLibrary(USER_ID, {});
 
-      expect(aiClient.getUserLibrary).toHaveBeenCalledWith({}, 'user_test_123');
+      expect(kebi.get).toHaveBeenCalledWith('/v1/user/library', USER_ID);
     });
   });
 
   describe('updatePlace', () => {
     const updated = { user_place_id: 'up_1', visited: true } as LibraryUserData;
 
-    it('forwards the path id, partial body, and user id (header)', async () => {
-      aiClient.updateUserPlace.mockResolvedValueOnce(updated);
+    it('PATCHes /v1/user/places/{id} with the partial body and user id (header)', async () => {
+      (kebi.patch as jest.Mock).mockResolvedValueOnce(updated);
       const dto: UpdateUserPlaceDto = { visited: true };
 
-      const result = await service.updatePlace('user_test_123', 'up_1', dto);
+      const result = await service.updatePlace(USER_ID, 'up_1', dto);
 
-      expect(aiClient.updateUserPlace).toHaveBeenCalledWith('up_1', dto, 'user_test_123');
+      expect(kebi.patch).toHaveBeenCalledWith(
+        '/v1/user/places/up_1',
+        USER_ID,
+        { visited: true }
+      );
       expect(result).toBe(updated);
     });
 
     it('preserves an explicit null (clear) in the forwarded body', async () => {
-      aiClient.updateUserPlace.mockResolvedValueOnce(updated);
+      (kebi.patch as jest.Mock).mockResolvedValueOnce(updated);
       const dto: UpdateUserPlaceDto = { liked: null, note: null };
 
-      await service.updatePlace('user_test_123', 'up_1', dto);
+      await service.updatePlace(USER_ID, 'up_1', dto);
 
-      expect(aiClient.updateUserPlace).toHaveBeenCalledWith(
-        'up_1',
-        { liked: null, note: null },
-        'user_test_123'
+      expect(kebi.patch).toHaveBeenCalledWith(
+        '/v1/user/places/up_1',
+        USER_ID,
+        { liked: null, note: null }
+      );
+    });
+
+    it('url-encodes the path id', async () => {
+      (kebi.patch as jest.Mock).mockResolvedValueOnce(updated);
+
+      await service.updatePlace(USER_ID, 'a/b 1', { visited: true });
+
+      expect(kebi.patch).toHaveBeenCalledWith(
+        '/v1/user/places/a%2Fb%201',
+        USER_ID,
+        { visited: true }
       );
     });
   });
 
   describe('deletePlace', () => {
-    it('forwards the path id and user id (header)', async () => {
-      aiClient.deleteUserPlace.mockResolvedValueOnce(undefined);
+    it('DELETEs /v1/user/places/{id} with the user id (header)', async () => {
+      (kebi.delete as jest.Mock).mockResolvedValueOnce(undefined);
 
-      await service.deletePlace('user_test_123', 'up_1');
+      await service.deletePlace(USER_ID, 'up_1');
 
-      expect(aiClient.deleteUserPlace).toHaveBeenCalledWith('up_1', 'user_test_123');
+      expect(kebi.delete).toHaveBeenCalledWith('/v1/user/places/up_1', USER_ID);
     });
 
-    it('propagates a 404 from the AI client', async () => {
+    it('propagates a 404 from the transport', async () => {
       const err = new Error('saved_place_not_found');
-      aiClient.deleteUserPlace.mockRejectedValueOnce(err);
+      (kebi.delete as jest.Mock).mockRejectedValueOnce(err);
 
-      await expect(service.deletePlace('user_test_123', 'missing')).rejects.toBe(err);
+      await expect(service.deletePlace(USER_ID, 'missing')).rejects.toBe(err);
+    });
+  });
+
+  describe('deleteData', () => {
+    it('DELETEs /v1/user/data with no query string when scopes is omitted or empty', async () => {
+      (kebi.delete as jest.Mock).mockResolvedValue(undefined);
+
+      await service.deleteData(USER_ID);
+      await service.deleteData(USER_ID, []);
+
+      expect(kebi.delete).toHaveBeenNthCalledWith(1, '/v1/user/data', USER_ID);
+      expect(kebi.delete).toHaveBeenNthCalledWith(2, '/v1/user/data', USER_ID);
+    });
+
+    it('serializes a single scope as ?scope=value', async () => {
+      (kebi.delete as jest.Mock).mockResolvedValueOnce(undefined);
+
+      await service.deleteData(USER_ID, ['chat_history']);
+
+      expect(kebi.delete).toHaveBeenCalledWith(
+        '/v1/user/data?scope=chat_history',
+        USER_ID
+      );
+    });
+
+    it('serializes multiple scopes as repeated ?scope= params', async () => {
+      (kebi.delete as jest.Mock).mockResolvedValueOnce(undefined);
+
+      await service.deleteData(USER_ID, ['chat_history', 'all']);
+
+      expect(kebi.delete).toHaveBeenCalledWith(
+        '/v1/user/data?scope=chat_history&scope=all',
+        USER_ID
+      );
+    });
+
+    it('propagates upstream errors to the caller', async () => {
+      const err = new Error('upstream 500');
+      (kebi.delete as jest.Mock).mockRejectedValueOnce(err);
+
+      await expect(service.deleteData(USER_ID)).rejects.toBe(err);
     });
   });
 });

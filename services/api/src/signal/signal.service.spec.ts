@@ -1,25 +1,20 @@
 import type { SignalResponse } from '@kebi-app/shared';
-import type { IAiServiceClient } from '../ai-service/ai-service-client.interface';
+import { KebiHttpClient } from '../kebi/kebi-http.client';
 import { SignalRequestDto } from './dto/signal-request.dto';
 import { SignalService } from './signal.service';
 
 describe('SignalService', () => {
   let service: SignalService;
-  let aiClient: jest.Mocked<IAiServiceClient>;
+  let kebi: jest.Mocked<KebiHttpClient>;
 
   beforeEach(() => {
-    aiClient = {
-      chatStream: jest.fn(),
-      postSignal: jest.fn(),
-      extractPlace: jest.fn(),
-      deleteUserData: jest.fn(),
-    };
-    service = new SignalService(aiClient);
+    kebi = { post: jest.fn() } as unknown as jest.Mocked<KebiHttpClient>;
+    service = new SignalService(kebi);
   });
 
-  it('forwards an accepted signal with the verified user id as the second arg (header), never the body', async () => {
+  it('POSTs /v1/signal with the verified user id as the header arg, never the body', async () => {
     const body: SignalResponse = { status: 'accepted' };
-    aiClient.postSignal.mockResolvedValueOnce(body);
+    (kebi.post as jest.Mock).mockResolvedValueOnce(body);
 
     const dto: SignalRequestDto = {
       signal_type: 'recommendation_accepted',
@@ -29,19 +24,16 @@ describe('SignalService', () => {
 
     const result = await service.submit('user_test_123', dto);
 
-    expect(aiClient.postSignal).toHaveBeenCalledWith(
-      {
-        signal_type: 'recommendation_accepted',
-        recommendation_id: 'rec_1',
-        place_core_id: 'c0ffee00-1111-2222-3333-444455556666',
-      },
-      'user_test_123'
-    );
+    expect(kebi.post).toHaveBeenCalledWith('/v1/signal', 'user_test_123', {
+      signal_type: 'recommendation_accepted',
+      recommendation_id: 'rec_1',
+      place_core_id: 'c0ffee00-1111-2222-3333-444455556666',
+    });
     expect(result).toEqual(body);
   });
 
   it('forwards rejected signals the same way', async () => {
-    aiClient.postSignal.mockResolvedValueOnce({ status: 'accepted' });
+    (kebi.post as jest.Mock).mockResolvedValueOnce({ status: 'accepted' });
 
     const dto: SignalRequestDto = {
       signal_type: 'recommendation_rejected',
@@ -51,15 +43,16 @@ describe('SignalService', () => {
 
     await service.submit('user_test_456', dto);
 
-    expect(aiClient.postSignal).toHaveBeenCalledWith(
-      expect.objectContaining({ signal_type: 'recommendation_rejected' }),
-      'user_test_456'
+    expect(kebi.post).toHaveBeenCalledWith(
+      '/v1/signal',
+      'user_test_456',
+      expect.objectContaining({ signal_type: 'recommendation_rejected' })
     );
   });
 
   it('propagates upstream errors so the global filter can translate them', async () => {
     const upstream = new Error('kebi error');
-    aiClient.postSignal.mockRejectedValueOnce(upstream);
+    (kebi.post as jest.Mock).mockRejectedValueOnce(upstream);
 
     await expect(
       service.submit('user_test_123', {

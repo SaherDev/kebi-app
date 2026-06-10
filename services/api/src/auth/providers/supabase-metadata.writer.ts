@@ -15,7 +15,7 @@ import { AppMetadataCipher } from '../app-metadata.cipher';
  * and auto-embedded in every minted token, so once stamped the gateway reads
  * identity + plan claim-first with no DB hit.
  *
- * Uses HttpService (like AiServiceClient) — no Supabase SDK dependency. Fails
+ * Uses HttpService (like KebiHttpClient) — no Supabase SDK dependency. Fails
  * open: any missing config or HTTP error is logged and swallowed so stamping
  * never breaks the request, which still has its id from the DB fallback.
  */

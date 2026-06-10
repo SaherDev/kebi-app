@@ -1,21 +1,18 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import type { ExtractPlaceResponse } from '@kebi-app/shared';
-import {
-  AI_SERVICE_CLIENT,
-  type IAiServiceClient,
-} from '../ai-service/ai-service-client.interface';
+import { KebiHttpClient } from '../kebi/kebi-http.client';
 import { ExtractRequestDto } from './dto/extract-request.dto';
 
 @Injectable()
 export class ExtractService {
-  constructor(
-    @Inject(AI_SERVICE_CLIENT) private readonly aiClient: IAiServiceClient
-  ) {}
+  constructor(private readonly kebi: KebiHttpClient) {}
 
   async extract(
     userId: string,
     dto: ExtractRequestDto
   ): Promise<ExtractPlaceResponse> {
-    return this.aiClient.extractPlace({ raw_input: dto.raw_input }, userId);
+    return this.kebi.post<ExtractPlaceResponse>('/v1/extract', userId, {
+      raw_input: dto.raw_input,
+    });
   }
 }

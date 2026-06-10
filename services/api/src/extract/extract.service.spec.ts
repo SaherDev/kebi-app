@@ -1,23 +1,18 @@
 import type { ExtractPlaceResponse } from '@kebi-app/shared';
-import type { IAiServiceClient } from '../ai-service/ai-service-client.interface';
+import { KebiHttpClient } from '../kebi/kebi-http.client';
 import { ExtractRequestDto } from './dto/extract-request.dto';
 import { ExtractService } from './extract.service';
 
 describe('ExtractService', () => {
   let service: ExtractService;
-  let aiClient: jest.Mocked<IAiServiceClient>;
+  let kebi: jest.Mocked<KebiHttpClient>;
 
   beforeEach(() => {
-    aiClient = {
-      chatStream: jest.fn(),
-      postSignal: jest.fn(),
-      extractPlace: jest.fn(),
-      deleteUserData: jest.fn(),
-    };
-    service = new ExtractService(aiClient);
+    kebi = { post: jest.fn() } as unknown as jest.Mocked<KebiHttpClient>;
+    service = new ExtractService(kebi);
   });
 
-  it('forwards raw_input and the verified user id (header) to the AI client', async () => {
+  it('POSTs /v1/extract with raw_input and the verified user id (header)', async () => {
     const response: ExtractPlaceResponse = {
       status: 'completed',
       results: [],
@@ -26,7 +21,7 @@ describe('ExtractService', () => {
       failure_reason: null,
       failure_message: null,
     };
-    aiClient.extractPlace.mockResolvedValueOnce(response);
+    (kebi.post as jest.Mock).mockResolvedValueOnce(response);
 
     const dto: ExtractRequestDto = {
       raw_input: 'https://www.tiktok.com/@user/video/123',
@@ -34,16 +29,15 @@ describe('ExtractService', () => {
 
     const result = await service.extract('user_test_123', dto);
 
-    expect(aiClient.extractPlace).toHaveBeenCalledWith(
-      { raw_input: 'https://www.tiktok.com/@user/video/123' },
-      'user_test_123'
-    );
+    expect(kebi.post).toHaveBeenCalledWith('/v1/extract', 'user_test_123', {
+      raw_input: 'https://www.tiktok.com/@user/video/123',
+    });
     expect(result).toEqual(response);
   });
 
   it('propagates upstream errors to the caller', async () => {
     const err = new Error('kebi pipeline error');
-    aiClient.extractPlace.mockRejectedValueOnce(err);
+    (kebi.post as jest.Mock).mockRejectedValueOnce(err);
 
     await expect(
       service.extract('user_test_123', { raw_input: 'a place' })

@@ -1,16 +1,11 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import type { SignalRequest, SignalResponse } from '@kebi-app/shared';
-import {
-  AI_SERVICE_CLIENT,
-  type IAiServiceClient,
-} from '../ai-service/ai-service-client.interface';
+import { KebiHttpClient } from '../kebi/kebi-http.client';
 import { SignalRequestDto } from './dto/signal-request.dto';
 
 @Injectable()
 export class SignalService {
-  constructor(
-    @Inject(AI_SERVICE_CLIENT) private readonly aiClient: IAiServiceClient
-  ) {}
+  constructor(private readonly kebi: KebiHttpClient) {}
 
   async submit(userId: string, dto: SignalRequestDto): Promise<SignalResponse> {
     const payload: SignalRequest = {
@@ -18,6 +13,6 @@ export class SignalService {
       recommendation_id: dto.recommendation_id,
       place_core_id: dto.place_core_id,
     };
-    return this.aiClient.postSignal(payload, userId);
+    return this.kebi.post<SignalResponse>('/v1/signal', userId, payload);
   }
 }

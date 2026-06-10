@@ -17,6 +17,16 @@ Format:
 
 ---
 
+## ADR-047: One shared kebi transport, injected directly; only chat is an AI concern
+
+**Date:** 2026-06-10\
+**Status:** accepted\
+**Context:** All forwarding to kebi went through one fat client interface that bundled chat, signal, extract, and user library/places/data. Every consumer injected the whole thing while calling one slice (Interface Segregation violation), and the "AI" label was applied indiscriminately — yet NestJS is a thin gateway, and the only operation it forwards that is genuinely AI-shaped is the chat agent stream. Signal, extract, and user CRUD are plain request/response relays. ADR-016's single-client rationale was already superseded by ADR-036.\
+**Decision:** Replace the fat client with a single shared transport, `KebiHttpClient`, that owns the base URL, the `X-Gateway-*` auth headers, and the timeout, and exposes generic verbs (`get`/`post`/`patch`/`delete`/`postStream`). Each domain service injects it **directly** and calls it with its own route + payload (the service owns its kebi path and any query/scope serialization). No per-domain client interfaces or tokens: `KebiHttpClient` is internal infrastructure — a thin wrapper over `HttpService` — so it is injected concretely the same way `HttpService`/`ConfigService` are. This is the scope boundary of ADR-033: interface-first applies to **swappable external** dependencies (the auth provider, an LLM vendor), not to our own infra transports, which have exactly one implementation. The AI label is reserved for chat (`@RequiresAi()`, ADR-022, applies only to the chat endpoint). The gateway's outbound base URL is configured as `KEBI_BASE_URL`.\
+**Consequences:** Two layers — controller → service → transport — with no near-empty per-domain adapter in between. Adding a kebi route is one method on the calling service; transport changes (headers, timeout, retries) happen in one class. Services unit-test against a mocked `KebiHttpClient`. The `KEBI_BASE_URL` rename requires a coordinated Railway variable change (the shared secret is unchanged).
+
+---
+
 ## ADR-046: The client validates server responses into class models at the API boundary
 
 **Date:** 2026-06-07\

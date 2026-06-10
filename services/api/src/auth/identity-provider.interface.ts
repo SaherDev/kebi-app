@@ -4,7 +4,8 @@ import { NormalizedIdentity } from '@kebi-app/shared';
  * Interface for an authentication provider.
  * Abstracts token verification behind a provider-agnostic contract so the auth
  * provider (Supabase today) can be swapped via config without touching the request
- * path. Mirrors the IAiServiceClient / AI_SERVICE_CLIENT reference pattern.
+ * path. The reference example of ADR-033's interface-first rule for swappable
+ * external dependencies.
  *
  * Implementations contain ALL provider-specific knowledge (SDK calls, claim
  * locations) and return a NormalizedIdentity. Business code depends on this
