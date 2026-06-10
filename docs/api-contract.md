@@ -43,13 +43,16 @@ rotate by setting the new value on both sides during the same deploy.
 Per-user buckets enforced via slowapi. Excess → HTTP 429. Buckets are
 keyed by the verified `X-Gateway-User-Id`.
 
-| Endpoint             | Bucket      |
-| -------------------- | ----------- |
-| POST /v1/chat        | 30 / minute |
-| POST /v1/chat/stream | 30 / minute |
-| POST /v1/extract     | 10 / minute |
-| POST /v1/signal      | 60 / minute |
-| DELETE /v1/user/data | 3 / hour    |
+| Endpoint                    | Bucket      |
+| --------------------------- | ----------- |
+| POST /v1/chat               | 30 / minute |
+| POST /v1/chat/stream        | 30 / minute |
+| POST /v1/extract            | 10 / minute |
+| GET /v1/user/library        | 60 / minute |
+| PATCH /v1/user/places/{id}  | 60 / minute |
+| DELETE /v1/user/places/{id} | 60 / minute |
+| POST /v1/signal             | 60 / minute |
+| DELETE /v1/user/data        | 3 / hour    |
 
 ### Request-ID correlation
 
@@ -347,6 +350,190 @@ ADR-074: results are cached by canonical URL — a repeat submission of the same
 
 ---
 
+## GET /v1/user/library
+
+The Library screen — a browsable, filterable, paged list of the caller's
+saved places (`user_places ⋈ places`). This is the first standalone
+product-facing catalog read; saved places were previously reachable only
+inside chat `tool_results`. `user_id` is taken from `X-Gateway-User-Id`, so
+a caller can only ever read **their own** library.
+
+**Request:** query params only (all optional). Plus the
+`X-Gateway-Token` + `X-Gateway-User-Id` headers.
+
+```
+GET /v1/user/library
+GET /v1/user/library?category=cafe&visited=false&source=tiktok&limit=20
+GET /v1/user/library?sort=name&limit=20
+GET /v1/user/library?sort=name&limit=20&cursor=<next_cursor-from-prior-response>
+```
+
+| Param          | Type                                | Notes                                                                                                            |
+| -------------- | ----------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `category`     | repeated `PlaceCategory`            | OR across repeats. `?category=cafe&category=bar`                                                                 |
+| `tag`          | repeated `string`                   | Tag **value**; AND across repeats (every value must be present)                                                  |
+| `city`         | `string`                            | Case-insensitive match on `place.location.city`                                                                  |
+| `country`      | `string`                            | Exact match on `place.location.country`                                                                          |
+| `source`       | `PlaceSource`                       | `tiktok \| instagram \| youtube \| google_maps_list \| manual \| kebi`                                           |
+| `visited`      | `bool`                              | Filter on the user's visited flag                                                                                |
+| `liked`        | `bool`                              | Filter on the user's like flag                                                                                   |
+| `approved`     | `bool`                              | Curation flag (ADR-071). **Omitted → every save is returned regardless of `approved`**                           |
+| `saved_after`  | ISO-8601                            | Saves on/after this instant                                                                                      |
+| `saved_before` | ISO-8601                            | Saves on/before this instant                                                                                     |
+| `sort`         | `recent \| name` (default `recent`) | The screen's recent ↔ A–Z toggle. `recent` = newest-saved first; `name` = case-insensitive A–Z                   |
+| `limit`        | `int` (1–100, default 50)           | Max places per page. Out-of-range → 422                                                                          |
+| `cursor`       | `string`                            | Opaque cursor from a prior response's `next_cursor`. Omit for the first page. Malformed or sort-mismatched → 400 |
+
+Filters combine with **AND**. Default order is newest-first (`saved_at`
+descending); `sort=name` switches to case-insensitive alphabetical. A
+`cursor` is bound to the `sort` it was issued under — replaying it under a
+different `sort` is a **400**, so flipping the toggle restarts paging from
+the first page (drop the `cursor`). Keep `sort` fixed across a paging run.
+
+**Response (200):** `LibraryResponse`
+
+```json
+{
+  "places": [
+    {
+      "place": {
+        /* PlaceCore */
+      },
+      "user_data": {
+        "user_place_id": "9b1c…",
+        "place_id": "c0ffee00-1111-2222-3333-444455556666",
+        "approved": false,
+        "visited": false,
+        "liked": null,
+        "note": null,
+        "source": "tiktok",
+        "source_ref": "https://www.tiktok.com/@user/video/123",
+        "source_label": "Mirror Temple",
+        "saved_at": "2026-05-01T08:00:00Z",
+        "visited_at": null
+      }
+    }
+  ],
+  "next_cursor": "eyJ0cyI6…"
+}
+```
+
+| Field         | Type               | Notes                                                                                                                                                                               |
+| ------------- | ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `places`      | `SavedPlaceView[]` | `{ place: PlaceCore, user_data: UserPlace }`. `place` carries catalog fields only — no live rating/hours (same as extraction). `user_data` is this user's relationship to the place |
+| `next_cursor` | `string \| null`   | Opaque keyset cursor. Pass it back as `?cursor=` for the next page. **`null` on the last page**                                                                                     |
+
+`user_data` (`UserPlace`) fields: `user_place_id`, `place_id`, `approved`,
+`visited`, `liked` (tri-state, may be `null`), `note`, `source`,
+`source_ref` (origin URL; `null` for `manual`/`kebi`), `source_label` (the
+name the place was shown as in the source post, ADR-081; `null` when it
+matched the canonical name), `saved_at`, `visited_at`. `user_id` is **not**
+echoed — the caller already knows who they are.
+
+**Empty state:** a user with no saves (or no matches) returns
+`{ "places": [], "next_cursor": null }` — the empty-state UI is the
+product's concern; the shape is guaranteed.
+
+**Paging:** keyset (cursor) pagination, not offset — stable under new
+saves (no skipped/duplicated rows at page boundaries) and fast at any
+depth. The cursor anchors on the active sort's key plus `user_place_id`
+(`saved_at` for `recent`, the case-folded place name for `name`) and
+records which sort minted it; clients treat it as opaque and stop when
+`next_cursor` is `null`.
+
+| Code  | When                                                                |
+| ----- | ------------------------------------------------------------------- |
+| `200` | Success (including the empty library)                               |
+| `400` | Malformed `cursor`, or a `cursor` replayed under a different `sort` |
+| `422` | Unknown query param, bad enum value, or `limit` out of 1–100        |
+
+---
+
+## PATCH /v1/user/places/{user_place_id}
+
+Update one saved place's **user-state** — the Library pills and menu actions
+(been-there / liked / approved / note). `user_id` is taken from
+`X-Gateway-User-Id`, so a caller can only ever mutate **their own** save;
+ownership is enforced in the update itself (matched on
+`(user_place_id, user_id)`).
+
+**Request:** a partial JSON body — only the fields that changed. Plus the
+`X-Gateway-Token` + `X-Gateway-User-Id` headers.
+
+```
+PATCH /v1/user/places/{user_place_id}
+```
+
+```json
+{ "visited": true }
+```
+
+| Field      | Type             | Notes                                        |
+| ---------- | ---------------- | -------------------------------------------- |
+| `visited`  | `bool`           | Been-there flag                              |
+| `liked`    | `bool \| null`   | Tri-state like. `null` returns it to neutral |
+| `approved` | `bool`           | Curation flag                                |
+| `note`     | `string \| null` | Free-text note. `null` clears it             |
+
+**Partial semantics:** omitted ≠ null. An **omitted** field is left
+untouched; an **explicit `null`** clears it (un-like to neutral, erase a
+note). An **empty body** (`{}` or all fields omitted) is rejected with
+**422** — a no-op patch is a client mistake. Unknown fields → 422. There is
+no server-side `visited_at` stamping; only the flags/note above change.
+
+**Response (200):** `LibraryUserData` — the full updated user-state, the
+same shape as `user_data` in the library response (every `UserPlace` field
+**except `user_id`**, which is never echoed). Returning the whole object
+lets the client replace its local row wholesale.
+
+```json
+{
+  "user_place_id": "9b1c…",
+  "place_id": "c0ffee00-1111-2222-3333-444455556666",
+  "approved": false,
+  "visited": true,
+  "liked": null,
+  "note": null,
+  "source": "tiktok",
+  "source_ref": "https://www.tiktok.com/@user/video/123",
+  "source_label": "Mirror Temple",
+  "saved_at": "2026-05-01T08:00:00Z",
+  "visited_at": null
+}
+```
+
+| Code  | When                                                                                                                                  |
+| ----- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| `200` | Updated — returns the new user-state                                                                                                  |
+| `404` | No such save **or** it belongs to another user (`detail: saved_place_not_found`) — the two are indistinguishable, so it leaks nothing |
+| `422` | Empty body, unknown field, or bad value type                                                                                          |
+
+---
+
+## DELETE /v1/user/places/{user_place_id}
+
+Remove one saved place from the caller's library (swipe-to-delete / remove).
+Hard-deletes the single `user_places` row; the shared catalog place and its
+embeddings stay (cross-user data). `user_id` is taken from
+`X-Gateway-User-Id` and enforced in the delete (matched on
+`(user_place_id, user_id)`), so a caller can only ever delete **their own**
+save. The taste model is not recomputed on a single removal.
+
+**Request:** no body. The `X-Gateway-Token` + `X-Gateway-User-Id` headers.
+
+```
+DELETE /v1/user/places/{user_place_id}
+```
+
+**Response:** `204 No Content` on success (empty body).
+
+| Code  | When                                                                                                                                                                            |
+| ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `204` | The caller's save was removed                                                                                                                                                   |
+| `404` | No such save **or** it belongs to another user (`detail: saved_place_not_found`) — indistinguishable, so it leaks nothing. A repeat delete of the same id therefore returns 404 |
+
+---
+
 ## DELETE /v1/user/data
 
 Hard-deletes a user's **AI-owned data**. Does NOT delete the user account — that lives in NestJS/Clerk. Called by the product repo's account-deletion flow after it deletes its own `users` / `user_settings` rows.
@@ -447,14 +634,17 @@ Always HTTP 200 — DB outages surface via `db: "disconnected"`.
 
 All protected calls additionally send the `X-Gateway-Token` + `X-Gateway-User-Id` headers (see "Service-to-service auth").
 
-| Endpoint             | Purpose                                    | NestJS Sends (body)                           | kebi Returns                                                                             |
-| -------------------- | ------------------------------------------ | --------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| POST /v1/chat        | Conversational turn (consult-family agent) | message, optional location, movement_profile  | type (`agent`\|`error`), message, data (reasoning_steps + tool_results), tool_calls_used |
-| POST /v1/chat/stream | SSE streaming chat                         | Same as POST /v1/chat                         | reasoning_step + tool_result + message + done frames                                     |
-| POST /v1/extract     | Canonical extraction (save a place)        | raw_input                                     | ExtractPlaceResponse                                                                     |
-| DELETE /v1/user/data | Account-deletion sweep of AI data          | — (optional `scope` query param)              | 204 No Content                                                                           |
-| POST /v1/signal      | Recommendation accept/reject               | signal_type, recommendation_id, place_core_id | status (202)                                                                             |
-| GET /v1/health       | Service health check (unauthenticated)     | —                                             | status, db connectivity                                                                  |
+| Endpoint                    | Purpose                                    | NestJS Sends (body)                                          | kebi Returns                                                                             |
+| --------------------------- | ------------------------------------------ | ------------------------------------------------------------ | ---------------------------------------------------------------------------------------- |
+| POST /v1/chat               | Conversational turn (consult-family agent) | message, optional location, movement_profile                 | type (`agent`\|`error`), message, data (reasoning_steps + tool_results), tool_calls_used |
+| POST /v1/chat/stream        | SSE streaming chat                         | Same as POST /v1/chat                                        | reasoning_step + tool_result + message + done frames                                     |
+| POST /v1/extract            | Canonical extraction (save a place)        | raw_input                                                    | ExtractPlaceResponse                                                                     |
+| GET /v1/user/library        | Browse the user's saved places (Library)   | — (optional filter + `sort` + `limit`/`cursor` query params) | LibraryResponse (`places: SavedPlaceView[]`, `next_cursor`)                              |
+| PATCH /v1/user/places/{id}  | Update a save's user-state (pills/menu)    | partial body: `visited`/`liked`/`approved`/`note`            | LibraryUserData (updated user-state; `200`/`404`)                                        |
+| DELETE /v1/user/places/{id} | Remove one saved place from the library    | — (path param only)                                          | 204 No Content (`404` if absent/not owned)                                               |
+| DELETE /v1/user/data        | Account-deletion sweep of AI data          | — (optional `scope` query param)                             | 204 No Content                                                                           |
+| POST /v1/signal             | Recommendation accept/reject               | signal_type, recommendation_id, place_core_id                | status (202)                                                                             |
+| GET /v1/health              | Service health check (unauthenticated)     | —                                                            | status, db connectivity                                                                  |
 
 ---
 

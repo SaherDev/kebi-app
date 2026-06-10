@@ -8,8 +8,11 @@ import {
   DataScope,
   ExtractPlaceRequest,
   ExtractPlaceResponse,
+  LibraryResponse,
+  LibraryUserData,
   SignalRequest,
   SignalResponse,
+  UpdateUserPlaceRequest,
 } from '@kebi-app/shared';
 import { IAiServiceClient } from './ai-service-client.interface';
 
@@ -128,6 +131,55 @@ export class AiServiceClient implements IAiServiceClient {
         timeout: AI_SERVICE_TIMEOUT_MS,
         headers: this.gatewayHeaders(userId),
       })
+    );
+  }
+
+  async getUserLibrary(
+    query: Record<string, string | string[]>,
+    userId: string
+  ): Promise<LibraryResponse> {
+    let url = `${this.baseUrl}/v1/user/library`;
+    const qs = new URLSearchParams();
+    for (const [key, value] of Object.entries(query)) {
+      if (Array.isArray(value)) {
+        for (const v of value) qs.append(key, v);
+      } else {
+        qs.append(key, value);
+      }
+    }
+    const queryString = qs.toString();
+    if (queryString) url += `?${queryString}`;
+
+    const response = await firstValueFrom(
+      this.httpService.get<LibraryResponse>(url, {
+        timeout: AI_SERVICE_TIMEOUT_MS,
+        headers: this.gatewayHeaders(userId),
+      })
+    );
+    return response.data;
+  }
+
+  async updateUserPlace(
+    userPlaceId: string,
+    body: UpdateUserPlaceRequest,
+    userId: string
+  ): Promise<LibraryUserData> {
+    const response = await firstValueFrom(
+      this.httpService.patch<LibraryUserData>(
+        `${this.baseUrl}/v1/user/places/${encodeURIComponent(userPlaceId)}`,
+        body,
+        { timeout: AI_SERVICE_TIMEOUT_MS, headers: this.gatewayHeaders(userId) }
+      )
+    );
+    return response.data;
+  }
+
+  async deleteUserPlace(userPlaceId: string, userId: string): Promise<void> {
+    await firstValueFrom(
+      this.httpService.delete<void>(
+        `${this.baseUrl}/v1/user/places/${encodeURIComponent(userPlaceId)}`,
+        { timeout: AI_SERVICE_TIMEOUT_MS, headers: this.gatewayHeaders(userId) }
+      )
     );
   }
 }

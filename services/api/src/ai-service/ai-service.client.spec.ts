@@ -7,8 +7,11 @@ import type {
   ChatRequestDto,
   ExtractPlaceRequest,
   ExtractPlaceResponse,
+  LibraryResponse,
+  LibraryUserData,
   SignalRequest,
   SignalResponse,
+  UpdateUserPlaceRequest,
 } from '@kebi-app/shared';
 import { AiServiceClient } from './ai-service.client';
 
@@ -37,6 +40,7 @@ describe('AiServiceClient', () => {
     httpService = {
       post: jest.fn(),
       get: jest.fn(),
+      patch: jest.fn(),
       delete: jest.fn(),
     } as unknown as jest.Mocked<HttpService>;
 
@@ -262,6 +266,110 @@ describe('AiServiceClient', () => {
       });
 
       await expect(client.deleteUserData(USER_ID)).rejects.toBe(upstream);
+    });
+  });
+
+  describe('getUserLibrary()', () => {
+    const body: LibraryResponse = { places: [], next_cursor: null };
+
+    it('GETs /v1/user/library with no query string for an empty record', async () => {
+      const response = { data: body } as AxiosResponse<LibraryResponse>;
+      (httpService.get as jest.Mock).mockReturnValueOnce(of(response));
+
+      const result = await client.getUserLibrary({}, USER_ID);
+
+      expect(httpService.get).toHaveBeenCalledWith(`${BASE_URL}/v1/user/library`, {
+        timeout: 30000,
+        headers: GATEWAY_HEADERS,
+      });
+      expect(result).toEqual(body);
+    });
+
+    it('serializes scalar params and repeats array params (category/tag)', async () => {
+      const response = { data: body } as AxiosResponse<LibraryResponse>;
+      (httpService.get as jest.Mock).mockReturnValueOnce(of(response));
+
+      await client.getUserLibrary(
+        { category: ['cafe', 'bar'], sort: 'name', limit: '20' },
+        USER_ID
+      );
+
+      expect(httpService.get).toHaveBeenCalledWith(
+        `${BASE_URL}/v1/user/library?category=cafe&category=bar&sort=name&limit=20`,
+        { timeout: 30000, headers: GATEWAY_HEADERS }
+      );
+    });
+  });
+
+  describe('updateUserPlace()', () => {
+    const body: UpdateUserPlaceRequest = { visited: true };
+    const updated = { user_place_id: 'up_1', visited: true } as LibraryUserData;
+
+    it('PATCHes /v1/user/places/{id} with the partial body and gateway headers', async () => {
+      const response = { data: updated } as AxiosResponse<LibraryUserData>;
+      (httpService.patch as jest.Mock).mockReturnValueOnce(of(response));
+
+      const result = await client.updateUserPlace('up_1', body, USER_ID);
+
+      expect(httpService.patch).toHaveBeenCalledWith(
+        `${BASE_URL}/v1/user/places/up_1`,
+        body,
+        { timeout: 30000, headers: GATEWAY_HEADERS }
+      );
+      expect(result).toEqual(updated);
+    });
+
+    it('url-encodes the path id', async () => {
+      const response = { data: updated } as AxiosResponse<LibraryUserData>;
+      (httpService.patch as jest.Mock).mockReturnValueOnce(of(response));
+
+      await client.updateUserPlace('a/b 1', body, USER_ID);
+
+      expect(httpService.patch).toHaveBeenCalledWith(
+        `${BASE_URL}/v1/user/places/a%2Fb%201`,
+        body,
+        { timeout: 30000, headers: GATEWAY_HEADERS }
+      );
+    });
+
+    it('propagates a 404 raw', async () => {
+      const upstream = Object.assign(new Error('saved_place_not_found'), {
+        isAxiosError: true,
+        response: { status: 404 },
+      });
+      (httpService.patch as jest.Mock).mockImplementationOnce(() => {
+        throw upstream;
+      });
+
+      await expect(client.updateUserPlace('missing', body, USER_ID)).rejects.toBe(
+        upstream
+      );
+    });
+  });
+
+  describe('deleteUserPlace()', () => {
+    it('DELETEs /v1/user/places/{id} with gateway headers', async () => {
+      const response = { data: undefined } as AxiosResponse<void>;
+      (httpService.delete as jest.Mock).mockReturnValueOnce(of(response));
+
+      await client.deleteUserPlace('up_1', USER_ID);
+
+      expect(httpService.delete).toHaveBeenCalledWith(
+        `${BASE_URL}/v1/user/places/up_1`,
+        { timeout: 30000, headers: GATEWAY_HEADERS }
+      );
+    });
+
+    it('propagates a 404 raw', async () => {
+      const upstream = Object.assign(new Error('saved_place_not_found'), {
+        isAxiosError: true,
+        response: { status: 404 },
+      });
+      (httpService.delete as jest.Mock).mockImplementationOnce(() => {
+        throw upstream;
+      });
+
+      await expect(client.deleteUserPlace('missing', USER_ID)).rejects.toBe(upstream);
     });
   });
 });

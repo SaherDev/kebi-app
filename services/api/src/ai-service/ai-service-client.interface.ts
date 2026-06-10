@@ -4,8 +4,11 @@ import {
   DataScope,
   ExtractPlaceRequest,
   ExtractPlaceResponse,
+  LibraryResponse,
+  LibraryUserData,
   SignalRequest,
   SignalResponse,
+  UpdateUserPlaceRequest,
 } from '@kebi-app/shared';
 
 /**
@@ -55,6 +58,35 @@ export interface IAiServiceClient {
    * `?scope=` query params. The target user is the verified X-Gateway-User-Id.
    */
   deleteUserData(userId: string, scopes?: DataScope[]): Promise<void>;
+
+  /**
+   * Read the caller's saved-place library (`GET /v1/user/library`). `query` is
+   * the validated filter/sort/paging params, forwarded verbatim as the upstream
+   * query string (repeated `category`/`tag` become repeated params). kebi owns
+   * the strict vocabulary — a bad enum value or sort-mismatched cursor surfaces
+   * as a raw 422/400 for AllExceptionsFilter to translate.
+   */
+  getUserLibrary(
+    query: Record<string, string | string[]>,
+    userId: string,
+  ): Promise<LibraryResponse>;
+
+  /**
+   * Update one save's user-state (`PATCH /v1/user/places/{id}`). Partial body —
+   * omitted ≠ null. Returns the full updated user-state. A 404 (no such save or
+   * not owned) propagates raw.
+   */
+  updateUserPlace(
+    userPlaceId: string,
+    body: UpdateUserPlaceRequest,
+    userId: string,
+  ): Promise<LibraryUserData>;
+
+  /**
+   * Remove one save from the caller's library (`DELETE /v1/user/places/{id}`).
+   * 204 on success; a 404 (absent or not owned) propagates raw.
+   */
+  deleteUserPlace(userPlaceId: string, userId: string): Promise<void>;
 }
 
 /**
