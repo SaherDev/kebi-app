@@ -1,4 +1,5 @@
 import type { Location } from "../schemas/location.js";
+import type { PlaceSource } from "./category-emoji.js";
 import type {
   LiteralUnion,
   PlaceCategory,
@@ -160,6 +161,68 @@ export interface ExtractPlaceResponse {
   request_id: string | null;
   failure_reason: string | null;
   failure_message: string | null;
+}
+
+// ── User library — saved places (GET /v1/user/library, ADR-071/081) ──────────
+// The Library screen: a browsable, keyset-paged list of the caller's saves
+// (user_places ⋈ places). `place` carries catalog fields only (same PlaceCore
+// as extraction — no live rating/hours); `user_data` is this user's
+// relationship to it. `user_id` is never echoed — the caller knows who they are.
+
+/**
+ * One user's relationship to a saved place. Mirrors the `user_places` row
+ * (minus `user_id`). `liked` is tri-state — `null` is neutral. `source_ref`
+ * is the origin URL (`null` for manual/kebi); `source_label` is the name the
+ * place was shown as in the source post (`null` when it matched the canonical
+ * name).
+ */
+export interface UserPlace {
+  user_place_id: string;
+  place_id: string;
+  approved: boolean;
+  visited: boolean;
+  liked: boolean | null;
+  note: string | null;
+  source: PlaceSource;
+  source_ref: string | null;
+  source_label: string | null;
+  saved_at: string;
+  visited_at: string | null;
+}
+
+/** A library entry: the catalog place plus the caller's user-state. */
+export interface SavedPlaceView {
+  place: PlaceCore;
+  user_data: UserPlace;
+}
+
+/**
+ * GET /v1/user/library response. Keyset (cursor) pagination — pass
+ * `next_cursor` back as `?cursor=` for the next page; `null` on the last page.
+ */
+export interface LibraryResponse {
+  places: SavedPlaceView[];
+  next_cursor: string | null;
+}
+
+/**
+ * PATCH /v1/user/places/{id} response — the full updated user-state, the same
+ * shape as a library entry's `user_data`. Returning the whole object lets the
+ * client replace its local row wholesale.
+ */
+export type LibraryUserData = UserPlace;
+
+/**
+ * PATCH /v1/user/places/{id} request body the gateway forwards to kebi. Partial
+ * — only changed fields. Omitted ≠ null: an omitted field is left untouched, an
+ * explicit `null` clears it (un-like to neutral, erase a note). An empty body is
+ * rejected (422). Identity is the X-Gateway-User-Id header, never the body.
+ */
+export interface UpdateUserPlaceRequest {
+  visited?: boolean;
+  liked?: boolean | null;
+  approved?: boolean;
+  note?: string | null;
 }
 
 // ── Auth, plan & mobility types ──────────────────────────────────────────────
