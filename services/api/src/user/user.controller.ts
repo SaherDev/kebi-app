@@ -15,7 +15,6 @@ import type {
   LibraryUserData,
 } from '@kebi-app/shared';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
-import { RequiresAi } from '../common/decorators/requires-ai.decorator';
 import { DeleteUserDataQueryDto } from './dto/delete-user-data.query.dto';
 import { LibraryQueryDto } from './dto/library-query.dto';
 import { UpdateUserPlaceDto } from './dto/update-user-place.dto';
@@ -26,7 +25,6 @@ export class UserController {
   constructor(private readonly userService: UserService) {}
 
   @Get('library')
-  @RequiresAi()
   async getLibrary(
     @CurrentUser() user: AuthUser,
     @Query() query: LibraryQueryDto
@@ -35,7 +33,6 @@ export class UserController {
   }
 
   @Patch('places/:id')
-  @RequiresAi()
   async updatePlace(
     @CurrentUser() user: AuthUser,
     @Param('id') userPlaceId: string,
@@ -46,7 +43,6 @@ export class UserController {
 
   @Delete('places/:id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  @RequiresAi()
   async deletePlace(
     @CurrentUser() user: AuthUser,
     @Param('id') userPlaceId: string
@@ -56,7 +52,6 @@ export class UserController {
 
   @Delete('data')
   @HttpCode(HttpStatus.NO_CONTENT)
-  @RequiresAi()
   async deleteData(
     @CurrentUser() user: AuthUser,
     @Query() query: DeleteUserDataQueryDto
