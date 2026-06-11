@@ -41,7 +41,65 @@
     "unsupportedUrl": "that link isn't supported yet"
   },
   "library": {
-    "empty": "nothing saved yet — tap save a place to add one."
+    "eyebrow": "your stash",
+    "heroCount": "{{count}} places",
+    "heroSuffix": ", saved up",
+    "results": "{{count}} results",
+    "searchPlaceholder": "search your stash...",
+    "sortAction": "change sort",
+    "error": "couldn't load your stash",
+    "retry": "try again",
+    "sort": {
+      "title": "sort",
+      "label": "order",
+      "recent": "recent",
+      "name": "A–Z",
+      "reset": "reset",
+      "apply": "apply"
+    },
+    "filter": {
+      "cta": "filter",
+      "title": "filter",
+      "status": "status",
+      "all": "all",
+      "beenSaved": "visited",
+      "new": "not visited",
+      "approved": "approved",
+      "approve": "needs review",
+      "reset": "reset",
+      "apply": "apply"
+    },
+    "pill": {
+      "visited": "visited",
+      "notVisited": "not visited",
+      "approved": "approved",
+      "needsReview": "needs review",
+      "liked": "liked",
+      "disliked": "disliked"
+    },
+    "price": {
+      "free": "free",
+      "budget": "$",
+      "moderate": "$$",
+      "expensive": "$$$",
+      "very_expensive": "$$$$"
+    },
+    "source": {
+      "tiktok": "saved from tiktok",
+      "instagram": "saved from instagram",
+      "youtube": "saved from youtube",
+      "google_maps_list": "from a maps list",
+      "manual": "added by you",
+      "kebi": "kebi found this"
+    },
+    "empty": {
+      "title": "your stash is empty",
+      "hint": "tap the bookmark up top to save your first place. paste a link or just name it."
+    },
+    "toast": {
+      "updateFailed": "couldn't update that — try again",
+      "removeFailed": "couldn't remove that one"
+    }
   },
   "save": {
     "eyebrow": "save",

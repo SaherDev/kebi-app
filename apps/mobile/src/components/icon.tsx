@@ -33,7 +33,13 @@ export type IconName =
   | 'alert'
   | 'link'
   | 'mail'
-  | 'phone';
+  | 'phone'
+  | 'instagram'
+  | 'tiktok'
+  | 'youtube'
+  | 'sparkle'
+  | 'sort'
+  | 'filter';
 
 // Path data verbatim from docs/kebi-app-design-system mockups (top-bar icons)
 // and kebi-tokens-mockup.html §15. viewBox 0 0 24 24, 1.8px stroke, fill none —
@@ -139,6 +145,31 @@ const ICONS: Record<IconName, ReactNode> = {
   phone: (
     <Path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.13.96.36 1.9.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0122 16.92z" />
   ),
+  // Library source-line glyphs (kebi-library-mockup.html `.group-row .row-icon`).
+  instagram: (
+    <>
+      <Rect x={3} y={3} width={18} height={18} rx={5} />
+      <Circle cx={12} cy={12} r={4} />
+      <Circle cx={17.5} cy={6.5} r={0.8} fill="currentColor" stroke="none" />
+    </>
+  ),
+  // TikTok: a clean eighth-note (its brand mark) — filled head, stem, flag.
+  tiktok: (
+    <>
+      <Path d="M13.5 14.5V4c2 .3 3.6 1.8 4.5 4" />
+      <Circle cx={10.5} cy={14.5} r={3} fill="currentColor" stroke="none" />
+    </>
+  ),
+  youtube: (
+    <>
+      <Rect x={2} y={5} width={20} height={14} rx={3} />
+      <Path d="M10 9l6 3-6 3z" fill="currentColor" stroke="none" />
+    </>
+  ),
+  sparkle: <Path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z" />,
+  // Library toolbar (kebi-library-mockup.html `.toolbar-btn`): sort lines + funnel.
+  sort: <Path d="M3 6h18M6 12h12M10 18h4" />,
+  filter: <Path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z" />,
 };
 
 interface IconProps {

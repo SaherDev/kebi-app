@@ -4,6 +4,7 @@ import { useColorScheme } from 'nativewind';
 import { ScreenScaffold } from '../components/screen-scaffold';
 import { TopBar } from '../components/top-bar';
 import { StatusPill } from '../components/status-pill';
+import { LibraryPill } from '../components/library-pill';
 import { Button } from '../components/button';
 import { Group } from '../components/group';
 import { IconButton } from '../components/icon-button';
@@ -332,10 +333,13 @@ export default function GalleryScreen() {
       <ScrollView className="flex-1 px-6 pt-2" contentContainerClassName="pb-24">
         <Section title="Status pills">
           <View className="flex-row flex-wrap items-center gap-2">
-            <StatusPill variant="green">saved</StatusPill>
-            <StatusPill variant="warm">new</StatusPill>
-            <StatusPill variant="amber">approve?</StatusPill>
+            <StatusPill variant="green">visited</StatusPill>
+            <StatusPill variant="green">approved</StatusPill>
+            <StatusPill variant="warm">not visited</StatusPill>
+            <StatusPill variant="amber">needs review</StatusPill>
             <StatusPill variant="danger">closed</StatusPill>
+            <LibraryPill tone="warm" glyph="👍" accessibilityLabel="liked" />
+            <LibraryPill tone="danger" glyph="👎" accessibilityLabel="disliked" />
           </View>
         </Section>
 
@@ -355,9 +359,9 @@ export default function GalleryScreen() {
 
         <Section title="Group">
           <Group eyebrow="saved places">
-            <GalleryRow emoji="🍜" name="Kamachiku" pill={<StatusPill variant="green">saved</StatusPill>} />
-            <GalleryRow emoji="🍷" name="Saint Jardim" pill={<StatusPill variant="warm">new</StatusPill>} />
-            <GalleryRow emoji="⛩️" name="Nezu Shrine" pill={<StatusPill variant="green">went</StatusPill>} />
+            <GalleryRow emoji="🍜" name="Kamachiku" pill={<StatusPill variant="green">approved</StatusPill>} />
+            <GalleryRow emoji="🍷" name="Saint Jardim" pill={<StatusPill variant="warm">not visited</StatusPill>} />
+            <GalleryRow emoji="⛩️" name="Nezu Shrine" pill={<StatusPill variant="green">visited</StatusPill>} />
           </Group>
         </Section>
 

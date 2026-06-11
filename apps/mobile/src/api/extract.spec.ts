@@ -41,6 +41,7 @@ function fakeClient(payload: unknown): HttpClient & { calls: { path: string; bod
     calls,
     get: async () => undefined as never,
     delete: async () => undefined,
+    patch: async () => undefined as never,
     post: async (path: string, body: unknown) => {
       calls.push({ path, body });
       return payload as never;

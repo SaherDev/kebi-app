@@ -8,4 +8,8 @@ export const API_ROUTES = {
   login: '/auth/login',
   /** Saves a place: forwards a URL or place name to kebi for extraction (ADR-073). */
   extract: '/extract',
+  /** The Library: browse the caller's saved places, keyset-paged (api-contract.md §GET /v1/user/library). */
+  library: '/user/library',
+  /** One saved place: PATCH user-state / DELETE the save (api-contract.md §/v1/user/places/{id}). */
+  userPlace: (id: string) => `/user/places/${id}`,
 } as const;

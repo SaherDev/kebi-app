@@ -199,10 +199,16 @@ export interface SavedPlaceView {
 /**
  * GET /v1/user/library response. Keyset (cursor) pagination — pass
  * `next_cursor` back as `?cursor=` for the next page; `null` on the last page.
+ *
+ * `total` is the caller's **grand total** of saved places — the whole stash,
+ * unaffected by the request's filters or pagination — for the screen's hero
+ * count. `null` only during the rollout window before kebi populates it (the
+ * client falls back to the loaded count).
  */
 export interface LibraryResponse {
   places: SavedPlaceView[];
   next_cursor: string | null;
+  total: number | null;
 }
 
 /**

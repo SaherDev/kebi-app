@@ -414,7 +414,8 @@ the first page (drop the `cursor`). Keep `sort` fixed across a paging run.
       }
     }
   ],
-  "next_cursor": "eyJ0cyI6…"
+  "next_cursor": "eyJ0cyI6…",
+  "total": 42
 }
 ```
 
@@ -422,6 +423,7 @@ the first page (drop the `cursor`). Keep `sort` fixed across a paging run.
 | ------------- | ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `places`      | `SavedPlaceView[]` | `{ place: PlaceCore, user_data: UserPlace }`. `place` carries catalog fields only — no live rating/hours (same as extraction). `user_data` is this user's relationship to the place |
 | `next_cursor` | `string \| null`   | Opaque keyset cursor. Pass it back as `?cursor=` for the next page. **`null` on the last page**                                                                                     |
+| `total`       | `integer`          | The caller's **grand total** of saved places — the whole stash, **independent of the request's filters and pagination** (drives the screen's hero count). Same on every page        |
 
 `user_data` (`UserPlace`) fields: `user_place_id`, `place_id`, `approved`,
 `visited`, `liked` (tri-state, may be `null`), `note`, `source`,
@@ -431,8 +433,10 @@ matched the canonical name), `saved_at`, `visited_at`. `user_id` is **not**
 echoed — the caller already knows who they are.
 
 **Empty state:** a user with no saves (or no matches) returns
-`{ "places": [], "next_cursor": null }` — the empty-state UI is the
-product's concern; the shape is guaranteed.
+`{ "places": [], "next_cursor": null, "total": 0 }` — the empty-state UI is
+the product's concern; the shape is guaranteed. (`total` is `0` only for a
+user with no saves at all; a filtered page that matches nothing still
+reports the unfiltered grand total.)
 
 **Paging:** keyset (cursor) pagination, not offset — stable under new
 saves (no skipped/duplicated rows at page boundaries) and fast at any
@@ -639,7 +643,7 @@ All protected calls additionally send the `X-Gateway-Token` + `X-Gateway-User-Id
 | POST /v1/chat               | Conversational turn (consult-family agent) | message, optional location, movement_profile                 | type (`agent`\|`error`), message, data (reasoning_steps + tool_results), tool_calls_used |
 | POST /v1/chat/stream        | SSE streaming chat                         | Same as POST /v1/chat                                        | reasoning_step + tool_result + message + done frames                                     |
 | POST /v1/extract            | Canonical extraction (save a place)        | raw_input                                                    | ExtractPlaceResponse                                                                     |
-| GET /v1/user/library        | Browse the user's saved places (Library)   | — (optional filter + `sort` + `limit`/`cursor` query params) | LibraryResponse (`places: SavedPlaceView[]`, `next_cursor`)                              |
+| GET /v1/user/library        | Browse the user's saved places (Library)   | — (optional filter + `sort` + `limit`/`cursor` query params) | LibraryResponse (`places: SavedPlaceView[]`, `next_cursor`, `total`)                     |
 | PATCH /v1/user/places/{id}  | Update a save's user-state (pills/menu)    | partial body: `visited`/`liked`/`approved`/`note`            | LibraryUserData (updated user-state; `200`/`404`)                                        |
 | DELETE /v1/user/places/{id} | Remove one saved place from the library    | — (path param only)                                          | 204 No Content (`404` if absent/not owned)                                               |
 | DELETE /v1/user/data        | Account-deletion sweep of AI data          | — (optional `scope` query param)                             | 204 No Content                                                                           |

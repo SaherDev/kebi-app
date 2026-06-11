@@ -42,6 +42,14 @@ export class FetchClient implements HttpClient {
     });
   }
 
+  async patch<T>(path: string, body: unknown, signal?: AbortSignal): Promise<T> {
+    return this.request<T>(path, {
+      method: 'PATCH',
+      body: JSON.stringify(body),
+      signal,
+    });
+  }
+
   async delete(path: string): Promise<void> {
     const res = await this.fetch(path, { method: 'DELETE' });
     if (!res.ok) {
