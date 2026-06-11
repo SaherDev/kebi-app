@@ -6,6 +6,7 @@ import { LibraryTopBar } from '../components/library-top-bar';
 import { LibraryToolbar } from '../components/library-toolbar';
 import { LibraryPlaceCard } from '../components/library-place-card';
 import { LibraryEmpty } from '../components/library-empty';
+import { LibrarySearchEmpty } from '../components/library-search-empty';
 import { LibraryFilterSheet } from '../components/library-filter-sheet';
 import { LibrarySortSheet } from '../components/library-sort-sheet';
 import { Spinner } from '../components/spinner';
@@ -128,9 +129,19 @@ export default function LibraryScreen() {
         data={filtered}
         keyExtractor={(view) => view.user_data.user_place_id}
         renderItem={({ item, index }) => (
-          <LibraryPlaceCard view={item} initiallyExpanded={index === 0} actions={actions} />
+          <LibraryPlaceCard
+            view={item}
+            initiallyExpanded={index === 0}
+            actions={actions}
+            highlight={normalizedQuery}
+          />
         )}
         ListHeaderComponent={header}
+        ListEmptyComponent={
+          normalizedQuery ? (
+            <LibrarySearchEmpty query={query.trim()} onClear={() => setQuery('')} />
+          ) : null
+        }
         ListFooterComponent={
           loadingMore ? (
             <View className="items-center py-4">

@@ -11,7 +11,8 @@ import { PRESS } from '../theme/motion';
 import { Icon } from './icon';
 import { PlaceAvatar } from './place-avatar';
 import { LibraryPill } from './library-pill';
-import { SOURCE_ICON } from './source-icon';
+import { HighlightText } from './highlight-text';
+import { SourceGlyph } from './source-glyph';
 import { ContextMenuTrigger } from './context-menu/context-menu-trigger';
 import { useLibraryMenuItems } from './use-library-menu-items';
 import { useTranslation } from '../i18n/context';
@@ -30,9 +31,16 @@ interface LibraryPlaceCardProps {
   /** First card opens expanded (mockup), the rest collapsed. */
   initiallyExpanded?: boolean;
   actions: LibraryActions;
+  /** Active search term (pre-lowercased) — highlights matches in the title. */
+  highlight?: string;
 }
 
-export function LibraryPlaceCard({ view, initiallyExpanded = false, actions }: LibraryPlaceCardProps) {
+export function LibraryPlaceCard({
+  view,
+  initiallyExpanded = false,
+  actions,
+  highlight,
+}: LibraryPlaceCardProps) {
   const { t } = useTranslation();
   const [expanded, setExpanded] = useState(initiallyExpanded);
   const items = useLibraryMenuItems(view, actions);
@@ -59,9 +67,12 @@ export function LibraryPlaceCard({ view, initiallyExpanded = false, actions }: L
             className={`flex-row items-center gap-2.5 ${PRESS}`}
           >
             <PlaceAvatar categories={place.categories} size="row" label={title} />
-            <Text className="flex-1 text-body font-semibold text-text" numberOfLines={1}>
-              {title}
-            </Text>
+            <HighlightText
+              text={title}
+              query={highlight}
+              className="flex-1 text-body font-semibold text-text"
+              numberOfLines={1}
+            />
             <View style={{ transform: [{ rotate: expanded ? '90deg' : '0deg' }] }}>
               <Icon name="chevron-right" size={16} className="text-text-soft" />
             </View>
@@ -87,18 +98,24 @@ export function LibraryPlaceCard({ view, initiallyExpanded = false, actions }: L
               {detail ? (
                 <View className="flex-row items-center gap-2.5 py-1">
                   <Icon name="pin" size={13} className="text-text-muted" />
-                  <Text className="flex-1 text-small text-text" numberOfLines={1}>
+                  <Text
+                    className="flex-1 text-small leading-[15px] text-text"
+                    numberOfLines={1}
+                  >
                     {detail}
                   </Text>
                 </View>
               ) : null}
               <View
-                className={`flex-row items-center gap-2.5 py-1 ${
-                  detail ? 'border-t border-surface-2' : ''
+                className={`flex-row items-center gap-2.5 ${
+                  detail ? 'border-t border-surface-2 pb-1 pt-2' : 'py-1'
                 }`}
               >
-                <Icon name={SOURCE_ICON[userData.source]} size={13} className="text-text-muted" />
-                <Text className="flex-1 text-small text-text-muted" numberOfLines={1}>
+                <SourceGlyph source={userData.source} />
+                <Text
+                  className="flex-1 text-small leading-[15px] text-text-muted"
+                  numberOfLines={1}
+                >
                   {sourceText}
                 </Text>
               </View>

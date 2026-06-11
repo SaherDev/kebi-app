@@ -46,6 +46,11 @@
     "heroSuffix": ", saved up",
     "results": "{{count}} results",
     "searchPlaceholder": "search your stash...",
+    "search": {
+      "noMatches": "no matches for “{{query}}”",
+      "tryAgain": "try a different word or",
+      "clear": "clear search"
+    },
     "sortAction": "change sort",
     "error": "couldn't load your stash",
     "retry": "try again",
