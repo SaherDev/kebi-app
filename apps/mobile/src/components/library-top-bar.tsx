@@ -67,8 +67,8 @@ export function LibraryTopBar({ query, onQueryChange, onSave }: LibraryTopBarPro
     <View className="flex-row items-center px-4 pb-3" style={{ paddingTop: insets.top + 12 }}>
       {searching ? (
         <Animated.View className="flex-1" style={[revealStyle, { transformOrigin: '100% 0%' }]}>
-          <View className="flex-row items-center rounded-full bg-surface px-1">
-            <Icon name="search" size={16} className="ms-2 text-text-muted" />
+          <View className="h-11 flex-row items-center gap-2.5 rounded-full bg-surface ps-4 pe-1.5">
+            <Icon name="search" size={18} className="text-text-soft" />
             <TextInput
               autoFocus
               value={query}
@@ -78,7 +78,12 @@ export function LibraryTopBar({ query, onQueryChange, onSave }: LibraryTopBarPro
               autoCapitalize="none"
               autoCorrect={false}
               returnKeyType="search"
-              className="h-9 flex-1 px-2 text-body text-text"
+              // Font-size only (no text-body lineHeight, which makes iOS render
+              // the glyph low) + a definite height so the text centers on the
+              // same line as the search/close icons.
+              includeFontPadding={false}
+              textAlignVertical="center"
+              className="h-11 flex-1 p-0 text-[15px] text-text"
             />
             <IconButton
               icon="close"

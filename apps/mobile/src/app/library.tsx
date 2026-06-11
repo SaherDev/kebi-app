@@ -123,6 +123,14 @@ export default function LibraryScreen() {
     );
   } else if (views.length === 0) {
     body = <LibraryEmpty />;
+  } else if (normalizedQuery && filtered.length === 0) {
+    // Search with no matches: keep the hero + toolbar, center the message below.
+    body = (
+      <View className="flex-1 px-6 pt-2">
+        {header}
+        <LibrarySearchEmpty query={query.trim()} onClear={() => setQuery('')} />
+      </View>
+    );
   } else {
     body = (
       <FlatList
@@ -137,11 +145,6 @@ export default function LibraryScreen() {
           />
         )}
         ListHeaderComponent={header}
-        ListEmptyComponent={
-          normalizedQuery ? (
-            <LibrarySearchEmpty query={query.trim()} onClear={() => setQuery('')} />
-          ) : null
-        }
         ListFooterComponent={
           loadingMore ? (
             <View className="items-center py-4">
