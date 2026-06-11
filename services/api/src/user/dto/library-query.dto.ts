@@ -1,6 +1,5 @@
 import {
   IsArray,
-  IsBoolean,
   IsIn,
   IsInt,
   IsOptional,
@@ -52,17 +51,21 @@ export class LibraryQueryDto {
   @IsString()
   source?: string;
 
+  // Booleans are kept as the string literals the wire carries. The gateway only
+  // forwards them (String(value)), and the pipe's `enableImplicitConversion`
+  // would otherwise coerce "false" via Boolean() → true, inverting the filter.
+  // Strings pass through untouched; kebi parses "true"/"false" itself.
   @IsOptional()
-  @IsBoolean()
-  visited?: boolean;
+  @IsIn(['true', 'false'])
+  visited?: 'true' | 'false';
 
   @IsOptional()
-  @IsBoolean()
-  liked?: boolean;
+  @IsIn(['true', 'false'])
+  liked?: 'true' | 'false';
 
   @IsOptional()
-  @IsBoolean()
-  approved?: boolean;
+  @IsIn(['true', 'false'])
+  approved?: 'true' | 'false';
 
   @IsOptional()
   @IsString()
