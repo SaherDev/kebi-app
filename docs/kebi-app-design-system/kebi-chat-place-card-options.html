@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Kebi Chat — Place Card (library-structured)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg:#FAFAF9; --surface:#F1F1EF; --surface-2:#E8E8E5;
+    --text:#1A1A1A; --text-muted:#8A8A87; --text-soft:#B5B5B1;
+    --success:#5B8A4E; --pill-green:#E8F2E1;
+    --like:#C2632F;   --pill-warm:#FEE4D4;
+  }
+  html,body{ background:#2A2A28; font-family:'Inter',system-ui,sans-serif;
+    -webkit-font-smoothing:antialiased; min-height:100vh; color:#EDEDEA; padding:40px 24px 64px; }
+  h1{ font-size:22px; font-weight:700; letter-spacing:-.01em; margin-bottom:6px; }
+  .lede{ font-size:14px; color:#B5B5B1; max-width:760px; line-height:1.55; margin-bottom:30px; }
+  .lede b{ color:#D9D9D5; font-weight:600; }
+  .cols{ display:flex; gap:48px; align-items:flex-start; flex-wrap:wrap; }
+  .cap{ font-size:13px; font-weight:600; color:#9A9A96; margin-bottom:12px; }
+  .cap b{ color:#D9D9D5; }
+
+  .stage{ background:var(--bg); border-radius:24px; padding:16px; width:360px; }
+
+  /* ── place card — mirrors library-place-card.tsx ── */
+  .card{ background:var(--surface); border-radius:14px; padding:14px; }
+
+  /* header: avatar + name + chevron (NO inline pill) */
+  .chead{ display:flex; align-items:center; gap:10px; }
+  .avatar{ width:30px; height:30px; border-radius:8px; background:var(--surface-2);
+    display:flex; align-items:center; justify-content:center; font-size:17px; flex-shrink:0; }
+  .name{ font-size:17px; font-weight:700; color:var(--text); letter-spacing:-.01em; flex:1; min-width:0;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .chev{ color:var(--text-soft); font-size:14px; }
+
+  /* pills row — its OWN row below the header (library structure) */
+  .pills{ display:flex; flex-wrap:wrap; gap:6px; margin-top:10px; }
+  .pill{ display:inline-flex; align-items:center; gap:5px; padding:3px 9px; border-radius:999px;
+    font-size:11px; font-weight:600; }
+  .pill.warm{ background:var(--pill-warm); color:var(--like); }
+  .pill.green{ background:var(--pill-green); color:var(--success); }
+  .pill::before{ content:''; width:5px; height:5px; border-radius:50%; background:currentColor; }
+
+  /* detail + source rows (icon + text), like the library card */
+  .ico{ width:15px; color:var(--text-muted); flex-shrink:0; display:inline-flex; }
+  .ico svg{ width:15px; height:15px; stroke:currentColor; stroke-width:1.8; fill:none; }
+  .detail{ display:flex; align-items:center; gap:10px; font-size:14px; color:var(--text);
+    letter-spacing:-.005em; margin-top:10px; }
+  .src{ display:flex; align-items:center; gap:10px; font-size:14px; color:var(--text-muted);
+    margin-top:8px; }
+  .reason{ font-size:14px; color:var(--text-muted); line-height:1.5; letter-spacing:-.005em;
+    margin-top:12px; padding-top:12px; border-top:1px solid var(--surface-2); }
+
+  /* actions + swaps wrap the card */
+  .actions{ display:flex; flex-direction:column; gap:8px; margin-top:14px; }
+  .btn{ display:flex; align-items:center; justify-content:center; gap:7px; border-radius:12px;
+    font-size:14px; font-weight:600; padding:11px; border:1px solid var(--surface-2);
+    background:var(--bg); color:var(--text); }
+  .btn.primary{ background:var(--text); color:var(--bg); border-color:var(--text); }
+  .btn.dim{ opacity:.45; }
+  .btn svg{ width:14px; height:14px; stroke:currentColor; stroke-width:2.2; fill:none; }
+  .btn.primary svg{ stroke:var(--bg); }
+  .btn-row{ display:flex; gap:8px; }
+  .btn-row .btn{ flex:1; font-size:13px; font-weight:500; padding:9px; }
+  .hr{ height:1px; background:var(--surface-2); }
+  .swaplbl{ font-size:11px; font-weight:600; color:var(--text-soft); text-transform:uppercase;
+    letter-spacing:.08em; padding:8px 0 4px; }
+  .swap{ display:flex; align-items:center; gap:11px; padding:9px 0; }
+  .swap + .swap{ border-top:1px solid var(--surface-2); }
+  .swap .savatar{ width:28px; height:28px; border-radius:7px; background:var(--bg);
+    display:flex; align-items:center; justify-content:center; font-size:15px; flex-shrink:0; }
+  .swap .sinfo{ flex:1; min-width:0; }
+  .swap .sname{ font-size:14px; font-weight:600; color:var(--text); }
+  .swap .smeta{ font-size:12.5px; color:var(--text-muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .swap .schev{ color:var(--text-soft); font-size:14px; }
+
+  /* the library reference card (for side-by-side) */
+  .ref .reason{ display:none; }
+</style>
+</head>
+<body>
+
+<h1>chat place card — structured like the library card</h1>
+<p class="lede">
+  option a, restructured to mirror <b>library-place-card.tsx</b>: header is just avatar + name + chevron, the
+  <b>pill sits in its own row below</b> (like <code>• visited • approved</code>), then the <code>◎ detail line</code>
+  and the <code>source line</code>. left = the chat card; right = the current library card it mirrors.
+</p>
+
+<div class="cols">
+
+  <!-- chat place card -->
+  <div>
+    <div class="cap"><b>chat place card</b> · the recommendation</div>
+    <div class="stage">
+      <div class="card">
+        <div class="chead">
+          <div class="avatar">🪩</div>
+          <span class="name">Contact Tokyo</span>
+          <span class="chev">⌄</span>
+        </div>
+        <div class="pills"><span class="pill warm">new</span></div>
+        <div class="detail"><span class="ico"><svg viewBox="0 0 24 24"><circle cx="12" cy="10" r="3"/><path d="M12 2a8 8 0 00-8 8c0 6 8 12 8 12s8-6 8-12a8 8 0 00-8-8z"/></svg></span>club · ¥¥¥ · Shibuya</div>
+        <div class="src"><span class="ico" style="color:var(--text)"><svg viewBox="0 0 24 24"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/></svg></span>kebi found this</div>
+        <div class="reason">underground house, smaller crowd than ageha but actually good music. you've been into deeper sounds lately.</div>
+        <div class="actions">
+          <button class="btn primary dim"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>good pick</button>
+          <div class="btn-row">
+            <button class="btn dim"><svg viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/></svg>save it</button>
+            <button class="btn dim"><svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>not it</button>
+          </div>
+        </div>
+        <div class="hr" style="margin-top:12px"></div>
+        <div class="swaplbl">or swap to</div>
+        <div class="swap"><div class="savatar">🍸</div><div class="sinfo"><div class="sname">Bar Trench</div><div class="smeta">¥¥¥ · ebisu · cocktails, less crowd</div></div><span class="schev">›</span></div>
+        <div class="swap"><div class="savatar">🍻</div><div class="sinfo"><div class="sname">Beat Cafe</div><div class="smeta">¥¥ · shimokitazawa · dive vibes</div></div><span class="schev">›</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- library card reference -->
+  <div>
+    <div class="cap"><b>current library card</b> · for reference</div>
+    <div class="stage">
+      <div class="card ref">
+        <div class="chead">
+          <div class="avatar">🍽️</div>
+          <span class="name">coco tam</span>
+          <span class="chev">⌄</span>
+        </div>
+        <div class="pills">
+          <span class="pill green">visited</span>
+          <span class="pill green">approved</span>
+          <span class="pill warm" style="padding-left:7px">👍</span>
+        </div>
+        <div class="detail"><span class="ico"><svg viewBox="0 0 24 24"><circle cx="12" cy="10" r="3"/><path d="M12 2a8 8 0 00-8 8c0 6 8 12 8 12s8-6 8-12a8 8 0 00-8-8z"/></svg></span>restaurant · lively · $$ · Tambon Bo Put</div>
+        <div class="src"><span class="ico"><svg viewBox="0 0 24 24"><path d="M12 20h9M16.5 3.5a2.12 2.12 0 113 3L7 19l-4 1 1-4z"/></svg></span>added by you</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

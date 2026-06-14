@@ -1,4 +1,4 @@
-import { memo, useEffect, useMemo, useRef, useState } from 'react';
+import { memo, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import {
   FlatList,
   Pressable,
@@ -22,6 +22,7 @@ import { Icon } from './icon';
 import { Mascot } from './mascot';
 import { ReasoningBlock } from './reasoning-block';
 import { PlaceCardSkeleton } from './place-card-skeleton';
+import { ChatPlaceCard } from './chat-place-card';
 import {
   useChatTranscript,
   type ChatTranscriptValue,
@@ -142,7 +143,8 @@ export function ChatScreen({ onClose }: ChatScreenProps) {
             finished = true;
             break;
           case 'error':
-            failTurn(kebiKey, ev.data.detail);
+            // The frame's `detail` is an internal log string — show a generic line.
+            failTurn(kebiKey, t('chat.error'));
             finished = true;
             break;
         }
@@ -150,10 +152,9 @@ export function ChatScreen({ onClose }: ChatScreenProps) {
     } catch (err) {
       // Aborting (stop button / close) is benign — keep what streamed so far.
       if (!controller.signal.aborted) {
-        // Log the real cause to Metro so a failing turn is diagnosable (the UI
-        // shows a generic line). HttpError carries "API error: <status> …".
+        // Log the real cause to Metro so a failing turn is diagnosable.
         console.warn('[chat] stream failed', err);
-        failTurn(kebiKey, err instanceof Error ? err.message : t('chat.error'));
+        failTurn(kebiKey, errorMessage(err, t));
         finished = true;
       }
     } finally {
@@ -361,22 +362,59 @@ function KebiTurnRow({
         />
       ) : null}
 
-      {turn.message ? (
-        <Text className="text-[17px] leading-relaxed text-text-muted">{turn.message}</Text>
+      {/* The agent's prose answer — shown only when the turn has no place cards
+          (with cards, the cards are the answer; the prose would just re-list them). */}
+      {turn.message && turn.toolResults.length === 0 ? (
+        <Text className="text-[17px] leading-relaxed text-text-muted">
+          {renderInlineMarkdown(turn.message)}
+        </Text>
       ) : null}
 
-      {/* Placeholder while places are still streaming in. Task 2 swaps this for
-          the real cards on done; until then a finished turn shows none (the
-          message already names the picks), so the skeleton never lingers. */}
+      {/* Places: a shimmer skeleton while still streaming in, then the real
+          recommendation card once the turn is done. */}
       {turn.status === 'streaming' && turn.toolResults.length > 0 ? <PlaceCardSkeleton /> : null}
+      {turn.status === 'done' && turn.toolResults.length > 0 ? (
+        <ChatPlaceCard toolResults={turn.toolResults} />
+      ) : null}
 
       {turn.status === 'error' ? (
-        // Generic, design-system-compliant line; the real cause is console.warn'd
-        // in the send handler for diagnosis.
-        <Text className="text-[15px] text-danger">{l.error}</Text>
+        // The localized line set by the send handler (rate-limit vs generic).
+        <Text className="text-[15px] text-danger">{turn.errorDetail ?? l.error}</Text>
       ) : null}
     </View>
   );
+}
+
+/**
+ * Map a stream failure to a user-facing line. A 429 is the gateway's per-plan AI
+ * rate limit (RateLimitGuard, ADR-016/022) — surface a "slow down" message;
+ * everything else is a generic reach error. Duck-types `status` so the chat
+ * screen needn't import the transport's HttpError (keeps the ./api seam clean).
+ */
+function errorMessage(err: unknown, t: (key: string) => string): string {
+  const status =
+    err && typeof err === 'object' && 'status' in err
+      ? (err as { status?: number }).status
+      : undefined;
+  return status === 429 ? t('chat.rateLimited') : t('chat.error');
+}
+
+/**
+ * Render kebi's light markdown in an assistant message: `**bold**` spans become
+ * semibold (and a touch darker); everything else is plain. kebi only sends bold
+ * emphasis in conversational replies, so this stays minimal — no full parser.
+ */
+function renderInlineMarkdown(text: string): ReactNode {
+  return text.split(/(\*\*[^*]+\*\*)/g).map((part, i) => {
+    const bold = /^\*\*([^*]+)\*\*$/.exec(part);
+    return bold ? (
+      <Text key={i} className="font-semibold text-text">
+        {bold[1]}
+      </Text>
+    ) : (
+      <Text key={i}>{part}</Text>
+    );
+  });
 }
 
 /** "9:38 pm" — manual format so it stays lowercase and Intl-independent (Hermes). */

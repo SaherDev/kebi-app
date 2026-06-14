@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Kebi Chat — Card Actions / Swaps Options</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *{ box-sizing:border-box; margin:0; padding:0; }
+  :root{ --bg:#FAFAF9; --surface:#F1F1EF; --surface-2:#E8E8E5; --text:#1A1A1A;
+    --text-muted:#8A8A87; --text-soft:#B5B5B1; --like:#C2632F; --pill-warm:#FEE4D4; }
+  html,body{ background:#2A2A28; font-family:'Inter',system-ui,sans-serif; -webkit-font-smoothing:antialiased;
+    min-height:100vh; color:#EDEDEA; padding:40px 24px 64px; }
+  h1{ font-size:22px; font-weight:700; margin-bottom:6px; }
+  .lede{ font-size:14px; color:#B5B5B1; max-width:780px; line-height:1.55; margin-bottom:30px; }
+  .lede b{ color:#D9D9D5; }
+  .cols{ display:flex; gap:40px; flex-wrap:wrap; align-items:flex-start; }
+  .col{ width:340px; }
+  .tag{ display:inline-block; font-size:11px; font-weight:700; letter-spacing:.08em; text-transform:uppercase;
+    color:#2A2A28; background:#D4B891; border-radius:999px; padding:3px 10px; }
+  .tag.rec{ background:#A7C7A0; }
+  .otitle{ font-size:15px; font-weight:600; margin-top:9px; }
+  .odesc{ font-size:12px; color:#9A9A96; line-height:1.5; margin:5px 0 12px; min-height:48px; }
+  .stage{ background:var(--bg); border-radius:22px; padding:14px; }
+  .card{ background:var(--surface); border-radius:14px; padding:14px; }
+
+  /* card top (context only) */
+  .chead{ display:flex; align-items:center; gap:10px; }
+  .avatar{ width:30px; height:30px; border-radius:8px; background:var(--surface-2); display:flex;
+    align-items:center; justify-content:center; font-size:17px; }
+  .name{ font-size:17px; font-weight:700; flex:1; }
+  .chev{ color:var(--text-soft); }
+  .pill{ display:inline-flex; align-items:center; gap:5px; padding:3px 9px; border-radius:999px;
+    font-size:11px; font-weight:600; background:var(--pill-warm); color:var(--like); margin-top:10px; }
+  .pill::before{ content:''; width:5px; height:5px; border-radius:50%; background:currentColor; }
+  .reason{ font-size:13.5px; color:var(--text-muted); line-height:1.5; margin-top:11px; }
+  .hr{ height:1px; background:var(--surface-2); margin:12px 0; }
+
+  /* buttons */
+  .btn{ display:flex; align-items:center; justify-content:center; gap:7px; border-radius:12px;
+    font-size:14px; font-weight:600; padding:11px; border:1px solid var(--surface-2); background:var(--bg);
+    color:var(--text); }
+  .btn.primary{ background:var(--text); color:var(--bg); border-color:var(--text); }
+  .btn svg{ width:14px; height:14px; stroke:currentColor; stroke-width:2.2; fill:none; }
+  .btn.primary svg{ stroke:var(--bg); }
+  .stack{ display:flex; flex-direction:column; gap:8px; }
+  .pair{ display:flex; gap:8px; }
+  .pair .btn{ flex:1; font-size:13px; font-weight:500; padding:9px; }
+  .trio{ display:flex; gap:8px; }
+  .trio .btn{ flex:1; font-size:12.5px; font-weight:600; padding:10px 6px; gap:5px; }
+  .round{ width:42px; height:42px; border-radius:50%; flex-shrink:0; padding:0; }
+  .ico-actions{ display:flex; gap:8px; align-items:stretch; }
+  .ico-actions .btn.primary{ flex:1; }
+
+  /* swap list */
+  .swaplbl{ font-size:11px; font-weight:600; color:var(--text-soft); text-transform:uppercase;
+    letter-spacing:.08em; padding:6px 0 4px; }
+  .swap{ display:flex; align-items:center; gap:11px; padding:9px 0; }
+  .swap + .swap{ border-top:1px solid var(--surface-2); }
+  .savatar{ width:28px; height:28px; border-radius:7px; background:var(--bg); display:flex;
+    align-items:center; justify-content:center; font-size:15px; flex-shrink:0; }
+  .sinfo{ flex:1; min-width:0; }
+  .sname{ font-size:14px; font-weight:600; }
+  .smeta{ font-size:12.5px; color:var(--text-muted); }
+  .schev{ color:var(--text-soft); }
+  /* compact swap (no avatar) */
+  .cswap{ display:flex; align-items:baseline; gap:8px; padding:7px 0; }
+  .cswap + .cswap{ border-top:1px solid var(--surface-2); }
+  .cswap .sname{ font-size:14px; }
+  .cswap .smeta{ font-size:12.5px; flex:1; }
+</style>
+</head>
+<body>
+
+<h1>chat card — actions + swaps</h1>
+<p class="lede">
+  the bottom of the recommendation card: the <b>good pick / save it / not it</b> actions (inert for now —
+  shown active here to judge layout) and the <b>or swap to</b> alternatives. card top is just context.
+</p>
+
+<div class="cols">
+
+  <!-- OPTION A -->
+  <div class="col">
+    <span class="tag rec">option a · rec</span>
+    <div class="otitle">primary + outlined pair</div>
+    <div class="odesc">the mockup layout: one filled <b>good pick</b>, then save / not it as an outlined pair. swaps as full rows (avatar + name + meta).</div>
+    <div class="stage"><div class="card">
+      <div class="chead"><div class="avatar">🪩</div><span class="name">Contact Tokyo</span><span class="chev">⌄</span></div>
+      <div class="pill">new</div>
+      <div class="reason">underground house, smaller crowd than ageha but actually good music.</div>
+      <div class="stack" style="margin-top:13px">
+        <button class="btn primary"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>good pick</button>
+        <div class="pair">
+          <button class="btn"><svg viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/></svg>save it</button>
+          <button class="btn"><svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>not it</button>
+        </div>
+      </div>
+      <div class="hr"></div>
+      <div class="swaplbl">or swap to</div>
+      <div class="swap"><div class="savatar">🍸</div><div class="sinfo"><div class="sname">Bar Trench</div><div class="smeta">¥¥¥ · ebisu</div></div><span class="schev">›</span></div>
+      <div class="swap"><div class="savatar">🍻</div><div class="sinfo"><div class="sname">Beat Cafe</div><div class="smeta">¥¥ · shimokitazawa</div></div><span class="schev">›</span></div>
+    </div></div>
+  </div>
+
+  <!-- OPTION B -->
+  <div class="col">
+    <span class="tag">option b</span>
+    <div class="otitle">three equal buttons</div>
+    <div class="odesc">all three weighted the same in one row (good pick filled, the others outlined). most compact vertically; swaps as full rows.</div>
+    <div class="stage"><div class="card">
+      <div class="chead"><div class="avatar">🪩</div><span class="name">Contact Tokyo</span><span class="chev">⌄</span></div>
+      <div class="pill">new</div>
+      <div class="reason">underground house, smaller crowd than ageha but actually good music.</div>
+      <div class="trio" style="margin-top:13px">
+        <button class="btn primary"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>good pick</button>
+        <button class="btn"><svg viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/></svg>save</button>
+        <button class="btn"><svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>not it</button>
+      </div>
+      <div class="hr"></div>
+      <div class="swaplbl">or swap to</div>
+      <div class="swap"><div class="savatar">🍸</div><div class="sinfo"><div class="sname">Bar Trench</div><div class="smeta">¥¥¥ · ebisu</div></div><span class="schev">›</span></div>
+      <div class="swap"><div class="savatar">🍻</div><div class="sinfo"><div class="sname">Beat Cafe</div><div class="smeta">¥¥ · shimokitazawa</div></div><span class="schev">›</span></div>
+    </div></div>
+  </div>
+
+  <!-- OPTION C -->
+  <div class="col">
+    <span class="tag">option c</span>
+    <div class="otitle">good pick + icon actions · compact swaps</div>
+    <div class="odesc">good pick takes the width; save / not it shrink to round icon buttons beside it. swaps are compact rows (no avatar) — lighter, more chat-like.</div>
+    <div class="stage"><div class="card">
+      <div class="chead"><div class="avatar">🪩</div><span class="name">Contact Tokyo</span><span class="chev">⌄</span></div>
+      <div class="pill">new</div>
+      <div class="reason">underground house, smaller crowd than ageha but actually good music.</div>
+      <div class="ico-actions" style="margin-top:13px">
+        <button class="btn primary"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>good pick</button>
+        <button class="btn round"><svg viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/></svg></button>
+        <button class="btn round"><svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+      </div>
+      <div class="hr"></div>
+      <div class="swaplbl">or swap to</div>
+      <div class="cswap"><span class="sname">Bar Trench</span><span class="smeta">¥¥¥ · ebisu · cocktails</span><span class="schev">›</span></div>
+      <div class="cswap"><span class="sname">Beat Cafe</span><span class="smeta">¥¥ · shimokitazawa · dive</span><span class="schev">›</span></div>
+    </div></div>
+  </div>
+
+</div>
+
+</body>
+</html>

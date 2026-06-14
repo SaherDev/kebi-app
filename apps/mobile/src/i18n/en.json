@@ -112,6 +112,7 @@
     "you": "you",
     "kebi": "kebi",
     "error": "couldn't reach kebi — try again",
+    "rateLimited": "too many asks — give it a sec",
     "send": "send",
     "stop": "stop",
     "stopped": "stopped",
@@ -120,7 +121,16 @@
     "copied": "copied",
     "thinking": "thinking",
     "thought": "done",
-    "interrupted": "interrupted"
+    "interrupted": "interrupted",
+    "placeCard": {
+      "new": "new",
+      "saved": "saved",
+      "goodPick": "good pick",
+      "saveIt": "save it",
+      "notIt": "not it",
+      "orSwapTo": "or swap to",
+      "noMatch": "couldn't find a match"
+    }
   },
   "save": {
     "eyebrow": "save",

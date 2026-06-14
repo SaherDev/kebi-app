@@ -57,20 +57,54 @@ describe('ChatScreen', () => {
         status: 'done',
         visibility: 'user',
       }),
-      frame('tool_result', { tool: 'find_saved', tool_call_id: 'c1', payload: { candidates: [] } }),
+      frame('tool_result', {
+        tool: 'find_saved',
+        tool_call_id: 'c1',
+        payload: {
+          candidates: [
+            {
+              place: {
+                id: null,
+                provider_id: null,
+                place_name: 'Contact Tokyo',
+                place_name_aliases: [],
+                categories: ['bar'],
+                tags: [],
+                location: null,
+                created_at: null,
+                refreshed_at: null,
+              },
+              source: 'discovered',
+              reason: null,
+            },
+          ],
+        },
+      }),
       frame('message', { content: 'here are a couple spots' }),
       frame('done', { tool_calls_used: 1 }),
     ]);
 
-    const { submit, getByText, queryByLabelText } = renderChat();
+    const { submit, getByText, queryByText, queryByLabelText } = renderChat();
     submit('drinks tonight');
 
     expect(getByText('drinks tonight')).toBeTruthy(); // user turn rendered immediately
-    await waitFor(() => expect(getByText('here are a couple spots')).toBeTruthy());
+    await waitFor(() => expect(getByText('Contact Tokyo')).toBeTruthy()); // real card
     expect(getByText('searched your saved spots')).toBeTruthy(); // reasoning step
-    // Once the turn is done the loading skeleton is gone (it's a streaming-only
-    // placeholder until Task 2 renders real cards) — never a perpetual shimmer.
-    expect(queryByLabelText('loading places')).toBeNull();
+    expect(queryByLabelText('loading places')).toBeNull(); // skeleton gone once done
+    // The prose message is hidden when the turn has cards (cards are the answer).
+    expect(queryByText('here are a couple spots')).toBeNull();
+  });
+
+  it('shows the agent message when the turn has no places', async () => {
+    scriptStream([
+      frame('message', { content: 'hey saher, what is the move?' }),
+      frame('done', { tool_calls_used: 0 }),
+    ]);
+
+    const { submit, getByText } = renderChat();
+    submit('hey');
+
+    await waitFor(() => expect(getByText('hey saher, what is the move?')).toBeTruthy());
   });
 
   it('shows an inline error when the stream emits an error frame', async () => {
@@ -80,5 +114,19 @@ describe('ChatScreen', () => {
     submit('hey');
 
     await waitFor(() => expect(getByText("couldn't reach kebi — try again")).toBeTruthy());
+  });
+
+  it('shows the rate-limit message when the gateway returns 429', async () => {
+    mockedStreamChat.mockImplementation(
+      // eslint-disable-next-line require-yield
+      async function* () {
+        throw Object.assign(new Error('rate_limit_exceeded'), { status: 429 });
+      },
+    );
+
+    const { submit, getByText } = renderChat();
+    submit('is japan good places?');
+
+    await waitFor(() => expect(getByText('too many asks — give it a sec')).toBeTruthy());
   });
 });
