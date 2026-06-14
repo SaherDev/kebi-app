@@ -13,7 +13,7 @@ import {
  * category maps (empty or all-unmapped); a caller may override per place via
  * `emoji`. Never a letter avatar. Light/dark is automatic (surface-2 swaps).
  */
-type AvatarSize = 'card' | 'row';
+type AvatarSize = 'card' | 'row' | 'lg';
 
 interface PlaceAvatarProps {
   /** The place's categories (`PlaceCore.categories`); the first drives the emoji. */
@@ -30,6 +30,7 @@ interface PlaceAvatarProps {
 const SIZE: Record<AvatarSize, { box: number; emoji: number }> = {
   card: { box: 28, emoji: 16 },
   row: { box: 36, emoji: 20 },
+  lg: { box: 44, emoji: 24 },
 };
 
 export function PlaceAvatar({ categories, emoji, size = 'card', label }: PlaceAvatarProps) {

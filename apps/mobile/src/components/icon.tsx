@@ -43,7 +43,8 @@ export type IconName =
   | 'image'
   | 'mic'
   | 'send'
-  | 'stop';
+  | 'stop'
+  | 'globe';
 
 // Path data verbatim from docs/kebi-app-design-system mockups (top-bar icons)
 // and kebi-tokens-mockup.html §15. viewBox 0 0 24 24, 1.8px stroke, fill none —
@@ -196,6 +197,14 @@ const ICONS: Record<IconName, ReactNode> = {
     </>
   ),
   stop: <Rect x={6} y={6} width={12} height={12} rx={3} />,
+  // Category/price meta row on the place card (kebi-chat-mockup `.group-row`).
+  globe: (
+    <>
+      <Circle cx={12} cy={12} r={10} />
+      <Line x1={2} y1={12} x2={22} y2={12} />
+      <Path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z" />
+    </>
+  ),
   // Library toolbar (kebi-library-mockup.html `.toolbar-btn`): sort lines + funnel.
   sort: <Path d="M3 6h18M6 12h12M10 18h4" />,
   filter: <Path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z" />,
