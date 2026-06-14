@@ -40,7 +40,13 @@
         }
       ],
       "expo-localization",
-      "expo-web-browser"
+      "expo-web-browser",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "kebi uses your location to suggest places near you."
+        }
+      ]
     ]
   }
 }

@@ -32,7 +32,8 @@ export type HapticEvent =
   | 'toast-undo' // Undo on a toast
   | 'pull-refresh' // Pull-to-refresh past threshold
   | 'filter-chip' // Filter chip selected
-  | 'theme-toggle'; // Theme toggle (light ↔ dark)
+  | 'theme-toggle' // Theme toggle (light ↔ dark)
+  | 'stop-stream'; // Stop a streaming chat response
 
 /**
  * Trigger → concrete `expo-haptics` call. The one source of truth in code for
@@ -51,6 +52,7 @@ const HAPTIC_MAP: Record<HapticEvent, () => Promise<void>> = {
   'pull-refresh': () => Haptics.impactAsync(ImpactFeedbackStyle.Light),
   'filter-chip': () => Haptics.selectionAsync(),
   'theme-toggle': () => Haptics.impactAsync(ImpactFeedbackStyle.Soft),
+  'stop-stream': () => Haptics.impactAsync(ImpactFeedbackStyle.Light),
 };
 
 /**

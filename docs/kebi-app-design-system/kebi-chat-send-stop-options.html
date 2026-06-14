@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Kebi Chat — Send / Stop Icon Options</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #FAFAF9; --surface: #F1F1EF; --surface-2: #E8E8E5;
+    --text: #1A1A1A; --text-muted: #8A8A87; --text-soft: #B5B5B1;
+  }
+  html, body {
+    background: #2A2A28; font-family: 'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased; min-height: 100vh; color: #EDEDEA;
+    padding: 40px 24px 64px;
+  }
+  h1 { font-size: 22px; font-weight: 700; letter-spacing: -0.01em; margin-bottom: 6px; }
+  .lede { font-size: 14px; color: #B5B5B1; max-width: 760px; line-height: 1.55; margin-bottom: 8px; }
+  .lede b { color: #D9D9D5; font-weight: 600; }
+
+  .grid { display: flex; gap: 48px; flex-wrap: wrap; margin-top: 32px; }
+  .opt { width: 300px; }
+  .opt-tag {
+    display: inline-block; font-size: 11px; font-weight: 700; letter-spacing: 0.08em;
+    text-transform: uppercase; color: #2A2A28; background: #D4B891; border-radius: 999px; padding: 3px 10px;
+  }
+  .opt-tag.rec { background: #A7C7A0; }
+  .opt-title { font-size: 16px; font-weight: 600; margin-top: 10px; letter-spacing: -0.01em; }
+  .opt-desc { font-size: 12.5px; color: #9A9A96; line-height: 1.55; margin-top: 6px; min-height: 52px; }
+
+  /* a slice of the real chat bottom, on the --bg surface */
+  .stage { background: var(--bg); border-radius: 22px; padding: 22px 18px; margin-top: 14px; }
+  .stage-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+  .stage-row:last-child { margin-bottom: 0; }
+  .state-label { font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-soft); }
+
+  /* the composer pill — mic + send/stop, exactly as in app */
+  .pill {
+    display: inline-flex; align-items: center; gap: 22px;
+    background: var(--surface); border-radius: 999px; padding: 11px 18px;
+  }
+  .ic { width: 19px; height: 19px; }
+  .ic svg { width: 19px; height: 19px; display: block; }
+  .stroke { stroke: var(--text); stroke-width: 1.8; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+  .stroke-soft { stroke: var(--text-soft); stroke-width: 1.8; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+  .fill { fill: var(--text); stroke: none; }
+
+  /* dark CTA circle variant (option B) */
+  .cta { width: 30px; height: 30px; border-radius: 50%; background: var(--text); display: inline-flex; align-items: center; justify-content: center; }
+  .cta.soft { background: var(--surface-2); }
+  .cta svg { width: 16px; height: 16px; display: block; }
+  .cta .s { stroke: var(--bg); stroke-width: 2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+  .cta.soft .s { stroke: var(--text-soft); }
+  .cta .f { fill: var(--bg); stroke: none; }
+
+  .foot { font-size: 12px; color: #9A9A96; margin-top: 12px; line-height: 1.5; }
+  .foot b { color: #D9D9D5; }
+</style>
+</head>
+<body>
+
+<h1>send / stop — icon options</h1>
+<p class="lede">
+  the button sits in the surface pill next to the <b>mic</b>; it's <b>send</b> when idle and <b>stop</b>
+  while streaming. each option shows both states. the goal is a pair that reads cleanly at 19px and
+  matches the feather-outline icon set (1.8px stroke).
+</p>
+
+<div class="grid">
+
+  <!-- ───────── OPTION A ───────── -->
+  <div class="opt">
+    <span class="opt-tag">option a</span>
+    <div class="opt-title">paper-plane · square</div>
+    <div class="opt-desc">pure outline pair, same 1.8px stroke as every other icon — the most consistent with the set. stop is a rounded-square outline (not a heavy filled block).</div>
+    <div class="stage">
+      <div class="stage-row">
+        <span class="state-label">send</span>
+        <span class="pill">
+          <span class="ic"><svg viewBox="0 0 24 24"><g class="stroke"><rect x="9" y="2" width="6" height="11" rx="3"/><path d="M5 10v1a7 7 0 0 0 14 0v-1"/><line x1="12" y1="18" x2="12" y2="22"/></g></svg></span>
+          <span class="ic"><svg viewBox="0 0 24 24"><g class="stroke"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></g></svg></span>
+        </span>
+      </div>
+      <div class="stage-row">
+        <span class="state-label">stop</span>
+        <span class="pill">
+          <span class="ic"><svg viewBox="0 0 24 24"><g class="stroke-soft"><rect x="9" y="2" width="6" height="11" rx="3"/><path d="M5 10v1a7 7 0 0 0 14 0v-1"/><line x1="12" y1="18" x2="12" y2="22"/></g></svg></span>
+          <span class="ic"><svg viewBox="0 0 24 24"><g class="stroke"><rect x="6" y="6" width="12" height="12" rx="3"/></g></svg></span>
+        </span>
+      </div>
+    </div>
+    <p class="foot"><b>feel:</b> quiet, fully native to the icon language.</p>
+  </div>
+
+  <!-- ───────── OPTION B ───────── -->
+  <div class="opt">
+    <span class="opt-tag rec">option b · rec</span>
+    <div class="opt-title">dark circle CTA</div>
+    <div class="opt-desc">send/stop becomes a small filled <b style="color:#D9D9D5">--text</b> circle with a white glyph — the one bright action in the bar (chatgpt / claude). muted grey when empty. mic stays outline.</div>
+    <div class="stage">
+      <div class="stage-row">
+        <span class="state-label">send</span>
+        <span class="pill">
+          <span class="ic"><svg viewBox="0 0 24 24"><g class="stroke"><rect x="9" y="2" width="6" height="11" rx="3"/><path d="M5 10v1a7 7 0 0 0 14 0v-1"/><line x1="12" y1="18" x2="12" y2="22"/></g></svg></span>
+          <span class="cta"><svg viewBox="0 0 24 24"><g class="s"><line x1="12" y1="19" x2="12" y2="6"/><polyline points="6 12 12 6 18 12"/></g></svg></span>
+        </span>
+      </div>
+      <div class="stage-row">
+        <span class="state-label">stop</span>
+        <span class="pill">
+          <span class="ic"><svg viewBox="0 0 24 24"><g class="stroke-soft"><rect x="9" y="2" width="6" height="11" rx="3"/><path d="M5 10v1a7 7 0 0 0 14 0v-1"/><line x1="12" y1="18" x2="12" y2="22"/></g></svg></span>
+          <span class="cta"><svg viewBox="0 0 24 24"><rect class="f" x="7" y="7" width="10" height="10" rx="2.5"/></svg></span>
+        </span>
+      </div>
+    </div>
+    <p class="foot"><b>feel:</b> clear primary action; the send button "pops". empty state shown muted at left of the row below.</p>
+  </div>
+
+  <!-- ───────── OPTION C ───────── -->
+  <div class="opt">
+    <span class="opt-tag">option c</span>
+    <div class="opt-title">circled outline</div>
+    <div class="opt-desc">both glyphs ride inside a stroked circle — arrow-up-circle for send, square-in-circle for stop. softer than the filled CTA, still more "button-like" than bare glyphs.</div>
+    <div class="stage">
+      <div class="stage-row">
+        <span class="state-label">send</span>
+        <span class="pill">
+          <span class="ic"><svg viewBox="0 0 24 24"><g class="stroke"><rect x="9" y="2" width="6" height="11" rx="3"/><path d="M5 10v1a7 7 0 0 0 14 0v-1"/><line x1="12" y1="18" x2="12" y2="22"/></g></svg></span>
+          <span class="ic"><svg viewBox="0 0 24 24"><g class="stroke"><circle cx="12" cy="12" r="9.5"/><polyline points="8 12 12 8 16 12"/><line x1="12" y1="16" x2="12" y2="8"/></g></svg></span>
+        </span>
+      </div>
+      <div class="stage-row">
+        <span class="state-label">stop</span>
+        <span class="pill">
+          <span class="ic"><svg viewBox="0 0 24 24"><g class="stroke-soft"><rect x="9" y="2" width="6" height="11" rx="3"/><path d="M5 10v1a7 7 0 0 0 14 0v-1"/><line x1="12" y1="18" x2="12" y2="22"/></g></svg></span>
+          <span class="ic"><svg viewBox="0 0 24 24"><g class="stroke"><circle cx="12" cy="12" r="9.5"/><rect x="9" y="9" width="6" height="6" rx="1.5"/></g></svg></span>
+        </span>
+      </div>
+    </div>
+    <p class="foot"><b>feel:</b> tidy, balanced with the mic; reads as a control without going dark.</p>
+  </div>
+
+</div>
+
+</body>
+</html>

@@ -26,7 +26,8 @@ export interface SseReasoningStep {
   status: ReasoningStepStatus;
   source?: 'agent' | 'fallback';
   visibility?: 'user' | 'debug';
-  duration_ms?: number;
+  /** Node latency; `null` on the `active` frame, set on `done` (api-contract.md). */
+  duration_ms?: number | null;
   timestamp?: string;
 }
 

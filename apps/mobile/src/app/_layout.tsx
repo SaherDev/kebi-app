@@ -27,6 +27,7 @@ import { ToastProvider } from "../components/toast-context";
 import { SaveSheetProvider } from "../components/save-sheet-context";
 import { SavedPlacesProvider } from "../components/saved-places-context";
 import { ChatProvider } from "../components/chat-context";
+import { ChatTranscriptProvider } from "../components/chat-transcript-context";
 import { ContextMenuProvider } from "../components/context-menu/context-menu-context";
 import { Splash } from "../components/splash";
 import { AuthProvider, useAuth } from "../auth/auth-context";
@@ -101,6 +102,10 @@ export default function RootLayout() {
                   <StatusBar style={colorScheme === "dark" ? "light" : "dark"} />
                   {/* Redirects between the login group and the app once auth resolves. */}
                   <AuthGate />
+                  {/* ChatTranscriptProvider sits ABOVE ChatProvider so the
+                      conversation survives the chat overlay close→reopen (the
+                      overlay unmounts its child); it resets on app restart. */}
+                  <ChatTranscriptProvider>
                   {/* ChatProvider wraps the Stack so the circular-reveal chat
                       overlay renders above home (the origin FAB stays behind it),
                       but below the boot splash and toasts. */}
@@ -108,6 +113,7 @@ export default function RootLayout() {
                     {/* Native header off — every screen renders the custom TopBar instead. */}
                     <Stack screenOptions={{ headerShown: false }} />
                   </ChatProvider>
+                  </ChatTranscriptProvider>
                   {/* Above the Stack, matching --bg, so the native splash hands off
                       without a flash; fades out to reveal home, then unmounts. */}
                   {!splashDone && <Splash onDone={() => setSplashDone(true)} />}

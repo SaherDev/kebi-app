@@ -106,6 +106,22 @@
       "removeFailed": "couldn't remove that one"
     }
   },
+  "chat": {
+    "greeting": "what's the move?",
+    "placeholder": "tell me what you want...",
+    "you": "you",
+    "kebi": "kebi",
+    "error": "couldn't reach kebi — try again",
+    "send": "send",
+    "stop": "stop",
+    "stopped": "stopped",
+    "voice": "voice",
+    "copy": "copy",
+    "copied": "copied",
+    "thinking": "thinking",
+    "thought": "done",
+    "interrupted": "interrupted"
+  },
   "save": {
     "eyebrow": "save",
     "title": "drop it in.",

@@ -80,9 +80,10 @@ export function LibraryTopBar({ query, onQueryChange, onSave }: LibraryTopBarPro
               returnKeyType="search"
               // Font-size only (no text-body lineHeight, which makes iOS render
               // the glyph low) + a definite height so the text centers on the
-              // same line as the search/close icons.
-              includeFontPadding={false}
+              // same line as the search/close icons. `includeFontPadding` is an
+              // Android TextStyle prop, so it rides `style`, not a bare prop.
               textAlignVertical="center"
+              style={{ includeFontPadding: false }}
               className="h-11 flex-1 p-0 text-[15px] text-text"
             />
             <IconButton
