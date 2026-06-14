@@ -43,6 +43,7 @@ function Probe() {
       {act('tool-a', () => tr.addToolResult(key.current, { ...TOOL, tool_call_id: 'a' }))}
       {act('tool-b', () => tr.addToolResult(key.current, { ...TOOL, tool_call_id: 'b' }))}
       {act('finish', () => tr.finishTurn(key.current, 1))}
+      {act('stop', () => tr.stopTurn(key.current))}
       {act('fail', () => tr.failTurn(key.current, 'boom'))}
       {tr.turns.map((t) =>
         t.role === 'you' ? (
@@ -58,7 +59,7 @@ function Probe() {
 function line(t: KebiTurn): string {
   const statuses = t.steps.map((s) => s.status).join(',');
   const tools = t.toolResults.map((r) => r.tool_call_id).join(',');
-  return `${t.key}|kebi|status:${t.status}|steps:${t.steps.length}|st:${statuses}|msg:${t.message}|tools:${tools}|collapsed:${t.collapsed}`;
+  return `${t.key}|kebi|status:${t.status}|steps:${t.steps.length}|st:${statuses}|msg:${t.message}|tools:${tools}|collapsed:${t.collapsed}|stopped:${t.stopped ?? false}`;
 }
 
 function setup() {
@@ -125,6 +126,16 @@ describe('ChatTranscriptProvider', () => {
     press('msg');
     press('finish');
     expect(kebi()).toContain('status:done');
+    expect(kebi()).toContain('stopped:false');
+  });
+
+  it('stopTurn finishes the turn and flags it stopped', () => {
+    const { press, kebi } = setup();
+    press('start');
+    press('step-active');
+    press('stop');
+    expect(kebi()).toContain('status:done');
+    expect(kebi()).toContain('stopped:true');
   });
 
   it('failTurn errors the turn and leaves an active step as a skeleton', () => {

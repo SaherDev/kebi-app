@@ -43,6 +43,8 @@ export interface KebiTurn {
   /** Assistant text (the `message` frame content). */
   message: string;
   status: ChatTurnStatus;
+  /** The user tapped "stop" — the turn finished early, not a natural completion. */
+  stopped?: boolean;
   /** From an `error` frame / a thrown transport error. */
   errorDetail?: string;
   startedAt: number;
@@ -66,6 +68,7 @@ type Action =
   | { type: 'SET_MESSAGE'; kebiKey: string; content: string }
   | { type: 'ADD_TOOL_RESULT'; kebiKey: string; result: SseToolResult }
   | { type: 'FINISH'; kebiKey: string; toolCallsUsed: number; now: number }
+  | { type: 'STOP'; kebiKey: string; now: number }
   | { type: 'FAIL'; kebiKey: string; detail: string }
   | { type: 'TOGGLE_COLLAPSE'; kebiKey: string; collapsed: boolean };
 
@@ -146,6 +149,15 @@ function reducer(state: TranscriptState, action: Action): TranscriptState {
         return { ...turn, status: 'done', durationMs, toolCallsUsed: action.toolCallsUsed };
       });
 
+    case 'STOP':
+      // User cancelled — finish the turn (keep what streamed) and flag it stopped
+      // so the reasoning header reads "stopped" instead of "done".
+      return mapKebi(state, action.kebiKey, (turn) =>
+        turn.status === 'streaming'
+          ? { ...turn, status: 'done', stopped: true, durationMs: action.now - turn.startedAt }
+          : turn,
+      );
+
     case 'FAIL':
       return mapKebi(state, action.kebiKey, (turn) =>
         turn.status === 'streaming'
@@ -169,6 +181,8 @@ export interface ChatTranscriptValue {
   setMessage: (kebiKey: string, content: string) => void;
   addToolResult: (kebiKey: string, result: SseToolResult) => void;
   finishTurn: (kebiKey: string, toolCallsUsed: number) => void;
+  /** User cancelled the stream — finish the turn and mark it stopped. */
+  stopTurn: (kebiKey: string) => void;
   failTurn: (kebiKey: string, detail: string) => void;
   toggleCollapse: (kebiKey: string, collapsed: boolean) => void;
 }
@@ -180,6 +194,7 @@ const fallback: ChatTranscriptValue = {
   setMessage: () => undefined,
   addToolResult: () => undefined,
   finishTurn: () => undefined,
+  stopTurn: () => undefined,
   failTurn: () => undefined,
   toggleCollapse: () => undefined,
 };
@@ -215,6 +230,10 @@ export function ChatTranscriptProvider({ children }: { children: ReactNode }) {
     dispatch({ type: 'FINISH', kebiKey, toolCallsUsed, now: Date.now() });
   }, []);
 
+  const stopTurn = useCallback((kebiKey: string) => {
+    dispatch({ type: 'STOP', kebiKey, now: Date.now() });
+  }, []);
+
   const failTurn = useCallback((kebiKey: string, detail: string) => {
     dispatch({ type: 'FAIL', kebiKey, detail });
   }, []);
@@ -231,10 +250,11 @@ export function ChatTranscriptProvider({ children }: { children: ReactNode }) {
       setMessage,
       addToolResult,
       finishTurn,
+      stopTurn,
       failTurn,
       toggleCollapse,
     }),
-    [state.turns, startTurn, upsertStep, setMessage, addToolResult, finishTurn, failTurn, toggleCollapse],
+    [state.turns, startTurn, upsertStep, setMessage, addToolResult, finishTurn, stopTurn, failTurn, toggleCollapse],
   );
 
   return <ChatTranscriptContext.Provider value={value}>{children}</ChatTranscriptContext.Provider>;

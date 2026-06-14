@@ -362,6 +362,7 @@ iOS exposes three haptic families through `expo-haptics`:
 | Pull-to-refresh past threshold | `Impact.Light` | Threshold confirmation |
 | Filter chip selected | `Selection` | Reversible choice |
 | Theme toggle (light ↔ dark) | `Impact.Soft` | Mood shift, organic |
+| Stop a streaming chat response | `Impact.Light` | Quiet ack — you cancelled the answer |
 | Tab or top-pill icon tap | none | Navigation is silent |
 | Toast appears | none | Visual is enough; you didn't trigger it directly |
 | Streaming chat message starts | none | Passive incoming |

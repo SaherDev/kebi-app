@@ -51,6 +51,8 @@ export interface ReasoningBlockProps {
   runningLabel?: string;
   /** Header label once done. Defaults to {@link DONE_LABEL}. */
   doneLabel?: string;
+  /** Detail shown on a step left unfinished when the run settled. Defaults to {@link INTERRUPTED_LABEL}. */
+  interruptedLabel?: string;
   /** Override the derived meta line verbatim (e.g. a translated string). */
   meta?: string;
   /** Controlled collapse. Omit for uncontrolled (see `defaultCollapsed`). */
@@ -77,6 +79,8 @@ const SUMMARY_LINES = 2;
 const RUNNING_LABEL = 'working on it';
 /** Header label once the run has finished. */
 const DONE_LABEL = 'got it';
+/** Detail on a step that never completed (the run was stopped/interrupted). */
+const INTERRUPTED_LABEL = 'interrupted';
 
 export function ReasoningBlock({
   steps,
@@ -85,6 +89,7 @@ export function ReasoningBlock({
   label,
   runningLabel = RUNNING_LABEL,
   doneLabel = DONE_LABEL,
+  interruptedLabel = INTERRUPTED_LABEL,
   meta,
   collapsed,
   defaultCollapsed = false,
@@ -151,6 +156,8 @@ export function ReasoningBlock({
               <StepRow
                 key={step.id}
                 step={step}
+                settled={done}
+                interruptedLabel={interruptedLabel}
                 enterDelay={i < initialCount ? i * STAGGER_MS : 0}
                 summaryLines={summaryLines}
               />
@@ -211,10 +218,15 @@ function Chevron({ expanded }: { expanded: boolean }) {
  */
 const StepRow = memo(function StepRow({
   step,
+  settled,
+  interruptedLabel,
   enterDelay,
   summaryLines,
 }: {
   step: ReasoningBlockStep;
+  /** The run has finished (done/stopped) — freeze an unfinished step: no shimmer. */
+  settled: boolean;
+  interruptedLabel: string;
   enterDelay: number;
   summaryLines: number;
 }) {
@@ -228,18 +240,26 @@ const StepRow = memo(function StepRow({
     transform: [{ translateY: (1 - enter.value) * -3 }],
   }));
 
+  // An active step on a settled run never finished — it was interrupted (failed).
+  const interrupted = settled && step.status === 'active';
+
   return (
     <Animated.View style={style} className="relative flex-row items-start gap-3 ps-[18px]">
       {/* Node disc: a bg-coloured circle masks the rail, holding the status node.
           top-0 centres the 14px node ~3px down inside the 20px disc, so its
           centre lines up with the title's first line (lineHeight 20 → centre 10). */}
       <View className="absolute -left-2.5 top-0 h-5 w-5 items-center justify-center rounded-full bg-bg">
-        <StatusNode status={step.status} />
+        <StatusNode status={step.status} settled={settled} />
       </View>
       <View className="min-w-0 flex-1 gap-[3px]">
-        {/* Bold action line (the step title), when present. */}
+        {/* Bold action line (the step title), when present. Danger-toned when the
+            step was interrupted, so it reads as the failed step. */}
         {step.title ? (
-          <Text numberOfLines={1} className="text-[13px] font-medium text-text" style={{ lineHeight: 20 }}>
+          <Text
+            numberOfLines={1}
+            className={`text-[13px] font-medium ${interrupted ? 'text-danger' : 'text-text'}`}
+            style={{ lineHeight: 20 }}
+          >
             {step.title}
           </Text>
         ) : null}
@@ -252,6 +272,15 @@ const StepRow = memo(function StepRow({
           >
             {step.summary}
           </Text>
+        ) : interrupted ? (
+          // The run was stopped before this step finished — mark it failed. With
+          // a title the red title already says it; without one, label it here so
+          // the row is never empty.
+          step.title ? null : (
+            <Text className="text-[13px] text-danger" style={{ lineHeight: 20 }}>
+              {interruptedLabel}
+            </Text>
+          )
         ) : step.status === 'active' ? (
           // Active & still streaming → shimmer bars in place of the detail.
           <>
@@ -264,12 +293,24 @@ const StepRow = memo(function StepRow({
   );
 });
 
-/** 14px node: filled check when done, ringed pulsing dot while active. */
-function StatusNode({ status }: { status: ReasoningStepStatus }) {
+/**
+ * 14px node: filled check when done; while active a ringed pulsing dot — unless
+ * the run is settled with this step unfinished, in which case a filled red node
+ * with an × marks it as the failed/interrupted step (no animation).
+ */
+function StatusNode({ status, settled }: { status: ReasoningStepStatus; settled: boolean }) {
   if (status === 'done') {
     return (
       <View className="h-3.5 w-3.5 items-center justify-center rounded-full bg-text">
         <Icon name="check" size={8} className="text-bg" strokeWidth={3} />
+      </View>
+    );
+  }
+  if (settled) {
+    // Interrupted/failed step — a red filled marker, like a done node but ×.
+    return (
+      <View className="h-3.5 w-3.5 items-center justify-center rounded-full bg-danger">
+        <Icon name="close" size={8} className="text-bg" strokeWidth={3} />
       </View>
     );
   }
@@ -307,11 +348,14 @@ function Shimmer({ width }: { width: `${number}%` }) {
 }
 
 /**
- * Animated height/opacity collapse. The content is always laid out at its
- * natural height (never clamped to 0 before it's measured — that traps
- * `onLayout` at 0 under Fabric), so the measured height is captured reliably
- * and tracked as steps stream in. `progress` animates 0↔1 over 240ms; the
- * measured height rides a shared value so the worklet stays reactive.
+ * Animated height/opacity collapse. `progress` animates 0↔1 over 240ms and the
+ * container's height rides the measured content height.
+ *
+ * The measured content is absolutely positioned so its `onLayout` always reports
+ * the natural content height — decoupled from the animated (clipping) container
+ * height. Measuring an in-flow child instead lets Fabric clamp it to the
+ * shrinking height during a collapse, trapping `measuredH` at a tiny value so a
+ * re-expand never grows back (the collapse→reopen-empty bug).
  */
 function Collapsible({ collapsed, children }: { collapsed: boolean; children: React.ReactNode }) {
   const progress = useSharedValue(collapsed ? 0 : 1);
@@ -334,7 +378,9 @@ function Collapsible({ collapsed, children }: { collapsed: boolean; children: Re
 
   return (
     <Animated.View style={[{ overflow: 'hidden' }, style]}>
-      <View onLayout={onLayout}>{children}</View>
+      <View style={{ position: 'absolute', left: 0, right: 0 }} onLayout={onLayout}>
+        {children}
+      </View>
     </Animated.View>
   );
 }

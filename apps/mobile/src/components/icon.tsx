@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { cssInterop } from 'nativewind';
-import Svg, { Path, Polyline, Circle, Line, Rect } from 'react-native-svg';
+import Svg, { Path, Polyline, Polygon, Circle, Line, Rect } from 'react-native-svg';
 
 // Lift the NativeWind text color onto react-native-svg's `color` prop so that
 // `stroke="currentColor"` / `fill="currentColor"` resolve to a semantic token.
@@ -41,7 +41,9 @@ export type IconName =
   | 'sort'
   | 'filter'
   | 'image'
-  | 'mic';
+  | 'mic'
+  | 'send'
+  | 'stop';
 
 // Path data verbatim from docs/kebi-app-design-system mockups (top-bar icons)
 // and kebi-tokens-mockup.html §15. viewBox 0 0 24 24, 1.8px stroke, fill none —
@@ -186,6 +188,14 @@ const ICONS: Record<IconName, ReactNode> = {
       <Path d="M5 10v2a7 7 0 0014 0v-2M12 19v3" />
     </>
   ),
+  // Composer send (paper-plane) and stop (rounded-square outline — abort stream).
+  send: (
+    <>
+      <Line x1={22} y1={2} x2={11} y2={13} />
+      <Polygon points="22 2 15 22 11 13 2 9 22 2" />
+    </>
+  ),
+  stop: <Rect x={6} y={6} width={12} height={12} rx={3} />,
   // Library toolbar (kebi-library-mockup.html `.toolbar-btn`): sort lines + funnel.
   sort: <Path d="M3 6h18M6 12h12M10 18h4" />,
   filter: <Path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z" />,

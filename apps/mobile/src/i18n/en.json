@@ -112,12 +112,15 @@
     "you": "you",
     "kebi": "kebi",
     "error": "couldn't reach kebi — try again",
-    "photo": "add a photo",
+    "send": "send",
+    "stop": "stop",
+    "stopped": "stopped",
     "voice": "voice",
     "copy": "copy",
     "copied": "copied",
     "thinking": "thinking",
-    "thought": "done"
+    "thought": "done",
+    "interrupted": "interrupted"
   },
   "save": {
     "eyebrow": "save",

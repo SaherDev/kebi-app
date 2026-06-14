@@ -32,6 +32,7 @@ import {
 import { useApiClient } from '../api/hooks';
 import { streamChat } from '../api/chat';
 import { getDeviceLocation } from '../lib/location';
+import { triggerHaptic } from '../lib/haptics';
 import { useToast } from './toast-context';
 import { useTranslation } from '../i18n/context';
 
@@ -60,8 +61,9 @@ export function ChatScreen({ onClose }: ChatScreenProps) {
   const reducedMotion = useReducedMotion();
   const softColor = useUnstableNativeVariable('--text-soft') ?? undefined;
   const client = useApiClient();
+  const { show: showToast, reserveTopAnchor } = useToast();
   const transcript = useChatTranscript();
-  const { turns, startTurn, upsertStep, setMessage, addToolResult, finishTurn, failTurn, toggleCollapse } =
+  const { turns, startTurn, upsertStep, setMessage, addToolResult, finishTurn, stopTurn, failTurn, toggleCollapse } =
     transcript;
 
   const [draft, setDraft] = useState('');
@@ -77,6 +79,10 @@ export function ChatScreen({ onClose }: ChatScreenProps) {
   // The transcript persists above, so a partial turn stays visible on reopen.
   useEffect(() => () => abortRef.current?.abort(), []);
 
+  // Route toasts to the top while chat is open — the bottom spot is covered by
+  // the composer and (often) the keyboard, so a bottom toast would be hidden.
+  useEffect(() => reserveTopAnchor(), [reserveTopAnchor]);
+
   const keyboard = useAnimatedKeyboard();
   const bottomPad = useAnimatedStyle(() => ({
     paddingBottom: Math.max(keyboard.height.value, insets.bottom),
@@ -90,13 +96,28 @@ export function ChatScreen({ onClose }: ChatScreenProps) {
     if (atBottomRef.current) listRef.current?.scrollToEnd({ animated: !reducedMotion });
   };
 
+  // The composer button is "send" normally and "stop" while a turn streams —
+  // derived from the last turn so it tracks the store (no separate flag to drift).
+  const last = turns[turns.length - 1];
+  const isStreaming = last?.role === 'kebi' && last.status === 'streaming';
+  const canSend = draft.trim().length > 0;
+
+  /** Cancel the in-flight stream: flag the turn stopped, then abort it. */
+  function stop() {
+    if (!abortRef.current) return;
+    if (last?.role === 'kebi' && last.status === 'streaming') stopTurn(last.key);
+    abortRef.current.abort();
+    triggerHaptic('stop-stream');
+    showToast({ text: t('chat.stopped'), icon: 'stop' });
+  }
+
   async function send() {
     const text = draft.trim();
-    if (!text) return;
+    // One turn streams at a time — ignore submit while a stream is in flight
+    // (the button shows "stop" then, but a hardware return could still fire).
+    if (!text || abortRef.current) return;
     setDraft('');
 
-    // One turn streams at a time — abort any previous before starting.
-    abortRef.current?.abort();
     const controller = new AbortController();
     abortRef.current = controller;
 
@@ -127,7 +148,7 @@ export function ChatScreen({ onClose }: ChatScreenProps) {
         }
       }
     } catch (err) {
-      // Aborting (close/unmount) is benign — leave the partial turn as-is.
+      // Aborting (stop button / close) is benign — keep what streamed so far.
       if (!controller.signal.aborted) {
         // Log the real cause to Metro so a failing turn is diagnosable (the UI
         // shows a generic line). HttpError carries "API error: <status> …".
@@ -136,8 +157,9 @@ export function ChatScreen({ onClose }: ChatScreenProps) {
         finished = true;
       }
     } finally {
-      // Stream ended without a done/error frame → finish on wall-clock.
-      if (!finished && !controller.signal.aborted) finishTurn(kebiKey, 0);
+      // Finish the turn unless it already errored — covers a clean end-without-done
+      // frame AND a user "stop" (abort), so the turn never hangs in "streaming".
+      if (!finished) finishTurn(kebiKey, 0);
       if (abortRef.current === controller) abortRef.current = null;
     }
   }
@@ -175,7 +197,9 @@ export function ChatScreen({ onClose }: ChatScreenProps) {
           onContentSizeChange={onContentSizeChange}
         />
 
-        {/* Editor line — left-aligned (LTR) composer. */}
+        {/* Editor line — multiline so long text wraps and the field grows (up to
+            ~5 lines, then scrolls). `submitBehavior="submit"` keeps return as the
+            send key (and keeps the keyboard up) rather than inserting a newline. */}
         <View className="px-6 pb-2 pt-2">
           <TextInput
             value={draft}
@@ -184,22 +208,37 @@ export function ChatScreen({ onClose }: ChatScreenProps) {
             placeholder={t('chat.placeholder')}
             placeholderTextColor={softColor}
             returnKeyType="send"
-            blurOnSubmit={false}
+            multiline
+            submitBehavior="submit"
+            textAlignVertical="top"
             autoCapitalize="none"
             autoCorrect={false}
             accessibilityLabel={t('chat.placeholder')}
-            className="p-0 text-[17px] leading-relaxed text-text"
+            className="max-h-[120px] p-0 text-[17px] leading-relaxed text-text"
           />
         </View>
 
-        {/* Photo + voice toolbar pill (placeholders this task; no AI button in chat).
-            Left-aligned to match the LTR composer. Two icons, gap-24, no divider. */}
-        <View className="mx-4 mb-3 flex-row items-center gap-6 self-start rounded-full bg-surface px-5 py-3">
-          <Pressable accessibilityRole="button" accessibilityLabel={t('chat.photo')} hitSlop={8}>
-            <Icon name="image" size={18} className="text-text" strokeWidth={1.6} />
-          </Pressable>
+        {/* Composer pill (bottom-right): mic (voice, placeholder) + send/stop. One
+            outline toggle — paper-plane send when idle, a larger square stop while
+            a turn streams (tapping stop aborts the response). Muted when empty. */}
+        <View className="mx-4 mb-3 flex-row items-center gap-6 self-end rounded-full bg-surface px-5 py-3">
           <Pressable accessibilityRole="button" accessibilityLabel={t('chat.voice')} hitSlop={8}>
             <Icon name="mic" size={18} className="text-text" strokeWidth={1.6} />
+          </Pressable>
+          <Pressable
+            onPress={isStreaming ? stop : send}
+            disabled={!isStreaming && !canSend}
+            accessibilityRole="button"
+            accessibilityLabel={isStreaming ? t('chat.stop') : t('chat.send')}
+            accessibilityState={{ disabled: !isStreaming && !canSend }}
+            hitSlop={8}
+          >
+            <Icon
+              name={isStreaming ? 'stop' : 'send'}
+              size={isStreaming ? 22 : 18}
+              className={isStreaming || canSend ? 'text-text' : 'text-text-soft'}
+              strokeWidth={1.8}
+            />
           </Pressable>
         </View>
       </Animated.View>
@@ -213,6 +252,8 @@ interface TurnLabels {
   error: string;
   thinking: string;
   thought: string;
+  stopped: string;
+  interrupted: string;
 }
 
 function labels(t: (k: string) => string): TurnLabels {
@@ -222,6 +263,8 @@ function labels(t: (k: string) => string): TurnLabels {
     error: t('chat.error'),
     thinking: t('chat.thinking'),
     thought: t('chat.thought'),
+    stopped: t('chat.stopped'),
+    interrupted: t('chat.interrupted'),
   };
 }
 
@@ -311,7 +354,8 @@ function KebiTurnRow({
           done={turn.status !== 'streaming'}
           durationMs={turn.durationMs}
           runningLabel={l.thinking}
-          doneLabel={l.thought}
+          doneLabel={turn.stopped ? l.stopped : l.thought}
+          interruptedLabel={l.interrupted}
           collapsed={turn.collapsed}
           onToggle={(next) => onToggle(turn.key, next)}
         />
