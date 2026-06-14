@@ -1,5 +1,5 @@
 import type { PlaceCore, SseToolResult } from '@kebi-app/shared';
-import { chatDetailRows, flattenCandidates, sourcePill } from './chat-place-card-data';
+import { chatDetailRows, flattenCandidates } from './chat-place-card-data';
 
 function place(name: string, over: Partial<PlaceCore> = {}): PlaceCore {
   return {
@@ -56,19 +56,6 @@ describe('flattenCandidates', () => {
 
   it('returns [] when there are no candidates', () => {
     expect(flattenCandidates([toolResult([], 'no_match')])).toEqual([]);
-  });
-});
-
-describe('sourcePill', () => {
-  const t = (k: string) => k;
-
-  it('gives a saved pick a green "saved" pill', () => {
-    expect(sourcePill('saved', t)).toEqual({ tone: 'green', label: 'chat.placeCard.saved' });
-  });
-
-  it('gives suggested/discovered picks no pill (the "new" chip was dropped)', () => {
-    expect(sourcePill('discovered', t)).toBeNull();
-    expect(sourcePill('suggested', t)).toBeNull();
   });
 });
 

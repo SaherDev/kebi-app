@@ -123,8 +123,7 @@
     "thought": "done",
     "interrupted": "interrupted",
     "placeCard": {
-      "new": "new",
-      "saved": "saved",
+      "savedByYou": "you saved this",
       "goodPick": "good pick",
       "saveIt": "save it",
       "notIt": "not for me",

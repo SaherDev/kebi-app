@@ -1,12 +1,11 @@
 import {
   buildDetailSegments,
   type ConsultCandidate,
-  type ConsultCandidateSource,
   type PlaceCore,
   type SseToolResult,
 } from '@kebi-app/shared';
 import { ConsultResultSchema } from '../api/models/chat';
-import type { PlaceCardDetailRow, PlaceCardPill } from './place-card-body';
+import type { PlaceCardDetailRow } from './place-card-body';
 
 /**
  * Pure data helpers for the chat place card — kept out of the component so they
@@ -73,13 +72,3 @@ export function swapMetaLine(place: PlaceCore, t: (key: string) => string): stri
     .join(' · ');
 }
 
-/**
- * The header pill — only a saved pick gets one ("saved", green); discovered /
- * suggested picks show no pill (the "new" chip was dropped as noise).
- */
-export function sourcePill(
-  source: ConsultCandidateSource,
-  t: (key: string) => string,
-): PlaceCardPill | null {
-  return source === 'saved' ? { tone: 'green', label: t('chat.placeCard.saved') } : null;
-}

@@ -5,7 +5,7 @@ import { PRESS } from '../theme/motion';
 import { Icon, type IconName } from './icon';
 import { PlaceAvatar } from './place-avatar';
 import { PlaceCardBody } from './place-card-body';
-import { chatDetailRows, flattenCandidates, sourcePill, swapMetaLine } from './chat-place-card-data';
+import { chatDetailRows, flattenCandidates, swapMetaLine } from './chat-place-card-data';
 import { triggerHaptic } from '../lib/haptics';
 import { useTranslation } from '../i18n/context';
 
@@ -31,7 +31,6 @@ export function ChatPlaceCard({ toolResults }: { toolResults: readonly SseToolRe
   const primaryIndex = selected < candidates.length ? selected : 0;
   const primary = candidates[primaryIndex];
   const place = primary.place;
-  const pill = sourcePill(primary.source, t);
   // Every other candidate (in original order, the old primary included) is a swap.
   const swaps = candidates
     .map((candidate, index) => ({ candidate, index }))
@@ -50,9 +49,14 @@ export function ChatPlaceCard({ toolResults }: { toolResults: readonly SseToolRe
           {place.place_name}
         </Text>
       }
-      pills={pill ? [pill] : undefined}
       detailRows={chatDetailRows(place, t)}
-      source={{ source: 'kebi', text: t('library.source.kebi') }}
+      // No chips on the consult card — provenance lives in the source line: a
+      // saved pick is the user's own ("you saved this"), otherwise kebi found it.
+      source={
+        primary.source === 'saved'
+          ? { source: 'manual', text: t('chat.placeCard.savedByYou') }
+          : { source: 'kebi', text: t('library.source.kebi') }
+      }
       variant="comfortable"
       expanded={expanded}
       onToggle={() => setExpanded((e) => !e)}
