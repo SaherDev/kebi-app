@@ -26,6 +26,13 @@ module.exports = {
     '^react-native-safe-area-context$': '<rootDir>/src/test-utils/safe-area-mock.js',
     // expo-localization is a native module the i18n catalog reads at import time.
     '^expo-localization$': '<rootDir>/src/test-utils/expo-localization-mock.js',
+    // expo/fetch (streaming transport) — map to the global-fetch stub; the SSE
+    // parser carries the wire-level coverage, streaming tests inject a fake client.
+    '^expo/fetch$': '<rootDir>/src/test-utils/expo-fetch-mock.js',
+    // expo-location is a native module; stub a granted permission + fixed coords.
+    '^expo-location$': '<rootDir>/src/test-utils/expo-location-mock.js',
+    // expo-clipboard is a native module; stub a no-op setter for the copy button.
+    '^expo-clipboard$': '<rootDir>/src/test-utils/expo-clipboard-mock.js',
   },
   transform: {
     '\\.[jt]sx?$': [

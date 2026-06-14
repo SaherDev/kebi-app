@@ -24,7 +24,7 @@ export class SseReasoningStep implements SseReasoningStepContract {
   readonly status: ReasoningStepStatus;
   readonly source?: 'agent' | 'fallback';
   readonly visibility?: 'user' | 'debug';
-  readonly duration_ms?: number;
+  readonly duration_ms?: number | null;
   readonly timestamp?: string;
 
   constructor(p: SseReasoningStepContract) {
@@ -49,7 +49,8 @@ export const SseReasoningStepSchema = z
     status: z.enum(['active', 'done']),
     source: z.enum(['agent', 'fallback']).optional(),
     visibility: z.enum(['user', 'debug']).optional(),
-    duration_ms: z.number().optional(),
+    // `null` on the active frame, a number on done — accept both (api-contract.md).
+    duration_ms: z.number().nullable().optional(),
     timestamp: z.string().optional(),
   })
   .transform((p) => new SseReasoningStep(p));

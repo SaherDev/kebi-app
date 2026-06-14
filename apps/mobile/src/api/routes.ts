@@ -6,6 +6,8 @@ export const API_ROUTES = {
   health: '/health',
   /** Provisions the user on sign-in (first authenticated call) — creates the product user server-side. */
   login: '/auth/login',
+  /** Conversational turn — always-streaming SSE (api-contract.md §POST /v1/chat/stream, ADR-036). */
+  chat: '/chat',
   /** Saves a place: forwards a URL or place name to kebi for extraction (ADR-073). */
   extract: '/extract',
   /** The Library: browse the caller's saved places, keyset-paged (api-contract.md §GET /v1/user/library). */

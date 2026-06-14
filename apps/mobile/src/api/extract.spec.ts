@@ -46,6 +46,9 @@ function fakeClient(payload: unknown): HttpClient & { calls: { path: string; bod
       calls.push({ path, body });
       return payload as never;
     },
+    postStream: async function* () {
+      // not exercised by extract tests
+    },
   };
 }
 

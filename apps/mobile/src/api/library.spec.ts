@@ -53,6 +53,9 @@ function fakeClient(payload: unknown): HttpClient & { calls: Call[] } {
     delete: async (path: string) => {
       calls.push({ method: 'DELETE', path });
     },
+    postStream: async function* () {
+      // not exercised by library tests
+    },
   };
 }
 

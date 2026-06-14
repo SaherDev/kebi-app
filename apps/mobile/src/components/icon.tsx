@@ -39,7 +39,9 @@ export type IconName =
   | 'youtube'
   | 'sparkle'
   | 'sort'
-  | 'filter';
+  | 'filter'
+  | 'image'
+  | 'mic';
 
 // Path data verbatim from docs/kebi-app-design-system mockups (top-bar icons)
 // and kebi-tokens-mockup.html §15. viewBox 0 0 24 24, 1.8px stroke, fill none —
@@ -170,6 +172,20 @@ const ICONS: Record<IconName, ReactNode> = {
     />
   ),
   sparkle: <Path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z" />,
+  // Chat editor toolbar (kebi-chat-mockup.html `.toolbar`): photo + voice.
+  image: (
+    <>
+      <Rect x={3} y={3} width={18} height={18} rx={2} />
+      <Circle cx={8.5} cy={8.5} r={1.5} />
+      <Path d="M21 15l-5-5L5 21" />
+    </>
+  ),
+  mic: (
+    <>
+      <Rect x={9} y={2} width={6} height={12} rx={3} />
+      <Path d="M5 10v2a7 7 0 0014 0v-2M12 19v3" />
+    </>
+  ),
   // Library toolbar (kebi-library-mockup.html `.toolbar-btn`): sort lines + funnel.
   sort: <Path d="M3 6h18M6 12h12M10 18h4" />,
   filter: <Path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z" />,
