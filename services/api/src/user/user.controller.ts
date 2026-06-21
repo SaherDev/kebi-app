@@ -7,6 +7,7 @@ import {
   HttpStatus,
   Param,
   Patch,
+  Post,
   Query,
 } from '@nestjs/common';
 import type {
@@ -17,6 +18,7 @@ import type {
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { DeleteUserDataQueryDto } from './dto/delete-user-data.query.dto';
 import { LibraryQueryDto } from './dto/library-query.dto';
+import { SaveUserPlaceDto } from './dto/save-user-place.dto';
 import { UpdateUserPlaceDto } from './dto/update-user-place.dto';
 import { UserService } from './user.service';
 
@@ -30,6 +32,15 @@ export class UserController {
     @Query() query: LibraryQueryDto
   ): Promise<LibraryResponse> {
     return this.userService.getLibrary(user.id, query);
+  }
+
+  @Post('places')
+  @HttpCode(HttpStatus.CREATED)
+  async savePlace(
+    @CurrentUser() user: AuthUser,
+    @Body() dto: SaveUserPlaceDto
+  ): Promise<LibraryUserData> {
+    return this.userService.savePlace(user.id, dto);
   }
 
   @Patch('places/:id')

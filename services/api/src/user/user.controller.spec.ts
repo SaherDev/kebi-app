@@ -7,6 +7,7 @@ import { UserController } from './user.controller';
 import { UserService } from './user.service';
 import { DeleteUserDataQueryDto } from './dto/delete-user-data.query.dto';
 import type { LibraryQueryDto } from './dto/library-query.dto';
+import type { SaveUserPlaceDto } from './dto/save-user-place.dto';
 import type { UpdateUserPlaceDto } from './dto/update-user-place.dto';
 
 describe('UserController', () => {
@@ -18,6 +19,7 @@ describe('UserController', () => {
     service = {
       deleteData: jest.fn(),
       getLibrary: jest.fn(),
+      savePlace: jest.fn(),
       updatePlace: jest.fn(),
       deletePlace: jest.fn(),
     } as unknown as jest.Mocked<UserService>;
@@ -35,6 +37,22 @@ describe('UserController', () => {
       expect(service.getLibrary).toHaveBeenCalledTimes(1);
       expect(service.getLibrary).toHaveBeenCalledWith('user_test_123', query);
       expect(result).toBe(response);
+    });
+  });
+
+  describe('POST /user/places', () => {
+    it('forwards the verified user id and validated body to the service', async () => {
+      const saved = { user_place_id: 'up_1', place_id: 'place_1' } as LibraryUserData;
+      service.savePlace.mockResolvedValueOnce(saved);
+      const dto: SaveUserPlaceDto = {
+        place_core_id: 'place_1',
+        recommendation_id: 'rec_1',
+      };
+
+      const result = await controller.savePlace(user, dto);
+
+      expect(service.savePlace).toHaveBeenCalledWith('user_test_123', dto);
+      expect(result).toBe(saved);
     });
   });
 

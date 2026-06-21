@@ -3,10 +3,12 @@ import type {
   DataScope,
   LibraryResponse,
   LibraryUserData,
+  SaveUserPlaceRequest,
   UpdateUserPlaceRequest,
 } from '@kebi-app/shared';
 import { KebiHttpClient } from '../kebi/kebi-http.client';
 import { LibraryQueryDto } from './dto/library-query.dto';
+import { SaveUserPlaceDto } from './dto/save-user-place.dto';
 import { UpdateUserPlaceDto } from './dto/update-user-place.dto';
 
 @Injectable()
@@ -33,6 +35,17 @@ export class UserService {
       ? `/v1/user/library?${queryString}`
       : '/v1/user/library';
     return this.kebi.get<LibraryResponse>(path, userId);
+  }
+
+  async savePlace(
+    userId: string,
+    dto: SaveUserPlaceDto
+  ): Promise<LibraryUserData> {
+    const body: SaveUserPlaceRequest = {
+      place_core_id: dto.place_core_id,
+      recommendation_id: dto.recommendation_id,
+    };
+    return this.kebi.post<LibraryUserData>('/v1/user/places', userId, body);
   }
 
   async updatePlace(

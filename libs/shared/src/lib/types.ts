@@ -231,6 +231,16 @@ export interface UpdateUserPlaceRequest {
   note?: string | null;
 }
 
+/**
+ * POST /v1/user/places request body the gateway forwards to kebi — save a
+ * place kebi recommended ("save it" on the consult card). Identity is the
+ * X-Gateway-User-Id header, never the body; `source` is server-stamped (kebi).
+ */
+export interface SaveUserPlaceRequest {
+  place_core_id: string;
+  recommendation_id: string;
+}
+
 // ── Auth, plan & mobility types ──────────────────────────────────────────────
 
 export type PlanTier = "homebody" | "explorer" | "local_legend";

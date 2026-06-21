@@ -1,6 +1,7 @@
 import type { LibraryResponse, LibraryUserData } from '@kebi-app/shared';
 import { KebiHttpClient } from '../kebi/kebi-http.client';
 import type { LibraryQueryDto } from './dto/library-query.dto';
+import type { SaveUserPlaceDto } from './dto/save-user-place.dto';
 import type { UpdateUserPlaceDto } from './dto/update-user-place.dto';
 import { UserService } from './user.service';
 
@@ -13,6 +14,7 @@ describe('UserService', () => {
   beforeEach(() => {
     kebi = {
       get: jest.fn(),
+      post: jest.fn(),
       patch: jest.fn(),
       delete: jest.fn(),
     } as unknown as jest.Mocked<KebiHttpClient>;
@@ -46,6 +48,38 @@ describe('UserService', () => {
       await service.getLibrary(USER_ID, {});
 
       expect(kebi.get).toHaveBeenCalledWith('/v1/user/library', USER_ID);
+    });
+  });
+
+  describe('savePlace', () => {
+    const saved = { user_place_id: 'up_1', place_id: 'place_1' } as LibraryUserData;
+
+    it('POSTs /v1/user/places with the body and user id (header)', async () => {
+      (kebi.post as jest.Mock).mockResolvedValueOnce(saved);
+      const dto: SaveUserPlaceDto = {
+        place_core_id: 'place_1',
+        recommendation_id: 'rec_1',
+      };
+
+      const result = await service.savePlace(USER_ID, dto);
+
+      expect(kebi.post).toHaveBeenCalledWith('/v1/user/places', USER_ID, {
+        place_core_id: 'place_1',
+        recommendation_id: 'rec_1',
+      });
+      expect(result).toBe(saved);
+    });
+
+    it('propagates a 404 (place_not_found) from the transport', async () => {
+      const err = new Error('place_not_found');
+      (kebi.post as jest.Mock).mockRejectedValueOnce(err);
+
+      await expect(
+        service.savePlace(USER_ID, {
+          place_core_id: 'missing',
+          recommendation_id: 'rec_1',
+        })
+      ).rejects.toBe(err);
     });
   });
 
