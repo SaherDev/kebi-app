@@ -5,7 +5,13 @@ import { PRESS } from '../theme/motion';
 import { Icon, type IconName } from './icon';
 import { PlaceAvatar } from './place-avatar';
 import { PlaceCardBody } from './place-card-body';
-import { chatDetailRows, flattenCandidates, swapMetaLine } from './chat-place-card-data';
+import {
+  chatDetailRows,
+  emptyMessage,
+  flattenCandidates,
+  resolveEmptyReason,
+  swapMetaLine,
+} from './chat-place-card-data';
 import { triggerHaptic } from '../lib/haptics';
 import { useTranslation } from '../i18n/context';
 
@@ -25,7 +31,10 @@ export function ChatPlaceCard({ toolResults }: { toolResults: readonly SseToolRe
 
   const candidates = flattenCandidates(toolResults);
   if (candidates.length === 0) {
-    return <Text className="text-small text-text-muted">{t('chat.placeCard.noMatch')}</Text>;
+    // No candidates — surface the reason ("no_location" is actionable, the rest
+    // fall back to a generic line) rather than always saying "no match".
+    const message = emptyMessage(resolveEmptyReason(toolResults), t);
+    return <Text className="text-small text-text-muted">{message}</Text>;
   }
 
   const primaryIndex = selected < candidates.length ? selected : 0;

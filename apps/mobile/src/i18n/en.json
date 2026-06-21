@@ -128,7 +128,8 @@
       "saveIt": "save it",
       "notIt": "not for me",
       "orSwapTo": "or swap to",
-      "noMatch": "couldn't find a match"
+      "noMatch": "couldn't find a match",
+      "noLocation": "turn on location so i can find places near you"
     }
   },
   "save": {

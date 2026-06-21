@@ -1,5 +1,10 @@
 import type { PlaceCore, SseToolResult } from '@kebi-app/shared';
-import { chatDetailRows, flattenCandidates } from './chat-place-card-data';
+import {
+  chatDetailRows,
+  emptyMessage,
+  flattenCandidates,
+  resolveEmptyReason,
+} from './chat-place-card-data';
 
 function place(name: string, over: Partial<PlaceCore> = {}): PlaceCore {
   return {
@@ -56,6 +61,42 @@ describe('flattenCandidates', () => {
 
   it('returns [] when there are no candidates', () => {
     expect(flattenCandidates([toolResult([], 'no_match')])).toEqual([]);
+  });
+});
+
+describe('resolveEmptyReason', () => {
+  it('returns the empty_reason from a candidate-less result', () => {
+    expect(resolveEmptyReason([toolResult([], 'no_match')])).toBe('no_match');
+  });
+
+  it('prefers no_location over no_match (it is actionable)', () => {
+    expect(
+      resolveEmptyReason([toolResult([], 'no_match'), toolResult([], 'no_location')]),
+    ).toBe('no_location');
+  });
+
+  it('returns null when no result carries an empty_reason', () => {
+    expect(resolveEmptyReason([toolResult([])])).toBeNull();
+  });
+
+  it('ignores a null payload and an invalid payload (render-safe)', () => {
+    const bad = { tool: 'find_saved', tool_call_id: 'x', payload: { nope: true } } as SseToolResult;
+    const nullPayload = { tool: 'find_saved', tool_call_id: 'y', payload: null } as SseToolResult;
+    expect(resolveEmptyReason([bad, nullPayload, toolResult([], 'no_match')])).toBe('no_match');
+  });
+});
+
+describe('emptyMessage', () => {
+  const t = (k: string) => k; // identity — assert the chosen key
+
+  it('uses the location-specific line for no_location', () => {
+    expect(emptyMessage('no_location', t)).toBe('chat.placeCard.noLocation');
+  });
+
+  it('falls back to the generic line for no_match, unknown, and null', () => {
+    expect(emptyMessage('no_match', t)).toBe('chat.placeCard.noMatch');
+    expect(emptyMessage('something_new' as never, t)).toBe('chat.placeCard.noMatch');
+    expect(emptyMessage(null, t)).toBe('chat.placeCard.noMatch');
   });
 });
 

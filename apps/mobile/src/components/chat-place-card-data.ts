@@ -1,6 +1,7 @@
 import {
   buildDetailSegments,
   type ConsultCandidate,
+  type ConsultEmptyReason,
   type PlaceCore,
   type SseToolResult,
 } from '@kebi-app/shared';
@@ -28,6 +29,40 @@ export function flattenCandidates(toolResults: readonly SseToolResult[]): Consul
     if (parsed.success) out.push(...parsed.data.candidates);
   }
   return out;
+}
+
+/**
+ * Why the turn produced no candidates, for the no-result line. Scans the turn's
+ * tool results (validating each at this boundary, ADR-046) and returns the most
+ * actionable `empty_reason`: `no_location` (the user can fix it) wins over
+ * `no_match`. Returns `null` when none is present — the caller then shows a
+ * generic line. Only meaningful once {@link flattenCandidates} comes back empty.
+ */
+export function resolveEmptyReason(
+  toolResults: readonly SseToolResult[],
+): ConsultEmptyReason | null {
+  const reasons: ConsultEmptyReason[] = [];
+  for (const tr of toolResults) {
+    if (!tr.payload) continue;
+    const parsed = ConsultResultSchema.safeParse(tr.payload);
+    if (parsed.success && parsed.data.empty_reason) reasons.push(parsed.data.empty_reason);
+  }
+  if (reasons.length === 0) return null;
+  return reasons.find((r) => r === 'no_location') ?? reasons[0];
+}
+
+/**
+ * The localized no-result line for an {@link resolveEmptyReason} verdict.
+ * `no_location` gets its own actionable copy; `no_match`, an unknown forward-compat
+ * reason, and `null` all fall back to the generic line.
+ */
+export function emptyMessage(
+  reason: ConsultEmptyReason | null,
+  t: (key: string) => string,
+): string {
+  return reason === 'no_location'
+    ? t('chat.placeCard.noLocation')
+    : t('chat.placeCard.noMatch');
 }
 
 /**
