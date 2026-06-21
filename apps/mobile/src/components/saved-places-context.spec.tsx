@@ -3,10 +3,14 @@ import { Pressable, Text } from 'react-native';
 import type { PlaceCore } from '@kebi-app/shared';
 import { SavedPlacesProvider, useSavedPlaces } from './saved-places-context';
 
-function place(name: string, id: string | null = null): PlaceCore {
+function place(
+  name: string,
+  id: string | null = null,
+  provider_id: string | null = null,
+): PlaceCore {
   return {
     id,
-    provider_id: null,
+    provider_id,
     place_name: name,
     place_name_aliases: [],
     categories: [],
@@ -77,5 +81,60 @@ describe('SavedPlacesProvider', () => {
     fireEvent.press(getByLabelText('add'));
     const names = getAllByText(/:/).map((n) => (n.props.children as string).split(':')[1]);
     expect(names).toEqual(['A', 'B']);
+  });
+});
+
+// Probe for isSaved/remove: shows whether `probe` is saved and can add/remove it.
+function MembershipProbe({ probe }: { probe: PlaceCore }) {
+  const { add, remove, isSaved } = useSavedPlaces();
+  return (
+    <>
+      <Pressable accessibilityLabel="add" onPress={() => add([probe])} />
+      <Pressable accessibilityLabel="remove" onPress={() => remove(probe)} />
+      <Text>{isSaved(probe) ? 'saved' : 'not-saved'}</Text>
+    </>
+  );
+}
+
+describe('SavedPlacesProvider — membership', () => {
+  it('isSaved flips true after add and false after remove', () => {
+    const { getByLabelText, getByText } = render(
+      <SavedPlacesProvider>
+        <MembershipProbe probe={place('Fuglen', 'place-1', 'google:abc')} />
+      </SavedPlacesProvider>,
+    );
+
+    expect(getByText('not-saved')).toBeTruthy();
+    fireEvent.press(getByLabelText('add'));
+    expect(getByText('saved')).toBeTruthy();
+    fireEvent.press(getByLabelText('remove'));
+    expect(getByText('not-saved')).toBeTruthy();
+  });
+
+  it('matches on provider_id even when the catalog id differs', () => {
+    // Saved with a catalog id; the probe has no id but the same provider_id —
+    // a kebi-discovered candidate for a place already in the library.
+    function Mixed() {
+      const { add, isSaved } = useSavedPlaces();
+      const discovered = place('Bar Goto', null, 'google:xyz');
+      return (
+        <>
+          <Pressable
+            accessibilityLabel="add"
+            onPress={() => add([place('Bar Goto', 'place-9', 'google:xyz')])}
+          />
+          <Text>{isSaved(discovered) ? 'saved' : 'not-saved'}</Text>
+        </>
+      );
+    }
+    const { getByLabelText, getByText } = render(
+      <SavedPlacesProvider>
+        <Mixed />
+      </SavedPlacesProvider>,
+    );
+
+    expect(getByText('not-saved')).toBeTruthy();
+    fireEvent.press(getByLabelText('add'));
+    expect(getByText('saved')).toBeTruthy();
   });
 });

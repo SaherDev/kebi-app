@@ -106,6 +106,12 @@ export interface ConsultCandidate {
 export interface ConsultResult {
   candidates: ConsultCandidate[];
   empty_reason?: ConsultEmptyReason | null;
+  /**
+   * Per-recommendation id minted by kebi. The client echoes it back when the
+   * user accepts/rejects (`POST /v1/signal`) or saves (`POST /v1/user/places`) a
+   * candidate, so the signal attributes to that recommendation.
+   */
+  recommendation_id: string;
 }
 
 export interface ToolResult {

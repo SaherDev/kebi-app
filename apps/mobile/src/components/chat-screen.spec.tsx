@@ -78,6 +78,7 @@ describe('ChatScreen', () => {
               reason: null,
             },
           ],
+          recommendation_id: 'rec_1',
         },
       }),
       frame('message', { content: 'here are a couple spots' }),

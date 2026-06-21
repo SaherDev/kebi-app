@@ -14,19 +14,37 @@ import type { PlaceCardDetailRow } from './place-card-body';
  */
 
 /**
+ * A candidate paired with the `recommendation_id` of the consult result it came
+ * from. The card echoes that id back when the user accepts/rejects/saves the
+ * candidate, so each candidate must carry its own result's id (a turn can run
+ * several consult tools, each minting a distinct id).
+ */
+export interface RecommendedCandidate {
+  candidate: ConsultCandidate;
+  recommendationId: string;
+}
+
+/**
  * Flatten the turn's tool results into a single ordered candidate list. Each
  * `tool_result` frame carries a raw payload (the SSE parser leaves it a record);
  * validate it into a `ConsultResult` at this boundary (ADR-046) and concatenate
- * its candidates in arrival order. A payload that fails validation is skipped
- * (render-safe — never throws). `candidates[0]` is the primary pick, the rest
- * are swaps.
+ * its candidates in arrival order, each tagged with that result's
+ * `recommendation_id`. A payload that fails validation is skipped (render-safe —
+ * never throws). `[0]` is the primary pick, the rest are swaps.
  */
-export function flattenCandidates(toolResults: readonly SseToolResult[]): ConsultCandidate[] {
-  const out: ConsultCandidate[] = [];
+export function flattenCandidates(
+  toolResults: readonly SseToolResult[],
+): RecommendedCandidate[] {
+  const out: RecommendedCandidate[] = [];
   for (const tr of toolResults) {
     if (!tr.payload) continue;
     const parsed = ConsultResultSchema.safeParse(tr.payload);
-    if (parsed.success) out.push(...parsed.data.candidates);
+    if (parsed.success) {
+      const recommendationId = parsed.data.recommendation_id;
+      for (const candidate of parsed.data.candidates) {
+        out.push({ candidate, recommendationId });
+      }
+    }
   }
   return out;
 }

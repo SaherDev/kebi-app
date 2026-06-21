@@ -12,6 +12,10 @@ export const API_ROUTES = {
   extract: '/extract',
   /** The Library: browse the caller's saved places, keyset-paged (api-contract.md §GET /v1/user/library). */
   library: '/user/library',
+  /** Save a recommended place — the consult card's "save it" (api-contract.md §POST /v1/user/places). */
+  userPlaces: '/user/places',
   /** One saved place: PATCH user-state / DELETE the save (api-contract.md §/v1/user/places/{id}). */
   userPlace: (id: string) => `/user/places/${id}`,
+  /** Recommendation accept/reject signal (api-contract.md §POST /v1/signal). */
+  signal: '/signal',
 } as const;

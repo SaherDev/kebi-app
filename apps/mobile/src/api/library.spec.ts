@@ -1,7 +1,14 @@
-import { deleteUserPlace, getLibrary, libraryQueryString, updateUserPlace } from './library';
+import {
+  deleteUserPlace,
+  getLibrary,
+  libraryQueryString,
+  saveUserPlace,
+  updateUserPlace,
+} from './library';
 import { API_ROUTES } from './routes';
 import { LibraryResponse, UserPlace } from './models/library';
 import { SchemaValidationError } from './validate';
+import { makeFakeClient } from '../test-utils/fake-http-client';
 import type { HttpClient } from './types';
 
 const PLACE = {
@@ -99,6 +106,36 @@ describe('getLibrary', () => {
     await expect(getLibrary(fakeClient({ places: 'nope' }))).rejects.toBeInstanceOf(
       SchemaValidationError,
     );
+  });
+});
+
+describe('saveUserPlace', () => {
+  it('POSTs the save body and returns the created user-state', async () => {
+    const client = makeFakeClient({ payload: USER_DATA });
+    const res = await saveUserPlace(client, {
+      place_core_id: 'c0ffee00-1111-2222-3333-444455556666',
+      recommendation_id: 'rec_1',
+    });
+
+    expect(client.calls).toEqual([
+      {
+        method: 'POST',
+        path: API_ROUTES.userPlaces,
+        body: {
+          place_core_id: 'c0ffee00-1111-2222-3333-444455556666',
+          recommendation_id: 'rec_1',
+        },
+      },
+    ]);
+    expect(res).toBeInstanceOf(UserPlace);
+    expect(res.user_place_id).toBe('9b1c');
+  });
+
+  it('fails closed on schema drift', async () => {
+    const client = makeFakeClient({ payload: { nope: true } });
+    await expect(
+      saveUserPlace(client, { place_core_id: 'x', recommendation_id: 'rec_1' }),
+    ).rejects.toBeInstanceOf(SchemaValidationError);
   });
 });
 

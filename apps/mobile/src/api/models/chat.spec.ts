@@ -36,6 +36,7 @@ const AGENT_FIXTURE = {
         tool_call_id: 'call_1',
         payload: {
           candidates: [{ place: PLACE, source: 'saved', reason: null }],
+          recommendation_id: 'rec_1',
         },
       },
     ],

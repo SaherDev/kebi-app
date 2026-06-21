@@ -1,4 +1,4 @@
-import type { UpdateUserPlaceRequest } from '@kebi-app/shared';
+import type { SaveUserPlaceRequest, UpdateUserPlaceRequest } from '@kebi-app/shared';
 import type { HttpClient } from './types';
 import { API_ROUTES } from './routes';
 import { validate } from './validate';
@@ -44,6 +44,20 @@ export async function getLibrary(
 ): Promise<LibraryResponse> {
   const raw = await client.get(`${API_ROUTES.library}${libraryQueryString(query)}`);
   return validate(LibraryResponseSchema, raw, 'LibraryResponse');
+}
+
+/**
+ * POST a save for a place kebi recommended — the consult card's "save it"
+ * (api-contract.md §POST /v1/user/places). Returns the created user-state
+ * (`201`), validated into a `UserPlace` so the caller gets `user_place_id` for
+ * an undo (DELETE). The server stamps `source: kebi` and emits the taste signal.
+ */
+export async function saveUserPlace(
+  client: HttpClient,
+  body: SaveUserPlaceRequest,
+): Promise<UserPlace> {
+  const raw = await client.post(API_ROUTES.userPlaces, body);
+  return validate(UserPlaceSchema, raw, 'LibraryUserData');
 }
 
 /** PATCH one save's user-state (pills / menu actions); returns the full new state. */

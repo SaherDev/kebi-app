@@ -21,11 +21,15 @@ function place(name: string, over: Partial<PlaceCore> = {}): PlaceCore {
   } as PlaceCore;
 }
 
-function toolResult(candidates: unknown[], empty_reason?: string): SseToolResult {
+function toolResult(
+  candidates: unknown[],
+  empty_reason?: string,
+  recommendation_id = 'rec_1',
+): SseToolResult {
   return {
     tool: 'discover_places',
     tool_call_id: 'c1',
-    payload: { candidates, ...(empty_reason ? { empty_reason } : {}) },
+    payload: { candidates, recommendation_id, ...(empty_reason ? { empty_reason } : {}) },
   } as SseToolResult;
 }
 
@@ -41,7 +45,15 @@ describe('flattenCandidates', () => {
       toolResult([cand('A'), cand('B')]),
       toolResult([cand('C')]),
     ]);
-    expect(out.map((c) => c.place.place_name)).toEqual(['A', 'B', 'C']);
+    expect(out.map((c) => c.candidate.place.place_name)).toEqual(['A', 'B', 'C']);
+  });
+
+  it('tags each candidate with its own result recommendation_id', () => {
+    const out = flattenCandidates([
+      toolResult([cand('A'), cand('B')], undefined, 'rec_1'),
+      toolResult([cand('C')], undefined, 'rec_2'),
+    ]);
+    expect(out.map((c) => c.recommendationId)).toEqual(['rec_1', 'rec_1', 'rec_2']);
   });
 
   it('skips a tool result with a null payload', () => {
@@ -49,14 +61,14 @@ describe('flattenCandidates', () => {
       { tool: 'find_saved', tool_call_id: 'x', payload: null } as SseToolResult,
       toolResult([cand('A')]),
     ]);
-    expect(out.map((c) => c.place.place_name)).toEqual(['A']);
+    expect(out.map((c) => c.candidate.place.place_name)).toEqual(['A']);
   });
 
   it('skips a payload that fails validation (render-safe, never throws)', () => {
     const bad = { tool: 'find_saved', tool_call_id: 'x', payload: { nope: true } } as SseToolResult;
-    expect(flattenCandidates([bad, toolResult([cand('A')])]).map((c) => c.place.place_name)).toEqual([
-      'A',
-    ]);
+    expect(
+      flattenCandidates([bad, toolResult([cand('A')])]).map((c) => c.candidate.place.place_name),
+    ).toEqual(['A']);
   });
 
   it('returns [] when there are no candidates', () => {

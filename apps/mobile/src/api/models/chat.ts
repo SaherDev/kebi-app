@@ -85,10 +85,12 @@ export const ConsultCandidateSchema = z
 export class ConsultResult implements ConsultResultContract {
   readonly candidates: ConsultCandidateContract[];
   readonly empty_reason?: ConsultEmptyReason | null;
+  readonly recommendation_id: string;
 
   constructor(p: ConsultResultContract) {
     this.candidates = p.candidates;
     if (p.empty_reason !== undefined) this.empty_reason = p.empty_reason;
+    this.recommendation_id = p.recommendation_id;
   }
 }
 
@@ -96,6 +98,7 @@ export const ConsultResultSchema = z
   .object({
     candidates: z.array(ConsultCandidateSchema),
     empty_reason: z.string().nullable().optional(),
+    recommendation_id: z.string(),
   })
   .transform((p) => new ConsultResult(p));
 

@@ -22,19 +22,29 @@ interface SavedPlacesContextValue {
   items: SavedPlaceItem[];
   /** Prepend newly-saved places (newest first), skipping ones already saved. */
   add: (places: PlaceCore[]) => void;
+  /** Drop a place from the set (save-undo) — matched by the same identity as add. */
+  remove: (place: PlaceCore) => void;
+  /** Whether this place is already in the set — the consult card's saved-state. */
+  isSaved: (place: PlaceCore) => boolean;
 }
 
 /**
- * Identity for dedup: the canonical place `id` (stable across re-saves —
- * ADR-074 links a re-submitted URL to the same cached place), falling back to
- * `provider_id`, then a normalised name when a place carries no id at all.
+ * Identity for dedup/membership: the external `provider_id` (e.g. `"google:…"`)
+ * first — it's the stable real-world identity a place keeps across catalog state
+ * (a kebi-discovered place carries it before it has a catalog `id`). Falls back
+ * to the catalog `id`, then a normalised name when a place carries neither.
  */
 function identityKey(place: PlaceCore): string {
-  return place.id ?? place.provider_id ?? `name:${place.place_name.trim().toLowerCase()}`;
+  return place.provider_id ?? place.id ?? `name:${place.place_name.trim().toLowerCase()}`;
 }
 
 // No-op fallback so useSavedPlaces() outside a provider is harmless (matches useToast).
-const fallback: SavedPlacesContextValue = { items: [], add: () => undefined };
+const fallback: SavedPlacesContextValue = {
+  items: [],
+  add: () => undefined,
+  remove: () => undefined,
+  isSaved: () => false,
+};
 const SavedPlacesContext = createContext<SavedPlacesContextValue>(fallback);
 
 export function SavedPlacesProvider({ children }: { children: ReactNode }) {
@@ -59,7 +69,25 @@ export function SavedPlacesProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
-  const value = useMemo<SavedPlacesContextValue>(() => ({ items, add }), [items, add]);
+  const remove = useCallback((place: PlaceCore) => {
+    const key = identityKey(place);
+    setItems((prev) => {
+      const next = prev.filter((item) => identityKey(item.place) !== key);
+      return next.length === prev.length ? prev : next;
+    });
+  }, []);
+
+  // Membership set, recomputed only when the list changes — keeps isSaved() O(1).
+  const savedKeys = useMemo(() => new Set(items.map((item) => identityKey(item.place))), [items]);
+  const isSaved = useCallback(
+    (place: PlaceCore) => savedKeys.has(identityKey(place)),
+    [savedKeys],
+  );
+
+  const value = useMemo<SavedPlacesContextValue>(
+    () => ({ items, add, remove, isSaved }),
+    [items, add, remove, isSaved],
+  );
 
   return <SavedPlacesContext.Provider value={value}>{children}</SavedPlacesContext.Provider>;
 }

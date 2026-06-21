@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
-import type { ConsultCandidate, SseToolResult } from '@kebi-app/shared';
+import type { ConsultCandidate, PlaceCore, SignalType, SseToolResult } from '@kebi-app/shared';
 import { PRESS } from '../theme/motion';
 import { Icon, type IconName } from './icon';
 import { PlaceAvatar } from './place-avatar';
@@ -12,7 +12,12 @@ import {
   resolveEmptyReason,
   swapMetaLine,
 } from './chat-place-card-data';
-import { triggerHaptic } from '../lib/haptics';
+import { triggerHaptic, type HapticEvent } from '../lib/haptics';
+import { useApiClient } from '../api/hooks';
+import { sendSignal } from '../api/signal';
+import { saveUserPlace, deleteUserPlace } from '../api/library';
+import { useToast } from './toast-context';
+import { useSavedPlaces } from './saved-places-context';
 import { useTranslation } from '../i18n/context';
 
 /**
@@ -20,14 +25,40 @@ import { useTranslation } from '../i18n/context';
  * renders the primary pick through the shared {@link PlaceCardBody} (header +
  * source-derived pill + detail line + "kebi found this" source), and **wraps** it
  * with the namer reason, the `good pick / save it / not it` actions, and an
- * "OR SWAP TO" list of the remaining candidates. Actions are **inert** for now —
- * `POST /v1/signal` needs a `recommendation_id` the candidate doesn't carry yet.
+ * "OR SWAP TO" list of the remaining candidates.
+ *
+ * Actions fire-and-forget against the gateway and confirm with a toast (no card
+ * transformation): good pick / not it post a `recommendation_accepted` /
+ * `_rejected` signal; save it posts the place to the library (undo deletes it).
+ * Each acts on the **selected** candidate using *its* `recommendation_id`; a
+ * candidate with no catalog `place.id` can't be attributed, so its actions are
+ * disabled. An already-saved candidate (from `find_saved`, or matched by
+ * `provider_id` in the session store) shows an inert "saved" slot.
  */
 export function ChatPlaceCard({ toolResults }: { toolResults: readonly SseToolResult[] }) {
   const { t } = useTranslation();
+  const client = useApiClient();
+  const { show: showToast } = useToast();
+  const savedPlaces = useSavedPlaces();
   const [expanded, setExpanded] = useState(true);
   // Which candidate is currently the recommendation — tapping a swap promotes it.
   const [selected, setSelected] = useState(0);
+  // Action keys with a request in flight — disables just that button (no double-fire).
+  const [inFlight, setInFlight] = useState<ReadonlySet<string>>(() => new Set());
+
+  const begin = useCallback(
+    (k: string) => setInFlight((s) => new Set(s).add(k)),
+    [],
+  );
+  const end = useCallback(
+    (k: string) =>
+      setInFlight((s) => {
+        const next = new Set(s);
+        next.delete(k);
+        return next;
+      }),
+    [],
+  );
 
   const candidates = flattenCandidates(toolResults);
   if (candidates.length === 0) {
@@ -39,16 +70,101 @@ export function ChatPlaceCard({ toolResults }: { toolResults: readonly SseToolRe
 
   const primaryIndex = selected < candidates.length ? selected : 0;
   const primary = candidates[primaryIndex];
-  const place = primary.place;
+  const place = primary.candidate.place;
+  const recommendationId = primary.recommendationId;
+  // The body needs the catalog id; without it a signal/save can't be attributed.
+  const placeCoreId = place.id;
+  // Already in the library: a find_saved pick, or a provider_id match this session.
+  const saved = primary.candidate.source === 'saved' || savedPlaces.isSaved(place);
+
   // Every other candidate (in original order, the old primary included) is a swap.
   const swaps = candidates
-    .map((candidate, index) => ({ candidate, index }))
+    .map((entry, index) => ({ candidate: entry.candidate, index }))
     .filter((s) => s.index !== primaryIndex);
 
   const promote = (index: number) => {
     setSelected(index);
     triggerHaptic('swap-select');
   };
+
+  /** Fire one fire-and-forget action: haptic → in-flight guard → request → toast. */
+  function run(key: string, haptic: HapticEvent, op: () => Promise<void>, retry: () => void) {
+    if (!placeCoreId || inFlight.has(key)) return;
+    triggerHaptic(haptic);
+    begin(key);
+    void (async () => {
+      try {
+        await op();
+      } catch {
+        showToast({
+          text: t('chat.placeCard.toast.error'),
+          tone: 'danger',
+          action: { label: t('chat.placeCard.toast.retry'), onPress: retry },
+        });
+      } finally {
+        end(key);
+      }
+    })();
+  }
+
+  function signal(key: string, type: SignalType, haptic: HapticEvent, toastKey: string) {
+    run(
+      key,
+      haptic,
+      async () => {
+        await sendSignal(client, {
+          signal_type: type,
+          recommendation_id: recommendationId,
+          place_core_id: placeCoreId as string,
+        });
+        showToast({ text: t(toastKey), icon: 'check', tone: 'success' });
+      },
+      () => signal(key, type, haptic, toastKey),
+    );
+  }
+
+  const onGoodPick = () =>
+    signal('good', 'recommendation_accepted', 'good-pick', 'chat.placeCard.toast.goodPick');
+  const onNotForMe = () =>
+    signal('not', 'recommendation_rejected', 'not-it', 'chat.placeCard.toast.notForMe');
+
+  function onSaveIt() {
+    if (saved) return;
+    run(
+      'save',
+      'save-it',
+      async () => {
+        const userPlace = await saveUserPlace(client, {
+          place_core_id: placeCoreId as string,
+          recommendation_id: recommendationId,
+        });
+        savedPlaces.add([place]);
+        showToast({
+          text: t('chat.placeCard.toast.saved'),
+          icon: 'check',
+          tone: 'success',
+          action: {
+            label: t('chat.placeCard.toast.undo'),
+            onPress: () => undoSave(userPlace.user_place_id, place),
+          },
+        });
+      },
+      onSaveIt,
+    );
+  }
+
+  function undoSave(userPlaceId: string, target: PlaceCore) {
+    void (async () => {
+      try {
+        await deleteUserPlace(client, userPlaceId);
+        savedPlaces.remove(target);
+        showToast({ text: t('chat.placeCard.toast.removed'), tone: 'neutral' });
+      } catch {
+        showToast({ text: t('chat.placeCard.toast.error'), tone: 'danger' });
+      }
+    })();
+  }
+
   return (
     <PlaceCardBody
       categories={place.categories}
@@ -62,7 +178,7 @@ export function ChatPlaceCard({ toolResults }: { toolResults: readonly SseToolRe
       // No chips on the consult card — provenance lives in the source line: a
       // saved pick is the user's own ("you saved this"), otherwise kebi found it.
       source={
-        primary.source === 'saved'
+        primary.candidate.source === 'saved'
           ? { source: 'manual', text: t('chat.placeCard.savedByYou') }
           : { source: 'kebi', text: t('library.source.kebi') }
       }
@@ -70,18 +186,43 @@ export function ChatPlaceCard({ toolResults }: { toolResults: readonly SseToolRe
       expanded={expanded}
       onToggle={() => setExpanded((e) => !e)}
     >
-      {primary.reason ? (
+      {primary.candidate.reason ? (
         <View className="border-t border-surface-2 pt-3">
-          <Text className="text-[14px] leading-[21px] text-text-muted">{primary.reason}</Text>
+          <Text className="text-[14px] leading-[21px] text-text-muted">
+            {primary.candidate.reason}
+          </Text>
         </View>
       ) : null}
 
-      {/* Actions (inert): a filled "good pick" over an outlined save/not pair. */}
+      {/* A filled "good pick" over an outlined save/not pair. The save slot shows
+          an inert "saved" state once the place is in the library. */}
       <View className="gap-2 pt-2">
-        <ActionButton variant="primary" icon="check" label={t('chat.placeCard.goodPick')} />
+        <ActionButton
+          variant="primary"
+          icon="check"
+          label={t('chat.placeCard.goodPick')}
+          onPress={onGoodPick}
+          disabled={!placeCoreId || inFlight.has('good')}
+        />
         <View className="flex-row gap-2">
-          <ActionButton variant="outlined" icon="share-in" label={t('chat.placeCard.saveIt')} />
-          <ActionButton variant="outlined" icon="close" label={t('chat.placeCard.notIt')} />
+          {saved ? (
+            <SavedSlot label={t('chat.placeCard.saved')} />
+          ) : (
+            <ActionButton
+              variant="outlined"
+              icon="share-in"
+              label={t('chat.placeCard.saveIt')}
+              onPress={onSaveIt}
+              disabled={!placeCoreId || inFlight.has('save')}
+            />
+          )}
+          <ActionButton
+            variant="outlined"
+            icon="close"
+            label={t('chat.placeCard.notIt')}
+            onPress={onNotForMe}
+            disabled={!placeCoreId || inFlight.has('not')}
+          />
         </View>
       </View>
 
@@ -105,22 +246,31 @@ export function ChatPlaceCard({ toolResults }: { toolResults: readonly SseToolRe
   );
 }
 
-/** Inert action button — a placeholder until the signal contract lands. */
+/** A tappable action button. Disabled state dims via inline opacity (a toggled
+ *  className sticks under NativeWind) and blocks the press. */
 function ActionButton({
   variant,
   icon,
   label,
+  onPress,
+  disabled,
 }: {
   variant: 'primary' | 'outlined';
   icon: IconName;
   label: string;
+  onPress: () => void;
+  disabled?: boolean;
 }) {
   const primary = variant === 'primary';
   return (
-    <View
+    <Pressable
+      onPress={onPress}
+      disabled={disabled}
       accessibilityRole="button"
       accessibilityLabel={label}
-      className={`flex-row items-center justify-center gap-1.5 rounded-card ${
+      accessibilityState={{ disabled: !!disabled }}
+      style={{ opacity: disabled ? 0.5 : 1 }}
+      className={`flex-row items-center justify-center gap-1.5 rounded-card ${PRESS} ${
         primary ? 'bg-text py-3' : 'flex-1 border border-surface-2 bg-bg py-2.5'
       }`}
     >
@@ -133,6 +283,20 @@ function ActionButton({
       <Text className={`font-semibold ${primary ? 'text-[14px] text-bg' : 'text-[13px] text-text'}`}>
         {label}
       </Text>
+    </Pressable>
+  );
+}
+
+/** Inert "saved" slot — replaces the save button when the place is in the library. */
+function SavedSlot({ label }: { label: string }) {
+  return (
+    <View
+      accessibilityRole="text"
+      accessibilityLabel={label}
+      className="flex-1 flex-row items-center justify-center gap-1.5 rounded-card border border-surface-2 bg-surface py-2.5"
+    >
+      <Icon name="check" size={13} className="text-text-muted" strokeWidth={2} />
+      <Text className="text-[13px] font-semibold text-text-muted">{label}</Text>
     </View>
   );
 }

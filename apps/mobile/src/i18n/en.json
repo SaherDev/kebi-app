@@ -126,10 +126,20 @@
       "savedByYou": "you saved this",
       "goodPick": "good pick",
       "saveIt": "save it",
+      "saved": "saved",
       "notIt": "not for me",
       "orSwapTo": "or swap to",
       "noMatch": "couldn't find a match",
-      "noLocation": "turn on location so i can find places near you"
+      "noLocation": "turn on location so i can find places near you",
+      "toast": {
+        "goodPick": "good pick — noted",
+        "saved": "saved to your library",
+        "removed": "removed",
+        "notForMe": "noted",
+        "undo": "undo",
+        "retry": "retry",
+        "error": "couldn't do that — try again"
+      }
     }
   },
   "save": {
