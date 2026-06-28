@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Kebi — Open in Maps Chooser Options</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #FAFAF9;
+    --surface: #F1F1EF;
+    --surface-2: #E8E8E5;
+    --text: #1A1A1A;
+    --text-muted: #8A8A87;
+    --text-soft: #B5B5B1;
+    --danger: #D14343;
+  }
+  body.dark {
+    --bg: #13110F;
+    --surface: #1C1A17;
+    --surface-2: #26231F;
+    --text: #F5F1EA;
+    --text-muted: #9A938A;
+    --text-soft: #6E6862;
+    --danger: #E89090;
+  }
+
+  html, body { background: var(--bg); color: var(--text); font-family: 'Inter', system-ui, sans-serif; -webkit-font-smoothing: antialiased; min-height: 100vh; transition: background 200ms; }
+  body.dark { background: #0A0908; }
+  .page { max-width: 1180px; margin: 0 auto; padding: 48px 32px 96px; }
+
+  .header { display: flex; align-items: center; justify-content: space-between; padding-bottom: 24px; border-bottom: 1px solid var(--surface-2); margin-bottom: 36px; }
+  .header h1 { font-size: 24px; font-weight: 700; letter-spacing: -0.025em; }
+  .header-meta { font-size: 12px; color: var(--text-muted); margin-top: 4px; max-width: 640px; }
+  .theme-toggle { display: flex; background: var(--surface); border-radius: 999px; padding: 3px; }
+  .theme-toggle button { padding: 6px 14px; background: transparent; border: none; border-radius: 999px; font-family: inherit; font-size: 12px; font-weight: 500; color: var(--text-muted); cursor: pointer; }
+  .theme-toggle button.active { background: var(--text); color: var(--bg); }
+
+  .phones { display: flex; flex-wrap: wrap; gap: 44px; justify-content: flex-start; }
+  .phone-wrap { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+  .phone-label { font-size: 14px; font-weight: 700; letter-spacing: -0.01em; }
+  .phone-sub { font-size: 11px; color: var(--text-muted); margin-top: -8px; text-align: center; max-width: 300px; line-height: 1.5; }
+
+  .phone { position: relative; width: 320px; height: 640px; background: var(--bg); border-radius: 44px; border: 10px solid #000; overflow: hidden; box-shadow: 0 8px 30px rgba(0,0,0,0.18); }
+  body.dark .phone { border-color: #2a2a2a; }
+
+  .status-bar { height: 44px; display: flex; align-items: center; justify-content: space-between; padding: 0 22px; font-size: 13px; font-weight: 600; }
+
+  /* faded place page behind the sheet */
+  .pill-bar { display: flex; align-items: center; justify-content: space-between; padding: 6px 16px 14px; }
+  .pill { display: flex; align-items: center; gap: 7px; background: var(--surface); border-radius: 999px; padding: 8px 14px; font-size: 13px; font-weight: 600; color: var(--text); }
+  .more-btn { width: 36px; height: 36px; border-radius: 999px; background: var(--surface); display: flex; align-items: center; justify-content: center; gap: 3px; }
+  .more-btn span { width: 4px; height: 4px; border-radius: 999px; background: var(--text); }
+  .hero-title { padding: 6px 18px 4px; font-size: 24px; font-weight: 700; letter-spacing: -0.025em; }
+  .hero-sub { padding: 0 18px 14px; font-size: 13px; color: var(--text-muted); }
+  /* the live "directions" service button that triggers the sheet */
+  .svc-row { display: flex; gap: 8px; padding: 0 18px; }
+  .svc-btn { display: inline-flex; align-items: center; gap: 6px; padding: 9px 14px; border: 1px solid var(--surface-2); background: transparent; border-radius: 999px; font-size: 13px; font-weight: 500; color: var(--text); }
+  .svc-btn svg { width: 13px; height: 13px; stroke: var(--text); stroke-width: 1.8; fill: none; }
+  .svc-btn.armed { box-shadow: 0 0 0 2px var(--text); }
+
+  /* the bottom sheet — save-sheet language */
+  .sheet-scrim { position: absolute; inset: 0; z-index: 5; background: rgba(15,13,10,0.45); backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px); }
+  .sheet { position: absolute; left: 0; right: 0; bottom: 0; z-index: 6; background: var(--bg); border-radius: 24px 24px 0 0; padding: 10px 16px 16px; display: flex; flex-direction: column; gap: 12px; box-shadow: 0 -16px 48px rgba(0,0,0,0.16); }
+  .grabber { width: 36px; height: 4px; border-radius: 2px; background: var(--surface-2); margin: 0 auto 2px; }
+  .sheet-head { display: flex; align-items: center; gap: 11px; padding: 2px 4px 4px; }
+  .sheet-avatar { width: 36px; height: 36px; border-radius: 9px; background: var(--surface-2); display: flex; align-items: center; justify-content: center; font-size: 19px; }
+  .sheet-eyebrow { font-size: 10px; font-weight: 600; color: var(--text-soft); text-transform: uppercase; letter-spacing: 0.08em; }
+  .sheet-title { font-size: 18px; font-weight: 700; color: var(--text); letter-spacing: -0.02em; }
+
+  .sheet-group { background: var(--surface); border-radius: 14px; overflow: hidden; }
+  .sheet-row { display: flex; align-items: center; gap: 12px; padding: 14px 14px; font-size: 15px; font-weight: 500; color: var(--text); letter-spacing: -0.01em; }
+  .sheet-row + .sheet-row { border-top: 1px solid var(--bg); }
+  .sheet-row .chev { margin-left: auto; width: 15px; height: 15px; stroke: var(--text-soft); stroke-width: 2; fill: none; }
+  .sheet-row .sub { margin-left: auto; font-size: 12px; color: var(--text-muted); font-weight: 400; }
+  .sheet-row.disabled { opacity: 0.4; }
+  .sheet-cancel { text-align: center; padding: 14px; background: var(--surface); border-radius: 14px; font-size: 15px; font-weight: 600; color: var(--text); }
+
+  /* brand glyph tile — mirrors social-button / brand-glyphs treatment */
+  .brand { width: 26px; height: 26px; border-radius: 7px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 15px; }
+  .brand.g { background: #fff; box-shadow: inset 0 0 0 1px var(--surface-2); }
+  .brand.a { background: #000; color: #fff; }
+  body.dark .brand.a { background: #fff; color: #000; }
+  .brand.w { background: #fff; box-shadow: inset 0 0 0 1px var(--surface-2); }
+
+  /* two-line row (name + subtitle stacked) for option C */
+  .rowtext { display: flex; flex-direction: column; gap: 1px; }
+  .rowtext .nm { font-size: 15px; font-weight: 500; color: var(--text); }
+  .rowtext .ds { font-size: 11.5px; font-weight: 400; color: var(--text-muted); }
+
+  /* app tiles (option B) */
+  .tiles { display: flex; gap: 10px; }
+  .tile { flex: 1; background: var(--surface); border-radius: 14px; padding: 16px 8px 12px; display: flex; flex-direction: column; align-items: center; gap: 9px; }
+  .tile .brand { width: 38px; height: 38px; border-radius: 10px; font-size: 21px; }
+  .tile .tlabel { font-size: 12px; font-weight: 500; color: var(--text); }
+  .tile.disabled { opacity: 0.4; }
+
+  .home-bar { width: 120px; height: 5px; border-radius: 999px; background: var(--text); opacity: 0.85; margin: 6px auto 0; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="header">
+    <div>
+      <h1>open in maps — chooser, 3 options</h1>
+      <div class="header-meta">tap "directions" on the place page → bottom sheet (save-sheet language). google is always available via <code>provider_id</code> (durable, exact place); apple / waze need fresh lat-lng and dim when the 30-day location wipe has run.</div>
+    </div>
+    <div class="theme-toggle">
+      <button class="active" data-theme="light">light</button>
+      <button data-theme="dark">dark</button>
+    </div>
+  </div>
+
+  <div class="phones">
+
+    <!-- A: grouped list, save-sheet language -->
+    <div class="phone-wrap">
+      <div class="phone">
+        <div class="status-bar"><span>9:41</span><span>􀙇 􀛨 􀋊</span></div>
+        <div class="pill-bar">
+          <div class="pill"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>back</div>
+          <div class="more-btn"><span></span><span></span><span></span></div>
+        </div>
+        <div class="hero-title">Saint Jardim</div>
+        <div class="hero-sub">shimokitazawa · portuguese small plates</div>
+        <div class="svc-row">
+          <div class="svc-btn armed"><svg viewBox="0 0 24 24"><polyline points="3 11 22 2 13 21 11 13 3 11"/></svg>directions</div>
+          <div class="svc-btn"><svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/></svg>call</div>
+        </div>
+
+        <div class="sheet-scrim"></div>
+        <div class="sheet">
+          <div class="grabber"></div>
+          <div class="sheet-head">
+            <div class="sheet-avatar">🍷</div>
+            <div><div class="sheet-eyebrow">directions to</div><div class="sheet-title">Saint Jardim</div></div>
+          </div>
+          <div class="sheet-group">
+            <div class="sheet-row"><span class="brand g">📍</span>google maps<svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></div>
+            <div class="sheet-row"><span class="brand a">􀙯</span>apple maps<svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></div>
+            <div class="sheet-row"><span class="brand w">🚗</span>waze<svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></div>
+          </div>
+          <div class="home-bar"></div>
+        </div>
+      </div>
+      <div class="phone-label">A · grouped list</div>
+      <div class="phone-sub">one surface group, brand glyph + name + chevron. closest to the ••• action sheet</div>
+    </div>
+
+    <!-- B: app tiles -->
+    <div class="phone-wrap">
+      <div class="phone">
+        <div class="status-bar"><span>9:41</span><span>􀙇 􀛨 􀋊</span></div>
+        <div class="pill-bar">
+          <div class="pill"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>back</div>
+          <div class="more-btn"><span></span><span></span><span></span></div>
+        </div>
+        <div class="hero-title">Saint Jardim</div>
+        <div class="hero-sub">shimokitazawa · portuguese small plates</div>
+        <div class="svc-row">
+          <div class="svc-btn armed"><svg viewBox="0 0 24 24"><polyline points="3 11 22 2 13 21 11 13 3 11"/></svg>directions</div>
+          <div class="svc-btn"><svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/></svg>call</div>
+        </div>
+
+        <div class="sheet-scrim"></div>
+        <div class="sheet">
+          <div class="grabber"></div>
+          <div class="sheet-head">
+            <div class="sheet-avatar">🍷</div>
+            <div><div class="sheet-eyebrow">open directions in</div><div class="sheet-title">Saint Jardim</div></div>
+          </div>
+          <div class="tiles">
+            <div class="tile"><span class="brand g">📍</span><span class="tlabel">google</span></div>
+            <div class="tile"><span class="brand a">􀙯</span><span class="tlabel">apple</span></div>
+            <div class="tile disabled"><span class="brand w">🚗</span><span class="tlabel">waze</span></div>
+          </div>
+          <div class="home-bar"></div>
+        </div>
+      </div>
+      <div class="phone-label">B · app tiles</div>
+      <div class="phone-sub">share-sheet style row. waze dimmed = location wiped, can't build its url</div>
+    </div>
+
+    <!-- C: list with subtitles + cancel -->
+    <div class="phone-wrap">
+      <div class="phone">
+        <div class="status-bar"><span>9:41</span><span>􀙇 􀛨 􀋊</span></div>
+        <div class="pill-bar">
+          <div class="pill"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>back</div>
+          <div class="more-btn"><span></span><span></span><span></span></div>
+        </div>
+        <div class="hero-title">Saint Jardim</div>
+        <div class="hero-sub">shimokitazawa · portuguese small plates</div>
+        <div class="svc-row">
+          <div class="svc-btn armed"><svg viewBox="0 0 24 24"><polyline points="3 11 22 2 13 21 11 13 3 11"/></svg>directions</div>
+          <div class="svc-btn"><svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/></svg>call</div>
+        </div>
+
+        <div class="sheet-scrim"></div>
+        <div class="sheet">
+          <div class="grabber"></div>
+          <div class="sheet-group">
+            <div class="sheet-row"><span class="brand g">📍</span><span class="rowtext"><span class="nm">google maps</span><span class="ds">exact place</span></span></div>
+            <div class="sheet-row"><span class="brand a">􀙯</span><span class="rowtext"><span class="nm">apple maps</span><span class="ds">by location</span></span></div>
+            <div class="sheet-row disabled"><span class="brand w">🚗</span><span class="rowtext"><span class="nm">waze</span><span class="ds">needs location</span></span></div>
+          </div>
+          <div class="sheet-cancel">cancel</div>
+          <div class="home-bar"></div>
+        </div>
+      </div>
+      <div class="phone-label">C · list + subtitles + cancel</div>
+      <div class="phone-sub">honest about reliability per app, iOS action-sheet feel with cancel</div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  document.querySelectorAll('.theme-toggle button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.theme-toggle button').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      document.body.classList.toggle('dark', btn.dataset.theme === 'dark');
+    });
+  });
+</script>
+</body>
+</html>
