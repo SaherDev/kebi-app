@@ -50,6 +50,28 @@ function toLatLng(pos: Location.LocationObject): ChatLocation {
   return { lat: pos.coords.latitude, lng: pos.coords.longitude };
 }
 
+/**
+ * Reverse-geocode coordinates to a short place label for the home header — the
+ * neighbourhood/district when available, else the city. Uses the device's native
+ * geocoder (no API key, no network call), so it's cheap display chrome, not an
+ * AI input. Best-effort: a missing result or any error resolves to `null` (the
+ * header just shows less). Assumes location permission is already granted — the
+ * caller resolves coordinates via `getDeviceLocation` first, which prompts.
+ */
+export async function getDeviceCity(coords: ChatLocation): Promise<string | null> {
+  try {
+    const results = await withTimeout(
+      Location.reverseGeocodeAsync({ latitude: coords.lat, longitude: coords.lng }),
+      FIX_TIMEOUT_MS,
+    );
+    const place = results?.[0];
+    if (!place) return null;
+    return place.district ?? place.subregion ?? place.city ?? null;
+  } catch {
+    return null;
+  }
+}
+
 /** Resolve `promise`, or `null` if it hasn't settled within `ms`. */
 function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T | null> {
   return Promise.race([

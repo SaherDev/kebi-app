@@ -25,6 +25,17 @@
     "billing": "billing",
     "chat": "chat"
   },
+  "home": {
+    "eyebrow": "kebi",
+    "whatYouWanted": "what you wanted",
+    "yourStash": "your stash",
+    "showAll": "show all",
+    "fallbackChips": {
+      "nearby": "somewhere nearby",
+      "dinner": "good for dinner",
+      "surprise": "surprise me"
+    }
+  },
   "placeMenu": {
     "thisPlace": "this place",
     "looksRight": "looks right",
