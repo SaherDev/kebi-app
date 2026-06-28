@@ -1,11 +1,13 @@
 import type {
   AuthUser,
+  IntentsResponse,
   LibraryResponse,
   LibraryUserData,
 } from '@kebi-app/shared';
 import { UserController } from './user.controller';
 import { UserService } from './user.service';
 import { DeleteUserDataQueryDto } from './dto/delete-user-data.query.dto';
+import type { IntentsQueryDto } from './dto/intents-query.dto';
 import type { LibraryQueryDto } from './dto/library-query.dto';
 import type { SaveUserPlaceDto } from './dto/save-user-place.dto';
 import type { UpdateUserPlaceDto } from './dto/update-user-place.dto';
@@ -19,6 +21,7 @@ describe('UserController', () => {
     service = {
       deleteData: jest.fn(),
       getLibrary: jest.fn(),
+      getIntents: jest.fn(),
       savePlace: jest.fn(),
       updatePlace: jest.fn(),
       deletePlace: jest.fn(),
@@ -36,6 +39,20 @@ describe('UserController', () => {
 
       expect(service.getLibrary).toHaveBeenCalledTimes(1);
       expect(service.getLibrary).toHaveBeenCalledWith('user_test_123', query);
+      expect(result).toBe(response);
+    });
+  });
+
+  describe('GET /user/intents', () => {
+    it('forwards the verified user id and validated query to the service', async () => {
+      const response: IntentsResponse = { intents: [], next_cursor: null };
+      service.getIntents.mockResolvedValueOnce(response);
+      const query: IntentsQueryDto = { limit: 20 };
+
+      const result = await controller.getIntents(user, query);
+
+      expect(service.getIntents).toHaveBeenCalledTimes(1);
+      expect(service.getIntents).toHaveBeenCalledWith('user_test_123', query);
       expect(result).toBe(response);
     });
   });

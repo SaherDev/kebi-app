@@ -12,11 +12,13 @@ import {
 } from '@nestjs/common';
 import type {
   AuthUser,
+  IntentsResponse,
   LibraryResponse,
   LibraryUserData,
 } from '@kebi-app/shared';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { DeleteUserDataQueryDto } from './dto/delete-user-data.query.dto';
+import { IntentsQueryDto } from './dto/intents-query.dto';
 import { LibraryQueryDto } from './dto/library-query.dto';
 import { SaveUserPlaceDto } from './dto/save-user-place.dto';
 import { UpdateUserPlaceDto } from './dto/update-user-place.dto';
@@ -32,6 +34,14 @@ export class UserController {
     @Query() query: LibraryQueryDto
   ): Promise<LibraryResponse> {
     return this.userService.getLibrary(user.id, query);
+  }
+
+  @Get('intents')
+  async getIntents(
+    @CurrentUser() user: AuthUser,
+    @Query() query: IntentsQueryDto
+  ): Promise<IntentsResponse> {
+    return this.userService.getIntents(user.id, query);
   }
 
   @Post('places')

@@ -1,5 +1,10 @@
-import type { LibraryResponse, LibraryUserData } from '@kebi-app/shared';
+import type {
+  IntentsResponse,
+  LibraryResponse,
+  LibraryUserData,
+} from '@kebi-app/shared';
 import { KebiHttpClient } from '../kebi/kebi-http.client';
+import type { IntentsQueryDto } from './dto/intents-query.dto';
 import type { LibraryQueryDto } from './dto/library-query.dto';
 import type { SaveUserPlaceDto } from './dto/save-user-place.dto';
 import type { UpdateUserPlaceDto } from './dto/update-user-place.dto';
@@ -48,6 +53,31 @@ describe('UserService', () => {
       await service.getLibrary(USER_ID, {});
 
       expect(kebi.get).toHaveBeenCalledWith('/v1/user/library', USER_ID);
+    });
+  });
+
+  describe('getIntents', () => {
+    const response: IntentsResponse = { intents: [], next_cursor: null };
+
+    it('serializes limit/cursor and forwards the user id (header)', async () => {
+      (kebi.get as jest.Mock).mockResolvedValueOnce(response);
+      const query: IntentsQueryDto = { limit: 20, cursor: 'eyJ0cyI6' };
+
+      const result = await service.getIntents(USER_ID, query);
+
+      expect(kebi.get).toHaveBeenCalledWith(
+        '/v1/user/intents?limit=20&cursor=eyJ0cyI6',
+        USER_ID
+      );
+      expect(result).toBe(response);
+    });
+
+    it('GETs with no query string for a bare query', async () => {
+      (kebi.get as jest.Mock).mockResolvedValueOnce(response);
+
+      await service.getIntents(USER_ID, {});
+
+      expect(kebi.get).toHaveBeenCalledWith('/v1/user/intents', USER_ID);
     });
   });
 
