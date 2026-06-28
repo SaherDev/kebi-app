@@ -33,6 +33,7 @@ import {
 import { useApiClient } from '../api/hooks';
 import { streamChat } from '../api/chat';
 import { getDeviceLocation } from '../lib/location';
+import { formatClockTime } from '../lib/format-relative-time';
 import { triggerHaptic } from '../lib/haptics';
 import { useToast } from './toast-context';
 import { useTranslation } from '../i18n/context';
@@ -40,6 +41,8 @@ import { useTranslation } from '../i18n/context';
 interface ChatScreenProps {
   /** Close the chat — runs the collapse-back-into-the-button animation. */
   onClose: () => void;
+  /** Optional first message auto-sent once on mount (a home chip / recall row). */
+  seed?: string;
 }
 
 /**
@@ -56,7 +59,7 @@ interface ChatScreenProps {
  * frame fills the answer, tool results stash a place-card skeleton (Task 2 will
  * render the real card). Bottom is a photo/mic toolbar pill (no AI button).
  */
-export function ChatScreen({ onClose }: ChatScreenProps) {
+export function ChatScreen({ onClose, seed }: ChatScreenProps) {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const reducedMotion = useReducedMotion();
@@ -83,6 +86,20 @@ export function ChatScreen({ onClose }: ChatScreenProps) {
   // Route toasts to the top while chat is open — the bottom spot is covered by
   // the composer and (often) the keyboard, so a bottom toast would be hidden.
   useEffect(() => reserveTopAnchor(), [reserveTopAnchor]);
+
+  // Auto-send a seed message once — a home quick-prompt chip or a "what you
+  // wanted" row opens the chat with an intent already in hand. `seededRef`
+  // guards against a re-mount / StrictMode double-invoke firing it twice.
+  const seededRef = useRef(false);
+  useEffect(() => {
+    if (seed && !seededRef.current) {
+      seededRef.current = true;
+      void submit(seed);
+    }
+    // `submit` is recreated each render; the ref guard (not the dep list) is what
+    // keeps this single-shot, so depend on `seed` only.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [seed]);
 
   const keyboard = useAnimatedKeyboard();
   const bottomPad = useAnimatedStyle(() => ({
@@ -112,8 +129,8 @@ export function ChatScreen({ onClose }: ChatScreenProps) {
     showToast({ text: t('chat.stopped'), icon: 'stop' });
   }
 
-  async function send() {
-    const text = draft.trim();
+  async function submit(raw: string) {
+    const text = raw.trim();
     // One turn streams at a time — ignore submit while a stream is in flight
     // (the button shows "stop" then, but a hardware return could still fire).
     if (!text || abortRef.current) return;
@@ -205,7 +222,7 @@ export function ChatScreen({ onClose }: ChatScreenProps) {
           <TextInput
             value={draft}
             onChangeText={setDraft}
-            onSubmitEditing={send}
+            onSubmitEditing={() => submit(draft)}
             placeholder={t('chat.placeholder')}
             placeholderTextColor={softColor}
             returnKeyType="send"
@@ -227,7 +244,7 @@ export function ChatScreen({ onClose }: ChatScreenProps) {
             <Icon name="mic" size={18} className="text-text" strokeWidth={1.6} />
           </Pressable>
           <Pressable
-            onPress={isStreaming ? stop : send}
+            onPress={isStreaming ? stop : () => submit(draft)}
             disabled={!isStreaming && !canSend}
             accessibilityRole="button"
             accessibilityLabel={isStreaming ? t('chat.stop') : t('chat.send')}
@@ -417,11 +434,7 @@ function renderInlineMarkdown(text: string): ReactNode {
   });
 }
 
-/** "9:38 pm" — manual format so it stays lowercase and Intl-independent (Hermes). */
+/** "9:38 pm" from an epoch — delegates to the shared lowercase, Intl-free clock. */
 function formatTime(at: number): string {
-  const d = new Date(at);
-  const minutes = d.getMinutes().toString().padStart(2, '0');
-  const ampm = d.getHours() >= 12 ? 'pm' : 'am';
-  const hour = d.getHours() % 12 || 12;
-  return `${hour}:${minutes} ${ampm}`;
+  return formatClockTime(new Date(at));
 }

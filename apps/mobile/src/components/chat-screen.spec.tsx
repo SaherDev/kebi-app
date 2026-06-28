@@ -117,6 +117,32 @@ describe('ChatScreen', () => {
     await waitFor(() => expect(getByText("couldn't reach kebi — try again")).toBeTruthy());
   });
 
+  it('auto-sends a seed message once on mount', async () => {
+    scriptStream([
+      frame('message', { content: 'on it' }),
+      frame('done', { tool_calls_used: 0 }),
+    ]);
+
+    const { getByText, rerender } = render(
+      <ChatTranscriptProvider>
+        <ChatScreen onClose={() => undefined} seed="ramen, no line" />
+      </ChatTranscriptProvider>,
+    );
+
+    // The seed appears as a user turn and streams a reply without any typing.
+    await waitFor(() => expect(getByText('ramen, no line')).toBeTruthy());
+    expect(mockedStreamChat).toHaveBeenCalledTimes(1);
+    expect(mockedStreamChat.mock.calls[0][1]).toBe('ramen, no line');
+
+    // A re-render with the same seed must not fire a second turn.
+    rerender(
+      <ChatTranscriptProvider>
+        <ChatScreen onClose={() => undefined} seed="ramen, no line" />
+      </ChatTranscriptProvider>,
+    );
+    expect(mockedStreamChat).toHaveBeenCalledTimes(1);
+  });
+
   it('shows the rate-limit message when the gateway returns 429', async () => {
     mockedStreamChat.mockImplementation(
       // eslint-disable-next-line require-yield

@@ -19,6 +19,8 @@ const REVEAL_EASING = Easing.bezier(...CHAT_REVEAL.bezier);
 interface ChatOverlayProps {
   /** Whether the chat should be shown. Toggling drives the transition both ways. */
   open: boolean;
+  /** Optional first message to auto-send on open (a home chip / recall row). */
+  seed?: string;
   /** Close request from the header X — flips `open` false via the provider. */
   onClose: () => void;
 }
@@ -31,7 +33,7 @@ interface ChatOverlayProps {
  * dim or blur. Open is 300ms, close 220ms, both ease-out. The overlay unmounts
  * itself once the collapse finishes, so the chat fully disappears into the button.
  */
-export function ChatOverlay({ open, onClose }: ChatOverlayProps) {
+export function ChatOverlay({ open, seed, onClose }: ChatOverlayProps) {
   const { width, height } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const reducedMotion = useReducedMotion();
@@ -88,7 +90,7 @@ export function ChatOverlay({ open, onClose }: ChatOverlayProps) {
       // Swallow taps only while shown; during the collapse, let them through.
       pointerEvents={open ? 'auto' : 'none'}
     >
-      <ChatScreen onClose={onClose} />
+      <ChatScreen onClose={onClose} seed={seed} />
     </Animated.View>
   );
 }

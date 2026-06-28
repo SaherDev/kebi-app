@@ -9,7 +9,12 @@ import { ChatOverlay } from './chat-overlay';
  * wipe and unmounts itself when the collapse finishes.
  */
 interface ChatContextValue {
-  open: () => void;
+  /**
+   * Raise the chat. Pass a `seed` to open it with a first message already
+   * sent — a home quick-prompt chip or a "what you wanted" row taps straight
+   * into a turn. Omit it for the FAB, which opens an empty composer.
+   */
+  open: (seed?: string) => void;
 }
 
 // No-op fallback so useChat() outside a provider is harmless (matches useToast).
@@ -18,16 +23,25 @@ const ChatContext = createContext<ChatContextValue>(fallback);
 
 export function ChatProvider({ children }: { children: ReactNode }) {
   const [isOpen, setIsOpen] = useState(false);
+  // The seed message to auto-send on open (undefined → empty composer). Cleared
+  // on close so a later FAB open never re-fires a stale seed.
+  const [seed, setSeed] = useState<string | undefined>(undefined);
 
-  const open = useCallback(() => setIsOpen(true), []);
-  const close = useCallback(() => setIsOpen(false), []);
+  const open = useCallback((next?: string) => {
+    setSeed(next);
+    setIsOpen(true);
+  }, []);
+  const close = useCallback(() => {
+    setIsOpen(false);
+    setSeed(undefined);
+  }, []);
 
   const value = useMemo<ChatContextValue>(() => ({ open }), [open]);
 
   return (
     <ChatContext.Provider value={value}>
       {children}
-      <ChatOverlay open={isOpen} onClose={close} />
+      <ChatOverlay open={isOpen} seed={seed} onClose={close} />
     </ChatContext.Provider>
   );
 }
