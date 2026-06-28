@@ -1,8 +1,12 @@
 import {
+  accessibilityLine,
   buildDetailSegments,
+  buildPlaceEyebrow,
   findPriceTag,
   humanize,
+  otherTags,
   placeDisplayName,
+  tagsOfType,
 } from "./place-display.js";
 import type { PlaceCore, SavedPlaceView, UserPlace } from "./types.js";
 import type { PlaceTag } from "./place-taxonomy.js";
@@ -77,6 +81,86 @@ describe("findPriceTag", () => {
 
   it("returns null with no price tag", () => {
     expect(findPriceTag(place({ tags: [tag("cuisine", "Thai")] }))).toBeNull();
+  });
+});
+
+describe("tagsOfType", () => {
+  it("returns every tag of the given type, in order", () => {
+    const p = place({
+      tags: [tag("atmosphere", "cozy"), tag("cuisine", "Thai"), tag("atmosphere", "romantic")],
+    });
+    expect(tagsOfType(p, "atmosphere").map((t) => t.value)).toEqual(["cozy", "romantic"]);
+  });
+
+  it("returns empty when none match", () => {
+    expect(tagsOfType(place({ tags: [tag("cuisine", "Thai")] }), "feature")).toEqual([]);
+  });
+});
+
+describe("otherTags", () => {
+  it("collects tags with no dedicated section (service + unknown), excluding dedicated/home-only", () => {
+    const p = place({
+      tags: [
+        tag("cuisine", "Thai"),
+        tag("atmosphere", "cozy"),
+        tag("feature", "rooftop"),
+        tag("accessibility", "wheelchair_entrance"),
+        tag("time", "late_night"),
+        tag("season", "summer"),
+        tag("service", "reservable"),
+        tag("vibe", "speakeasy"), // free-text / unknown type
+      ],
+    });
+    expect(otherTags(p).map((t) => t.value)).toEqual(["reservable", "speakeasy"]);
+  });
+});
+
+describe("buildPlaceEyebrow", () => {
+  const loc = (neighborhood: string | null, city: string | null) => ({
+    lat: null,
+    lng: null,
+    address: null,
+    neighborhood,
+    city,
+    country: "JP",
+  });
+
+  it("joins neighborhood and lowercased cuisine", () => {
+    expect(
+      buildPlaceEyebrow(
+        place({ tags: [tag("cuisine", "Portuguese")], location: loc("Shimokitazawa", "Tokyo") }),
+      ),
+    ).toBe("Shimokitazawa · portuguese");
+  });
+
+  it("falls back to the primary category when no cuisine", () => {
+    expect(
+      buildPlaceEyebrow(place({ categories: ["hot_spring"], location: loc(null, "Hakone") })),
+    ).toBe("Hakone · hot spring");
+  });
+
+  it("drops the empty area part", () => {
+    expect(buildPlaceEyebrow(place({ categories: ["shrine"] }))).toBe("shrine");
+  });
+});
+
+describe("accessibilityLine", () => {
+  it("states the wheelchair-accessible prefix once, then the suffixes", () => {
+    expect(
+      accessibilityLine(
+        place({
+          tags: [
+            tag("accessibility", "wheelchair_parking"),
+            tag("accessibility", "wheelchair_entrance"),
+            tag("accessibility", "wheelchair_restroom"),
+          ],
+        }),
+      ),
+    ).toBe("wheelchair accessible: parking · entrance · restroom");
+  });
+
+  it("returns null with no accessibility tags", () => {
+    expect(accessibilityLine(place({ tags: [tag("cuisine", "Thai")] }))).toBeNull();
   });
 });
 

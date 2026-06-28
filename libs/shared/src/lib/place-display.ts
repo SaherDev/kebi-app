@@ -1,5 +1,5 @@
 import type { PlaceCore, SavedPlaceView } from "./types";
-import type { PriceTag } from "./place-taxonomy";
+import type { PlaceTag, PriceTag, TagType } from "./place-taxonomy";
 import { CARD_FACETS, CATEGORY_GROUP } from "./card-facets";
 
 /**
@@ -11,6 +11,83 @@ import { CARD_FACETS, CATEGORY_GROUP } from "./card-facets";
 /** snake_case tag/category value → spaced label ("hot_spring" → "hot spring"). */
 export function humanize(value: string): string {
   return value.replace(/_/g, " ").trim();
+}
+
+/** Every tag of a given type, in order (e.g. all `atmosphere` tags). */
+export function tagsOfType(place: PlaceCore, type: TagType): PlaceTag[] {
+  return place.tags.filter((t) => t.type === type);
+}
+
+/**
+ * Tag types that have a dedicated place-page home (eyebrow/meta/pill/chips/line)
+ * or are intentionally shown elsewhere (`time`/`season` drive the home greeting,
+ * not the place page). Everything else falls into the catch-all "others" section.
+ */
+const DEDICATED_TAG_TYPES: ReadonlySet<string> = new Set<TagType>([
+  "cuisine",
+  "price",
+  "dietary",
+  "atmosphere",
+  "feature",
+  "accessibility",
+  "time",
+  "season",
+]);
+
+/**
+ * Tags with no dedicated place-page section — the catch-all "others" chips. Picks
+ * up `service` tags and any free-text/unknown tag types kebi may emit, so nothing
+ * is silently dropped.
+ */
+export function otherTags(place: PlaceCore): PlaceTag[] {
+  return place.tags.filter((t) => !DEDICATED_TAG_TYPES.has(t.type));
+}
+
+/**
+ * The place page's eyebrow line (kebi-place-mockup.html): `area · descriptor`,
+ * where `area` is the neighborhood (city fallback) and `descriptor` is the
+ * cuisine tag, falling back to the primary category. Lowercased to match the
+ * place-page voice; any empty part is dropped.
+ */
+export function buildPlaceEyebrow(place: PlaceCore): string {
+  const area = place.location?.neighborhood ?? place.location?.city ?? null;
+  const cuisine = place.tags.find((t) => t.type === "cuisine")?.value ?? null;
+  const category = place.categories[0] ?? null;
+  const descriptor = cuisine
+    ? humanize(String(cuisine)).toLowerCase()
+    : category
+      ? humanize(category)
+      : null;
+  return [area, descriptor].filter(Boolean).join(" · ");
+}
+
+/**
+ * The place page's quiet accessibility line. The known accessibility values are
+ * all `wheelchair_*`, so when every value shares that prefix the line reads
+ * "wheelchair accessible: parking · entrance · restroom" — the "wheelchair
+ * accessible" prefix stated once, separated by a colon from the suffixes. Any
+ * value outside that vocabulary falls back to a plain humanized join. `null`
+ * when there are none.
+ */
+export function accessibilityLine(place: PlaceCore): string | null {
+  const raw = tagsOfType(place, "accessibility").map((t) => String(t.value));
+  if (raw.length === 0) return null;
+  const PREFIX = "wheelchair_";
+  if (raw.every((v) => v.startsWith(PREFIX))) {
+    const suffixes = raw.map((v) => humanize(v.slice(PREFIX.length)));
+    return `wheelchair accessible: ${suffixes.join(" · ")}`;
+  }
+  return raw.map((v) => humanize(v)).join(" · ");
+}
+
+/**
+ * The place page's dietary line: every `dietary` tag value, humanized and joined
+ * with ` · ` (e.g. "vegan · halal") into one label for the green pill below the
+ * title. `null` when the place carries none.
+ */
+export function dietaryLine(place: PlaceCore): string | null {
+  const values = tagsOfType(place, "dietary").map((t) => humanize(String(t.value)));
+  return values.length > 0 ? values.join(" · ") : null;
 }
 
 /** The known price tags, for narrowing a free-text tag value. */
