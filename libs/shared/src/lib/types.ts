@@ -247,6 +247,50 @@ export interface SaveUserPlaceRequest {
   recommendation_id: string;
 }
 
+// ── Home screen (greeting + recall) ─────────────────────────────────────────
+
+/**
+ * GET /v1/home — one suggestion chip. `text` is both the display label and the
+ * intent the client re-submits to POST /v1/chat on tap (a chip is a first
+ * message, not a separate action — it emits no taste signal on its own).
+ */
+export interface HomeChip {
+  text: string;
+}
+
+/**
+ * GET /v1/home response (ADR-111) — the home screen's opening surface: a short
+ * context-aware greeting plus 3–4 suggestion chips. Fails open upstream, so the
+ * call always returns this shape (a neutral greeting + generic chips on error).
+ */
+export interface HomeResponse {
+  greeting: string;
+  chips: HomeChip[];
+}
+
+/**
+ * GET /v1/user/intents — one recalled intent: a past intent-bearing chat turn,
+ * played back verbatim. `text` is re-submitted to POST /v1/chat on tap.
+ * `created_at` is a raw ISO-8601 instant — the client renders relative phrasing,
+ * since only it knows the user's timezone.
+ */
+export interface IntentItem {
+  id: string;
+  text: string;
+  created_at: string;
+}
+
+/**
+ * GET /v1/user/intents response (ADR-110) — the "what you wanted" recall list,
+ * newest-first. Keyset (cursor) pagination — pass `next_cursor` back as
+ * `?cursor=` for the next page; `null` on the last page. Empty history returns
+ * `{ intents: [], next_cursor: null }`.
+ */
+export interface IntentsResponse {
+  intents: IntentItem[];
+  next_cursor: string | null;
+}
+
 // ── Auth, plan & mobility types ──────────────────────────────────────────────
 
 export type PlanTier = "homebody" | "explorer" | "local_legend";
