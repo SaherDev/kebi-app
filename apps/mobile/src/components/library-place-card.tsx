@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRouter } from 'expo-router';
 import {
   derivePills,
   placeDisplayName,
@@ -8,39 +8,37 @@ import {
 import { HighlightText } from './highlight-text';
 import { PlaceCardBody, formatDetailLine, type PlaceCardPill } from './place-card-body';
 import { ContextMenuTrigger } from './context-menu/context-menu-trigger';
-import { useLibraryMenuItems } from './use-library-menu-items';
+import { usePlaceMenuItems } from './use-place-menu-items';
+import { usePlaceDetail } from './place-detail-context';
+import { usePlaceActions } from './place-actions-context';
 import { useTranslation } from '../i18n/context';
-import type { LibraryActions } from './use-library-actions';
 
 /**
- * The Library's rich saved-place card (kebi-library-mockup.html `.place-card`).
- * Derives its display props from a {@link SavedPlaceView} — pills from the saved
- * state, the detail line from the place, the source line + handle from the save
- * — and renders them through the shared {@link PlaceCardBody}. The chat
- * recommendation card composes the same body from a candidate instead. Tap the
- * row toggles expand; long-press lifts the action menu (wired via {@link LibraryActions}).
+ * The Library's saved-place row (kebi-library-mockup.html `.place-card`). Tapping
+ * the row opens the full place detail page (path A — hands the view to the
+ * place-detail context, navigates to `/place`). Long-press lifts the shared
+ * action menu ({@link usePlaceMenuItems} → global {@link usePlaceActions}); the
+ * same actions power the place page. The card renders its effective state via
+ * `resolve` (optimistic pills) and hides itself once the place is forgotten.
  */
 
 interface LibraryPlaceCardProps {
   view: SavedPlaceView;
-  /** First card opens expanded (mockup), the rest collapsed. */
-  initiallyExpanded?: boolean;
-  actions: LibraryActions;
   /** Active search term (pre-lowercased) — highlights matches in the title. */
   highlight?: string;
 }
 
-export function LibraryPlaceCard({
-  view,
-  initiallyExpanded = false,
-  actions,
-  highlight,
-}: LibraryPlaceCardProps) {
+export function LibraryPlaceCard({ view, highlight }: LibraryPlaceCardProps) {
   const { t } = useTranslation();
-  const [expanded, setExpanded] = useState(initiallyExpanded);
-  const items = useLibraryMenuItems(view, actions);
+  const router = useRouter();
+  const placeDetail = usePlaceDetail();
+  const { resolve } = usePlaceActions();
+  const items = usePlaceMenuItems(view);
 
-  const { place, user_data: userData } = view;
+  const { userData, removed } = resolve(view);
+  if (removed) return null; // optimistically gone after a forget
+
+  const { place } = view;
   const title = placeDisplayName(view);
   const pills: PlaceCardPill[] = derivePills(userData).map((p) => {
     const label = t(`library.pill.${p.kind}`);
@@ -50,6 +48,11 @@ export function LibraryPlaceCard({
   });
   const source = sourceLineText(userData);
   const sourceText = 'handle' in source ? source.handle : t(`library.source.${source.labelKey}`);
+
+  const openPlace = () => {
+    placeDetail.set(view);
+    router.push('/place');
+  };
 
   return (
     <ContextMenuTrigger
@@ -73,8 +76,8 @@ export function LibraryPlaceCard({
             return line ? [{ icon: 'pin' as const, text: line }] : undefined;
           })()}
           source={{ source: userData.source, text: sourceText }}
-          expanded={expanded}
-          onToggle={() => setExpanded((e) => !e)}
+          expanded={false}
+          onToggle={openPlace}
         />
       )}
     />

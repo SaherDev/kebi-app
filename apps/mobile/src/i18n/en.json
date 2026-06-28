@@ -30,7 +30,50 @@
     "looksRight": "looks right",
     "like": "i like this one",
     "beenThere": "been there",
-    "forget": "forget this place"
+    "addNote": "add a note",
+    "editNote": "edit note",
+    "forget": "forget this place",
+    "toast": {
+      "approved": "noted",
+      "liked": "liked",
+      "been": "marked as been"
+    }
+  },
+  "note": {
+    "eyebrow": "note",
+    "addTitle": "add a note",
+    "editTitle": "edit note",
+    "placeholder": "what do you want to remember about this place?",
+    "cta": "save",
+    "toast": {
+      "saved": "note saved"
+    }
+  },
+  "place": {
+    "empty": "no place to show",
+    "approve": "approve?",
+    "addNote": "add a note",
+    "actions": {
+      "directions": "directions",
+      "share": "share"
+    },
+    "meta": {
+      "approved": "approved",
+      "liked": "liked",
+      "went": "went"
+    },
+    "sections": {
+      "atmosphere": "atmosphere",
+      "features": "features",
+      "others": "others",
+      "accessibility": "accessibility"
+    },
+    "maps": {
+      "title": "open directions in",
+      "google": "google maps",
+      "apple": "apple maps",
+      "waze": "waze"
+    }
   },
   "toast": {
     "undo": "undo",

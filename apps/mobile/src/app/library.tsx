@@ -11,7 +11,6 @@ import { LibraryFilterSheet } from '../components/library-filter-sheet';
 import { LibrarySortSheet } from '../components/library-sort-sheet';
 import { Spinner } from '../components/spinner';
 import { useLibrary } from '../components/use-library';
-import { useLibraryActions } from '../components/use-library-actions';
 import { useSaveSheet } from '../components/save-sheet-context';
 import { useSavedPlaces } from '../components/saved-places-context';
 import { useTranslation } from '../i18n/context';
@@ -38,7 +37,6 @@ export default function LibraryScreen() {
   const { t } = useTranslation();
   const saveSheet = useSaveSheet();
   const library = useLibrary();
-  const actions = useLibraryActions(library);
   const { items: savedItems } = useSavedPlaces();
   const [query, setQuery] = useState('');
   const [filterOpen, setFilterOpen] = useState(false);
@@ -136,13 +134,8 @@ export default function LibraryScreen() {
       <FlatList
         data={filtered}
         keyExtractor={(view) => view.user_data.user_place_id}
-        renderItem={({ item, index }) => (
-          <LibraryPlaceCard
-            view={item}
-            initiallyExpanded={index === 0}
-            actions={actions}
-            highlight={normalizedQuery}
-          />
+        renderItem={({ item }) => (
+          <LibraryPlaceCard view={item} highlight={normalizedQuery} />
         )}
         ListHeaderComponent={header}
         ListFooterComponent={

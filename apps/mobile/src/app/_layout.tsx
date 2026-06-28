@@ -26,6 +26,9 @@ import { I18nProvider } from "../i18n/context";
 import { ToastProvider } from "../components/toast-context";
 import { SaveSheetProvider } from "../components/save-sheet-context";
 import { SavedPlacesProvider } from "../components/saved-places-context";
+import { PlaceDetailProvider } from "../components/place-detail-context";
+import { PlaceActionsProvider } from "../components/place-actions-context";
+import { NoteSheetProvider } from "../components/note-sheet-context";
 import { ChatProvider } from "../components/chat-context";
 import { ChatTranscriptProvider } from "../components/chat-transcript-context";
 import { ContextMenuProvider } from "../components/context-menu/context-menu-context";
@@ -94,7 +97,17 @@ export default function RootLayout() {
                 {/* SavedPlacesProvider holds the places saved this session (the
                     library reads from it); it wraps SaveSheetProvider so the save
                     flow can add to it. */}
+                {/* PlaceActionsProvider owns the saved-place menu mutations
+                    (looks right / like / been there / forget) + the optimistic
+                    overrides store, shared by the library card and place page. */}
+                <PlaceActionsProvider>
                 <SavedPlacesProvider>
+                {/* PlaceDetailProvider holds the place opened on the detail page;
+                    the library card sets it before navigating to /place (path A). */}
+                <PlaceDetailProvider>
+                {/* NoteSheetProvider mounts the global note editor; any surface
+                    raises it via useNoteSheet().open(view) — saves via place actions. */}
+                <NoteSheetProvider>
                 {/* SaveSheetProvider sits under ToastProvider so a save toast
                     renders above the sheet; it mounts the save sheet once and
                     lets home/library raise it via useSaveSheet(). */}
@@ -118,7 +131,10 @@ export default function RootLayout() {
                       without a flash; fades out to reveal home, then unmounts. */}
                   {!splashDone && <Splash onDone={() => setSplashDone(true)} />}
                 </SaveSheetProvider>
+                </NoteSheetProvider>
+                </PlaceDetailProvider>
                 </SavedPlacesProvider>
+                </PlaceActionsProvider>
               </ToastProvider>
             </ContextMenuProvider>
           </AuthProvider>

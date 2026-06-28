@@ -27,6 +27,9 @@ export type IconName =
   | 'check'
   | 'plus'
   | 'pin'
+  | 'navigation'
+  | 'accessibility'
+  | 'share'
   | 'copy'
   | 'eye'
   | 'trash'
@@ -105,6 +108,24 @@ const ICONS: Record<IconName, ReactNode> = {
     <>
       <Circle cx={12} cy={10} r={3} />
       <Path d="M12 2a8 8 0 00-8 8c0 6 8 12 8 12s8-6 8-12a8 8 0 00-8-8z" />
+    </>
+  ),
+  // Directions paper-plane (kebi-place-mockup.html `.service-btn` directions).
+  navigation: <Polyline points="3 11 22 2 13 21 11 13 3 11" />,
+  // Share — box with an up-arrow (kebi-place-mockup.html overflow `share`).
+  share: (
+    <>
+      <Path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8" />
+      <Polyline points="16 6 12 2 8 6" />
+      <Line x1={12} y1={2} x2={12} y2={15} />
+    </>
+  ),
+  // Wheelchair — place-page accessibility row (kebi-place-mockup.html `.access-row`).
+  accessibility: (
+    <>
+      <Circle cx={12} cy={4} r={2} />
+      <Path d="M19 13v-2a7 7 0 00-14 0v2" />
+      <Path d="M12 22a4 4 0 004-4v-1H8v1a4 4 0 004 4z" />
     </>
   ),
   // Toast glyphs (kebi-toasts-dark-mockup.html).

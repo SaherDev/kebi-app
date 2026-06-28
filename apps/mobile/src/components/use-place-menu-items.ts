@@ -1,50 +1,45 @@
 import { useMemo } from 'react';
-import type { PlaceCore } from '@kebi-app/shared';
+import type { SavedPlaceView } from '@kebi-app/shared';
 import { useTranslation } from '../i18n/context';
-import { useToast } from './toast-context';
-import { triggerHaptic } from '../lib/haptics';
+import { usePlaceActions } from './place-actions-context';
 import type { ContextMenuItem } from './context-menu/context-menu-types';
 
 /**
- * The place action set shared by the library long-press menu and the place-page
- * ••• overflow menu (kebi-tokens-mockup.html §13/§14): looks right · i like this
- * one · been there · (divider) · forget this place.
- *
- * "forget this place" fires the `forget-place` warning haptic and an undo toast;
- * the accept/like/visited signals and the actual removal are the gateway's job
- * (TODO) — this wires the UX path only.
+ * The saved-place action menu (kebi-tokens-mockup.html §13/§14): looks right ·
+ * i like this one · been there · (divider) · forget this place. The single menu
+ * builder for every surface — the library card long-press menu and the place
+ * page ••• sheet both use it. Items are wired to the global {@link usePlaceActions}
+ * (PATCH for the signals, DELETE for forget), operating on a real
+ * `SavedPlaceView` (carries `user_place_id`).
  */
-
-// Positive signals are not wired to the gateway yet (TODO below).
-const pendingSignal = () => undefined;
-
-export function usePlaceMenuItems(place: PlaceCore): ContextMenuItem[] {
+export function usePlaceMenuItems(view: SavedPlaceView): ContextMenuItem[] {
   const { t } = useTranslation();
-  const toast = useToast();
+  const { update, forget } = usePlaceActions();
 
   return useMemo<ContextMenuItem[]>(
     () => [
-      // TODO(gateway): POST the accept / like / visited signals for this place.
-      { emoji: '👍', label: t('placeMenu.looksRight'), onPress: pendingSignal },
-      { emoji: '❤️', label: t('placeMenu.like'), onPress: pendingSignal },
-      { emoji: '✅', label: t('placeMenu.beenThere'), onPress: pendingSignal },
+      {
+        emoji: '👍',
+        label: t('placeMenu.looksRight'),
+        onPress: () => void update(view, { approved: true }, { emoji: '👍', text: t('placeMenu.toast.approved') }),
+      },
+      {
+        emoji: '❤️',
+        label: t('placeMenu.like'),
+        onPress: () => void update(view, { liked: true }, { emoji: '❤️', text: t('placeMenu.toast.liked') }),
+      },
+      {
+        emoji: '✅',
+        label: t('placeMenu.beenThere'),
+        onPress: () => void update(view, { visited: true }, { emoji: '✅', text: t('placeMenu.toast.been') }),
+      },
       {
         emoji: '🗑️',
         label: t('placeMenu.forget'),
         destructive: true,
-        onPress: () => {
-          triggerHaptic('forget-place');
-          // TODO(gateway): optimistic remove + POST the forget signal; on failure
-          // restore the row and show the "couldn't remove that one" error toast.
-          toast.show({
-            tone: 'danger',
-            icon: 'trash',
-            text: t('toast.removed', { name: place.place_name }),
-            action: { label: t('toast.undo'), onPress: () => triggerHaptic('toast-undo') },
-          });
-        },
+        onPress: () => forget(view),
       },
     ],
-    [t, toast, place.place_name],
+    [t, update, forget, view],
   );
 }
