@@ -158,6 +158,21 @@ export const SPLASH = {
 } as const;
 
 /**
+ * Greeting typewriter (home hero). The greeting types out one character at a
+ * time with a blinking caret — the same keystroke feel as the splash wordmark,
+ * but for async-arriving, multi-line copy. `perCharMs` is the per-keystroke
+ * cadence; `caretBlinkMs` is the caret's on/off half-period (full blink = 2×).
+ * Consumed by `TypewriterText` (components/typewriter-text.tsx); no inline
+ * literals there (zero-hardcoding).
+ */
+export const GREETING_TYPE = {
+  /** Milliseconds per character revealed. */
+  perCharMs: 36,
+  /** Caret on/off toggle period (ms); full blink cycle is twice this. */
+  caretBlinkMs: 500,
+} as const;
+
+/**
  * Invalid-input shake — the quick horizontal wiggle played on a rejected submit
  * (e.g. the login smart input with ambiguous text). Offsets are fed to
  * `withSequence(...withTiming(offset, { duration: stepMs }))`; the accompanying
