@@ -4,6 +4,7 @@ import type {
   IntentsResponse,
   LibraryResponse,
   LibraryUserData,
+  PlanTier,
   SaveUserPlaceRequest,
   UpdateUserPlaceRequest,
 } from '@kebi-app/shared';
@@ -59,13 +60,16 @@ export class UserService {
 
   async savePlace(
     userId: string,
-    dto: SaveUserPlaceDto
+    dto: SaveUserPlaceDto,
+    plan?: PlanTier,
   ): Promise<LibraryUserData> {
     const body: SaveUserPlaceRequest = {
       place_core_id: dto.place_core_id,
       recommendation_id: dto.recommendation_id,
     };
-    return this.kebi.post<LibraryUserData>('/v1/user/places', userId, body);
+    // plan rides along so kebi can enforce the save_limit (ADR-112); a re-save
+    // of an existing place is idempotent and never counts against the cap.
+    return this.kebi.post<LibraryUserData>('/v1/user/places', userId, body, plan);
   }
 
   async updatePlace(

@@ -27,11 +27,15 @@ describe('ExtractService', () => {
       raw_input: 'https://www.tiktok.com/@user/video/123',
     };
 
-    const result = await service.extract('user_test_123', dto);
+    const result = await service.extract('user_test_123', dto, 'homebody');
 
-    expect(kebi.post).toHaveBeenCalledWith('/v1/extract', 'user_test_123', {
-      raw_input: 'https://www.tiktok.com/@user/video/123',
-    });
+    // plan rides along so kebi can enforce the save_limit before the pipeline (ADR-112).
+    expect(kebi.post).toHaveBeenCalledWith(
+      '/v1/extract',
+      'user_test_123',
+      { raw_input: 'https://www.tiktok.com/@user/video/123' },
+      'homebody'
+    );
     expect(result).toEqual(response);
   });
 

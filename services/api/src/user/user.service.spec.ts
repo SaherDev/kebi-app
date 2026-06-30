@@ -91,12 +91,15 @@ describe('UserService', () => {
         recommendation_id: 'rec_1',
       };
 
-      const result = await service.savePlace(USER_ID, dto);
+      const result = await service.savePlace(USER_ID, dto, 'homebody');
 
-      expect(kebi.post).toHaveBeenCalledWith('/v1/user/places', USER_ID, {
-        place_core_id: 'place_1',
-        recommendation_id: 'rec_1',
-      });
+      // plan rides along so kebi can enforce the save_limit (ADR-112).
+      expect(kebi.post).toHaveBeenCalledWith(
+        '/v1/user/places',
+        USER_ID,
+        { place_core_id: 'place_1', recommendation_id: 'rec_1' },
+        'homebody'
+      );
       expect(result).toBe(saved);
     });
 

@@ -4,8 +4,19 @@ import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
 import { Readable } from 'stream';
 import type { AxiosRequestConfig } from 'axios';
+import type { PlanTier } from '@kebi-app/shared';
+import { EntitlementsService } from '../entitlements/entitlements.service';
 
 const KEBI_TIMEOUT_MS = 30000;
+
+/** ADR-112 capability headers — the gateway forwards capabilities, never the plan name. */
+const ENTITLEMENT_HEADERS = {
+  taste: 'X-Gateway-Taste-Enabled',
+  discovery: 'X-Gateway-Discovery-Enabled',
+  advancedModels: 'X-Gateway-Advanced-Models-Enabled',
+  saveLimit: 'X-Gateway-Save-Limit',
+  consultsPerDay: 'X-Gateway-Consults-Per-Day',
+} as const;
 
 /**
  * Shared signed-HTTP transport to the kebi service. The single place that knows
@@ -28,6 +39,7 @@ export class KebiHttpClient {
   constructor(
     configService: ConfigService,
     private readonly httpService: HttpService,
+    private readonly entitlements: EntitlementsService,
   ) {
     const baseUrl = configService.get<string>('KEBI_BASE_URL');
     if (!baseUrl) {
@@ -53,9 +65,14 @@ export class KebiHttpClient {
     return response.data;
   }
 
-  async post<T>(path: string, userId: string, body?: unknown): Promise<T> {
+  async post<T>(
+    path: string,
+    userId: string,
+    body?: unknown,
+    plan?: PlanTier,
+  ): Promise<T> {
     const response = await firstValueFrom(
-      this.httpService.post<T>(this.url(path), body, this.config(userId)),
+      this.httpService.post<T>(this.url(path), body, this.config(userId, plan)),
     );
     return response.data;
   }
@@ -84,12 +101,13 @@ export class KebiHttpClient {
     userId: string,
     body: unknown,
     signal?: AbortSignal,
+    plan?: PlanTier,
   ): Promise<Readable> {
     const response = await firstValueFrom(
       this.httpService.post<Readable>(
         this.url(path),
         body,
-        this.config(userId, { responseType: 'stream', signal }),
+        this.config(userId, plan, { responseType: 'stream', signal }),
       ),
     );
     return response.data;
@@ -99,9 +117,13 @@ export class KebiHttpClient {
     return `${this.baseUrl}${path}`;
   }
 
-  /** Axios config with the gateway auth headers + timeout stamped on. */
+  /**
+   * Axios config with the gateway auth headers + timeout stamped on. When a
+   * `plan` is supplied, the caller's ADR-112 capability headers ride along too.
+   */
   private config(
     userId: string,
+    plan?: PlanTier,
     extra?: AxiosRequestConfig,
   ): AxiosRequestConfig {
     return {
@@ -110,8 +132,32 @@ export class KebiHttpClient {
       headers: {
         'X-Gateway-Token': this.gatewaySecret,
         'X-Gateway-User-Id': userId,
+        ...this.entitlementHeaders(plan),
         ...extra?.headers,
       },
     };
+  }
+
+  /**
+   * ADR-112 capability headers for the caller's plan. Booleans are always sent
+   * (kebi fails closed on a missing flag); numeric limits are omitted when null
+   * (absent = unlimited), so kebi never hard-codes free-tier numbers. Returns an
+   * empty set when no plan is supplied (non-entitlement-gated calls).
+   */
+  private entitlementHeaders(plan?: PlanTier): Record<string, string> {
+    if (plan === undefined) return {};
+    const ent = this.entitlements.resolve(plan);
+    const headers: Record<string, string> = {
+      [ENTITLEMENT_HEADERS.taste]: String(ent.taste_enabled),
+      [ENTITLEMENT_HEADERS.discovery]: String(ent.discovery_enabled),
+      [ENTITLEMENT_HEADERS.advancedModels]: String(ent.advanced_models_enabled),
+    };
+    if (ent.save_limit !== null) {
+      headers[ENTITLEMENT_HEADERS.saveLimit] = String(ent.save_limit);
+    }
+    if (ent.consults_per_day !== null) {
+      headers[ENTITLEMENT_HEADERS.consultsPerDay] = String(ent.consults_per_day);
+    }
+    return headers;
   }
 }

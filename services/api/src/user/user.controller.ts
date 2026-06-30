@@ -50,7 +50,7 @@ export class UserController {
     @CurrentUser() user: AuthUser,
     @Body() dto: SaveUserPlaceDto
   ): Promise<LibraryUserData> {
-    return this.userService.savePlace(user.id, dto);
+    return this.userService.savePlace(user.id, dto, user.plan);
   }
 
   @Patch('places/:id')

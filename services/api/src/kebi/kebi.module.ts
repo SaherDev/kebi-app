@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { HttpModule } from '@nestjs/axios';
+import { EntitlementsModule } from '../entitlements/entitlements.module';
 import { KebiHttpClient } from './kebi-http.client';
 
 /**
@@ -16,7 +17,7 @@ import { KebiHttpClient } from './kebi-http.client';
  * Only the chat stream is an AI operation; the rest are plain forwards.
  */
 @Module({
-  imports: [ConfigModule, HttpModule],
+  imports: [ConfigModule, HttpModule, EntitlementsModule],
   providers: [KebiHttpClient],
   exports: [KebiHttpClient],
 })
