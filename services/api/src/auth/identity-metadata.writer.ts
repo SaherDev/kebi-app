@@ -26,6 +26,12 @@ export interface StampClaims {
  * rather than breaking auth.
  */
 export interface IdentityMetadataWriter {
+  /**
+   * Persist `claims` into the provider's token metadata. Deduped per user by the
+   * claims themselves: an identical repeat (the steady-state fallback path re-runs
+   * every request until the token refreshes) is skipped, but any changed claim
+   * (e.g. an explicit plan switch) re-stamps so the next token refresh carries it.
+   */
   stamp(externalId: string, claims: StampClaims): Promise<void>;
 }
 

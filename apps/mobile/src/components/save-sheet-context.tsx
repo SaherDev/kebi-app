@@ -4,6 +4,7 @@ import { extractPlace, EXTRACT_TIMEOUT_MS } from '../api/extract';
 import { useTranslation } from '../i18n/context';
 import { SaveSheet } from './save-sheet';
 import { useToast } from './toast-context';
+import { useUpgradeToast } from './use-upgrade-toast';
 import { useSavedPlaces } from './saved-places-context';
 
 /**
@@ -31,6 +32,7 @@ export function SaveSheetProvider({ children }: { children: ReactNode }) {
   const { t } = useTranslation();
   const client = useApiClient();
   const toast = useToast();
+  const showUpgrade = useUpgradeToast();
   const { add } = useSavedPlaces();
 
   const [isOpen, setIsOpen] = useState(false);
@@ -65,14 +67,19 @@ export function SaveSheetProvider({ children }: { children: ReactNode }) {
           return;
         }
         // Domain failure (failed / pending / empty) — keep the sheet open to retry.
-        toast.show({
-          tone: 'danger',
-          icon: 'alert',
-          text:
-            res.failure_reason === 'unsupported_url'
-              ? t('toast.unsupportedUrl')
-              : t('toast.saveFailed'),
-        });
+        if (res.failure_reason === 'save_limit_reached') {
+          // Library is full on the free tier (ADR-112) — point to plans.
+          showUpgrade(t('plans.limitReached.save'));
+        } else {
+          toast.show({
+            tone: 'danger',
+            icon: 'alert',
+            text:
+              res.failure_reason === 'unsupported_url'
+                ? t('toast.unsupportedUrl')
+                : t('toast.saveFailed'),
+          });
+        }
         setStatus('idle');
       } catch {
         // Transport error, schema drift, or timeout abort.
@@ -82,7 +89,7 @@ export function SaveSheetProvider({ children }: { children: ReactNode }) {
         clearTimeout(timeout);
       }
     },
-    [status, client, add, toast, t, close],
+    [status, client, add, toast, showUpgrade, t, close],
   );
 
   const value = useMemo<SaveSheetContextValue>(() => ({ open }), [open]);

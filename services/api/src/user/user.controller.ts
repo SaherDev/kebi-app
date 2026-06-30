@@ -24,6 +24,7 @@ import { DeleteUserDataQueryDto } from './dto/delete-user-data.query.dto';
 import { IntentsQueryDto } from './dto/intents-query.dto';
 import { LibraryQueryDto } from './dto/library-query.dto';
 import { SaveUserPlaceDto } from './dto/save-user-place.dto';
+import { UpdatePlanDto } from './dto/update-plan.dto';
 import { UpdateUserPlaceDto } from './dto/update-user-place.dto';
 import { UpdateUserProfileDto } from './dto/update-user-profile.dto';
 import { UserService } from './user.service';
@@ -47,6 +48,15 @@ export class UserController {
     @Body() dto: UpdateUserProfileDto
   ): Promise<UserProfile> {
     return this.userService.updateProfile(identity, user, dto.name);
+  }
+
+  @Patch('plan')
+  async changePlan(
+    @CurrentIdentity() identity: NormalizedIdentity,
+    @CurrentUser() user: AuthUser,
+    @Body() dto: UpdatePlanDto
+  ): Promise<UserProfile> {
+    return this.userService.changePlan(identity, user, dto.plan);
   }
 
   @Get('library')

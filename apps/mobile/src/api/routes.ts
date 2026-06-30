@@ -22,6 +22,8 @@ export const API_ROUTES = {
   userPlace: (id: string) => `/user/places/${id}`,
   /** The caller's display profile: GET name/email/plan, PATCH the display name (gateway-local). */
   userProfile: '/user/profile',
+  /** Switch the caller's plan tier — PATCH plan, re-stamps the token (gateway-local). */
+  userPlan: '/user/plan',
   /** Wipe the caller's AI-owned data — "nuke my data" (api-contract.md §DELETE /v1/user/data). */
   userData: '/user/data',
   /** Recommendation accept/reject signal (api-contract.md §POST /v1/signal). */

@@ -22,8 +22,8 @@ import { AppMetadataCipher } from '../app-metadata.cipher';
 @Injectable()
 export class SupabaseMetadataWriter implements IdentityMetadataWriter {
   private readonly logger = new Logger(SupabaseMetadataWriter.name);
-  /** externalId → last stamp epoch ms, to dedupe repeated admin writes. */
-  private readonly stampedAt = new Map<string, number>();
+  /** externalId → signature of the last successfully-stamped claims (dedupe). */
+  private readonly lastStamped = new Map<string, string>();
   private warnedMissingConfig = false;
 
   constructor(
@@ -33,16 +33,12 @@ export class SupabaseMetadataWriter implements IdentityMetadataWriter {
   ) {}
 
   async stamp(externalId: string, claims: StampClaims): Promise<void> {
-    // A token carries the stamped claims after its next refresh, so the fallback
-    // path re-enters here every request only within the pre-refresh window —
-    // dedupe admin writes to at most one per user per that window (≈ token TTL).
-    const dedupeTtlMs = this.configService.get<number>(
-      'auth.supabase.stamp_dedupe_ttl_ms',
-      60 * 60 * 1000,
-    );
-    const last = this.stampedAt.get(externalId);
-    const now = Date.now();
-    if (last !== undefined && now - last < dedupeTtlMs) return;
+    // The token carries the stamped claims only after its next refresh, so the
+    // fallback path re-enters here every request until then. Dedupe by the claims
+    // themselves: skip an identical repeat, but always write when something
+    // changed (e.g. a plan switch) so the change lands in the next token.
+    const signature = this.signatureOf(claims);
+    if (this.lastStamped.get(externalId) === signature) return;
 
     const projectUrl = this.configService
       .get<string>('SUPABASE_PROJECT_URL')
@@ -87,7 +83,7 @@ export class SupabaseMetadataWriter implements IdentityMetadataWriter {
           },
         ),
       );
-      this.stampedAt.set(externalId, now);
+      this.lastStamped.set(externalId, signature);
       this.logger.log(
         `Stamped app_metadata for ${externalId}: internal_id=${claims.internal_id}, plan=${claims.plan ?? '—'}`,
       );
@@ -96,5 +92,15 @@ export class SupabaseMetadataWriter implements IdentityMetadataWriter {
         `Failed to stamp app_metadata for ${externalId}: ${error instanceof Error ? error.message : String(error)}`,
       );
     }
+  }
+
+  /** Stable signature of the claims, so an unchanged repeat dedupes. */
+  private signatureOf(claims: StampClaims): string {
+    return JSON.stringify([
+      claims.internal_id,
+      claims.plan ?? null,
+      claims.ai_enabled ?? null,
+      claims.movement_profile ?? null,
+    ]);
   }
 }

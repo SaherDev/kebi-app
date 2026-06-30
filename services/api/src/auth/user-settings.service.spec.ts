@@ -31,6 +31,7 @@ describe('UserSettingsService.ensureForUser', () => {
     repo = {
       findByUserId: jest.fn(),
       create: jest.fn(),
+      update: jest.fn(),
     } as unknown as jest.Mocked<UserSettingsRepository>;
     service = new UserSettingsService(makeConfig(), repo);
   });
@@ -65,6 +66,29 @@ describe('UserSettingsService.ensureForUser', () => {
 
     expect(settings).toEqual(existing);
     expect(repo.create).not.toHaveBeenCalled();
+  });
+
+  describe('updatePlan', () => {
+    it('writes the new plan, preserving the other settings, and returns the new doc', async () => {
+      const existing: UserSettingsData = {
+        plan: 'homebody',
+        ai_enabled: true,
+        movement_profile: MOVEMENT,
+      };
+      repo.findByUserId.mockResolvedValue(rowWith(existing));
+      repo.update.mockImplementation((_userId: string, settings: UserSettingsData) =>
+        Promise.resolve(rowWith(settings)),
+      );
+
+      const next = await service.updatePlan('user_1', 'explorer');
+
+      expect(repo.update).toHaveBeenCalledWith('user_1', {
+        plan: 'explorer',
+        ai_enabled: true,
+        movement_profile: MOVEMENT,
+      });
+      expect(next.plan).toBe('explorer');
+    });
   });
 
   it('re-reads the winner when the create loses the unique-constraint race', async () => {

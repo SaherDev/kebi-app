@@ -49,6 +49,16 @@
     --toast-danger-fg:  #E89090;
     --toast-neutral-bg: rgba(245, 241, 234, 0.10);
     --toast-neutral-fg: #F5F1EA;
+
+    /* Content sitting on a `--text`-filled surface (the popular plan card, the
+       active billing-toggle segment). Opacity modifiers can't apply to a var()
+       color in NativeWind, so these translucent tones are pre-composed and
+       theme-aware, like the --toast-* tokens. Light mode: fill is dark → light
+       fg. */
+    --on-fill-muted:   rgba(250, 250, 249, 0.70);
+    --on-fill-faint:   rgba(250, 250, 249, 0.40);
+    --on-fill-divider: rgba(250, 250, 249, 0.14);
+    --on-fill-chip:    rgba(250, 250, 249, 0.16);
   }
 
   /*
@@ -93,6 +103,12 @@
     --toast-danger-fg:  #D14343;
     --toast-neutral-bg: rgba(26, 26, 26, 0.08);
     --toast-neutral-fg: #1A1A1A;
+
+    /* On-fill tones — dark mode: the `--text` fill is light, so fg is dark. */
+    --on-fill-muted:   rgba(26, 26, 26, 0.65);
+    --on-fill-faint:   rgba(26, 26, 26, 0.40);
+    --on-fill-divider: rgba(26, 26, 26, 0.14);
+    --on-fill-chip:    rgba(26, 26, 26, 0.12);
   }
 }
 

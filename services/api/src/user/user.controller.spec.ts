@@ -24,6 +24,7 @@ describe('UserController', () => {
       deleteData: jest.fn(),
       getProfile: jest.fn(),
       updateProfile: jest.fn(),
+      changePlan: jest.fn(),
       getLibrary: jest.fn(),
       getIntents: jest.fn(),
       savePlace: jest.fn(),
@@ -67,6 +68,25 @@ describe('UserController', () => {
       const result = await controller.updateProfile(identity, user, { name: 'new' });
 
       expect(service.updateProfile).toHaveBeenCalledWith(identity, user, 'new');
+      expect(result).toBe(profile);
+    });
+  });
+
+  describe('PATCH /user/plan', () => {
+    const identity: NormalizedIdentity = {
+      externalId: 'ext_1',
+      claims: {},
+      email: 'saher@kebi.app',
+      name: 'saher',
+    };
+
+    it('forwards identity, user, and the validated plan to the service', async () => {
+      const profile: UserProfile = { name: 'saher', email: 'saher@kebi.app', plan: 'explorer' };
+      service.changePlan.mockResolvedValueOnce(profile);
+
+      const result = await controller.changePlan(identity, user, { plan: 'explorer' });
+
+      expect(service.changePlan).toHaveBeenCalledWith(identity, user, 'explorer');
       expect(result).toBe(profile);
     });
   });
