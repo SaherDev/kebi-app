@@ -132,6 +132,44 @@ describe('SupabaseIdentityProvider', () => {
     expect(identity.claims.internal_id).toBeUndefined();
   });
 
+  it('surfaces email and user_metadata.name as JWT-native PII', async () => {
+    mockJwtVerify.mockResolvedValue({
+      payload: {
+        sub: 'uuid-pii',
+        email: 'saher@kebi.app',
+        user_metadata: { name: 'saher q' },
+      },
+    });
+
+    const identity = await provider.verify('valid.token');
+
+    expect(identity.email).toBe('saher@kebi.app');
+    expect(identity.name).toBe('saher q');
+  });
+
+  it('falls back to user_metadata.full_name when name is absent', async () => {
+    mockJwtVerify.mockResolvedValue({
+      payload: {
+        sub: 'uuid-google',
+        email: 'g@kebi.app',
+        user_metadata: { full_name: 'Saher Google' },
+      },
+    });
+
+    const identity = await provider.verify('valid.token');
+
+    expect(identity.name).toBe('Saher Google');
+  });
+
+  it('leaves name undefined when no user_metadata is present', async () => {
+    mockJwtVerify.mockResolvedValue({ payload: { sub: 'uuid-noname', email: 'x@kebi.app' } });
+
+    const identity = await provider.verify('valid.token');
+
+    expect(identity.name).toBeUndefined();
+    expect(identity.email).toBe('x@kebi.app');
+  });
+
   it('throws when the token has no subject', async () => {
     mockJwtVerify.mockResolvedValue({ payload: { sub: undefined } });
 

@@ -47,7 +47,12 @@ export type IconName =
   | 'mic'
   | 'send'
   | 'stop'
-  | 'globe';
+  | 'globe'
+  | 'sun'
+  | 'moon'
+  | 'monitor'
+  | 'card'
+  | 'log-out';
 
 // Path data verbatim from docs/kebi-app-design-system mockups (top-bar icons)
 // and kebi-tokens-mockup.html §15. viewBox 0 0 24 24, 1.8px stroke, fill none —
@@ -229,6 +234,42 @@ const ICONS: Record<IconName, ReactNode> = {
   // Library toolbar (kebi-library-mockup.html `.toolbar-btn`): sort lines + funnel.
   sort: <Path d="M3 6h18M6 12h12M10 18h4" />,
   filter: <Path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z" />,
+  // Settings appearance + rows (kebi-settings-mockup.html): theme sun/moon/monitor,
+  // billing card, log out.
+  sun: (
+    <>
+      <Circle cx={12} cy={12} r={5} />
+      <Line x1={12} y1={1} x2={12} y2={3} />
+      <Line x1={12} y1={21} x2={12} y2={23} />
+      <Line x1={4.22} y1={4.22} x2={5.64} y2={5.64} />
+      <Line x1={18.36} y1={18.36} x2={19.78} y2={19.78} />
+      <Line x1={1} y1={12} x2={3} y2={12} />
+      <Line x1={21} y1={12} x2={23} y2={12} />
+      <Line x1={4.22} y1={19.78} x2={5.64} y2={18.36} />
+      <Line x1={18.36} y1={5.64} x2={19.78} y2={4.22} />
+    </>
+  ),
+  moon: <Path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" />,
+  monitor: (
+    <>
+      <Rect x={2} y={3} width={20} height={14} rx={2} />
+      <Line x1={8} y1={21} x2={16} y2={21} />
+      <Line x1={12} y1={17} x2={12} y2={21} />
+    </>
+  ),
+  card: (
+    <>
+      <Path d="M3 8a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
+      <Line x1={3} y1={11} x2={21} y2={11} />
+    </>
+  ),
+  'log-out': (
+    <>
+      <Path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" />
+      <Polyline points="16 17 21 12 16 7" />
+      <Line x1={21} y1={12} x2={9} y2={12} />
+    </>
+  ),
 };
 
 interface IconProps {

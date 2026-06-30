@@ -1,9 +1,11 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { NormalizedIdentity } from '@kebi-app/shared';
 import { IDENTITY_PROVIDER } from './identity-provider.interface';
 import type { IdentityProvider } from './identity-provider.interface';
 import { IDENTITY_METADATA_WRITER } from './identity-metadata.writer';
 import type { IdentityMetadataWriter } from './identity-metadata.writer';
+import { PROFILE_WRITER } from './profile-writer.interface';
+import type { ProfileWriter } from './profile-writer.interface';
 import { UserIdentityService } from './user-identity.service';
 import { UserSettingsService } from './user-settings.service';
 
@@ -23,10 +25,13 @@ import { UserSettingsService } from './user-settings.service';
  */
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     @Inject(IDENTITY_PROVIDER) private readonly provider: IdentityProvider,
     @Inject(IDENTITY_METADATA_WRITER)
     private readonly metadataWriter: IdentityMetadataWriter,
+    @Inject(PROFILE_WRITER) private readonly profileWriter: ProfileWriter,
     private readonly userIdentity: UserIdentityService,
     private readonly userSettings: UserSettingsService,
   ) {}
@@ -34,6 +39,8 @@ export class AuthService {
   async provision(identity: NormalizedIdentity): Promise<void> {
     const userId = await this.userIdentity.resolve(this.provider.name, identity);
     const settings = await this.userSettings.ensureForUser(userId);
+
+    await this.seedName(identity);
 
     // Stamp the token from settings only when it's out of sync (different id, or
     // plan/ai_enabled/movement_profile changed) — steady-state logins skip it.
@@ -54,5 +61,28 @@ export class AuthService {
         movement_profile: settings.movement_profile,
       }),
     });
+  }
+
+  /**
+   * Seed the display name once, on first sign-in only. Google OAuth populates
+   * `user_metadata.full_name` (→ `identity.name` present) so the guard skips and
+   * nothing is overwritten; an email-OTP signup has no name, so we derive one
+   * from the email local-part; a phone-only signup has neither, so nothing is
+   * seeded. Fails open — a seed failure must never break login (the name is
+   * purely cosmetic and editable later).
+   */
+  private async seedName(identity: NormalizedIdentity): Promise<void> {
+    if (identity.name || !identity.email) return;
+    const seed = identity.email.split('@')[0]?.trim();
+    if (!seed) return;
+    try {
+      await this.profileWriter.setName(identity.externalId, seed);
+    } catch (error) {
+      this.logger.warn(
+        `Name seed failed for ${identity.externalId}: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+    }
   }
 }

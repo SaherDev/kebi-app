@@ -20,6 +20,10 @@ export const API_ROUTES = {
   userPlaces: '/user/places',
   /** One saved place: PATCH user-state / DELETE the save (api-contract.md §/v1/user/places/{id}). */
   userPlace: (id: string) => `/user/places/${id}`,
+  /** The caller's display profile: GET name/email/plan, PATCH the display name (gateway-local). */
+  userProfile: '/user/profile',
+  /** Wipe the caller's AI-owned data — "nuke my data" (api-contract.md §DELETE /v1/user/data). */
+  userData: '/user/data',
   /** Recommendation accept/reject signal (api-contract.md §POST /v1/signal). */
   signal: '/signal',
 } as const;

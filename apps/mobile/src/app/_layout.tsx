@@ -34,6 +34,7 @@ import { ChatTranscriptProvider } from "../components/chat-transcript-context";
 import { ContextMenuProvider } from "../components/context-menu/context-menu-context";
 import { Splash } from "../components/splash";
 import { AuthProvider, useAuth } from "../auth/auth-context";
+import { getStoredTheme } from "../lib/theme-preference";
 
 // Keep the splash visible until the Inter weights are loaded.
 SplashScreen.preventAutoHideAsync();
@@ -63,10 +64,13 @@ function AuthGate() {
 }
 
 export default function RootLayout() {
-  const { colorScheme } = useColorScheme();
+  const { colorScheme, setColorScheme } = useColorScheme();
   // Boot-only: the animated splash overlays the app on cold start, then unmounts
   // for good — never re-shown on in-app navigation (design-system Loading #1).
   const [splashDone, setSplashDone] = useState(false);
+  // Apply the persisted theme before the first paint is revealed, so the app
+  // never flashes the system theme then snaps to the user's choice.
+  const [themeRestored, setThemeRestored] = useState(false);
   const [fontsLoaded, fontError] = useFonts({
     Inter_400Regular,
     Inter_500Medium,
@@ -76,12 +80,27 @@ export default function RootLayout() {
   });
 
   useEffect(() => {
-    if (fontsLoaded || fontError) {
+    let cancelled = false;
+    getStoredTheme()
+      .then((stored) => {
+        if (cancelled) return;
+        if (stored) setColorScheme(stored);
+      })
+      .finally(() => {
+        if (!cancelled) setThemeRestored(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [setColorScheme]);
+
+  useEffect(() => {
+    if ((fontsLoaded || fontError) && themeRestored) {
       SplashScreen.hideAsync();
     }
-  }, [fontsLoaded, fontError]);
+  }, [fontsLoaded, fontError, themeRestored]);
 
-  if (!fontsLoaded && !fontError) {
+  if ((!fontsLoaded && !fontError) || !themeRestored) {
     return null;
   }
 

@@ -383,10 +383,30 @@ export interface IdentityClaims {
  * Provider-agnostic identity returned by any auth provider after verifying a
  * token. `externalId` is the provider's subject (Clerk `sub`) — the lookup key
  * for the stable internal id, never forwarded to kebi.
+ *
+ * `email`/`name` are JWT-native PII (Supabase `email` + `user_metadata.name`),
+ * surfaced only so the gateway-local profile endpoint (`GET /user/profile`) can
+ * read them without an Admin-API call. They are a scoped relaxation of ADR-044
+ * (client-blind-to-identity): never placed in `IdentityClaims`/`AuthUser`, and
+ * never forwarded to kebi.
  */
 export interface NormalizedIdentity {
   externalId: string;
   claims: IdentityClaims;
+  email?: string;
+  name?: string;
+}
+
+/**
+ * The user's display profile, returned by the gateway-local `/user/profile`
+ * endpoint to the client. `name`/`email` are Supabase-owned PII (read from the
+ * JWT, written via the Admin API); `plan` mirrors the product claim. The
+ * internal id is never exposed.
+ */
+export interface UserProfile {
+  name: string;
+  email: string;
+  plan: PlanTier;
 }
 
 // Signal types — recommendation accept/reject only (kebi ADR-076/078).

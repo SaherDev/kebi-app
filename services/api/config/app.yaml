@@ -13,6 +13,8 @@ auth:
     # Admin-API app_metadata stamping (SupabaseMetadataWriter).
     stamp_timeout_ms: 5000 # admin PUT request timeout
     stamp_dedupe_ttl_ms: 3600000 # re-stamp a user at most once per window (≈ token TTL)
+    # Admin-API user_metadata.name write (SupabaseProfileWriter).
+    profile_timeout_ms: 5000 # admin PUT request timeout
   public_paths:
     - /health
   # Verified but not-yet-provisioned tokens (no internal_id) may hit only these —

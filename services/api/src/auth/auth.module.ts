@@ -9,10 +9,13 @@ import {
   IDENTITY_METADATA_WRITER,
   IdentityMetadataWriter,
 } from './identity-metadata.writer';
+import { PROFILE_WRITER, ProfileWriter } from './profile-writer.interface';
 import { AppMetadataCipher } from './app-metadata.cipher';
 import { SupabaseIdentityProvider } from './providers/supabase-identity.provider';
 import { NoopMetadataWriter } from './providers/noop-metadata.writer';
 import { SupabaseMetadataWriter } from './providers/supabase-metadata.writer';
+import { NoopProfileWriter } from './providers/noop-profile.writer';
+import { SupabaseProfileWriter } from './providers/supabase-profile.writer';
 import { UserIdentityRepository } from './user-identity.repository';
 import { UserIdentityService } from './user-identity.service';
 import { UserSettingsRepository } from './user-settings.repository';
@@ -36,6 +39,8 @@ const DEFAULT_PROVIDER = 'supabase';
     SupabaseIdentityProvider,
     NoopMetadataWriter,
     SupabaseMetadataWriter,
+    NoopProfileWriter,
+    SupabaseProfileWriter,
     UserIdentityRepository,
     UserIdentityService,
     UserSettingsRepository,
@@ -73,7 +78,26 @@ const DEFAULT_PROVIDER = 'supabase';
         return name === 'supabase' ? supabase : noop;
       },
     },
+    {
+      // Selected by the same `auth.provider` key. Supabase writes
+      // user_metadata.name via the Admin API; out-of-band providers get no-op.
+      provide: PROFILE_WRITER,
+      inject: [ConfigService, NoopProfileWriter, SupabaseProfileWriter],
+      useFactory: (
+        config: ConfigService,
+        noop: NoopProfileWriter,
+        supabase: SupabaseProfileWriter,
+      ): ProfileWriter => {
+        const name = config.get<string>('auth.provider', DEFAULT_PROVIDER);
+        return name === 'supabase' ? supabase : noop;
+      },
+    },
   ],
-  exports: [IDENTITY_PROVIDER, IDENTITY_METADATA_WRITER, UserIdentityService],
+  exports: [
+    IDENTITY_PROVIDER,
+    IDENTITY_METADATA_WRITER,
+    PROFILE_WRITER,
+    UserIdentityService,
+  ],
 })
 export class AuthModule {}

@@ -15,18 +15,39 @@ import type {
   IntentsResponse,
   LibraryResponse,
   LibraryUserData,
+  NormalizedIdentity,
+  UserProfile,
 } from '@kebi-app/shared';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
+import { CurrentIdentity } from '../common/decorators/current-identity.decorator';
 import { DeleteUserDataQueryDto } from './dto/delete-user-data.query.dto';
 import { IntentsQueryDto } from './dto/intents-query.dto';
 import { LibraryQueryDto } from './dto/library-query.dto';
 import { SaveUserPlaceDto } from './dto/save-user-place.dto';
 import { UpdateUserPlaceDto } from './dto/update-user-place.dto';
+import { UpdateUserProfileDto } from './dto/update-user-profile.dto';
 import { UserService } from './user.service';
 
 @Controller('user')
 export class UserController {
   constructor(private readonly userService: UserService) {}
+
+  @Get('profile')
+  getProfile(
+    @CurrentIdentity() identity: NormalizedIdentity,
+    @CurrentUser() user: AuthUser
+  ): UserProfile {
+    return this.userService.getProfile(identity, user);
+  }
+
+  @Patch('profile')
+  async updateProfile(
+    @CurrentIdentity() identity: NormalizedIdentity,
+    @CurrentUser() user: AuthUser,
+    @Body() dto: UpdateUserProfileDto
+  ): Promise<UserProfile> {
+    return this.userService.updateProfile(identity, user, dto.name);
+  }
 
   @Get('library')
   async getLibrary(
