@@ -56,7 +56,11 @@ export function BillingToggle({
         >
           {yearlyLabel}
         </Text>
-        <View className={`rounded-full px-1.5 py-0.5 ${yearlyActive ? 'bg-bg/20' : 'bg-surface-2'}`}>
+        {/* The active chip sits on the --text fill — use the pre-composed chip
+            token, not an opacity-on-var (which renders black). */}
+        <View
+          className={`rounded-full px-1.5 py-0.5 ${yearlyActive ? 'bg-on-fill-chip' : 'bg-surface-2'}`}
+        >
           <Text
             className={`text-eyebrow font-semibold ${yearlyActive ? 'text-bg' : 'text-text-muted'}`}
           >

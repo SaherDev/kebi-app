@@ -53,6 +53,11 @@ module.exports = {
         'toast-danger-fg': 'var(--toast-danger-fg)',
         'toast-neutral-bg': 'var(--toast-neutral-bg)',
         'toast-neutral-fg': 'var(--toast-neutral-fg)',
+        // Content on a --text-filled surface (popular plan card, active toggle)
+        'on-fill-muted': 'var(--on-fill-muted)',
+        'on-fill-faint': 'var(--on-fill-faint)',
+        'on-fill-divider': 'var(--on-fill-divider)',
+        'on-fill-chip': 'var(--on-fill-chip)',
       },
 
       // ── Border radii (from kebi-tokens-mockup.html §07) ────────────────────

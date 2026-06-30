@@ -31,15 +31,17 @@ export function PlanCard({ content, cycle, isCurrent, busy, onSelect }: PlanCard
   const meta = PLAN_TIERS[tier];
   const price = content.price[cycle];
 
-  // Palette flips on the popular (dark-filled) card.
+  // Palette flips on the popular (dark-filled) card. The translucent tones use
+  // pre-composed --on-fill-* tokens, not opacity modifiers — NativeWind can't
+  // apply an opacity (`/70`) to a var() color, which renders black (invisible).
   const tone = {
     title: popular ? 'text-bg' : 'text-text',
-    muted: popular ? 'text-bg/70' : 'text-text-muted',
+    muted: popular ? 'text-on-fill-muted' : 'text-text-muted',
     feature: popular ? 'text-bg' : 'text-text',
-    featureMuted: popular ? 'text-bg/50' : 'text-text-soft',
+    featureMuted: popular ? 'text-on-fill-faint' : 'text-text-soft',
     check: popular ? 'text-bg' : 'text-success',
-    cross: popular ? 'text-bg/50' : 'text-text-soft',
-    divider: popular ? 'bg-bg/15' : 'bg-surface-2',
+    cross: popular ? 'text-on-fill-faint' : 'text-text-soft',
+    divider: popular ? 'bg-on-fill-divider' : 'bg-surface-2',
   };
 
   return (
@@ -131,14 +133,14 @@ function PlanCta({
   // current = muted disabled pill; selectable = primary (inverted on popular).
   const box = isCurrent
     ? popular
-      ? 'bg-bg/20'
+      ? 'bg-on-fill-chip'
       : 'bg-surface-2'
     : popular
       ? 'bg-bg'
       : 'bg-text';
   const text = isCurrent
     ? popular
-      ? 'text-bg/60'
+      ? 'text-on-fill-muted'
       : 'text-text-muted'
     : popular
       ? 'text-text'
