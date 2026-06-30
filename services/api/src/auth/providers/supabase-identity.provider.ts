@@ -28,6 +28,12 @@ interface SupabaseAppMetadata {
 
 interface SupabaseTokenPayload extends JWTPayload {
   app_metadata?: Record<string, unknown>;
+  // JWT-native PII Supabase always embeds: top-level `email` and the
+  // user-writable `user_metadata`. Read here only to surface the display
+  // profile for the gateway-local /user/profile endpoint — never enters claims,
+  // never forwarded to kebi (scoped ADR-044 relaxation).
+  email?: string;
+  user_metadata?: { name?: string; full_name?: string };
 }
 
 /**
@@ -81,6 +87,10 @@ export class SupabaseIdentityProvider implements IdentityProvider {
     const meta: SupabaseAppMetadata =
       (typeof blob === 'string' ? this.cipher.decrypt(blob) : null) ?? {};
 
+    // Display name: prefer the user-edited `name`, fall back to the OAuth
+    // `full_name` Supabase seeds for Google sign-ins. PII stays off claims.
+    const name = payload.user_metadata?.name ?? payload.user_metadata?.full_name;
+
     return {
       externalId,
       claims: new TokenClaims({
@@ -89,6 +99,8 @@ export class SupabaseIdentityProvider implements IdentityProvider {
         movement_profile: meta.movement_profile,
         internal_id: meta.internal_id,
       }),
+      email: payload.email,
+      name,
     };
   }
 

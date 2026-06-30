@@ -3,6 +3,8 @@ import type {
   IntentsResponse,
   LibraryResponse,
   LibraryUserData,
+  NormalizedIdentity,
+  UserProfile,
 } from '@kebi-app/shared';
 import { UserController } from './user.controller';
 import { UserService } from './user.service';
@@ -20,6 +22,8 @@ describe('UserController', () => {
   beforeEach(() => {
     service = {
       deleteData: jest.fn(),
+      getProfile: jest.fn(),
+      updateProfile: jest.fn(),
       getLibrary: jest.fn(),
       getIntents: jest.fn(),
       savePlace: jest.fn(),
@@ -27,6 +31,44 @@ describe('UserController', () => {
       deletePlace: jest.fn(),
     } as unknown as jest.Mocked<UserService>;
     controller = new UserController(service);
+  });
+
+  describe('GET /user/profile', () => {
+    const identity: NormalizedIdentity = {
+      externalId: 'ext_1',
+      claims: {},
+      email: 'saher@kebi.app',
+      name: 'saher',
+    };
+
+    it('returns the profile from identity + user', () => {
+      const profile: UserProfile = { name: 'saher', email: 'saher@kebi.app', plan: 'explorer' };
+      service.getProfile.mockReturnValueOnce(profile);
+
+      const result = controller.getProfile(identity, user);
+
+      expect(service.getProfile).toHaveBeenCalledWith(identity, user);
+      expect(result).toBe(profile);
+    });
+  });
+
+  describe('PATCH /user/profile', () => {
+    const identity: NormalizedIdentity = {
+      externalId: 'ext_1',
+      claims: {},
+      email: 'saher@kebi.app',
+      name: 'old',
+    };
+
+    it('forwards identity, user, and the validated name to the service', async () => {
+      const profile: UserProfile = { name: 'new', email: 'saher@kebi.app', plan: 'explorer' };
+      service.updateProfile.mockResolvedValueOnce(profile);
+
+      const result = await controller.updateProfile(identity, user, { name: 'new' });
+
+      expect(service.updateProfile).toHaveBeenCalledWith(identity, user, 'new');
+      expect(result).toBe(profile);
+    });
   });
 
   describe('GET /user/library', () => {

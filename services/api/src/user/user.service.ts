@@ -1,21 +1,64 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import type {
+  AuthUser,
   DataScope,
   IntentsResponse,
   LibraryResponse,
   LibraryUserData,
+  NormalizedIdentity,
   SaveUserPlaceRequest,
   UpdateUserPlaceRequest,
+  UserProfile,
 } from '@kebi-app/shared';
 import { KebiHttpClient } from '../kebi/kebi-http.client';
+import { PROFILE_WRITER } from '../auth/profile-writer.interface';
+import type { ProfileWriter } from '../auth/profile-writer.interface';
 import { IntentsQueryDto } from './dto/intents-query.dto';
 import { LibraryQueryDto } from './dto/library-query.dto';
 import { SaveUserPlaceDto } from './dto/save-user-place.dto';
 import { UpdateUserPlaceDto } from './dto/update-user-place.dto';
 
+/** Fallback tier if a (provisioned) token somehow lacks a plan claim. */
+const DEFAULT_PLAN = 'homebody' as const;
+
 @Injectable()
 export class UserService {
-  constructor(private readonly kebi: KebiHttpClient) {}
+  constructor(
+    private readonly kebi: KebiHttpClient,
+    @Inject(PROFILE_WRITER) private readonly profileWriter: ProfileWriter,
+  ) {}
+
+  /**
+   * The user's display profile, read gateway-local (never forwarded to kebi).
+   * `name`/`email` come from the verified JWT (Supabase PII); `plan` from the
+   * product claim. The internal id is never exposed (scoped ADR-044 relaxation).
+   */
+  getProfile(identity: NormalizedIdentity, user: AuthUser): UserProfile {
+    return {
+      name: identity.name ?? '',
+      email: identity.email ?? '',
+      plan: user.plan ?? DEFAULT_PLAN,
+    };
+  }
+
+  /**
+   * Updates the display name (Supabase `user_metadata.name`). Echoes the
+   * just-written name rather than re-reading the still-stale JWT — the response
+   * is the client's source of truth until its token refreshes. A writer failure
+   * propagates so the client can surface "save failed" and roll back.
+   */
+  async updateProfile(
+    identity: NormalizedIdentity,
+    user: AuthUser,
+    name: string,
+  ): Promise<UserProfile> {
+    await this.profileWriter.setName(identity.externalId, name);
+    return {
+      name,
+      email: identity.email ?? '',
+      plan: user.plan ?? DEFAULT_PLAN,
+    };
+  }
 
   async getLibrary(
     userId: string,

@@ -1,9 +1,12 @@
 import type {
+  AuthUser,
   IntentsResponse,
   LibraryResponse,
   LibraryUserData,
+  NormalizedIdentity,
 } from '@kebi-app/shared';
 import { KebiHttpClient } from '../kebi/kebi-http.client';
+import type { ProfileWriter } from '../auth/profile-writer.interface';
 import type { IntentsQueryDto } from './dto/intents-query.dto';
 import type { LibraryQueryDto } from './dto/library-query.dto';
 import type { SaveUserPlaceDto } from './dto/save-user-place.dto';
@@ -15,6 +18,7 @@ const USER_ID = 'user_test_123';
 describe('UserService', () => {
   let service: UserService;
   let kebi: jest.Mocked<KebiHttpClient>;
+  let profileWriter: { setName: jest.Mock };
 
   beforeEach(() => {
     kebi = {
@@ -23,7 +27,61 @@ describe('UserService', () => {
       patch: jest.fn(),
       delete: jest.fn(),
     } as unknown as jest.Mocked<KebiHttpClient>;
-    service = new UserService(kebi);
+    profileWriter = { setName: jest.fn().mockResolvedValue(undefined) };
+    service = new UserService(kebi, profileWriter as unknown as ProfileWriter);
+  });
+
+  describe('getProfile', () => {
+    const identity: NormalizedIdentity = {
+      externalId: 'ext_1',
+      claims: {},
+      email: 'saher@kebi.app',
+      name: 'saher',
+    };
+    const user: AuthUser = { id: USER_ID, ai_enabled: true, plan: 'explorer' };
+
+    it('returns name/email from the identity and plan from the user claim (no kebi call)', () => {
+      const profile = service.getProfile(identity, user);
+
+      expect(profile).toEqual({ name: 'saher', email: 'saher@kebi.app', plan: 'explorer' });
+      expect(kebi.get).not.toHaveBeenCalled();
+    });
+
+    it('falls back to empty strings / homebody when identity/plan are bare', () => {
+      const profile = service.getProfile(
+        { externalId: 'ext_2', claims: {} },
+        { id: USER_ID, ai_enabled: true },
+      );
+
+      expect(profile).toEqual({ name: '', email: '', plan: 'homebody' });
+    });
+  });
+
+  describe('updateProfile', () => {
+    const identity: NormalizedIdentity = {
+      externalId: 'ext_1',
+      claims: {},
+      email: 'saher@kebi.app',
+      name: 'old name',
+    };
+    const user: AuthUser = { id: USER_ID, ai_enabled: true, plan: 'local_legend' };
+
+    it('writes the new name and echoes it (not the stale identity name)', async () => {
+      const profile = await service.updateProfile(identity, user, 'new name');
+
+      expect(profileWriter.setName).toHaveBeenCalledWith('ext_1', 'new name');
+      expect(profile).toEqual({
+        name: 'new name',
+        email: 'saher@kebi.app',
+        plan: 'local_legend',
+      });
+    });
+
+    it('propagates a writer failure so the client can surface it', async () => {
+      profileWriter.setName.mockRejectedValueOnce(new Error('admin down'));
+
+      await expect(service.updateProfile(identity, user, 'x')).rejects.toThrow('admin down');
+    });
   });
 
   describe('getLibrary', () => {
