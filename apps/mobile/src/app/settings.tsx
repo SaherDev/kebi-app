@@ -60,9 +60,10 @@ function SettingsRow({
         }`}
       >
         {emoji ? (
-          <Text className="leading-none" style={{ fontSize: 16 }}>
-            {emoji}
-          </Text>
+          // Emoji glyphs render taller than their font box; a tight lineHeight
+          // (leading-none) clips them on iOS, so give it room and let the
+          // centering container place it.
+          <Text style={{ fontSize: 16, lineHeight: 20 }}>{emoji}</Text>
         ) : icon ? (
           <Icon name={icon} size={15} className={danger ? 'text-danger' : 'text-text'} />
         ) : null}
