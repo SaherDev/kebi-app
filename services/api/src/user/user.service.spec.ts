@@ -7,6 +7,8 @@ import type {
 } from '@kebi-app/shared';
 import { KebiHttpClient } from '../kebi/kebi-http.client';
 import type { ProfileWriter } from '../auth/profile-writer.interface';
+import type { IdentityMetadataWriter } from '../auth/identity-metadata.writer';
+import type { UserSettingsService } from '../auth/user-settings.service';
 import type { IntentsQueryDto } from './dto/intents-query.dto';
 import type { LibraryQueryDto } from './dto/library-query.dto';
 import type { SaveUserPlaceDto } from './dto/save-user-place.dto';
@@ -19,6 +21,8 @@ describe('UserService', () => {
   let service: UserService;
   let kebi: jest.Mocked<KebiHttpClient>;
   let profileWriter: { setName: jest.Mock };
+  let userSettings: { updatePlan: jest.Mock };
+  let metadataWriter: { stamp: jest.Mock };
 
   beforeEach(() => {
     kebi = {
@@ -28,7 +32,14 @@ describe('UserService', () => {
       delete: jest.fn(),
     } as unknown as jest.Mocked<KebiHttpClient>;
     profileWriter = { setName: jest.fn().mockResolvedValue(undefined) };
-    service = new UserService(kebi, profileWriter as unknown as ProfileWriter);
+    userSettings = { updatePlan: jest.fn() };
+    metadataWriter = { stamp: jest.fn().mockResolvedValue(undefined) };
+    service = new UserService(
+      kebi,
+      profileWriter as unknown as ProfileWriter,
+      userSettings as unknown as UserSettingsService,
+      metadataWriter as unknown as IdentityMetadataWriter,
+    );
   });
 
   describe('getProfile', () => {
@@ -81,6 +92,52 @@ describe('UserService', () => {
       profileWriter.setName.mockRejectedValueOnce(new Error('admin down'));
 
       await expect(service.updateProfile(identity, user, 'x')).rejects.toThrow('admin down');
+    });
+  });
+
+  describe('changePlan', () => {
+    const identity: NormalizedIdentity = {
+      externalId: 'ext_1',
+      claims: {},
+      email: 'saher@kebi.app',
+      name: 'saher',
+    };
+    const user: AuthUser = { id: USER_ID, ai_enabled: true, plan: 'homebody' };
+
+    it('writes the plan, re-stamps the token claims, and echoes the new plan', async () => {
+      userSettings.updatePlan.mockResolvedValueOnce({
+        plan: 'explorer',
+        ai_enabled: true,
+        movement_profile: { available_modes: ['walking'], reach: 'normal' },
+      });
+
+      const profile = await service.changePlan(identity, user, 'explorer');
+
+      expect(userSettings.updatePlan).toHaveBeenCalledWith(USER_ID, 'explorer');
+      // Re-stamp uses the externalId + the fresh settings (internal id from the user).
+      expect(metadataWriter.stamp).toHaveBeenCalledWith('ext_1', {
+        internal_id: USER_ID,
+        ai_enabled: true,
+        plan: 'explorer',
+        movement_profile: { available_modes: ['walking'], reach: 'normal' },
+      });
+      expect(profile).toEqual({ name: 'saher', email: 'saher@kebi.app', plan: 'explorer' });
+    });
+
+    it('omits movement_profile from the stamp when the user has none', async () => {
+      userSettings.updatePlan.mockResolvedValueOnce({
+        plan: 'local_legend',
+        ai_enabled: true,
+        movement_profile: null,
+      });
+
+      await service.changePlan(identity, user, 'local_legend');
+
+      expect(metadataWriter.stamp).toHaveBeenCalledWith('ext_1', {
+        internal_id: USER_ID,
+        ai_enabled: true,
+        plan: 'local_legend',
+      });
     });
   });
 

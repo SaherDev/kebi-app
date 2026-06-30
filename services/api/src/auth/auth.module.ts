@@ -98,6 +98,7 @@ const DEFAULT_PROVIDER = 'supabase';
     IDENTITY_METADATA_WRITER,
     PROFILE_WRITER,
     UserIdentityService,
+    UserSettingsService,
   ],
 })
 export class AuthModule {}

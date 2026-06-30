@@ -43,6 +43,18 @@ export class UserSettingsService {
     }
   }
 
+  /**
+   * Switch the user's plan tier, preserving every other setting. Returns the new
+   * settings document so the caller can re-stamp the token claims from it. The
+   * row is created with defaults first if it somehow doesn't exist yet.
+   */
+  async updatePlan(userId: string, plan: PlanTier): Promise<UserSettingsData> {
+    const current = await this.ensureForUser(userId);
+    const next: UserSettingsData = { ...current, plan };
+    await this.settings.update(userId, next);
+    return next;
+  }
+
   /** Default settings for a new user, seeded from `user_settings.defaults` config. */
   private defaults(): UserSettingsData {
     return {

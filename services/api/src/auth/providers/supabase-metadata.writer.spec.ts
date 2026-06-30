@@ -99,11 +99,18 @@ describe('SupabaseMetadataWriter', () => {
     expect(http.put).not.toHaveBeenCalled();
   });
 
-  it('dedupes repeated stamps for the same user within the TTL window', async () => {
+  it('dedupes an identical repeat stamp for the same user', async () => {
     const writer = make();
-    await writer.stamp('uuid-4', { internal_id: 'user_y' });
-    await writer.stamp('uuid-4', { internal_id: 'user_y' });
+    await writer.stamp('uuid-4', { internal_id: 'user_y', plan: 'homebody' });
+    await writer.stamp('uuid-4', { internal_id: 'user_y', plan: 'homebody' });
     expect(http.put).toHaveBeenCalledTimes(1);
+  });
+
+  it('re-stamps when a claim changes (e.g. a plan switch)', async () => {
+    const writer = make();
+    await writer.stamp('uuid-4b', { internal_id: 'user_y', plan: 'homebody' });
+    await writer.stamp('uuid-4b', { internal_id: 'user_y', plan: 'explorer' });
+    expect(http.put).toHaveBeenCalledTimes(2);
   });
 
   it('does not record a successful stamp when the admin call fails', async () => {

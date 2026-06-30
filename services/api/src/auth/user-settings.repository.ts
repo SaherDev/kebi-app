@@ -23,4 +23,18 @@ export class UserSettingsRepository {
   create(userId: string, settings: UserSettingsData): Promise<UserSettingsEntity> {
     return this.repo.save(this.repo.create({ userId, settings }));
   }
+
+  /**
+   * Overwrite an existing user's settings document. Loads the row first so the
+   * save targets its primary key (an UPDATE) rather than inserting a new row —
+   * `id` is only generated on insert and `userId` is unique.
+   */
+  async update(userId: string, settings: UserSettingsData): Promise<UserSettingsEntity> {
+    const row = await this.repo.findOne({ where: { userId } });
+    if (!row) {
+      throw new Error(`user_settings row not found for ${userId}`);
+    }
+    row.settings = settings;
+    return this.repo.save(row);
+  }
 }

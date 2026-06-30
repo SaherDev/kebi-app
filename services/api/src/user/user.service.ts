@@ -14,6 +14,9 @@ import type {
 import { KebiHttpClient } from '../kebi/kebi-http.client';
 import { PROFILE_WRITER } from '../auth/profile-writer.interface';
 import type { ProfileWriter } from '../auth/profile-writer.interface';
+import { IDENTITY_METADATA_WRITER } from '../auth/identity-metadata.writer';
+import type { IdentityMetadataWriter } from '../auth/identity-metadata.writer';
+import { UserSettingsService } from '../auth/user-settings.service';
 import { IntentsQueryDto } from './dto/intents-query.dto';
 import { LibraryQueryDto } from './dto/library-query.dto';
 import { SaveUserPlaceDto } from './dto/save-user-place.dto';
@@ -27,6 +30,9 @@ export class UserService {
   constructor(
     private readonly kebi: KebiHttpClient,
     @Inject(PROFILE_WRITER) private readonly profileWriter: ProfileWriter,
+    private readonly userSettings: UserSettingsService,
+    @Inject(IDENTITY_METADATA_WRITER)
+    private readonly metadataWriter: IdentityMetadataWriter,
   ) {}
 
   /**
@@ -58,6 +64,34 @@ export class UserService {
       name,
       email: identity.email ?? '',
       plan: user.plan ?? DEFAULT_PLAN,
+    };
+  }
+
+  /**
+   * Switches the user's plan tier. Writes `user_settings.plan` (our product data)
+   * then re-stamps the token claims from the new settings so the next refresh
+   * carries the new plan — and with it the ADR-112 entitlements. Echoes the new
+   * plan rather than the still-stale JWT claim, the client's source of truth until
+   * its token refreshes.
+   */
+  async changePlan(
+    identity: NormalizedIdentity,
+    user: AuthUser,
+    plan: PlanTier,
+  ): Promise<UserProfile> {
+    const settings = await this.userSettings.updatePlan(user.id, plan);
+    await this.metadataWriter.stamp(identity.externalId, {
+      internal_id: user.id,
+      ai_enabled: settings.ai_enabled,
+      plan: settings.plan,
+      ...(settings.movement_profile !== null && {
+        movement_profile: settings.movement_profile,
+      }),
+    });
+    return {
+      name: identity.name ?? '',
+      email: identity.email ?? '',
+      plan: settings.plan,
     };
   }
 
