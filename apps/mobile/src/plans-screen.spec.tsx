@@ -60,7 +60,7 @@ describe('PlansScreen', () => {
   it('switches plan optimistically, calls the gateway, and refreshes the token', async () => {
     const { getByLabelText } = render(<PlansScreen />);
 
-    fireEvent.press(getByLabelText('switch to explorer'));
+    fireEvent.press(getByLabelText('upgrade to explorer'));
 
     expect(mockSetLocalPlan).toHaveBeenCalledWith('explorer'); // optimistic, synchronous
     await waitFor(() => expect(mockChangePlan).toHaveBeenCalledWith({}, 'explorer'));
@@ -71,7 +71,7 @@ describe('PlansScreen', () => {
     mockChangePlan.mockRejectedValueOnce(new Error('boom'));
     const { getByLabelText } = render(<PlansScreen />);
 
-    fireEvent.press(getByLabelText('switch to local legend'));
+    fireEvent.press(getByLabelText('go legend'));
 
     expect(mockSetLocalPlan).toHaveBeenCalledWith('local_legend'); // optimistic
     await waitFor(() => expect(mockSetLocalPlan).toHaveBeenLastCalledWith('homebody')); // rollback

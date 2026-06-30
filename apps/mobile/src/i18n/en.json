@@ -283,7 +283,7 @@
       },
       "explorer": {
         "tagline": "it learns what you like",
-        "cta": "switch to explorer",
+        "cta": "upgrade to explorer",
         "features": {
           "saves": "save as many places as you want",
           "asks": "ask as much as you want",
@@ -295,7 +295,7 @@
       "local_legend": {
         "tagline": "for the ones who actually go",
         "lead": "everything in explorer, plus:",
-        "cta": "switch to local legend",
+        "cta": "go legend",
         "features": {
           "discover": "discover brand-new places beyond your list",
           "matched": "taste-matched picks for spots you've never been to",
