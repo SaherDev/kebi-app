@@ -220,6 +220,7 @@
     "saveName": "save",
     "subscription": "subscription",
     "yourPlan": "your plan",
+    "planActive": "active",
     "billing": "billing",
     "billingSub": "payment, invoices, cancel",
     "appearance": "appearance",
@@ -247,6 +248,69 @@
       "nameFailed": "couldn't save that — try again",
       "nuked": "your data's gone",
       "nukeFailed": "couldn't nuke that — try again"
+    }
+  },
+  "plans": {
+    "eyebrow": "plans",
+    "hero": "pick your vibe",
+    "subtitle": "free forever, or let kebi learn your taste. cancel anytime.",
+    "billing": {
+      "monthly": "monthly",
+      "yearly": "yearly",
+      "save": "save 20%"
+    },
+    "period": {
+      "forever": "forever",
+      "month": "/ month",
+      "year": "/ year"
+    },
+    "current": "current",
+    "popular": "most picked",
+    "currentCta": "your current plan",
+    "upgradeAction": "see plans",
+    "footnote": "cancel anytime, no questions.",
+    "tiers": {
+      "homebody": {
+        "tagline": "your spots, sorted",
+        "cta": "switch to homebody",
+        "features": {
+          "saves": "save up to 10 places",
+          "asks": "3 asks a day",
+          "picks": "smart picks from everything you've saved",
+          "noTaste": "no taste personalization",
+          "noDiscovery": "no new-place discovery"
+        }
+      },
+      "explorer": {
+        "tagline": "it learns what you like",
+        "cta": "switch to explorer",
+        "features": {
+          "saves": "save as many places as you want",
+          "asks": "ask as much as you want",
+          "taste": "a taste model that's truly yours — picks tuned to you",
+          "sharper": "gets sharper every time you save",
+          "savedOnly": "your saved places only"
+        }
+      },
+      "local_legend": {
+        "tagline": "for the ones who actually go",
+        "lead": "everything in explorer, plus:",
+        "cta": "switch to local legend",
+        "features": {
+          "discover": "discover brand-new places beyond your list",
+          "matched": "taste-matched picks for spots you've never been to",
+          "model": "our smartest, deepest-thinking model"
+        }
+      }
+    },
+    "error": "couldn't load plans",
+    "toast": {
+      "planChanged": "you're on {{plan}} now",
+      "planFailed": "couldn't switch plans — try again"
+    },
+    "limitReached": {
+      "save": "you've hit your save limit",
+      "daily": "you've used all your asks today"
     }
   },
   "auth": {

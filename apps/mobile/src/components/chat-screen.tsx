@@ -36,6 +36,7 @@ import { getDeviceLocation } from '../lib/location';
 import { formatClockTime } from '../lib/format-relative-time';
 import { triggerHaptic } from '../lib/haptics';
 import { useToast } from './toast-context';
+import { useUpgradeToast } from './use-upgrade-toast';
 import { useTranslation } from '../i18n/context';
 
 interface ChatScreenProps {
@@ -66,6 +67,7 @@ export function ChatScreen({ onClose, seed }: ChatScreenProps) {
   const softColor = useUnstableNativeVariable('--text-soft') ?? undefined;
   const client = useApiClient();
   const { show: showToast, reserveTopAnchor } = useToast();
+  const showUpgrade = useUpgradeToast();
   const transcript = useChatTranscript();
   const { turns, startTurn, upsertStep, setMessage, addToolResult, finishTurn, stopTurn, failTurn, toggleCollapse } =
     transcript;
@@ -160,8 +162,14 @@ export function ChatScreen({ onClose, seed }: ChatScreenProps) {
             finished = true;
             break;
           case 'error':
-            // The frame's `detail` is an internal log string — show a generic line.
-            failTurn(kebiKey, t('chat.error'));
+            if (ev.data.detail === 'daily_limit_reached') {
+              // Daily consult quota spent (ADR-112) — fail the turn and point to plans.
+              failTurn(kebiKey, t('plans.limitReached.daily'));
+              showUpgrade(t('plans.limitReached.daily'));
+            } else {
+              // The frame's `detail` is an internal log string — show a generic line.
+              failTurn(kebiKey, t('chat.error'));
+            }
             finished = true;
             break;
         }

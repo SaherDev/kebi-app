@@ -16,9 +16,20 @@ import { triggerHaptic, type HapticEvent } from '../lib/haptics';
 import { useApiClient } from '../api/hooks';
 import { sendSignal } from '../api/signal';
 import { saveUserPlace, deleteUserPlace } from '../api/library';
+import { HttpError } from '../api/transports/fetch.transport';
 import { useToast } from './toast-context';
+import { useUpgradeToast } from './use-upgrade-toast';
 import { useSavedPlaces } from './saved-places-context';
 import { useTranslation } from '../i18n/context';
+
+/** A save blocked by the free-tier library cap (ADR-112 — 403 save_limit_reached). */
+function isSaveLimitReached(err: unknown): boolean {
+  return (
+    err instanceof HttpError &&
+    err.status === 403 &&
+    err.body?.detail === 'save_limit_reached'
+  );
+}
 
 /**
  * The chat recommendation card. Flattens the turn's tool results into candidates,
@@ -39,6 +50,7 @@ export function ChatPlaceCard({ toolResults }: { toolResults: readonly SseToolRe
   const { t } = useTranslation();
   const client = useApiClient();
   const { show: showToast } = useToast();
+  const showUpgrade = useUpgradeToast();
   const savedPlaces = useSavedPlaces();
   const [expanded, setExpanded] = useState(true);
   // Which candidate is currently the recommendation — tapping a swap promotes it.
@@ -95,12 +107,17 @@ export function ChatPlaceCard({ toolResults }: { toolResults: readonly SseToolRe
     void (async () => {
       try {
         await op();
-      } catch {
-        showToast({
-          text: t('chat.placeCard.toast.error'),
-          tone: 'danger',
-          action: { label: t('chat.placeCard.toast.retry'), onPress: retry },
-        });
+      } catch (err) {
+        if (isSaveLimitReached(err)) {
+          // Retrying won't help a full library — send them to plans instead.
+          showUpgrade(t('plans.limitReached.save'));
+        } else {
+          showToast({
+            text: t('chat.placeCard.toast.error'),
+            tone: 'danger',
+            action: { label: t('chat.placeCard.toast.retry'), onPress: retry },
+          });
+        }
       } finally {
         end(key);
       }

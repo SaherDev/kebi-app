@@ -1,6 +1,6 @@
-import { useState, type ReactNode } from 'react';
+import { useCallback, useState, type ReactNode } from 'react';
 import { ScrollView, View, Text, Pressable } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import Constants from 'expo-constants';
 import { PLAN_TIERS } from '@kebi-app/shared';
 import { ScreenScaffold } from '../components/screen-scaffold';
@@ -8,6 +8,7 @@ import { TopBar } from '../components/top-bar';
 import { IconButton } from '../components/icon-button';
 import { Icon, type IconName } from '../components/icon';
 import { Group } from '../components/group';
+import { StatusPill } from '../components/status-pill';
 import { ProfileAvatar } from '../components/profile-avatar';
 import { SegmentedControl } from '../components/segmented-control';
 import { EditNameSheet } from '../components/edit-name-sheet';
@@ -101,7 +102,15 @@ export default function SettingsScreen() {
   const { t } = useTranslation();
   const router = useRouter();
   const { signOut } = useAuth();
-  const { profile, setLocalName } = useProfile();
+  const { profile, setLocalName, refetch } = useProfile();
+  // Re-read the profile when settings regains focus (e.g. returning from the
+  // plans screen after a switch) so the plan row reflects the new tier. The
+  // in-screen name edit doesn't navigate, so this never races that flow.
+  useFocusEffect(
+    useCallback(() => {
+      refetch();
+    }, [refetch]),
+  );
   const { choice, setChoice } = useThemePreference();
   const toast = useToast();
   const client = useApiClient();
@@ -188,7 +197,12 @@ export default function SettingsScreen() {
             label={t('settings.yourPlan')}
             sublabel={planMeta ? `${planMeta.label} · ${planMeta.price}` : undefined}
             onPress={() => router.push('/plans')}
-            trailing={<Icon name="chevron-right" size={14} className="text-text-soft" />}
+            trailing={
+              <View className="flex-row items-center gap-2">
+                {planMeta ? <StatusPill variant="warm">{t('settings.planActive')}</StatusPill> : null}
+                <Icon name="chevron-right" size={14} className="text-text-soft" />
+              </View>
+            }
           />
           {/* billing renders but is inert — no destination yet. */}
           <SettingsRow

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import type { PlanTier } from '@kebi-app/shared';
 import { useApiClient } from '../api/hooks';
 import { getProfile } from '../api/profile';
 import { UserProfile } from '../api/models/profile';
@@ -22,6 +23,8 @@ export interface UseProfile {
   refetch: () => void;
   /** Optimistically patch the displayed name after a successful edit. */
   setLocalName: (name: string) => void;
+  /** Optimistically patch the displayed plan after a successful switch. */
+  setLocalPlan: (plan: PlanTier) => void;
 }
 
 export function useProfile(): UseProfile {
@@ -39,6 +42,12 @@ export function useProfile(): UseProfile {
   const setLocalName = useCallback((name: string) => {
     setProfile((prev) =>
       prev ? new UserProfile({ name, email: prev.email, plan: prev.plan }) : prev,
+    );
+  }, []);
+
+  const setLocalPlan = useCallback((plan: PlanTier) => {
+    setProfile((prev) =>
+      prev ? new UserProfile({ name: prev.name, email: prev.email, plan }) : prev,
     );
   }, []);
 
@@ -65,5 +74,5 @@ export function useProfile(): UseProfile {
     };
   }, [nonce]);
 
-  return { profile, loading, error, refetch, setLocalName };
+  return { profile, loading, error, refetch, setLocalName, setLocalPlan };
 }
