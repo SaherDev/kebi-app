@@ -24,12 +24,12 @@ describe('ExtractController', () => {
     service.extract.mockResolvedValueOnce(body);
 
     const dto: ExtractRequestDto = { raw_input: 'a place' };
-    const user: AuthUser = { id: 'user_test_123', ai_enabled: true };
+    const user: AuthUser = { id: 'user_test_123', ai_enabled: true, plan: 'explorer' };
 
     const result = await controller.extract(user, dto);
 
     expect(service.extract).toHaveBeenCalledTimes(1);
-    expect(service.extract).toHaveBeenCalledWith('user_test_123', dto);
+    expect(service.extract).toHaveBeenCalledWith('user_test_123', dto, 'explorer');
     expect(result).toEqual(body);
   });
 });

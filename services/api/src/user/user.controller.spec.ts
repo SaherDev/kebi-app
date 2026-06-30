@@ -15,7 +15,7 @@ import type { UpdateUserPlaceDto } from './dto/update-user-place.dto';
 describe('UserController', () => {
   let controller: UserController;
   let service: jest.Mocked<UserService>;
-  const user: AuthUser = { id: 'user_test_123', ai_enabled: true };
+  const user: AuthUser = { id: 'user_test_123', ai_enabled: true, plan: 'explorer' };
 
   beforeEach(() => {
     service = {
@@ -68,7 +68,7 @@ describe('UserController', () => {
 
       const result = await controller.savePlace(user, dto);
 
-      expect(service.savePlace).toHaveBeenCalledWith('user_test_123', dto);
+      expect(service.savePlace).toHaveBeenCalledWith('user_test_123', dto, 'explorer');
       expect(result).toBe(saved);
     });
   });

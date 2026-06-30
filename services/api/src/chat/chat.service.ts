@@ -42,6 +42,7 @@ export class ChatService {
       user.id,
       payload,
       controller.signal,
+      user.plan,
     );
 
     res.setHeader('Content-Type', 'text/event-stream');

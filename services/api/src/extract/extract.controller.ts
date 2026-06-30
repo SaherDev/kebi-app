@@ -19,6 +19,6 @@ export class ExtractController {
     @CurrentUser() user: AuthUser,
     @Body() dto: ExtractRequestDto
   ): Promise<ExtractPlaceResponse> {
-    return this.extractService.extract(user.id, dto);
+    return this.extractService.extract(user.id, dto, user.plan);
   }
 }
