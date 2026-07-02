@@ -56,6 +56,20 @@ describe('SaveSheet', () => {
     expect(opacityOf(getByLabelText('saving'))).toMatchObject({ opacity: 0.4 });
   });
 
+  it('initialValue → seeds the draft from a shared link, active CTA submits it', () => {
+    // The iOS share flow opens the sheet pre-filled with the shared URL.
+    const onSubmit = jest.fn();
+    const sharedUrl = 'https://www.tiktok.com/@x/video/1';
+    const { getByLabelText, getByText } = render(
+      <SaveSheet open onClose={noop} onSubmit={onSubmit} initialValue={sharedUrl} />,
+    );
+    const cta = getByLabelText('save it');
+    expect(opacityOf(cta)).toMatchObject({ opacity: 1 });
+    expect(getByText('looks like a tiktok link')).toBeTruthy();
+    fireEvent.press(cta);
+    expect(onSubmit).toHaveBeenCalledWith(sharedUrl);
+  });
+
   it('shows the source meta hint for a tiktok link, not for a plain name', () => {
     const { getByText, queryByText, getByPlaceholderText } = render(
       <SaveSheet open onClose={noop} onSubmit={noop} />,

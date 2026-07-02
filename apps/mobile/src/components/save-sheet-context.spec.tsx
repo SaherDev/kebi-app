@@ -33,7 +33,12 @@ jest.mock('./save-sheet', () => ({
 
 function Opener() {
   const { open } = useSaveSheet();
-  return <Pressable accessibilityLabel="open" onPress={open} />;
+  return <Pressable accessibilityLabel="open" onPress={() => open()} />;
+}
+
+function PrefillOpener({ url }: { url: string }) {
+  const { open } = useSaveSheet();
+  return <Pressable accessibilityLabel="open-prefill" onPress={() => open(url)} />;
 }
 
 function renderProvider() {
@@ -77,6 +82,23 @@ describe('SaveSheetProvider extract wiring', () => {
       expect.objectContaining({ tone: 'success', text: 'saved Coco Tam' }),
     );
     expect(mockSheet.props.open).toBe(false);
+  });
+
+  it('open() → empty draft; open(url) → seeds initialValue for the iOS share flow', () => {
+    const url = 'https://www.tiktok.com/@x/video/1';
+    const { getByLabelText } = render(
+      <SaveSheetProvider>
+        <Opener />
+        <PrefillOpener url={url} />
+      </SaveSheetProvider>,
+    );
+
+    fireEvent.press(getByLabelText('open'));
+    expect(mockSheet.props.open).toBe(true);
+    expect(mockSheet.props.initialValue).toBe('');
+
+    fireEvent.press(getByLabelText('open-prefill'));
+    expect(mockSheet.props.initialValue).toBe(url);
   });
 
   it('many results → success toast names the count', async () => {

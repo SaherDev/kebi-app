@@ -46,6 +46,11 @@ interface SaveSheetProps {
   onClose: () => void;
   onSubmit: (text: string) => void;
   status?: SaveSheetStatus;
+  /**
+   * Seed text for the draft when the sheet opens — used by the iOS share flow to
+   * pre-fill the shared link. Omitted for the in-app save trigger (empty draft).
+   */
+  initialValue?: string;
 }
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
@@ -59,7 +64,13 @@ const CLOSE_VELOCITY = 800;
 // The pan only takes over after this much downward travel, so the textarea is usable.
 const PAN_ACTIVATE_Y = 10;
 
-export function SaveSheet({ open, onClose, onSubmit, status = 'idle' }: SaveSheetProps) {
+export function SaveSheet({
+  open,
+  onClose,
+  onSubmit,
+  status = 'idle',
+  initialValue = '',
+}: SaveSheetProps) {
   const { t } = useTranslation();
   const { reserveTopAnchor } = useToast();
   const insets = useSafeAreaInsets();
@@ -67,7 +78,7 @@ export function SaveSheet({ open, onClose, onSubmit, status = 'idle' }: SaveShee
   const softColor = useUnstableNativeVariable('--text-soft') ?? undefined;
 
   const [mounted, setMounted] = useState(open);
-  const [value, setValue] = useState('');
+  const [value, setValue] = useState(initialValue);
   const scrim = useSharedValue(0);
   const translateY = useSharedValue(height);
   const keyboard = useAnimatedKeyboard();
@@ -85,10 +96,12 @@ export function SaveSheet({ open, onClose, onSubmit, status = 'idle' }: SaveShee
     return reserveTopAnchor();
   }, [mounted, reserveTopAnchor]);
 
-  // Each open starts a fresh draft (kebi-save-sheet-empty state).
+  // Each open starts a fresh draft — empty for the in-app trigger, or seeded with
+  // the shared link when opened from the iOS share sheet (kebi-save-sheet-empty
+  // becomes a filled state when initialValue is present).
   useEffect(() => {
-    if (open) setValue('');
-  }, [open]);
+    if (open) setValue(initialValue);
+  }, [open, initialValue]);
 
   // Entrance: scrim fades in, sheet springs up from the bottom.
   useEffect(() => {
