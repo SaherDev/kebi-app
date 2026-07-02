@@ -17,6 +17,16 @@ Format:
 
 ---
 
+## ADR-048: Mobile ships a native dev/prod build; iOS share extension feeds the existing save flow
+
+**Date:** 2026-07-02\
+**Status:** accepted\
+**Context:** The design system defines a "save from the share sheet" trigger — a user shares a TikTok/Instagram link from iOS straight into Kebi. A share extension is native app-extension code, which **Expo Go cannot host**, so the app had to stop running inside Expo Go and become its own native build. This is a one-way workflow change with real cost (device builds need Apple credentials), so it warrants a recorded decision rather than an implicit migration.\
+**Decision:** Move `apps/mobile` off Expo Go to a **native build** — a dev client for day-to-day work, and the same native shell (JS bundled) for production. Native projects are **generated, not committed**: Continuous Native Generation owns `ios/`/`android/` (gitignored), and all native config lives in `app.json` + config plugins. The iOS **Share Extension** is provided by a config plugin (`expo-share-intent`) in **redirect-to-host-app** mode: a shared link opens Kebi and pre-fills the **existing** save sheet, which the user confirms — reusing the current `extract` → save → toast path verbatim. No custom in-extension UI, no new gateway/kebi endpoint, no new client data path. The gateway/AI contract is untouched (Constitution §V preserved). Identity stays server-side (ADR-044): a share into a signed-out app routes through the normal auth gate first.\
+**Consequences:** Day-to-day development now runs the Kebi dev client instead of Expo Go, and the app carries committed native config it didn't before — a `bundleIdentifier` (`app.kebi`) and an App Group (`group.app.kebi`) that a device build's credentials must match. Native code is reproducible from config (regenerate via prebuild), so the gitignored `ios/`/`android/` are disposable. Adding native capabilities later (widgets, deep links, notifications) now follows the same config-plugin path. The end user gets the share extension for free — iOS registers it at install with zero setup; there is no product-surface change beyond the new share target.
+
+---
+
 ## ADR-047: One shared kebi transport, injected directly; only chat is an AI concern
 
 **Date:** 2026-06-10\

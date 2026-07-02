@@ -16,6 +16,7 @@ import {
 } from "@expo-google-fonts/inter";
 
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { ShareIntentProvider } from "expo-share-intent";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { Stack, useRouter, useSegments } from "expo-router";
 import { StatusBar } from "expo-status-bar";
@@ -32,6 +33,7 @@ import { NoteSheetProvider } from "../components/note-sheet-context";
 import { ChatProvider } from "../components/chat-context";
 import { ChatTranscriptProvider } from "../components/chat-transcript-context";
 import { ContextMenuProvider } from "../components/context-menu/context-menu-context";
+import { ShareIntentReceiver } from "../components/share-intent-receiver";
 import { Splash } from "../components/splash";
 import { AuthProvider, useAuth } from "../auth/auth-context";
 import { getStoredTheme } from "../lib/theme-preference";
@@ -106,6 +108,10 @@ export default function RootLayout() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
+      {/* ShareIntentProvider listens for the iOS "Save to Kebi" share extension;
+          ShareIntentReceiver (under SaveSheetProvider) turns a shared link into a
+          pre-filled save sheet. */}
+      <ShareIntentProvider>
       <I18nProvider>
         <SafeAreaProvider>
           <AuthProvider>
@@ -134,6 +140,8 @@ export default function RootLayout() {
                   <StatusBar style={colorScheme === "dark" ? "light" : "dark"} />
                   {/* Redirects between the login group and the app once auth resolves. */}
                   <AuthGate />
+                  {/* Turns an incoming iOS share into a pre-filled save sheet. */}
+                  <ShareIntentReceiver />
                   {/* ChatTranscriptProvider sits ABOVE ChatProvider so the
                       conversation survives the chat overlay close→reopen (the
                       overlay unmounts its child); it resets on app restart. */}
@@ -159,6 +167,7 @@ export default function RootLayout() {
           </AuthProvider>
         </SafeAreaProvider>
       </I18nProvider>
+      </ShareIntentProvider>
     </GestureHandlerRootView>
   );
 }

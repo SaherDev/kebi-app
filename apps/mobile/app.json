@@ -9,7 +9,8 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "app.kebi"
     },
     "android": {
       "adaptiveIcon": {
@@ -45,6 +46,17 @@
         "expo-location",
         {
           "locationWhenInUsePermission": "kebi uses your location to suggest places near you."
+        }
+      ],
+      [
+        "expo-share-intent",
+        {
+          "iosActivationRules": {
+            "NSExtensionActivationSupportsWebURLWithMaxCount": 1,
+            "NSExtensionActivationSupportsWebPageWithMaxCount": 1
+          },
+          "iosShareExtensionName": "Save to Kebi",
+          "iosAppGroupIdentifier": "group.app.kebi"
         }
       ]
     ]

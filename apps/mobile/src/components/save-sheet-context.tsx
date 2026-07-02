@@ -21,7 +21,8 @@ import { useSavedPlaces } from './saved-places-context';
  * fix and retry (domain `failed` rides a 200; transport/validation errors throw).
  */
 interface SaveSheetContextValue {
-  open: () => void;
+  /** Raise the save sheet. `prefill` seeds the draft (iOS share flow); omit for an empty draft. */
+  open: (prefill?: string) => void;
 }
 
 // No-op fallback so useSaveSheet() outside a provider is harmless (matches useToast).
@@ -36,9 +37,13 @@ export function SaveSheetProvider({ children }: { children: ReactNode }) {
   const { add } = useSavedPlaces();
 
   const [isOpen, setIsOpen] = useState(false);
+  const [prefill, setPrefill] = useState('');
   const [status, setStatus] = useState<'idle' | 'saving'>('idle');
 
-  const open = useCallback(() => setIsOpen(true), []);
+  const open = useCallback((prefillText?: string) => {
+    setPrefill(prefillText ?? '');
+    setIsOpen(true);
+  }, []);
   const close = useCallback(() => setIsOpen(false), []);
 
   const handleSubmit = useCallback(
@@ -97,7 +102,13 @@ export function SaveSheetProvider({ children }: { children: ReactNode }) {
   return (
     <SaveSheetContext.Provider value={value}>
       {children}
-      <SaveSheet open={isOpen} onClose={close} onSubmit={handleSubmit} status={status} />
+      <SaveSheet
+        open={isOpen}
+        onClose={close}
+        onSubmit={handleSubmit}
+        status={status}
+        initialValue={prefill}
+      />
     </SaveSheetContext.Provider>
   );
 }
