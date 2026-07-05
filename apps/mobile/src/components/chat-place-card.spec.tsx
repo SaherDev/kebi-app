@@ -124,16 +124,22 @@ describe('ChatPlaceCard', () => {
 
   it('saves the place and flips the button to a saved state on "save it"', async () => {
     const tr = toolResult([
-      { place: place('Contact Tokyo', 'place_1', 'google:abc'), source: 'discovered', reason: null },
+      {
+        place: place('Contact Tokyo', 'place_1', 'google:abc'),
+        source: 'discovered',
+        reason: 'great deep house',
+      },
     ]);
     const { getByLabelText, getByText, queryByLabelText } = renderCard([tr]);
 
     fireEvent.press(getByLabelText('save it'));
 
+    // The consult reason rides along as the note (not persisted server-side).
     await waitFor(() =>
       expect(mockedSaveUserPlace).toHaveBeenCalledWith(expect.anything(), {
         place_core_id: 'place_1',
         recommendation_id: 'rec_1',
+        note: 'great deep house',
       }),
     );
     // The save button is replaced by the inert "saved" slot.

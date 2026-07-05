@@ -218,6 +218,24 @@ describe('UserService', () => {
       expect(result).toBe(saved);
     });
 
+    it('forwards the note (consult reason) when present', async () => {
+      (kebi.post as jest.Mock).mockResolvedValueOnce(saved);
+      const dto: SaveUserPlaceDto = {
+        place_core_id: 'place_1',
+        recommendation_id: 'rec_1',
+        note: 'great deep house',
+      };
+
+      await service.savePlace(USER_ID, dto, 'homebody');
+
+      expect(kebi.post).toHaveBeenCalledWith(
+        '/v1/user/places',
+        USER_ID,
+        { place_core_id: 'place_1', recommendation_id: 'rec_1', note: 'great deep house' },
+        'homebody'
+      );
+    });
+
     it('propagates a 404 (place_not_found) from the transport', async () => {
       const err = new Error('place_not_found');
       (kebi.post as jest.Mock).mockRejectedValueOnce(err);

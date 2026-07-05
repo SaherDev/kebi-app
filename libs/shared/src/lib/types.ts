@@ -245,6 +245,12 @@ export interface UpdateUserPlaceRequest {
 export interface SaveUserPlaceRequest {
   place_core_id: string;
   recommendation_id: string;
+  /**
+   * Free text stored on the save — typically the recommendation's reason the
+   * client is showing (the reason is not persisted server-side, so the client
+   * supplies it). Applied only on create; omit or `null` for no note.
+   */
+  note?: string | null;
 }
 
 // ── Home screen (greeting + recall) ─────────────────────────────────────────
