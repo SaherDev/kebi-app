@@ -15,6 +15,7 @@ export function makeSamplePlace(placeName: string, categories: PlaceCategory[]):
     place_name_aliases: [],
     categories,
     tags: [],
+    icon: null,
     location: null,
     created_at: null,
     refreshed_at: null,

@@ -17,6 +17,7 @@ const PLACE_CORE_FIXTURE = {
     { type: 'cuisine', value: 'Japanese', source: 'google' },
     { type: 'atmosphere', value: 'casual', source: 'llm' },
   ],
+  icon: '🍜',
   location: {
     lat: 13.778,
     lng: 100.541,
@@ -39,6 +40,14 @@ describe('PlaceCoreSchema', () => {
     expect(place.tags[0]).toBeInstanceOf(PlaceTag);
     expect(place.location).toBeInstanceOf(PlaceCoreLocation);
     expect(place.location?.city).toBe('Bangkok');
+    expect(place.icon).toBe('🍜');
+  });
+
+  it('defaults a missing icon to null (rollout window before kebi emits it)', () => {
+    const { icon, ...withoutIcon } = PLACE_CORE_FIXTURE;
+    const place = PlaceCoreSchema.parse(withoutIcon);
+
+    expect(place.icon).toBeNull();
   });
 
   it('accepts null id and null location (freshly-built / location-less places)', () => {

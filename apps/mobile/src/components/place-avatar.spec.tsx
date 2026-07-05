@@ -32,4 +32,15 @@ describe('PlaceAvatar', () => {
     const { getByText } = render(<PlaceAvatar categories={['cafe']} emoji="🍣" />);
     expect(getByText('🍣')).toBeTruthy();
   });
+
+  it('prefers the LLM-picked icon over the category default', () => {
+    const { getByText, queryByText } = render(<PlaceAvatar categories={['cafe']} icon="🗼" />);
+    expect(getByText('🗼')).toBeTruthy();
+    expect(queryByText(CATEGORY_EMOJI.cafe)).toBeNull();
+  });
+
+  it('falls back to the category mapping when icon is null', () => {
+    const { getByText } = render(<PlaceAvatar categories={['cafe']} icon={null} />);
+    expect(getByText(CATEGORY_EMOJI.cafe)).toBeTruthy();
+  });
 });

@@ -33,7 +33,7 @@ export function PlaceCard({ place, onPress }: PlaceCardProps) {
           accessibilityLabel={place.place_name}
           className={`flex-row items-center gap-2.5 rounded-large bg-surface px-3.5 py-3 ${PRESS}`}
         >
-          <PlaceAvatar categories={place.categories} size="row" label={place.place_name} />
+          <PlaceAvatar categories={place.categories} icon={place.icon} size="row" label={place.place_name} />
           <Text className="flex-1 text-body font-medium text-text" numberOfLines={1}>
             {place.place_name}
           </Text>

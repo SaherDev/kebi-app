@@ -61,6 +61,7 @@ export function LibraryPlaceCard({ view, highlight }: LibraryPlaceCardProps) {
       renderCard={() => (
         <PlaceCardBody
           categories={place.categories}
+          icon={place.icon}
           accessibilityLabel={title}
           name={
             <HighlightText

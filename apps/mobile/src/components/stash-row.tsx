@@ -49,7 +49,7 @@ export function StashRow({ view }: StashRowProps) {
       accessibilityLabel={title}
       className={`flex-row items-center gap-3 py-2.5 ${PRESS}`}
     >
-      <PlaceAvatar categories={place.categories} size="row" label={title} />
+      <PlaceAvatar categories={place.categories} icon={place.icon} size="row" label={title} />
       <View className="flex-1 gap-1">
         <Text className="text-body font-semibold text-text" numberOfLines={1}>
           {title}

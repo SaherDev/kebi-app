@@ -1,12 +1,26 @@
 import type { PlaceCore, SavedPlaceView } from "./types";
 import type { PlaceTag, PriceTag, TagType } from "./place-taxonomy";
 import { CARD_FACETS, CATEGORY_GROUP } from "./card-facets";
+import { CATEGORY_EMOJI, CATEGORY_EMOJI_FALLBACK } from "./category-emoji";
 
 /**
  * Pure presentation helpers for a saved place — shared so web and mobile render
  * the Library card identically. No i18n or UI imports: these return raw
  * values/keys, and the component formats (price → i18n, joins with `·`).
  */
+
+/**
+ * The place's avatar emoji: the LLM-picked `icon` when present (ADR-117), else
+ * the first category that maps to one (categories are ordered most-specific
+ * first, so a generic primary never hides a specific later category), else 📍.
+ */
+export function placeEmoji(place: Pick<PlaceCore, "icon" | "categories">): string {
+  return (
+    place.icon ??
+    place.categories.map((c) => CATEGORY_EMOJI[c]).find(Boolean) ??
+    CATEGORY_EMOJI_FALLBACK
+  );
+}
 
 /** snake_case tag/category value → spaced label ("hot_spring" → "hot spring"). */
 export function humanize(value: string): string {

@@ -2,13 +2,12 @@ import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import {
-  CATEGORY_EMOJI,
-  CATEGORY_EMOJI_FALLBACK,
   accessibilityLine,
   buildPlaceEyebrow,
   dietaryLine,
   otherTags,
   placeDisplayName,
+  placeEmoji,
   tagsOfType,
   type SavedPlaceView,
 } from '@kebi-app/shared';
@@ -98,7 +97,7 @@ function PlaceContent({ view, back }: { view: SavedPlaceView; back: React.ReactN
   }, [removed, router]);
 
   const { place } = view;
-  const emoji = CATEGORY_EMOJI[place.categories[0]] ?? CATEGORY_EMOJI_FALLBACK;
+  const emoji = placeEmoji(place);
   const title = placeDisplayName(view);
   const eyebrow = buildPlaceEyebrow(place);
   const dietary = dietaryLine(place);

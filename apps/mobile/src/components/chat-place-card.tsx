@@ -187,6 +187,7 @@ export function ChatPlaceCard({ toolResults }: { toolResults: readonly SseToolRe
   return (
     <PlaceCardBody
       categories={place.categories}
+      icon={place.icon}
       accessibilityLabel={place.place_name}
       name={
         <Text className="flex-1 text-body font-semibold text-text" numberOfLines={1}>
@@ -341,7 +342,7 @@ function SwapRow({
       className={`flex-row items-center gap-3 py-2.5 ${divided ? 'border-t border-surface-2' : ''} ${PRESS}`}
     >
       {/* Decorative — the Pressable labels the row, so the avatar needs no label. */}
-      <PlaceAvatar categories={place.categories} size="card" />
+      <PlaceAvatar categories={place.categories} icon={place.icon} size="card" />
       <View className="min-w-0 flex-1 gap-0.5">
         <Text className="text-[14px] font-semibold text-text" numberOfLines={1}>
           {place.place_name}

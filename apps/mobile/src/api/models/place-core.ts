@@ -94,6 +94,7 @@ export class PlaceCore implements PlaceCoreContract {
   readonly place_name_aliases: PlaceNameAliasContract[];
   readonly categories: PlaceCategory[];
   readonly tags: PlaceTagContract[];
+  readonly icon: string | null;
   readonly location: PlaceCoreLocationContract | null;
   readonly created_at: string | null;
   readonly refreshed_at: string | null;
@@ -105,6 +106,7 @@ export class PlaceCore implements PlaceCoreContract {
     this.place_name_aliases = p.place_name_aliases;
     this.categories = p.categories;
     this.tags = p.tags;
+    this.icon = p.icon;
     this.location = p.location;
     this.created_at = p.created_at;
     this.refreshed_at = p.refreshed_at;
@@ -121,6 +123,9 @@ export const PlaceCoreSchema = z
     // forward-compat; `z.custom` keeps the contract's `PlaceCategory` type.
     categories: z.array(z.custom<PlaceCategory>((v) => typeof v === 'string')),
     tags: z.array(PlaceTagSchema),
+    // LLM-picked place emoji (ADR-117). Missing key → null (rollout window
+    // before kebi emits it), same stance as LibraryResponse.total.
+    icon: z.string().nullable().default(null),
     location: PlaceCoreLocationSchema.nullable(),
     created_at: z.string().nullable(),
     refreshed_at: z.string().nullable(),

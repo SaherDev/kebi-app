@@ -78,6 +78,13 @@ export interface PlaceCore {
   place_name_aliases: PlaceNameAlias[];
   categories: PlaceCategory[];
   tags: PlaceTag[];
+  /**
+   * Single emoji for the place's identity (🗼, ⛲, 🌴), LLM-picked where an LLM
+   * already sees the place (ADR-117). Nullable by design — LLM-less paths
+   * (provider discovery) leave it `null`; the client falls back to the
+   * category→emoji mapping (see `placeEmoji`).
+   */
+  icon: string | null;
   location: PlaceCoreLocation | null;
   created_at: string | null;
   refreshed_at: string | null;

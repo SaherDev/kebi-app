@@ -88,6 +88,8 @@ const VARIANT: Record<PlaceCardVariant, VariantTokens> = {
 
 interface PlaceCardBodyProps {
   categories: PlaceCategory[];
+  /** LLM-picked place emoji (`PlaceCore.icon`); wins over the category default. */
+  icon?: string | null;
   /** Title — avatar label + header button a11y label. */
   accessibilityLabel: string;
   /** Rendered name node; must size itself `flex-1` (HighlightText / Text). */
@@ -106,6 +108,7 @@ interface PlaceCardBodyProps {
 
 export function PlaceCardBody({
   categories,
+  icon,
   accessibilityLabel,
   name,
   pills,
@@ -127,7 +130,7 @@ export function PlaceCardBody({
         accessibilityState={{ expanded }}
         className={`flex-row items-center ${v.headerGap} ${PRESS}`}
       >
-        <PlaceAvatar categories={categories} size={v.avatar} label={accessibilityLabel} />
+        <PlaceAvatar categories={categories} icon={icon} size={v.avatar} label={accessibilityLabel} />
         {name}
         <View style={{ transform: [{ rotate: expanded ? '90deg' : '0deg' }] }}>
           <Icon name="chevron-right" size={16} className="text-text-soft" />
