@@ -1,0 +1,1456 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Kebi Design Tokens</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    /* ============================================
+       COLOR TOKENS — LIGHT
+       ============================================ */
+    --bg: #FAFAF9;
+    --surface: #F1F1EF;
+    --surface-2: #E8E8E5;
+    --text: #1A1A1A;
+    --text-muted: #8A8A87;
+    --text-soft: #B5B5B1;
+
+    /* Semantic */
+    --success: #4A7C3A;
+    --like: #C2410C;
+    --warn: #B45309;
+    --danger: #D14343;
+
+    /* Status pill backgrounds */
+    --pill-green-bg: #E8F2E1;
+    --pill-warm-bg: #FEE4D4;
+    --pill-amber-bg: #FEF3C7;
+    --pill-danger-bg: #FCEEEE;
+
+    /* Mascot */
+    --mascot-body: #D4B891;
+    --mascot-shadow: #8B7355;
+    --mascot-belly: #F5EBD3;
+  }
+
+  body.dark {
+    --bg: #13110F;
+    --surface: #1C1A17;
+    --surface-2: #26231F;
+    --text: #F5F1EA;
+    --text-muted: #9A938A;
+    --text-soft: #6E6862;
+    --success: #A8C293;
+    --like: #E8B894;
+    --warn: #E5C078;
+    --danger: #E89090;
+    --pill-green-bg: #1F2E1A;
+    --pill-warm-bg: #3A1F12;
+    --pill-amber-bg: #3A2A0E;
+    --pill-danger-bg: #3A1818;
+  }
+
+  html, body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+    transition: background 200ms;
+  }
+
+  body.dark { background: #0A0908; }
+
+  .page {
+    max-width: 980px;
+    margin: 0 auto;
+    padding: 56px 32px 96px;
+  }
+
+  /* Header */
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-bottom: 32px;
+    border-bottom: 1px solid var(--surface-2);
+    margin-bottom: 48px;
+  }
+
+  .header-title {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .mascot-mini {
+    width: 36px;
+    height: 36px;
+  }
+
+  .header h1 {
+    font-size: 24px;
+    font-weight: 700;
+    letter-spacing: -0.025em;
+    color: var(--text);
+  }
+
+  .header-meta {
+    font-size: 12px;
+    color: var(--text-muted);
+    letter-spacing: -0.005em;
+  }
+
+  /* Theme toggle */
+  .theme-toggle {
+    display: flex;
+    background: var(--surface);
+    border-radius: 999px;
+    padding: 3px;
+  }
+
+  .theme-toggle button {
+    padding: 6px 12px;
+    background: transparent;
+    border: none;
+    border-radius: 999px;
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-muted);
+    cursor: pointer;
+    letter-spacing: -0.005em;
+  }
+
+  .theme-toggle button.active {
+    background: var(--text);
+    color: var(--bg);
+  }
+
+  /* Section */
+  .section {
+    margin-bottom: 56px;
+  }
+
+  .section-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--surface-2);
+  }
+
+  .section-title {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-soft);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .section-count {
+    font-size: 12px;
+    color: var(--text-soft);
+    letter-spacing: -0.005em;
+  }
+
+  .section-h2 {
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: -0.025em;
+    color: var(--text);
+    margin-bottom: 8px;
+  }
+
+  .section-desc {
+    font-size: 14px;
+    color: var(--text-muted);
+    letter-spacing: -0.005em;
+    line-height: 1.5;
+    max-width: 640px;
+    margin-bottom: 24px;
+  }
+
+  /* Token grid */
+  .grid {
+    display: grid;
+    gap: 12px;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  }
+
+  .grid.three { grid-template-columns: repeat(3, 1fr); }
+  .grid.two { grid-template-columns: repeat(2, 1fr); }
+
+  /* Color swatch card */
+  .swatch {
+    background: var(--surface);
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid var(--surface-2);
+  }
+
+  .swatch-color {
+    height: 88px;
+    border-bottom: 1px solid var(--surface-2);
+  }
+
+  .swatch-info {
+    padding: 12px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .swatch-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+    letter-spacing: -0.005em;
+  }
+
+  .swatch-token {
+    font-family: 'SF Mono', Menlo, Consolas, monospace;
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+
+  .swatch-hex {
+    font-family: 'SF Mono', Menlo, Consolas, monospace;
+    font-size: 11px;
+    color: var(--text-soft);
+  }
+
+  /* Type sample */
+  .type-row {
+    background: var(--surface);
+    border-radius: 12px;
+    padding: 20px;
+    border: 1px solid var(--surface-2);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .type-row + .type-row { margin-top: 8px; }
+
+  .type-meta {
+    display: flex;
+    gap: 12px;
+    align-items: baseline;
+  }
+
+  .type-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-soft);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .type-spec {
+    font-family: 'SF Mono', Menlo, Consolas, monospace;
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+
+  .type-sample {
+    color: var(--text);
+  }
+
+  /* Spacing */
+  .spacing-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 12px 14px;
+    background: var(--surface);
+    border-radius: 10px;
+    border: 1px solid var(--surface-2);
+  }
+
+  .spacing-row + .spacing-row { margin-top: 6px; }
+
+  .spacing-bar {
+    background: var(--text);
+    height: 14px;
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+
+  .spacing-info {
+    display: flex;
+    gap: 12px;
+    align-items: baseline;
+  }
+
+  .spacing-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+    letter-spacing: -0.005em;
+  }
+
+  .spacing-token {
+    font-family: 'SF Mono', Menlo, Consolas, monospace;
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+
+  /* Radius */
+  .radius-row {
+    background: var(--surface);
+    border: 1px solid var(--surface-2);
+    padding: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .radius-shape {
+    width: 64px;
+    height: 64px;
+    background: var(--text);
+  }
+
+  .radius-info {
+    text-align: center;
+  }
+
+  .radius-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  .radius-token {
+    font-family: 'SF Mono', Menlo, Consolas, monospace;
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+
+  /* Component preview */
+  .component-row {
+    background: var(--surface);
+    border-radius: 12px;
+    border: 1px solid var(--surface-2);
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .component-row + .component-row { margin-top: 12px; }
+
+  .component-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+    letter-spacing: -0.005em;
+  }
+
+  .component-desc {
+    font-size: 12px;
+    color: var(--text-muted);
+    letter-spacing: -0.005em;
+    line-height: 1.5;
+  }
+
+  .component-preview {
+    padding: 24px;
+    background: var(--bg);
+    border-radius: 10px;
+    border: 1px solid var(--surface-2);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: center;
+  }
+
+  /* Pills */
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: -0.005em;
+  }
+
+  .pill::before {
+    content: '';
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+  }
+
+  .pill.green { background: var(--pill-green-bg); color: var(--success); }
+  .pill.green::before { background: var(--success); }
+  .pill.warm { background: var(--pill-warm-bg); color: var(--like); }
+  .pill.warm::before { background: var(--like); }
+  .pill.amber { background: var(--pill-amber-bg); color: var(--warn); }
+  .pill.amber::before { background: var(--warn); }
+  .pill.danger { background: var(--pill-danger-bg); color: var(--danger); }
+  .pill.danger::before { background: var(--danger); }
+
+  /* Buttons */
+  .btn {
+    padding: 9px 16px;
+    border-radius: 12px;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    letter-spacing: -0.005em;
+  }
+
+  .btn.primary {
+    background: var(--text);
+    color: var(--bg);
+  }
+
+  .btn.outlined {
+    background: transparent;
+    color: var(--text);
+    border: 1.5px solid var(--surface-2);
+  }
+
+  .btn.danger {
+    background: var(--danger);
+    color: white;
+  }
+
+  /* AI button */
+  .ai-btn {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: white;
+    border: 1px solid var(--surface-2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+  }
+
+  body.dark .ai-btn {
+    background: var(--text);
+    border: none;
+  }
+
+  .ai-btn svg {
+    width: 42px;
+    height: 42px;
+  }
+
+  /* Group container */
+  .group-demo {
+    background: var(--surface);
+    border-radius: 14px;
+    padding: 12px;
+    width: 100%;
+    max-width: 380px;
+    border: 1px solid var(--surface-2);
+  }
+
+  .group-demo-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 4px;
+    font-size: 14px;
+  }
+
+  .group-demo-row + .group-demo-row { border-top: 1px solid var(--surface-2); }
+
+  .demo-avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 7px;
+    background: var(--surface-2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    line-height: 1;
+  }
+
+  .demo-title {
+    flex: 1;
+    font-weight: 500;
+    color: var(--text);
+    letter-spacing: -0.005em;
+  }
+
+  /* Toast */
+  .toast-demo {
+    background: #1A1A1A;
+    color: #F5F1EA;
+    border-radius: 14px;
+    padding: 10px 14px;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: -0.005em;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.18);
+  }
+
+  body.dark .toast-demo {
+    background: #F5F1EA;
+    color: #1A1A1A;
+  }
+
+  .toast-demo .check {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: #1F2E1A;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  body.dark .toast-demo .check {
+    background: #DCEAD3;
+  }
+
+  .toast-demo .check svg {
+    width: 12px;
+    height: 12px;
+    stroke: #A8C293;
+    stroke-width: 2.2;
+    fill: none;
+  }
+
+  body.dark .toast-demo .check svg {
+    stroke: #4A7C3A;
+  }
+
+  /* Motion */
+  .motion-row {
+    display: grid;
+    grid-template-columns: 140px 1fr 140px;
+    gap: 16px;
+    align-items: center;
+    padding: 14px;
+    background: var(--surface);
+    border-radius: 10px;
+    border: 1px solid var(--surface-2);
+  }
+
+  .motion-row + .motion-row { margin-top: 6px; }
+
+  .motion-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  .motion-spec {
+    font-family: 'SF Mono', Menlo, Consolas, monospace;
+    font-size: 11px;
+    color: var(--text-muted);
+    text-align: right;
+  }
+
+  .motion-track {
+    height: 24px;
+    background: var(--bg);
+    border-radius: 999px;
+    position: relative;
+    overflow: hidden;
+    border: 1px solid var(--surface-2);
+  }
+
+  .motion-dot {
+    position: absolute;
+    top: 4px;
+    left: 4px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--text);
+  }
+
+  .motion-row[data-curve="ease-out"] .motion-dot { animation: m-ease-out 1.6s ease-out infinite; }
+  .motion-row[data-curve="ease-in-out"] .motion-dot { animation: m-ease-out 1.6s ease-in-out infinite; }
+  .motion-row[data-curve="spring"] .motion-dot { animation: m-ease-out 1.6s cubic-bezier(0.34, 1.56, 0.64, 1) infinite; }
+  .motion-row[data-curve="linear"] .motion-dot { animation: m-ease-out 1.6s linear infinite; }
+
+  @keyframes m-ease-out {
+    0%, 100% { left: 4px; }
+    50% { left: calc(100% - 20px); }
+  }
+
+  /* Tag / chip variants */
+  .chip {
+    padding: 6px 12px;
+    border-radius: 999px;
+    background: var(--surface-2);
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text);
+    letter-spacing: -0.005em;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .chip.feature {
+    background: transparent;
+    border: 1px solid var(--surface-2);
+    padding: 5px 10px;
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+
+  /* Mascot block */
+  .mascot-stage {
+    background: var(--surface);
+    border: 1px solid var(--surface-2);
+    border-radius: 14px;
+    padding: 24px;
+    display: flex;
+    align-items: center;
+    gap: 24px;
+  }
+
+  .mascot-large { width: 96px; height: 96px; flex-shrink: 0; }
+
+  .mascot-info {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .mascot-info-name {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text);
+    letter-spacing: -0.015em;
+  }
+
+  .mascot-info-spec {
+    font-family: 'SF Mono', Menlo, Consolas, monospace;
+    font-size: 11px;
+    color: var(--text-muted);
+    line-height: 1.6;
+  }
+
+  /* Iconography */
+  .icon-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 12px 14px;
+    background: var(--surface);
+    border-radius: 10px;
+    border: 1px solid var(--surface-2);
+  }
+
+  .icon-row + .icon-row { margin-top: 6px; }
+
+  .icon-sample {
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    background: var(--bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .icon-sample svg {
+    stroke: var(--text);
+    fill: none;
+  }
+
+  /* Footer */
+  .footer {
+    margin-top: 80px;
+    padding-top: 32px;
+    border-top: 1px solid var(--surface-2);
+    font-size: 12px;
+    color: var(--text-soft);
+    text-align: center;
+    letter-spacing: -0.005em;
+    line-height: 1.6;
+  }
+
+  .footer code {
+    font-family: 'SF Mono', Menlo, Consolas, monospace;
+    background: var(--surface);
+    padding: 2px 6px;
+    border-radius: 4px;
+    color: var(--text-muted);
+  }
+</style>
+</head>
+<body>
+
+<div class="page">
+
+  <div class="header">
+    <div class="header-title">
+      <svg class="mascot-mini" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+        <ellipse cx="32" cy="38" rx="20" ry="20" fill="#D4B891"/>
+        <ellipse cx="32" cy="42" rx="13" ry="13" fill="#F5EBD3"/>
+        <ellipse cx="13" cy="34" rx="3.5" ry="6" fill="#A89070" transform="rotate(-25 13 34)"/>
+        <ellipse cx="51" cy="34" rx="3.5" ry="6" fill="#A89070" transform="rotate(25 51 34)"/>
+        <ellipse cx="22" cy="36" rx="3" ry="2" fill="#E8B894" opacity="0.6"/>
+        <ellipse cx="42" cy="36" rx="3" ry="2" fill="#E8B894" opacity="0.6"/>
+        <circle cx="25" cy="30" r="3.5" fill="white"/>
+        <circle cx="39" cy="30" r="3.5" fill="white"/>
+        <circle cx="25" cy="30" r="1.7" fill="#1A1A1A"/>
+        <circle cx="39" cy="30" r="1.7" fill="#1A1A1A"/>
+        <path d="M30 33 L34 33 L32 36 Z" fill="#C87A4A"/>
+        <path d="M30 14 Q32 10 34 14" stroke="#8B7355" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+      </svg>
+      <div>
+        <h1>Kebi Design Tokens</h1>
+        <div class="header-meta">v0.4.2 — single source of truth for the design system</div>
+      </div>
+    </div>
+    <div class="theme-toggle" id="theme-toggle">
+      <button class="active" data-theme="light">light</button>
+      <button data-theme="dark">dark</button>
+    </div>
+  </div>
+
+  <!-- ============================================
+       1. COLORS — CANVAS
+       ============================================ -->
+  <div class="section">
+    <div class="section-head">
+      <span class="section-title">01 — colors</span>
+      <span class="section-count">canvas</span>
+    </div>
+    <h2 class="section-h2">canvas</h2>
+    <p class="section-desc">three layers of warm paper: background, surface (cards, pills), and surface-2 (dividers, nested). Light mode is candlelit paper. Dark mode is warm near-black, never pure #000.</p>
+
+    <div class="grid">
+      <div class="swatch">
+        <div class="swatch-color" style="background: var(--bg);"></div>
+        <div class="swatch-info">
+          <span class="swatch-name">background</span>
+          <span class="swatch-token">--bg</span>
+          <span class="swatch-hex">#FAFAF9 / #13110F</span>
+        </div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background: var(--surface);"></div>
+        <div class="swatch-info">
+          <span class="swatch-name">surface</span>
+          <span class="swatch-token">--surface</span>
+          <span class="swatch-hex">#F1F1EF / #1C1A17</span>
+        </div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background: var(--surface-2);"></div>
+        <div class="swatch-info">
+          <span class="swatch-name">surface-2</span>
+          <span class="swatch-token">--surface-2</span>
+          <span class="swatch-hex">#E8E8E5 / #26231F</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================
+       2. COLORS — TEXT
+       ============================================ -->
+  <div class="section">
+    <div class="section-head">
+      <span class="section-title">02 — colors</span>
+      <span class="section-count">text</span>
+    </div>
+    <h2 class="section-h2">text</h2>
+    <p class="section-desc">three text weights based on hierarchy. text is the primary copy. muted is meta, sublabels, secondary info. soft is timestamps, eyebrow labels, decorative.</p>
+
+    <div class="grid">
+      <div class="swatch">
+        <div class="swatch-color" style="background: var(--text);"></div>
+        <div class="swatch-info">
+          <span class="swatch-name">text</span>
+          <span class="swatch-token">--text</span>
+          <span class="swatch-hex">#1A1A1A / #F5F1EA</span>
+        </div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background: var(--text-muted);"></div>
+        <div class="swatch-info">
+          <span class="swatch-name">text-muted</span>
+          <span class="swatch-token">--text-muted</span>
+          <span class="swatch-hex">#8A8A87 / #9A938A</span>
+        </div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background: var(--text-soft);"></div>
+        <div class="swatch-info">
+          <span class="swatch-name">text-soft</span>
+          <span class="swatch-token">--text-soft</span>
+          <span class="swatch-hex">#B5B5B1 / #6E6862</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================
+       3. COLORS — SEMANTIC
+       ============================================ -->
+  <div class="section">
+    <div class="section-head">
+      <span class="section-title">03 — colors</span>
+      <span class="section-count">semantic</span>
+    </div>
+    <h2 class="section-h2">semantic</h2>
+    <p class="section-desc">four meanings. success for confirmed actions and saved states. like for warm/affection (liked, new). warn for attention without alarm (vibe check, closing soon). danger for destructive actions only.</p>
+
+    <div class="grid">
+      <div class="swatch">
+        <div class="swatch-color" style="background: var(--success);"></div>
+        <div class="swatch-info">
+          <span class="swatch-name">success</span>
+          <span class="swatch-token">--success</span>
+          <span class="swatch-hex">#4A7C3A / #A8C293</span>
+        </div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background: var(--like);"></div>
+        <div class="swatch-info">
+          <span class="swatch-name">like</span>
+          <span class="swatch-token">--like</span>
+          <span class="swatch-hex">#C2410C / #E8B894</span>
+        </div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background: var(--warn);"></div>
+        <div class="swatch-info">
+          <span class="swatch-name">warn</span>
+          <span class="swatch-token">--warn</span>
+          <span class="swatch-hex">#B45309 / #E5C078</span>
+        </div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background: var(--danger);"></div>
+        <div class="swatch-info">
+          <span class="swatch-name">danger</span>
+          <span class="swatch-token">--danger</span>
+          <span class="swatch-hex">#D14343 / #E89090</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================
+       4. STATUS PILLS
+       ============================================ -->
+  <div class="section">
+    <div class="section-head">
+      <span class="section-title">04 — components</span>
+      <span class="section-count">status pills</span>
+    </div>
+    <h2 class="section-h2">status pills</h2>
+    <p class="section-desc">four pills for place state. each is a tinted background + dot + label. used on place cards, in stash rows, and inside chat recommendations.</p>
+
+    <div class="component-row">
+      <div class="component-preview">
+        <span class="pill green">saved</span>
+        <span class="pill green">went</span>
+        <span class="pill warm">new</span>
+        <span class="pill warm">new to you</span>
+        <span class="pill amber">approve?</span>
+        <span class="pill amber">closing soon</span>
+        <span class="pill danger">closed</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================
+       5. TYPOGRAPHY
+       ============================================ -->
+  <div class="section">
+    <div class="section-head">
+      <span class="section-title">05 — typography</span>
+      <span class="section-count">inter</span>
+    </div>
+    <h2 class="section-h2">type scale</h2>
+    <p class="section-desc">Inter, tight letter-spacing throughout. Hero titles get -0.03em, body sits at -0.005em. Weight 700 for heroes, 600 for emphasis, 500 for medium copy, 400 default.</p>
+
+    <div class="type-row">
+      <div class="type-meta">
+        <span class="type-label">hero</span>
+        <span class="type-spec">32px / 700 / -0.03em</span>
+      </div>
+      <div class="type-sample" style="font-size: 32px; font-weight: 700; letter-spacing: -0.03em; line-height: 1.05;">it's late, drunk food?</div>
+    </div>
+
+    <div class="type-row">
+      <div class="type-meta">
+        <span class="type-label">title</span>
+        <span class="type-spec">28px / 700 / -0.025em</span>
+      </div>
+      <div class="type-sample" style="font-size: 28px; font-weight: 700; letter-spacing: -0.025em;">Saint Jardim</div>
+    </div>
+
+    <div class="type-row">
+      <div class="type-meta">
+        <span class="type-label">subtitle</span>
+        <span class="type-spec">18px / 700 / -0.015em</span>
+      </div>
+      <div class="type-sample" style="font-size: 18px; font-weight: 700; letter-spacing: -0.015em;">your stash</div>
+    </div>
+
+    <div class="type-row">
+      <div class="type-meta">
+        <span class="type-label">body</span>
+        <span class="type-spec">15px / 400 / -0.005em</span>
+      </div>
+      <div class="type-sample" style="font-size: 15px; font-weight: 400; letter-spacing: -0.005em;">natural wine, 6 seats at the counter. small plates change weekly.</div>
+    </div>
+
+    <div class="type-row">
+      <div class="type-meta">
+        <span class="type-label">small</span>
+        <span class="type-spec">13px / 500 / -0.005em</span>
+      </div>
+      <div class="type-sample" style="font-size: 13px; font-weight: 500; letter-spacing: -0.005em; color: var(--text-muted);">portuguese · ¥¥¥ · 8 min · shimokitazawa</div>
+    </div>
+
+    <div class="type-row">
+      <div class="type-meta">
+        <span class="type-label">eyebrow</span>
+        <span class="type-spec">11px / 600 / 0.08em uppercase</span>
+      </div>
+      <div class="type-sample" style="font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-soft);">SUBSCRIPTION</div>
+    </div>
+  </div>
+
+  <!-- ============================================
+       6. SPACING
+       ============================================ -->
+  <div class="section">
+    <div class="section-head">
+      <span class="section-title">06 — spacing</span>
+      <span class="section-count">4 base unit</span>
+    </div>
+    <h2 class="section-h2">spacing</h2>
+    <p class="section-desc">multiples of 4. used for padding, gaps, margins. most components use 12 / 14 / 16 / 24.</p>
+
+    <div class="spacing-row">
+      <div class="spacing-bar" style="width: 4px;"></div>
+      <div class="spacing-info">
+        <span class="spacing-name">space-1</span>
+        <span class="spacing-token">4px</span>
+      </div>
+    </div>
+    <div class="spacing-row">
+      <div class="spacing-bar" style="width: 8px;"></div>
+      <div class="spacing-info">
+        <span class="spacing-name">space-2</span>
+        <span class="spacing-token">8px</span>
+      </div>
+    </div>
+    <div class="spacing-row">
+      <div class="spacing-bar" style="width: 12px;"></div>
+      <div class="spacing-info">
+        <span class="spacing-name">space-3</span>
+        <span class="spacing-token">12px</span>
+      </div>
+    </div>
+    <div class="spacing-row">
+      <div class="spacing-bar" style="width: 14px;"></div>
+      <div class="spacing-info">
+        <span class="spacing-name">space-4</span>
+        <span class="spacing-token">14px — card padding default</span>
+      </div>
+    </div>
+    <div class="spacing-row">
+      <div class="spacing-bar" style="width: 16px;"></div>
+      <div class="spacing-info">
+        <span class="spacing-name">space-5</span>
+        <span class="spacing-token">16px</span>
+      </div>
+    </div>
+    <div class="spacing-row">
+      <div class="spacing-bar" style="width: 24px;"></div>
+      <div class="spacing-info">
+        <span class="spacing-name">space-6</span>
+        <span class="spacing-token">24px — page edge padding</span>
+      </div>
+    </div>
+    <div class="spacing-row">
+      <div class="spacing-bar" style="width: 32px;"></div>
+      <div class="spacing-info">
+        <span class="spacing-name">space-8</span>
+        <span class="spacing-token">32px — between major sections</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================
+       7. RADIUS
+       ============================================ -->
+  <div class="section">
+    <div class="section-head">
+      <span class="section-title">07 — radius</span>
+      <span class="section-count">corners</span>
+    </div>
+    <h2 class="section-h2">radius</h2>
+    <p class="section-desc">small radius for chips and avatars, medium for cards, full for pills and buttons.</p>
+
+    <div class="grid three">
+      <div class="radius-row">
+        <div class="radius-shape" style="border-radius: 4px;"></div>
+        <div class="radius-info"><div class="radius-name">tiny</div><div class="radius-token">4px — tag chips</div></div>
+      </div>
+      <div class="radius-row">
+        <div class="radius-shape" style="border-radius: 7px;"></div>
+        <div class="radius-info"><div class="radius-name">small</div><div class="radius-token">7px — avatars</div></div>
+      </div>
+      <div class="radius-row">
+        <div class="radius-shape" style="border-radius: 10px;"></div>
+        <div class="radius-info"><div class="radius-name">medium</div><div class="radius-token">10px — buttons, rows</div></div>
+      </div>
+      <div class="radius-row">
+        <div class="radius-shape" style="border-radius: 12px;"></div>
+        <div class="radius-info"><div class="radius-name">card</div><div class="radius-token">12px — cards, sheets</div></div>
+      </div>
+      <div class="radius-row">
+        <div class="radius-shape" style="border-radius: 14px;"></div>
+        <div class="radius-info"><div class="radius-name">large</div><div class="radius-token">14px — group containers</div></div>
+      </div>
+      <div class="radius-row">
+        <div class="radius-shape" style="border-radius: 999px;"></div>
+        <div class="radius-info"><div class="radius-name">full</div><div class="radius-token">999px — pills, circular</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================
+       8. BUTTONS
+       ============================================ -->
+  <div class="section">
+    <div class="section-head">
+      <span class="section-title">08 — components</span>
+      <span class="section-count">buttons</span>
+    </div>
+    <h2 class="section-h2">buttons</h2>
+    <p class="section-desc">three button styles. primary for the main action per screen. outlined for secondary. danger for destructive confirmations only.</p>
+
+    <div class="component-row">
+      <div class="component-preview">
+        <button class="btn primary">good pick</button>
+        <button class="btn outlined">not it</button>
+        <button class="btn danger">do it</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================
+       9. AI BUTTON
+       ============================================ -->
+  <div class="section">
+    <div class="section-head">
+      <span class="section-title">09 — components</span>
+      <span class="section-count">ai button</span>
+    </div>
+    <h2 class="section-h2">kebi ai button</h2>
+    <p class="section-desc">circular floating action, 64px, bottom-right of every screen. white in light mode (border-only), cream-filled in dark mode. always brightest spot on screen since it's the primary CTA.</p>
+
+    <div class="component-row">
+      <div class="component-preview">
+        <button class="ai-btn">
+          <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+            <ellipse cx="32" cy="38" rx="20" ry="20" fill="#D4B891"/>
+            <ellipse cx="32" cy="42" rx="13" ry="13" fill="#F5EBD3"/>
+            <ellipse cx="13" cy="34" rx="3.5" ry="6" fill="#A89070" transform="rotate(-25 13 34)"/>
+            <ellipse cx="51" cy="34" rx="3.5" ry="6" fill="#A89070" transform="rotate(25 51 34)"/>
+            <ellipse cx="22" cy="36" rx="3" ry="2" fill="#E8B894" opacity="0.6"/>
+            <ellipse cx="42" cy="36" rx="3" ry="2" fill="#E8B894" opacity="0.6"/>
+            <circle cx="25" cy="30" r="3.5" fill="white"/>
+            <circle cx="39" cy="30" r="3.5" fill="white"/>
+            <circle cx="25" cy="30" r="1.7" fill="#1A1A1A"/>
+            <circle cx="39" cy="30" r="1.7" fill="#1A1A1A"/>
+            <path d="M30 33 L34 33 L32 36 Z" fill="#C87A4A"/>
+            <path d="M30 14 Q32 10 34 14" stroke="#8B7355" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================
+       10. GROUP CONTAINER
+       ============================================ -->
+  <div class="section">
+    <div class="section-head">
+      <span class="section-title">10 — components</span>
+      <span class="section-count">group container</span>
+    </div>
+    <h2 class="section-h2">group container</h2>
+    <p class="section-desc">Linear-style sub-issue group. surface bg, 14px radius, rows separated by surface-2 hairlines. used for place cards, settings sections, plan cards, swap rows.</p>
+
+    <div class="component-row">
+      <div class="component-preview" style="justify-content: center;">
+        <div class="group-demo">
+          <div class="group-demo-row">
+            <div class="demo-avatar">🍜</div>
+            <span class="demo-title">Kamachiku</span>
+            <span class="pill green">saved</span>
+          </div>
+          <div class="group-demo-row">
+            <div class="demo-avatar">🍷</div>
+            <span class="demo-title">Saint Jardim</span>
+            <span class="pill warm">new</span>
+          </div>
+          <div class="group-demo-row">
+            <div class="demo-avatar">⛩️</div>
+            <span class="demo-title">Nezu Shrine</span>
+            <span class="pill green">went</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================
+       11. CHIPS
+       ============================================ -->
+  <div class="section">
+    <div class="section-head">
+      <span class="section-title">11 — components</span>
+      <span class="section-count">chips</span>
+    </div>
+    <h2 class="section-h2">chips</h2>
+    <p class="section-desc">two chip styles. atmosphere chips are emoji-prefixed, surface-filled, larger. feature chips are outlined, small icon, used for practical attributes.</p>
+
+    <div class="component-row">
+      <div class="component-name">atmosphere</div>
+      <div class="component-preview">
+        <span class="chip">🕯️ intimate</span>
+        <span class="chip">🍷 natural wine</span>
+        <span class="chip">💘 romantic</span>
+        <span class="chip">🪑 counter-seat</span>
+      </div>
+    </div>
+
+    <div class="component-row">
+      <div class="component-name">feature</div>
+      <div class="component-preview">
+        <span class="chip feature">private room</span>
+        <span class="chip feature">dog friendly</span>
+        <span class="chip feature">open late</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================
+       12. TOAST
+       ============================================ -->
+  <div class="section">
+    <div class="section-head">
+      <span class="section-title">12 — components</span>
+      <span class="section-count">toast</span>
+    </div>
+    <h2 class="section-h2">toast</h2>
+    <p class="section-desc">always dark in light mode, cream-filled in dark mode. floats 92px above bottom edge, sits above the AI button. auto-dismiss after 3s (no action) or 5s (with undo/retry). max 280px wide, stacks vertically with 8px gap.</p>
+
+    <div class="component-row">
+      <div class="component-preview">
+        <div class="toast-demo">
+          <span class="check">
+            <svg viewBox="0 0 24 24"><polyline points="5 12 10 17 19 7"/></svg>
+          </span>
+          <span>saved <strong style="font-weight: 600;">Saint Jardim</strong> to your stash</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================
+       13. LONG-PRESS CONTEXT MENU
+       ============================================ -->
+  <div class="section">
+    <div class="section-head">
+      <span class="section-title">13 — components</span>
+      <span class="section-count">long-press context menu</span>
+    </div>
+    <h2 class="section-h2">long-press context menu</h2>
+    <p class="section-desc">iOS lift + blur (iMessage / Notion). long-press a card (500ms) → it lifts over a frosted, dimmed backdrop and a menu floats beneath it; haptic Impact.Medium fires as it appears. generic — any card supplies its own items. non-destructive first, hairline divider, destructive (forget) in danger tint. the place page ••• opens a bottom action sheet (§14) instead of a long-press. full mockup with placement + dark mode: kebi-context-menu-mockup.html.</p>
+
+    <div class="component-row">
+      <div class="component-preview" style="padding: 0; justify-content: center;">
+        <!-- mini scene: dimmed/blurred backdrop + lifted card + floating menu -->
+        <div style="position: relative; width: 320px; height: 300px; border-radius: 16px; overflow: hidden; background: var(--bg);">
+          <!-- faded rows behind the backdrop -->
+          <div style="position: absolute; inset: 0; padding: 16px; display: flex; flex-direction: column; gap: 8px; filter: blur(3px); opacity: 0.5;">
+            <div style="background: var(--surface); border-radius: 14px; height: 56px;"></div>
+            <div style="background: var(--surface); border-radius: 14px; height: 56px;"></div>
+            <div style="background: var(--surface); border-radius: 14px; height: 56px;"></div>
+          </div>
+          <!-- dim scrim -->
+          <div style="position: absolute; inset: 0; background: rgba(0,0,0,0.32);"></div>
+          <!-- lifted card (scale 1.03 + lift shadow) -->
+          <div style="position: absolute; top: 24px; left: 16px; right: 16px; background: var(--surface); border-radius: 14px; padding: 12px 14px; display: flex; align-items: center; gap: 10px; transform: scale(1.03); box-shadow: 0 18px 50px rgba(0,0,0,0.28);">
+            <div class="demo-avatar">⛩️</div>
+            <span class="demo-title">Nezu Shrine</span>
+          </div>
+          <!-- floating menu (10px below the lifted card) -->
+          <div style="position: absolute; top: 96px; left: 16px; width: 188px; background: var(--bg); border: 1px solid var(--surface-2); border-radius: 14px; padding: 4px; box-shadow: 0 12px 40px rgba(0,0,0,0.18);">
+            <div style="display: flex; align-items: center; gap: 9px; padding: 8px 10px; border-radius: 10px; font-size: 13px; font-weight: 500; color: var(--text);"><span style="width: 16px; text-align: center;">👍</span>looks right</div>
+            <div style="display: flex; align-items: center; gap: 9px; padding: 8px 10px; border-radius: 10px; font-size: 13px; font-weight: 500; color: var(--text);"><span style="width: 16px; text-align: center;">❤️</span>i like this one</div>
+            <div style="display: flex; align-items: center; gap: 9px; padding: 8px 10px; border-radius: 10px; font-size: 13px; font-weight: 500; color: var(--text);"><span style="width: 16px; text-align: center;">✅</span>been there</div>
+            <div style="height: 1px; background: var(--surface-2); margin: 4px 8px;"></div>
+            <div style="display: flex; align-items: center; gap: 9px; padding: 8px 10px; border-radius: 10px; font-size: 13px; font-weight: 500; color: var(--danger);"><span style="width: 16px; text-align: center;">🗑️</span>forget this place</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================
+       14. PLACE ACTION SHEET
+       ============================================ -->
+  <div class="section">
+    <div class="section-head">
+      <span class="section-title">14 — components</span>
+      <span class="section-count">place ••• action sheet</span>
+    </div>
+    <h2 class="section-h2">place action sheet</h2>
+    <p class="section-desc">tap the ••• on the place page → a bottom sheet springs up (save-sheet language: grabber, 22px top radius, dim+blur scrim, spring). place header, then natural-language actions on a surface group — positives grouped, destructive (forget) set apart in its own group below. cards use the long-press context menu (§13); this is the place page's equivalent. full mockup: kebi-context-menu-mockup.html.</p>
+
+    <div class="component-row">
+      <div class="component-preview" style="background: var(--surface-2); padding: 0; align-items: flex-end; justify-content: center; height: 400px; overflow: hidden;">
+        <!-- the sheet, anchored to the bottom -->
+        <div style="width: 100%; max-width: 340px; background: var(--bg); border-radius: 24px 24px 0 0; padding: 10px 16px 16px; display: flex; flex-direction: column; gap: 12px; box-shadow: 0 -16px 48px rgba(0,0,0,0.16);">
+          <div style="width: 36px; height: 4px; border-radius: 2px; background: var(--surface-2); margin: 0 auto 2px;"></div>
+          <div style="display: flex; align-items: center; gap: 11px; padding: 2px 4px 4px;">
+            <div class="demo-avatar" style="width: 36px; height: 36px; border-radius: 9px; font-size: 19px;">☕</div>
+            <div>
+              <div style="font-size: 10px; font-weight: 600; color: var(--text-soft); text-transform: uppercase; letter-spacing: 0.08em;">this place</div>
+              <div style="font-size: 18px; font-weight: 700; color: var(--text); letter-spacing: -0.02em;">Fuglen</div>
+            </div>
+          </div>
+          <div style="background: var(--surface); border-radius: 14px; overflow: hidden;">
+            <div style="display: flex; align-items: center; gap: 12px; padding: 14px 14px; font-size: 15px; font-weight: 500; color: var(--text);"><span style="width: 20px; text-align: center; font-size: 17px;">👍</span>looks right</div>
+            <div style="display: flex; align-items: center; gap: 12px; padding: 14px 14px; font-size: 15px; font-weight: 500; color: var(--text); border-top: 1px solid var(--bg);"><span style="width: 20px; text-align: center; font-size: 17px;">❤️</span>i like this one</div>
+            <div style="display: flex; align-items: center; gap: 12px; padding: 14px 14px; font-size: 15px; font-weight: 500; color: var(--text); border-top: 1px solid var(--bg);"><span style="width: 20px; text-align: center; font-size: 17px;">✅</span>been there</div>
+          </div>
+          <div style="background: var(--surface); border-radius: 14px; overflow: hidden;">
+            <div style="display: flex; align-items: center; gap: 12px; padding: 14px 14px; font-size: 15px; font-weight: 500; color: var(--danger);"><span style="width: 20px; text-align: center; font-size: 17px;">🗑️</span>forget this place</div>
+          </div>
+          <div style="width: 120px; height: 5px; border-radius: 999px; background: var(--text); opacity: 0.85; margin: 6px auto 0;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================
+       15. ICONOGRAPHY
+       ============================================ -->
+  <div class="section">
+    <div class="section-head">
+      <span class="section-title">15 — iconography</span>
+      <span class="section-count">feather style</span>
+    </div>
+    <h2 class="section-h2">icons</h2>
+    <p class="section-desc">stroke-based, 1.8px stroke width, square line caps. 18px in row icons, 14px in chips, 12px in toasts, 36px for the mascot avatar inside the AI button. Always inherits color via stroke: var(--text) etc.</p>
+
+    <div class="icon-row">
+      <div class="icon-sample">
+        <svg width="18" height="18" viewBox="0 0 24 24" stroke-width="1.8"><polyline points="20 6 9 17 4 12"/></svg>
+      </div>
+      <div>
+        <div class="component-name">check</div>
+        <div class="component-desc">success states, completed steps, confirmations</div>
+      </div>
+    </div>
+
+    <div class="icon-row">
+      <div class="icon-sample">
+        <svg width="18" height="18" viewBox="0 0 24 24" stroke-width="1.8"><polyline points="9 6 15 12 9 18"/></svg>
+      </div>
+      <div>
+        <div class="component-name">chevron</div>
+        <div class="component-desc">row navigation, expandable sections, place cards</div>
+      </div>
+    </div>
+
+    <div class="icon-row">
+      <div class="icon-sample">
+        <svg width="18" height="18" viewBox="0 0 24 24" stroke-width="1.8"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      </div>
+      <div>
+        <div class="component-name">plus</div>
+        <div class="component-desc">add a place, add to a group, expand options</div>
+      </div>
+    </div>
+
+    <div class="icon-row">
+      <div class="icon-sample">
+        <svg width="18" height="18" viewBox="0 0 24 24" stroke-width="1.8"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </div>
+      <div>
+        <div class="component-name">close</div>
+        <div class="component-desc">dismiss, cancel, "not it" reactions</div>
+      </div>
+    </div>
+
+    <div class="icon-row">
+      <div class="icon-sample">
+        <svg width="18" height="18" viewBox="0 0 24 24" stroke-width="1.8"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      </div>
+      <div>
+        <div class="component-name">search</div>
+        <div class="component-desc">expandable search input in top pill</div>
+      </div>
+    </div>
+
+    <div class="icon-row">
+      <div class="icon-sample">
+        <svg width="18" height="18" viewBox="0 0 24 24" stroke-width="1.8"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="8 11 12 15 16 11"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      </div>
+      <div>
+        <div class="component-name">share-in</div>
+        <div class="component-desc">save trigger in top pill. tray + arrow dropping in. matches "drop it in" voice.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================
+       16. MOTION
+       ============================================ -->
+  <div class="section">
+    <div class="section-head">
+      <span class="section-title">16 — motion</span>
+      <span class="section-count">timing</span>
+    </div>
+    <h2 class="section-h2">motion</h2>
+    <p class="section-desc">four timing functions for different feels. ease-out for everyday transitions. ease-in-out for symmetric movements. spring for entrances and pickups. linear only for skeleton shimmer and loading bars.</p>
+
+    <div class="motion-row" data-curve="ease-out">
+      <span class="motion-name">ease-out</span>
+      <div class="motion-track"><div class="motion-dot"></div></div>
+      <span class="motion-spec">200–280ms</span>
+    </div>
+
+    <div class="motion-row" data-curve="ease-in-out">
+      <span class="motion-name">ease-in-out</span>
+      <div class="motion-track"><div class="motion-dot"></div></div>
+      <span class="motion-spec">240ms</span>
+    </div>
+
+    <div class="motion-row" data-curve="spring">
+      <span class="motion-name">spring</span>
+      <div class="motion-track"><div class="motion-dot"></div></div>
+      <span class="motion-spec">cubic-bezier(0.34, 1.56, 0.64, 1)</span>
+    </div>
+
+    <div class="motion-row" data-curve="linear">
+      <span class="motion-name">linear</span>
+      <div class="motion-track"><div class="motion-dot"></div></div>
+      <span class="motion-spec">1.4s — skeleton only</span>
+    </div>
+  </div>
+
+  <!-- ============================================
+       17. MASCOT
+       ============================================ -->
+  <div class="section">
+    <div class="section-head">
+      <span class="section-title">17 — brand</span>
+      <span class="section-count">mascot</span>
+    </div>
+    <h2 class="section-h2">mascot</h2>
+    <p class="section-desc">small round bird with cream body and warm brown wings raised in greeting. orange beak anchors the face. used at three sizes: 88px (login hero, splash), 56px / 36px (AI button, home), 18px / 24px (chat title, cards).</p>
+
+    <div class="mascot-stage">
+      <svg class="mascot-large" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+        <ellipse cx="32" cy="38" rx="20" ry="20" fill="#D4B891"/>
+        <ellipse cx="32" cy="42" rx="13" ry="13" fill="#F5EBD3"/>
+        <ellipse cx="13" cy="34" rx="3.5" ry="6" fill="#A89070" transform="rotate(-25 13 34)"/>
+        <ellipse cx="51" cy="34" rx="3.5" ry="6" fill="#A89070" transform="rotate(25 51 34)"/>
+        <ellipse cx="22" cy="36" rx="3" ry="2" fill="#E8B894" opacity="0.6"/>
+        <ellipse cx="42" cy="36" rx="3" ry="2" fill="#E8B894" opacity="0.6"/>
+        <circle cx="25" cy="30" r="3.5" fill="white"/>
+        <circle cx="39" cy="30" r="3.5" fill="white"/>
+        <circle cx="25" cy="30" r="1.7" fill="#1A1A1A"/>
+        <circle cx="39" cy="30" r="1.7" fill="#1A1A1A"/>
+        <circle cx="25.6" cy="29.4" r="0.6" fill="white"/>
+        <circle cx="39.6" cy="29.4" r="0.6" fill="white"/>
+        <path d="M30 33 L34 33 L32 36 Z" fill="#C87A4A"/>
+        <path d="M30 14 Q32 10 34 14" stroke="#8B7355" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+      </svg>
+      <div class="mascot-info">
+        <div class="mascot-info-name">kebi</div>
+        <div class="mascot-info-spec">
+          body: #D4B891<br>
+          belly: #F5EBD3<br>
+          wings: #A89070<br>
+          tuft: #8B7355<br>
+          beak: #C87A4A<br>
+          cheek: #E8B894 (60% opacity)<br>
+          viewBox: 0 0 64 64<br>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================
+       18. LAYOUT
+       ============================================ -->
+  <div class="section">
+    <div class="section-head">
+      <span class="section-title">18 — layout</span>
+      <span class="section-count">phone</span>
+    </div>
+    <h2 class="section-h2">layout</h2>
+    <p class="section-desc">designed for iPhone 15-class device. 390 × 844 viewport. status bar 50px. safe area bottom ~34px. content scroll padding 24px horizontal, 8px top, 24px bottom. AI button anchored 16px from bottom-right.</p>
+
+    <div class="component-row">
+      <div class="component-preview" style="background: var(--surface); padding: 32px; justify-content: center;">
+        <div style="width: 220px; aspect-ratio: 390/844; background: var(--bg); border-radius: 28px; border: 1px solid var(--surface-2); position: relative; overflow: hidden;">
+          <div style="position: absolute; top: 0; left: 0; right: 0; height: 14%; background: var(--surface-2); display: flex; align-items: center; justify-content: center; font-size: 9px; color: var(--text-soft);">status + nav</div>
+          <div style="position: absolute; top: 14%; left: 14%; right: 14%; bottom: 14%; background: var(--surface); border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 10px; color: var(--text-muted);">scroll area</div>
+          <div style="position: absolute; bottom: 14%; right: 8%; width: 22%; aspect-ratio: 1; background: var(--text); border-radius: 50%;"></div>
+          <div style="position: absolute; bottom: 4%; left: 50%; transform: translateX(-50%); width: 38%; height: 2px; background: var(--text); border-radius: 2px;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    Kebi v0.4.2 · design tokens reference<br>
+    pair this with <code>category-emoji.js</code> for default place avatars<br>
+    every screen in the system is built from these primitives
+  </div>
+
+</div>
+
+<script>
+  document.querySelectorAll('.theme-toggle button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.theme-toggle button').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      document.body.classList.toggle('dark', btn.dataset.theme === 'dark');
+    });
+  });
+</script>
+
+</body>
+</html>

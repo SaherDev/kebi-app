@@ -1,28 +1,26 @@
-import { IsString, IsNotEmpty, IsOptional, IsNumber, IsIn, ValidateNested } from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional, IsNumber, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
-import type { SignalTier } from '@kebi-app/shared';
-
-const ALLOWED_SIGNAL_TIERS: SignalTier[] = ['cold', 'warming', 'chip_selection', 'active'];
 
 export class LocationDto {
   @IsNumber()
-  lat: number;
+  lat!: number;
 
   @IsNumber()
-  lng: number;
+  lng!: number;
 }
 
+/**
+ * Client→gateway chat body. `movement_profile` is NOT a client field — the
+ * gateway sources it from the verified Supabase token and injects it into the
+ * kebi-bound body. Identity travels in the X-Gateway-User-Id header.
+ */
 export class ChatRequestBodyDto {
   @IsString()
   @IsNotEmpty()
-  message: string;
+  message!: string;
 
   @IsOptional()
   @ValidateNested()
   @Type(() => LocationDto)
   location?: LocationDto;
-
-  @IsOptional()
-  @IsIn(ALLOWED_SIGNAL_TIERS)
-  signal_tier?: SignalTier;
 }

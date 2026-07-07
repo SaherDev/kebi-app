@@ -13,7 +13,7 @@ import { RateLimitGuard } from '../common/guards/rate-limit.guard';
  * Pure facade pattern (ADR-032) — makes exactly one service call
  *
  * POST /api/v1/chat
- * - Requires valid Clerk token (via ClerkMiddleware)
+ * - Requires a valid Supabase token (via AuthMiddleware)
  * - Requires AI enabled (via @RequiresAi() guard per ADR-022)
  * - Pipes raw SSE stream from the AI service to the client; NestJS is transparent
  */
@@ -30,6 +30,6 @@ export class ChatController {
     @Req() req: IncomingMessage,
     @Res() res: Response,
   ): Promise<void> {
-    await this.chatService.pipeStream(user.id, dto, req, res);
+    await this.chatService.pipeStream(user, dto, req, res);
   }
 }

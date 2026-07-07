@@ -16,7 +16,7 @@ describe('AiEnabledGuard', () => {
           useValue: {
             get: jest.fn((key: string, defaultValue?: any) => {
               const config: Record<string, any> = {
-                'ai.enabled_default': true,
+                'user_settings.defaults.ai_enabled': true,
               };
               return config[key] ?? defaultValue;
             }),

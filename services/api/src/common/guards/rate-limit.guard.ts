@@ -21,12 +21,11 @@ export class RateLimitGuard implements CanActivate {
     const request = context.switchToHttp().getRequest<Request>();
     const user = request.user as AuthUser;
 
-    const planName =
-      user.plan ?? this.configService.get<string>('rate_limits.default_plan', 'homebody');
-
-    const thresholds = this.configService.get<PlanThresholds>(
-      `rate_limits.plans.${planName}`,
-    );
+    // plan comes from the token (stamped from user_settings, ADR-045) — never
+    // defaulted here. No plan / unknown plan → no thresholds → not rate-limited.
+    const thresholds = user.plan
+      ? this.configService.get<PlanThresholds>(`rate_limits.plans.${user.plan}`)
+      : undefined;
 
     if (!thresholds) {
       return true;

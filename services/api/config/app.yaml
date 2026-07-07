@@ -4,15 +4,40 @@ app:
   api_prefix: api/v1
 
 auth:
+  provider: supabase # active identity provider (registry key in AuthModule)
+  user_id_prefix: user_ # typed prefix for generated internal user ids
+  # Supabase verification params (consumed when provider: supabase). issuer
+  # derives from SUPABASE_PROJECT_URL when omitted; audience defaults below.
+  supabase:
+    audience: authenticated
+    # Admin-API app_metadata stamping (SupabaseMetadataWriter).
+    stamp_timeout_ms: 5000 # admin PUT request timeout
+    stamp_dedupe_ttl_ms: 3600000 # re-stamp a user at most once per window (≈ token TTL)
+    # Admin-API user_metadata.name write (SupabaseProfileWriter).
+    profile_timeout_ms: 5000 # admin PUT request timeout
   public_paths:
     - /health
-    - /webhooks/clerk
+  # Verified but not-yet-provisioned tokens (no internal_id) may hit only these —
+  # the provisioning endpoint that creates the user + stamps the token. Every
+  # other route requires a provisioned token or it fails (no placeholder identity).
+  provisioning_paths:
+    - /auth/login
 
-ai:
-  enabled_default: true
+# Defaults for a new user's user_settings row — the source of truth for the
+# claims stamped into the token (ADR-045). Also used as fallbacks when a token
+# claim is absent (pre-provision / pre-refresh). All user-setting defaults live
+# here, in one place.
+user_settings:
+  defaults:
+    plan: homebody
+    ai_enabled: true
+    movement_profile:
+      available_modes:
+        - walking
+        - transit
+      reach: normal
 
 rate_limits:
-  default_plan: homebody
   plans:
     homebody:
       sessions_per_day: 3
@@ -26,3 +51,27 @@ rate_limits:
       sessions_per_day: 20
       tool_calls_per_day: 200
       turns_per_session: 30
+
+# Plan-tier capabilities forwarded to kebi as X-Gateway-* headers (ADR-112).
+# The gateway owns plans/billing; kebi enforces these. Repricing or renaming a
+# tier is a change here only — kebi never sees the plan name. Booleans fail
+# closed (a missing flag denies the paid feature). Omit save_limit /
+# consults_per_day to mean unlimited (the header is then not sent).
+entitlements:
+  plans:
+    homebody:
+      taste_enabled: false
+      discovery_enabled: false
+      advanced_models_enabled: false
+      save_limit: 10
+      consults_per_day: 3
+    explorer:
+      taste_enabled: true
+      discovery_enabled: false
+      advanced_models_enabled: false
+      # save_limit / consults_per_day omitted = unlimited
+    local_legend:
+      taste_enabled: true
+      discovery_enabled: true
+      advanced_models_enabled: true
+      # save_limit / consults_per_day omitted = unlimited

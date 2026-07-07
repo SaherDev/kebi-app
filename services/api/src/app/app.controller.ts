@@ -1,11 +1,6 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Request,
-} from '@nestjs/common';
+import { Controller, Get, Request } from '@nestjs/common';
+import type { Request as ExpressRequest } from 'express';
 import { AppService } from './app.service';
-import { RequiresAi } from '../common/decorators/requires-ai.decorator';
 
 @Controller()
 export class AppController {
@@ -26,10 +21,10 @@ export class AppController {
   }
 
   /**
-   * Protected route (requires valid Clerk token)
+   * Protected route (requires a valid Supabase token)
    */
   @Get('protected')
-  protected(@Request() req) {
+  protected(@Request() req: ExpressRequest) {
     return {
       message: 'Protected route accessed successfully',
       user: req.user,

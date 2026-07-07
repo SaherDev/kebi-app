@@ -1,0 +1,956 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Kebi Home — Linear Style</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #FAFAF9;
+    --surface: #F1F1EF;
+    --surface-2: #E8E8E5;
+    --text: #1A1A1A;
+    --text-muted: #8A8A87;
+    --text-soft: #B5B5B1;
+    --success: #4A7C3A;
+    --like: #C2410C;
+    --warn: #B45309;
+    --warn-bg: #FEF3C7;
+    --new-bg: #FEE4D4;
+    --new-fg: #C2410C;
+  }
+
+  html, body {
+    background: #2A2A28;
+    font-family: 'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 16px;
+  }
+
+  .phone {
+    width: 390px;
+    height: 844px;
+    background: var(--bg);
+    border-radius: 48px;
+    overflow: hidden;
+    position: relative;
+    box-shadow: 0 0 0 12px #111, 0 0 0 14px #2A2A28, 0 40px 80px rgba(0,0,0,0.5);
+    display: flex;
+    flex-direction: column;
+  }
+
+  .status-bar {
+    height: 50px;
+    padding: 18px 32px 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text);
+    flex-shrink: 0;
+  }
+
+  .status-right { display: flex; gap: 6px; align-items: center; }
+
+  .top-bar {
+    padding: 12px 16px 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-shrink: 0;
+  }
+
+  .location-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: var(--text-muted);
+    letter-spacing: -0.005em;
+  }
+
+  .location-row svg {
+    width: 13px;
+    height: 13px;
+    stroke: var(--text-muted);
+    stroke-width: 1.8;
+    fill: none;
+  }
+
+  .location-dot {
+    width: 3px;
+    height: 3px;
+    border-radius: 50%;
+    background: var(--text-soft);
+  }
+
+  .top-pill {
+    display: flex;
+    align-items: center;
+    background: var(--surface);
+    border-radius: 999px;
+    padding: 0 4px;
+  }
+
+  .top-pill button {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: transparent;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    gap: 4px;
+  }
+
+  .top-pill svg {
+    width: 16px;
+    height: 16px;
+    stroke: var(--text);
+    stroke-width: 1.8;
+    fill: none;
+  }
+
+  .saved-count {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0 10px 0 8px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+    height: 36px;
+  }
+
+  .saved-count svg {
+    width: 14px;
+    height: 14px;
+    stroke: var(--text);
+    stroke-width: 1.8;
+    fill: none;
+  }
+
+  .scroll {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px 24px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  .scroll::-webkit-scrollbar { display: none; }
+
+  .turn {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .turn.you {
+    align-items: flex-end;
+    text-align: right;
+  }
+
+  .turn-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-soft);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .turn-text {
+    font-size: 17px;
+    line-height: 1.5;
+    color: var(--text);
+    letter-spacing: -0.01em;
+    max-width: 92%;
+  }
+
+  .turn-text.muted { color: var(--text-muted); }
+  .turn-text strong { color: var(--text); font-weight: 600; }
+
+  .quick-prompts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 16px;
+    margin-top: 4px;
+  }
+
+  .quick-prompt {
+    font-size: 17px;
+    color: var(--text);
+    letter-spacing: -0.01em;
+    background: transparent;
+    border: none;
+    padding: 0 0 1px;
+    text-align: left;
+    font-family: inherit;
+    cursor: pointer;
+    border-bottom: 1px dashed var(--text-soft);
+  }
+
+  .history-list {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+  }
+
+  .group {
+    background: var(--surface);
+    border-radius: 14px;
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .group-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 4px 4px 8px;
+  }
+
+  .group-header-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 14px;
+    color: var(--text);
+    font-weight: 500;
+    letter-spacing: -0.005em;
+  }
+
+  .group-count {
+    color: var(--text-muted);
+    font-weight: 400;
+  }
+
+  .group-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .group-header-actions button {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    border: none;
+    background: transparent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+  }
+
+  .group-header-actions svg {
+    width: 14px;
+    height: 14px;
+    stroke: var(--text-muted);
+    stroke-width: 2;
+    fill: none;
+  }
+
+  .group-row {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    padding: 10px 4px;
+    cursor: pointer;
+  }
+
+  .group-row + .group-row {
+    border-top: 1px solid var(--surface-2);
+  }
+
+  .group-add {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 4px 4px;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text);
+    cursor: pointer;
+    letter-spacing: -0.005em;
+  }
+
+  .group-add svg {
+    width: 14px;
+    height: 14px;
+    stroke: var(--text-soft);
+    stroke-width: 2;
+    fill: none;
+  }
+
+  .row-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    background: var(--bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-size: 18px;
+    line-height: 1;
+  }
+
+  .row-body {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  .row-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text);
+    letter-spacing: -0.01em;
+    line-height: 1.3;
+  }
+
+  .row-status-line {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .row-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 1px 7px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: -0.005em;
+  }
+
+  .row-pill::before {
+    content: '';
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+  }
+
+  .row-pill.green { background: #E8F2E1; color: var(--success); }
+  .row-pill.green::before { background: var(--success); }
+
+  .row-pill.amber { background: #FEF3C7; color: #B45309; }
+  .row-pill.amber::before { background: #D97706; }
+
+  .row-pill.warm { background: #FEE4D4; color: var(--like); }
+  .row-pill.warm::before { background: var(--like); }
+
+  .row-meta {
+    font-size: 13px;
+    color: var(--text-muted);
+    letter-spacing: -0.005em;
+    line-height: 1.4;
+  }
+
+  .row-chevron {
+    width: 16px;
+    height: 16px;
+    stroke: var(--text-soft);
+    stroke-width: 2;
+    fill: none;
+    margin-top: 6px;
+    flex-shrink: 0;
+  }
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+  }
+
+  .history-entry {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .history-query {
+    font-size: 17px;
+    color: var(--text);
+    letter-spacing: -0.01em;
+    line-height: 1.4;
+  }
+
+  .history-result {
+    font-size: 15px;
+    color: var(--text-muted);
+    letter-spacing: -0.005em;
+    line-height: 1.4;
+  }
+
+  .history-result strong {
+    color: var(--text);
+    font-weight: 600;
+  }
+
+  .history-time {
+    font-size: 12px;
+    color: var(--text-soft);
+    letter-spacing: -0.005em;
+    margin-top: 2px;
+  }
+
+  .hero {
+    font-size: 38px;
+    font-weight: 700;
+    color: var(--text);
+    letter-spacing: -0.03em;
+    line-height: 1.05;
+    margin-top: 4px;
+  }
+
+  .section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 4px;
+  }
+
+  .section-title {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-muted);
+    letter-spacing: -0.005em;
+  }
+
+  .section-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-muted);
+    letter-spacing: -0.005em;
+    text-decoration: none;
+  }
+
+  .section-link svg {
+    width: 12px;
+    height: 12px;
+    stroke: var(--text-muted);
+    stroke-width: 2;
+    fill: none;
+  }
+
+  .card-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .card {
+    background: white;
+    border: 1px solid var(--surface-2);
+    border-radius: 16px;
+    padding: 14px;
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    cursor: pointer;
+    position: relative;
+  }
+
+  .card.expanded {
+    flex-wrap: wrap;
+  }
+
+  .card-expand-btn {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--surface);
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  .card-expand-btn svg {
+    width: 14px;
+    height: 14px;
+    stroke: var(--text-muted);
+    stroke-width: 2;
+    fill: none;
+  }
+
+  .card-actions {
+    width: 100%;
+    display: flex;
+    gap: 8px;
+    margin-top: 4px;
+    padding-left: 52px;
+  }
+
+  .card-action-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    background: var(--surface);
+    border: none;
+    border-radius: 999px;
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text);
+    letter-spacing: -0.005em;
+    cursor: pointer;
+    transition: background 120ms ease-out;
+  }
+
+  .card-action-btn.icon-only {
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    justify-content: center;
+  }
+
+  .card-action-btn:hover { background: var(--surface-2); }
+
+  .card-action-btn svg {
+    width: 14px;
+    height: 14px;
+    stroke: var(--text);
+    stroke-width: 1.8;
+    fill: none;
+  }
+
+  .card-avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    background: var(--surface);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text);
+    letter-spacing: -0.02em;
+  }
+
+  .card-avatar.consult {
+    background: var(--surface);
+  }
+
+  .card-avatar.consult svg {
+    width: 18px;
+    height: 18px;
+    stroke: var(--text);
+    stroke-width: 1.8;
+    fill: none;
+  }
+
+  .card-body {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .card-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text);
+    letter-spacing: -0.015em;
+    line-height: 1.2;
+  }
+
+  .place-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 999px;
+    letter-spacing: -0.005em;
+    align-self: flex-start;
+    margin-top: 2px;
+  }
+
+  .place-status::before {
+    content: '';
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+  }
+
+  .place-status.new {
+    background: #FEF3C7;
+    color: #B45309;
+  }
+  .place-status.new::before { background: #D97706; }
+
+  .place-status.saved {
+    background: #E8F2E1;
+    color: var(--success);
+  }
+  .place-status.saved::before { background: var(--success); }
+
+  .place-status.visited {
+    background: #E8F2E1;
+    color: var(--success);
+  }
+  .place-status.visited::before { background: var(--success); }
+
+  .place-status-row {
+    display: flex;
+    gap: 6px;
+    margin-top: 2px;
+  }
+
+  .place-meta-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: var(--text-muted);
+    letter-spacing: -0.005em;
+    line-height: 1.5;
+    flex-wrap: wrap;
+  }
+
+  .place-meta-row svg.meta-icon {
+    width: 13px;
+    height: 13px;
+    stroke: var(--text-muted);
+    stroke-width: 1.8;
+    fill: none;
+    flex-shrink: 0;
+  }
+
+  .place-source {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: var(--text-muted);
+    letter-spacing: -0.005em;
+    margin-top: 2px;
+  }
+
+  .place-source svg {
+    width: 13px;
+    height: 13px;
+    stroke: var(--text-muted);
+    stroke-width: 1.8;
+    fill: none;
+    flex-shrink: 0;
+  }
+
+  .card-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin: 2px 0;
+  }
+
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: -0.005em;
+  }
+
+  .pill::before {
+    content: '';
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+  }
+
+  .pill.saved {
+    background: #E8F2E1;
+    color: var(--success);
+  }
+  .pill.saved::before { background: var(--success); }
+
+  .pill.visited {
+    background: #E8F2E1;
+    color: var(--success);
+  }
+  .pill.visited::before { background: var(--success); }
+
+  .pill.new {
+    background: var(--new-bg);
+    color: var(--new-fg);
+  }
+  .pill.new::before { background: var(--new-fg); }
+
+  .pill.approval {
+    background: var(--warn-bg);
+    color: var(--warn);
+  }
+  .pill.approval::before { background: #D97706; }
+
+  .card-meta {
+    font-size: 13px;
+    color: var(--text-muted);
+    letter-spacing: -0.005em;
+    line-height: 1.5;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .meta-icon {
+    width: 12px;
+    height: 12px;
+    stroke: var(--text-muted);
+    stroke-width: 1.8;
+    fill: none;
+    flex-shrink: 0;
+  }
+
+  .meta-dot {
+    color: var(--text-soft);
+  }
+
+  .card-up-chevron {
+    width: 14px;
+    height: 14px;
+    stroke: var(--text-muted);
+    stroke-width: 2;
+    fill: none;
+  }
+
+  .consult-card-time {
+    font-size: 12px;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-top: 2px;
+  }
+
+  .consult-card-time svg {
+    width: 11px;
+    height: 11px;
+    stroke: var(--text-muted);
+    stroke-width: 1.8;
+    fill: none;
+  }
+
+  .tab-bar {
+    margin: 8px 16px 12px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    flex-shrink: 0;
+  }
+
+  .kebi-ai-btn {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: white;
+    border: 1px solid var(--surface-2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 20px;
+    font-weight: 800;
+    color: var(--text);
+    letter-spacing: -0.04em;
+  }
+
+  .home-indicator {
+    width: 134px;
+    height: 5px;
+    background: var(--text);
+    border-radius: 3px;
+    margin: 0 auto 8px;
+    flex-shrink: 0;
+  }
+</style>
+</head>
+<body>
+
+<div class="phone">
+
+  <div class="status-bar">
+    <span>9:41</span>
+    <div class="status-right">
+      <svg width="17" height="11" viewBox="0 0 17 11" fill="currentColor"><path d="M1 7h2v3H1zM5 5h2v5H5zM9 3h2v7H9zM13 1h2v9h-2z"/></svg>
+      <svg width="15" height="11" viewBox="0 0 15 11" fill="currentColor"><path d="M7.5 2C9.7 2 11.7 2.8 13.3 4.2L14.5 3C12.6 1.2 10.1.2 7.5.2S2.4 1.2.5 3l1.2 1.2C3.3 2.8 5.3 2 7.5 2zM7.5 5.5c1.4 0 2.7.5 3.7 1.4l1.2-1.2c-1.4-1.3-3.2-2-5-2s-3.6.7-5 2l1.2 1.2c1-.9 2.3-1.4 3.7-1.4z"/></svg>
+      <svg width="24" height="11" viewBox="0 0 24 11" fill="none"><rect x="0.5" y="0.5" width="20" height="10" rx="2.5" stroke="currentColor"/><rect x="2" y="2" width="17" height="7" rx="1" fill="currentColor"/><rect x="21" y="3.5" width="1.5" height="4" rx="0.5" fill="currentColor"/></svg>
+    </div>
+  </div>
+
+  <div class="top-bar">
+    <div class="location-row">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="10" r="3"/><path d="M12 2a8 8 0 00-8 8c0 6 8 12 8 12s8-6 8-12a8 8 0 00-8-8z"/></svg>
+      <span>shimokitazawa</span>
+      <span class="location-dot"></span>
+      <span>17° · clear</span>
+    </div>
+    <div class="top-pill">
+      <button aria-label="Save a place" id="save-trigger">
+        <svg viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/></svg>
+      </button>
+      <button aria-label="Library" id="library-trigger">
+        <svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>
+      </button>
+      <button aria-label="Settings">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <div class="scroll">
+
+    <div class="turn">
+      <div class="turn-label">kebi</div>
+      <h1 class="hero">it's late, drunk food?</h1>
+    </div>
+
+    <div class="quick-prompts">
+      <button class="quick-prompt">ramen, no line</button>
+      <button class="quick-prompt">drinks somewhere chill</button>
+      <button class="quick-prompt">dessert, walking distance</button>
+      <button class="quick-prompt">surprise me</button>
+    </div>
+
+    <div class="turn">
+      <div class="turn-label">what you wanted</div>
+      <div class="history-list">
+
+        <div class="history-entry">
+          <div class="history-query">"coffee, quiet, nowhere i've been"</div>
+          <div class="history-time">yesterday, 8:42</div>
+        </div>
+
+        <div class="history-entry">
+          <div class="history-query">"something with anya — not sushi"</div>
+          <div class="history-time">mon, 7:10 pm</div>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="group">
+      <div class="group-header">
+        <div class="group-header-left">
+          <span>your stash</span>
+          <span class="group-count">7</span>
+        </div>
+        <div class="group-header-actions">
+          <button aria-label="Add">
+            <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          </button>
+          <button aria-label="Collapse">
+            <svg viewBox="0 0 24 24"><polyline points="18 15 12 9 6 15"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="group-row">
+        <div class="row-avatar">🍜</div>
+        <div class="row-body">
+          <div class="row-title">Kamachiku</div>
+          <div class="row-status-line">
+            <span class="row-pill green">saved</span>
+            <span class="row-pill green">went</span>
+          </div>
+          <div class="row-meta">udon · ¥¥ · 14 min · nezu</div>
+        </div>
+        <svg class="row-chevron" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>
+      </div>
+
+      <div class="group-row">
+        <div class="row-avatar">🍷</div>
+        <div class="row-body">
+          <div class="row-title">Saint Jardim</div>
+          <div class="row-status-line">
+            <span class="row-pill warm">new to you</span>
+          </div>
+          <div class="row-meta">portuguese · ¥¥¥ · 8 min · shimokitazawa</div>
+        </div>
+        <svg class="row-chevron" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>
+      </div>
+
+      <div class="group-row">
+        <div class="row-avatar">☕</div>
+        <div class="row-body">
+          <div class="row-title">Fuglen</div>
+          <div class="row-status-line">
+            <span class="row-pill green">went</span>
+          </div>
+          <div class="row-meta">coffee + cocktails · ¥¥ · 22 min · tomigaya</div>
+        </div>
+        <svg class="row-chevron" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>
+      </div>
+
+      <div class="group-add">
+        <span>show all</span>
+        <svg viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="tab-bar">
+    <button class="kebi-ai-btn" aria-label="Ask Kebi">
+      <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" width="36" height="36">
+        <ellipse cx="32" cy="38" rx="20" ry="20" fill="#D4B891"/>
+        <ellipse cx="32" cy="42" rx="13" ry="13" fill="#F5EBD3"/>
+        <ellipse cx="13" cy="34" rx="3.5" ry="6" fill="#A89070" transform="rotate(-25 13 34)"/>
+        <ellipse cx="51" cy="34" rx="3.5" ry="6" fill="#A89070" transform="rotate(25 51 34)"/>
+        <ellipse cx="22" cy="36" rx="3" ry="2" fill="#E8B894" opacity="0.6"/>
+        <ellipse cx="42" cy="36" rx="3" ry="2" fill="#E8B894" opacity="0.6"/>
+        <circle cx="25" cy="30" r="3.5" fill="white"/>
+        <circle cx="39" cy="30" r="3.5" fill="white"/>
+        <circle cx="25" cy="30" r="1.7" fill="#1A1A1A"/>
+        <circle cx="39" cy="30" r="1.7" fill="#1A1A1A"/>
+        <circle cx="25.6" cy="29.4" r="0.6" fill="white"/>
+        <circle cx="39.6" cy="29.4" r="0.6" fill="white"/>
+        <path d="M30 33 L34 33 L32 36 Z" fill="#C87A4A"/>
+        <path d="M30 14 Q32 10 34 14" stroke="#8B7355" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+      </svg>
+    </button>
+  </div>
+
+  <div class="home-indicator"></div>
+
+</div>
+
+</body>
+</html>

@@ -19,14 +19,14 @@ describe('SignalController', () => {
     const dto: SignalRequestDto = {
       signal_type: 'recommendation_accepted',
       recommendation_id: 'rec_1',
-      place_id: 'google:abc',
+      place_core_id: 'c0ffee00-1111-2222-3333-444455556666',
     };
-    const user: AuthUser = { id: 'user_clerk_123', ai_enabled: true };
+    const user: AuthUser = { id: 'user_test_123', ai_enabled: true };
 
     const result = await controller.submit(user, dto);
 
     expect(service.submit).toHaveBeenCalledTimes(1);
-    expect(service.submit).toHaveBeenCalledWith('user_clerk_123', dto);
+    expect(service.submit).toHaveBeenCalledWith('user_test_123', dto);
     expect(result).toEqual(body);
   });
 });

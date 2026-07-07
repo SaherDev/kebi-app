@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Kebi · Place-source icons</title>
+<style>
+  .theme {
+    --bg: #FAFAF9; --surface: #F1F1EF; --surface-2: #E8E8E5;
+    --text: #1A1A1A; --text-muted: #8A8A87; --text-soft: #B5B5B1;
+  }
+  .theme.dark {
+    --bg: #13110F; --surface: #1C1A17; --surface-2: #26231F;
+    --text: #F5F1EA; --text-muted: #9A938A; --text-soft: #6E6862;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; font-family: 'Inter', system-ui, sans-serif;
+    background: #d9d9d6; padding: 32px; display: flex; gap: 28px;
+    flex-wrap: wrap; align-items: flex-start;
+  }
+  .theme {
+    background: var(--bg); color: var(--text); width: 440px;
+    border-radius: 28px; padding: 24px 22px 28px;
+    box-shadow: 0 8px 40px rgba(0,0,0,.18);
+  }
+  h1 { font-size: 17px; margin: 0 0 2px; letter-spacing: -0.01em; }
+  .scheme { font-size: 12px; color: var(--text-muted); margin-bottom: 18px; }
+  h2 {
+    font-size: 11px; text-transform: uppercase; letter-spacing: .08em;
+    color: var(--text-muted); margin: 22px 0 8px; font-weight: 600;
+  }
+
+  /* the source line as it renders on a library card */
+  .src {
+    display: flex; align-items: center; gap: 10px; padding: 9px 2px;
+    border-bottom: 1px solid var(--surface-2);
+  }
+  .src:last-child { border-bottom: none; }
+  .src svg { width: 15px; height: 15px; flex: none; color: var(--text-muted); }
+  .src svg.mascot { width: 18px; height: 18px; }
+  .src .txt { font-size: 13px; color: var(--text-muted); }
+  .src .key {
+    margin-left: auto; font-family: 'SF Mono', Menlo, monospace;
+    font-size: 10px; color: var(--text-soft);
+  }
+
+  .cmp { display: flex; align-items: center; gap: 22px; padding: 8px 2px; }
+  .cmp .col { display: flex; align-items: center; gap: 9px; }
+  .cmp .lab { font-size: 11px; color: var(--text-soft); width: 34px; }
+  .cmp svg { width: 16px; height: 16px; color: var(--text-muted); }
+  .note { font-size: 11px; color: var(--text-soft); margin-top: 16px; line-height: 1.5; }
+</style>
+</head>
+<body>
+<template id="panel">
+  <div>
+    <h1>Place-source icons</h1>
+    <div class="scheme">SCHEME</div>
+
+    <h2>proposed — recognizable brand marks</h2>
+
+    <div class="src">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.08-.14 1.62.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07z"/></svg>
+      <span class="txt">@seniworldtravel</span>
+      <span class="key">tiktok</span>
+    </div>
+
+    <div class="src">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C8.74 0 8.333.015 7.053.072 5.775.132 4.905.333 4.14.63c-.789.306-1.459.717-2.126 1.384S.935 3.35.63 4.14C.333 4.905.131 5.775.072 7.053.012 8.333 0 8.74 0 12s.015 3.667.072 4.947c.06 1.277.261 2.148.558 2.913.306.788.717 1.459 1.384 2.126.667.666 1.336 1.079 2.126 1.384.766.296 1.636.499 2.913.558C8.333 23.988 8.74 24 12 24s3.667-.015 4.947-.072c1.277-.06 2.148-.262 2.913-.558.788-.306 1.459-.718 2.126-1.384.666-.667 1.079-1.335 1.384-2.126.296-.765.499-1.636.558-2.913.06-1.28.072-1.687.072-4.947s-.015-3.667-.072-4.947c-.06-1.277-.262-2.149-.558-2.913-.306-.789-.718-1.459-1.384-2.126C21.319 1.347 20.651.935 19.86.63c-.765-.297-1.636-.499-2.913-.558C15.667.012 15.26 0 12 0zm0 2.16c3.203 0 3.585.016 4.85.071 1.17.055 1.805.249 2.227.415.562.217.96.477 1.382.896.419.42.679.819.896 1.381.164.422.36 1.057.413 2.227.057 1.266.07 1.646.07 4.85s-.015 3.585-.074 4.85c-.061 1.17-.256 1.805-.421 2.227-.224.562-.479.96-.899 1.382-.419.419-.824.679-1.38.896-.42.164-1.065.36-2.235.413-1.274.057-1.649.07-4.859.07-3.211 0-3.586-.015-4.859-.074-1.171-.061-1.816-.256-2.236-.421-.569-.224-.96-.479-1.379-.899-.421-.419-.69-.824-.9-1.38-.165-.42-.359-1.065-.42-2.235-.045-1.26-.061-1.649-.061-4.844 0-3.196.016-3.586.061-4.861.061-1.17.255-1.814.42-2.234.21-.57.479-.96.9-1.381.419-.419.81-.689 1.379-.898.42-.166 1.051-.361 2.221-.421 1.275-.045 1.65-.06 4.859-.06l.045.03zm0 3.678c-3.405 0-6.162 2.76-6.162 6.162 0 3.405 2.76 6.162 6.162 6.162 3.405 0 6.162-2.76 6.162-6.162 0-3.405-2.76-6.162-6.162-6.162zM12 16c-2.21 0-4-1.79-4-4s1.79-4 4-4 4 1.79 4 4-1.79 4-4 4zm7.846-10.405c0 .795-.646 1.44-1.44 1.44-.795 0-1.44-.646-1.44-1.44 0-.794.646-1.439 1.44-1.439.793-.001 1.44.645 1.44 1.439z"/></svg>
+      <span class="txt">@cafehopbkk</span>
+      <span class="key">instagram</span>
+    </div>
+
+    <div class="src">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
+      <span class="txt">@MarkWiens</span>
+      <span class="key">youtube</span>
+    </div>
+
+    <div class="src">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 6-9 12-9 12s-9-6-9-12a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+      <span class="txt">from a maps list</span>
+      <span class="key">google_maps_list</span>
+    </div>
+
+    <div class="src">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>
+      <span class="txt">added by you</span>
+      <span class="key">manual</span>
+    </div>
+
+    <div class="src">
+      <svg class="mascot" viewBox="0 0 64 64">
+        <ellipse cx="32" cy="38" rx="20" ry="20" fill="#D4B891"/>
+        <ellipse cx="32" cy="42" rx="13" ry="13" fill="#F5EBD3"/>
+        <ellipse cx="13" cy="34" rx="3.5" ry="6" fill="#A89070" transform="rotate(-25 13 34)"/>
+        <ellipse cx="51" cy="34" rx="3.5" ry="6" fill="#A89070" transform="rotate(25 51 34)"/>
+        <ellipse cx="22" cy="36" rx="3" ry="2" fill="#E8B894" opacity="0.6"/>
+        <ellipse cx="42" cy="36" rx="3" ry="2" fill="#E8B894" opacity="0.6"/>
+        <circle cx="25" cy="30" r="3.5" fill="#FFFFFF"/>
+        <circle cx="39" cy="30" r="3.5" fill="#FFFFFF"/>
+        <circle cx="25" cy="30" r="1.7" fill="#1A1A1A"/>
+        <circle cx="39" cy="30" r="1.7" fill="#1A1A1A"/>
+        <circle cx="25.6" cy="29.4" r="0.6" fill="#FFFFFF"/>
+        <circle cx="39.6" cy="29.4" r="0.6" fill="#FFFFFF"/>
+        <path d="M30 33 L34 33 L32 36 Z" fill="#C87A4A"/>
+        <path d="M30 14 Q32 10 34 14" stroke="#8B7355" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+      </svg>
+      <span class="txt">kebi found this</span>
+      <span class="key">kebi</span>
+    </div>
+
+    <h2>tiktok — before vs after</h2>
+    <div class="cmp">
+      <div class="col">
+        <span class="lab">now</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13.5 14.5V4c2 .3 3.6 1.8 4.5 4"/><circle cx="10.5" cy="14.5" r="3" fill="currentColor" stroke="none"/></svg>
+        <span class="txt">music note — reads "audio", not TikTok</span>
+      </div>
+    </div>
+    <div class="cmp">
+      <div class="col">
+        <span class="lab">new</span>
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.08-.14 1.62.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07z"/></svg>
+        <span class="txt">official TikTok logo — unmistakable</span>
+      </div>
+    </div>
+
+    <p class="note">
+      Brand logos (TikTok / Instagram / YouTube) come from the canonical
+      single-colour marks, tinted with <code>--text-muted</code> like every
+      source line. Maps-list keeps a pin, manual a pencil. <b>kebi</b> uses the
+      actual mascot art (&lt;Mascot/&gt;) and keeps its own warm palette in both
+      themes, since it's our brand; the other glyphs stay monochrome.
+    </p>
+  </div>
+</template>
+
+<div class="theme" id="light"></div>
+<div class="theme dark" id="dark"></div>
+
+<script>
+  const tpl = document.getElementById('panel').content;
+  for (const [id, label] of [['light','light'], ['dark','dark']]) {
+    const node = tpl.cloneNode(true);
+    node.querySelector('.scheme').textContent = label;
+    document.getElementById(id).appendChild(node);
+  }
+</script>
+</body>
+</html>

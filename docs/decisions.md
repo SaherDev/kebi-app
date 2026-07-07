@@ -2,36 +2,138 @@
 
 Log of architectural decisions. Add new entries at the top.
 
+Each ADR describes a problem and the chosen approach, not implementation mechanics. The acid test: a paragraph that would need rewriting when code is refactored does not belong here — it belongs in the code, in tests, or in the PR description.
+
 Format:
 
 ```
 ## ADR-NNN: Title
 **Date:** YYYY-MM-DD\
-**Status:** accepted | superseded | deprecated\
-**Context:** Why this decision was needed.\
-**Decision:** What we decided.\
-**Consequences:** What follows from this decision.
+**Status:** accepted | superseded | deferred\
+**Context:** The problem and the constraints.
+**Decision:** The chosen approach.
+**Consequences:** What changes for users, operators, and future maintainers.
 ```
 
 ---
 
-## ADR-036: Single POST /v1/chat endpoint replaces three-endpoint AI contract
+## ADR-048: Mobile ships a native dev/prod build; iOS share extension feeds the existing save flow
 
-**Date:** 2026-04-09\
+**Date:** 2026-07-02\
 **Status:** accepted\
-**Context:** NestJS previously forwarded requests to three separate AI endpoints: POST /v1/extract-place (10s timeout), POST /v1/consult (20s timeout), and POST /v1/recall (20s timeout). This required NestJS to know the user's intent before forwarding — routing logic that belongs in the AI service, not the gateway. Additionally, NestJS was storing recommendation history after each consult request, coupling the gateway to AI response shapes.\
-**Decision:** Replace all three AI endpoint methods on IAiServiceClient with a single chat(payload: ChatRequestDto): Promise<ChatResponseDto> method. The concrete implementation calls POST /v1/chat with a 30-second timeout. The AI service classifies intent internally and returns a typed ChatResponseDto with a discriminated type field (extract-place | consult | recall | assistant | clarification | error). NestJS always returns HTTP 200 for chat responses — error classification is the frontend's responsibility via the type field. HTTP error codes (401, 403, 503) are reserved for transport failures only. NestJS no longer writes recommendation history. The RecommendationsModule is deleted. This supersedes the three-endpoint contract in ADR-016. Constitution §I, §V, and §VI are updated: NestJS no longer writes recommendations; the AI contract is one endpoint, not three.\
-**Consequences:** The old extract-place, consult, and recall NestJS endpoints are removed. The frontend must call POST /api/v1/chat for all interactions. SSE streaming (consultStream) is removed in this change — it can be added as chatStream() in a future ADR when the frontend requires real-time reasoning steps. AiServiceClient is simplified to one method and one timeout.
+**Context:** The design system defines a "save from the share sheet" trigger — a user shares a TikTok/Instagram link from iOS straight into Kebi. A share extension is native app-extension code, which **Expo Go cannot host**, so the app had to stop running inside Expo Go and become its own native build. This is a one-way workflow change with real cost (device builds need Apple credentials), so it warrants a recorded decision rather than an implicit migration.\
+**Decision:** Move `apps/mobile` off Expo Go to a **native build** — a dev client for day-to-day work, and the same native shell (JS bundled) for production. Native projects are **generated, not committed**: Continuous Native Generation owns `ios/`/`android/` (gitignored), and all native config lives in `app.json` + config plugins. The iOS **Share Extension** is provided by a config plugin (`expo-share-intent`) in **redirect-to-host-app** mode: a shared link opens Kebi and pre-fills the **existing** save sheet, which the user confirms — reusing the current `extract` → save → toast path verbatim. No custom in-extension UI, no new gateway/kebi endpoint, no new client data path. The gateway/AI contract is untouched (Constitution §V preserved). Identity stays server-side (ADR-044): a share into a signed-out app routes through the normal auth gate first.\
+**Consequences:** Day-to-day development now runs the Kebi dev client instead of Expo Go, and the app carries committed native config it didn't before — a `bundleIdentifier` (`app.kebi`) and an App Group (`group.app.kebi`) that a device build's credentials must match. Native code is reproducible from config (regenerate via prebuild), so the gitignored `ios/`/`android/` are disposable. Adding native capabilities later (widgets, deep links, notifications) now follows the same config-plugin path. The end user gets the share extension for free — iOS registers it at install with zero setup; there is no product-surface change beyond the new share target.
 
 ---
 
-## ADR-035: TypeORM as the ORM for services/api
+## ADR-047: One shared kebi transport, injected directly; only chat is an AI concern
+
+**Date:** 2026-06-10\
+**Status:** accepted\
+**Context:** All forwarding to kebi went through one fat client interface that bundled chat, signal, extract, and user library/places/data. Every consumer injected the whole thing while calling one slice (Interface Segregation violation), and the "AI" label was applied indiscriminately — yet NestJS is a thin gateway, and the only operation it forwards that is genuinely AI-shaped is the chat agent stream. Signal, extract, and user CRUD are plain request/response relays. ADR-016's single-client rationale was already superseded by ADR-036.\
+**Decision:** Replace the fat client with a single shared transport, `KebiHttpClient`, that owns the base URL, the `X-Gateway-*` auth headers, and the timeout, and exposes generic verbs (`get`/`post`/`patch`/`delete`/`postStream`). Each domain service injects it **directly** and calls it with its own route + payload (the service owns its kebi path and any query/scope serialization). No per-domain client interfaces or tokens: `KebiHttpClient` is internal infrastructure — a thin wrapper over `HttpService` — so it is injected concretely the same way `HttpService`/`ConfigService` are. This is the scope boundary of ADR-033: interface-first applies to **swappable external** dependencies (the auth provider, an LLM vendor), not to our own infra transports, which have exactly one implementation. The AI label is reserved for chat (`@RequiresAi()`, ADR-022, applies only to the chat endpoint). The gateway's outbound base URL is configured as `KEBI_BASE_URL`.\
+**Consequences:** Two layers — controller → service → transport — with no near-empty per-domain adapter in between. Adding a kebi route is one method on the calling service; transport changes (headers, timeout, retries) happen in one class. Services unit-test against a mocked `KebiHttpClient`. The `KEBI_BASE_URL` rename requires a coordinated Railway variable change (the shared secret is unchanged).
+
+---
+
+## ADR-046: The client validates server responses into class models at the API boundary
+
+**Date:** 2026-06-07\
+**Status:** accepted\
+**Context:** The client trusted server payloads as-is — responses reached components unvalidated, so an unexpected or evolving kebi response failed deep in the UI instead of at the edge. `frontend.md` already called for runtime validation of AI responses but left open what the validated value *is*: a plain object, or a domain object. Plain objects spread shape-trusting, identity-less data through the app; the server had already chosen the other way (token claims are a class instance, not a plain object).\
+**Decision:** Validate every server-response contract type at the client's API boundary, and produce each as a **class instance that implements the canonical `libs/shared` interface** — not a plain object. The shared interfaces stay the single source of truth; the client owns the runtime models and their validation. Validation is **fail-closed** — drift raises a typed error rather than falling back silently (ADR-041) — and **forward-compatible** — unknown fields and out-of-vocabulary values are tolerated so kebi can evolve the contract without breaking the client (ADR-019). This refines `frontend.md`'s response-validation guidance.\
+**Consequences:** Components receive real domain objects, and contract drift surfaces loudly at the edge instead of as a confusing downstream failure. New response models follow this pattern. The models live in the client that consumes them (the mobile app today); `apps/web`'s parked plain-object schemas are superseded by this approach if that app is revived. Wiring the validators into each data path is per-feature work, not part of this decision.
+
+---
+
+## ADR-045: Data-ownership boundaries — `users` is a mapping, `user_settings` is our product data
+
+**Date:** 2026-06-06\
+**Status:** accepted\
+**Context:** With Supabase as the identity provider, it's easy for the gateway DB to accumulate copies of user data (email, phone) that Supabase already owns — which means duplication, drift (Supabase is the real source for contact info), and a wider PII leak surface. At the same time we do need a home for *our* per-user product data (plan, movement profile, preferences), and that data was being defaulted from config with nowhere to persist per-user values.\
+**Decision:** Draw clear ownership lines. **Supabase** owns identity/PII (email, phone, linked providers). **kebi** owns AI data (taste model, places, embeddings). Our gateway DB owns exactly two things: `users` — an opaque identity **mapping** only (`id ↔ authProvider + externalId`, no PII) — and `user_settings` — **our product data**, stored as a single JSON document keyed by the internal user id. `user_settings` is the **source of truth** for the plan/ai_enabled/movement_profile claims stamped into the token (the token is a cache; the middleware reads it claim-first). Provisioning (`POST /auth/login`) creates the `user_settings` row with config-seeded defaults on first sign-in. If the gateway ever needs PII (e.g. to email a receipt), it fetches it live from Supabase by `externalId` rather than storing a copy. Extends ADR-044 (client blind to identity) to the server: minimal identity footprint everywhere.\
+**Consequences:** No PII in our DB — less to leak, no drift, Supabase stays authoritative. New per-user settings are a field in the `user_settings` JSON (no migration). The gateway never stores email/phone; needing them later is a Supabase read, not a schema change. kebi and Supabase are untouched by this split.
+
+---
+
+## ADR-044: Client is blind to identity — session and user data stay server-side
+
+**Date:** 2026-06-06\
+**Status:** accepted\
+**Context:** With Supabase Auth in place (ADR-042), we have to decide how much the client app knows about the authenticated user. If the app can read the session object and user/profile fields, identity logic spreads across the client, the UI starts trusting client-held values, and screens couple to auth internals — all of which weaken the rule that the server is authoritative over identity.\
+**Decision:** The client stays blind to identity. It never reads the session object or any user data. It holds only (1) an opaque bearer credential, managed by the auth SDK and read in exactly one place — the API layer — solely to attach to requests, and (2) a coarse auth *status* (loading / authenticated / unauthenticated) used for routing. All identity is server-side: the gateway owns the internal user id and product/user data; the provider's external id and the gateway's internal id never reach the client. Provisioning a user is a server concern — the client triggers it on sign-in via a dedicated endpoint that returns no user data — not something the client computes or inspects.\
+**Consequences:** The mobile auth context exposes status + actions only, never the session. UI cannot branch on user fields locally; anything user-specific must arrive in a server response intended for that purpose. The token lives behind the API client's getter as a credential, not as app state. Identity stays authoritative on the server and the client remains thin and auditable.
+
+---
+
+## ADR-043: Haptics governed by a single required map
+
+**Date:** 2026-06-04\
+**Status:** accepted\
+**Context:** The mobile app shipped with no haptic feedback. Without a rule, haptics get sprinkled in per-component and per-developer taste, and the effect erodes — every extra vibration makes the device feel noisy rather than alive. Haptics also have accessibility and platform constraints (reduced-motion, app backgrounded) that are easy to forget at an individual call site.\
+**Decision:** All mobile haptics come from a single required map maintained in the design system (`docs/kebi-app-design-system/design-system.md` → Behavior → Haptics) and are delivered through `expo-haptics` behind one app utility (`apps/mobile/src/lib/haptics.ts`). Constraints the utility enforces: never `Impact.Heavy` (reads as an error); never stack (within a 200ms window only one fires); suppressed when reduced motion is enabled or the app is backgrounded; only user-initiated actions vibrate — navigation and passive/incoming events (toasts appearing, streaming, background removals) are silent. New triggers are added to the map first, never invented at the call site.\
+**Consequences:** One dependency (`expo-haptics`) is added to `apps/mobile`; the web app is unaffected. New interactive features wire their haptic by referencing the map. Changing what vibrates is a design-system edit plus a doc version bump, not a scattered code change. The map is the contract; the utility is the only place that touches the haptics API.
+
+---
+
+## ADR-042: Switch auth from Clerk to Supabase
+
+**Date:** 2026-06-02\
+**Status:** accepted\
+**Context:** Clerk was our auth provider (ADR-004). We are moving to Supabase Auth. The gateway was already built to swap providers behind the `IdentityProvider` interface (ADR-033), so this is a provider change, not a rewrite. The active client is the Expo app; `apps/web` is parked (ADR-040) and stays on Clerk for now.\
+**Decision:** Use Supabase Auth instead of Clerk. Users sign in with email, Google, or phone/SMS; Apple is deferred until the paid Apple Developer account is active. The gateway verifies Supabase tokens with the project's public keys (JWKS), and the user's plan/movement settings travel inside the token as they did with Clerk (amends ADR-037 — that data now comes from Supabase). We start fresh: existing Clerk users are not migrated. Clerk stays wired in parallel until Supabase is fully set up, so going live is a one-line config flip with instant rollback. Supersedes ADR-004.\
+**Consequences:** Email and Google sign-in work on the free tier; SMS needs a paid SMS provider. The Clerk webhook and SDK are removed once Supabase is verified end-to-end. `apps/web`'s Clerk code is left untouched until that app is revived.
+
+---
+
+## ADR-041: No dummy data — contract-first data flow
+
+**Date:** 2026-05-31\
+**Status:** accepted\
+**Context:** The native client is built against an evolving kebi HTTP contract. Without a rule, missing backend fields get stubbed in the frontend — producing throwaway code that drifts from the real response and silently hides contract gaps.\
+**Decision:** No dummy, mock, placeholder, or stub data in any frontend for product flows. When a screen needs a field or endpoint that does not yet exist end-to-end, build it server-side first (contract → shared types → gateway and kebi), then build the UI against the live response. Test fixtures inside test files are exempt.\
+**Consequences:** Screens may start slower because server-side work is a prerequisite, but every shipped screen is backed by a real, tested contract. This is a Constitution Check item — plans proposing fixture data for a product flow are flagged and revised.
+
+---
+
+## ADR-040: Park apps/web and libs/ui pending the native mobile rebuild
+
+**Date:** 2026-05-29\
+**Status:** accepted\
+**Context:** The product is pivoting to a native React Native (Expo) app as the primary client; `apps/web` is frozen and no longer compiles after `libs/shared` was stripped to the live contract types. Left in the build graph, its broken typecheck blocks the active projects.\
+**Decision:** Park `apps/web` and `libs/ui` (the web-only design-system lib) — exclude them from the build graph without deleting them. The code stays in-tree as reference. Web is removed once mobile reaches parity, or revived if the pivot reverses.\
+**Consequences:** `apps/web` and `libs/ui` are intentionally excluded from CI/lint/test/build. The go-forward client is `apps/mobile` (Expo, NativeWind).
+
+---
+
+## ADR-037: Gateway speaks the hardened kebi contract; movement_profile rides the token _(claim source amended by ADR-042)_
+
+**Date:** 2026-05-29\
+**Status:** accepted\
+**Context:** kebi hardened its HTTP contract — protected routes now require service-to-service auth headers plus a verified user id (no longer a body field), and several endpoints were reshaped or removed. The gateway was still on the old contract and could not authenticate to kebi at all. Separately, `movement_profile` (a per-turn mobility setting) needed a home, carried like the existing `plan`.\
+**Decision:** Align the gateway with the current kebi contract: attach the shared-secret auth headers on every protected call (fail-closed if the secret is unset; it must match kebi exactly), pass the verified user id per call, and match the reshaped endpoints. `movement_profile` rides the auth token as a claim (like `plan`) and the gateway injects it server-side — the client never sends it. Shared contract types live in `libs/shared` as the single source of truth for both clients.\
+**Consequences:** Gateway auth is a coordinated cross-repo change — the shared secret must match on both sides and the endpoints must deploy in lockstep with kebi's schema. A user-facing way to set `movement_profile` is still owed; until then kebi applies a neutral fallback.
+
+---
+
+## ADR-036: Single chat endpoint replaces the three-endpoint AI contract
 
 **Date:** 2026-04-09\
 **Status:** accepted\
-**Context:** services/api manages exactly two domain tables — users and user_settings. A lightweight ORM is sufficient for a two-table gateway service.\
-**Decision:** Use TypeORM in services/api. `TypeOrmModule.forRootAsync()` reads `DATABASE_URL` from env vars via `ConfigService`. `synchronize: true` — acceptable at this stage (small team, no production data at risk). `UserEntity` and `UserSettingsEntity` map to the `users` and `user_settings` tables; `@PrimaryColumn()` with `@BeforeInsert()` CUID generation. TypeORM with `synchronize: true` only touches registered entities — AI-owned tables (places, embeddings, taste_model, consult_logs, user_memories, interaction_log) are never registered and are fully owned by kebi's Alembic migrations.\
-**Consequences:** Single-tool schema management on the NestJS side. If the team grows or production data accrues, replace `synchronize: true` with explicit TypeORM migrations via a future ADR.
+**Context:** The gateway forwarded to three separate AI endpoints, which forced it to know the user's intent before forwarding — routing logic that belongs in the AI service. It also stored recommendation history, coupling it to AI response shapes.\
+**Decision:** Replace the three endpoints with a single chat call; the AI service classifies intent internally and returns a typed response with a discriminated `type` field. The gateway always returns HTTP 200 for chat — error classification is the client's job via `type`; HTTP error codes are reserved for transport failures. The gateway no longer writes recommendation history. Supersedes ADR-016.\
+**Consequences:** The frontend calls one chat endpoint for all interactions. SSE streaming is dropped here and can return in a future ADR when the frontend needs real-time reasoning steps.
+
+---
+
+## ADR-035: TypeORM as the ORM for the gateway
+
+**Date:** 2026-04-09\
+**Status:** accepted\
+**Context:** The gateway manages exactly two tables (`users`, `user_settings`); a lightweight ORM is sufficient.\
+**Decision:** Use TypeORM with schema auto-sync — acceptable while there is no production data at risk. It only manages the gateway's own tables; AI-owned tables stay fully owned by kebi's migrations.\
+**Consequences:** Single-tool schema management on the gateway side. Move to explicit migrations once the team grows or production data accrues.
 
 ---
 
@@ -39,71 +141,49 @@ Format:
 
 **Date:** 2026-03-14\
 **Status:** deferred\
-**Context:** NestJS controllers currently use a global ValidationPipe (ADR-017) for request body validation. As domain-specific validation rules grow — for example, validating consult location bounds, checking user quota before forwarding to kebi, or enforcing place input constraints — a single pipe or service method will accumulate unrelated rules that are hard to test independently.\
-**Decision:** Deferred. Apply the Chain of Responsibility pattern when any single validation path exceeds 3 independent rules. Each validator implements a validate(payload) -> ValidationResult interface and is chained at module startup. Until the threshold is reached, a single validation method per service is acceptable.\
-**Consequences:** No implementation now. When the threshold is reached, refactor into a chain of validator classes. Each rule becomes independently testable. Adding a new rule means adding a new class, not editing existing ones.
+**Context:** Controllers use a global validation pipe. As domain-specific validation grows, a single method accumulates unrelated rules that are hard to test independently.\
+**Decision:** Deferred. Adopt Chain of Responsibility once any single validation path exceeds three independent rules; until then, a single validation method per service is acceptable.\
+**Consequences:** No work now. When triggered, each rule becomes an independently testable validator and adding a rule means adding a class, not editing one.
 
 ---
 
-## ADR-033: Interface abstraction for all swappable dependencies in the product repo
+## ADR-033: Interface abstraction for all swappable dependencies
 
 **Date:** 2026-03-14\
 **Status:** accepted\
-**Context:** The product repo depends on external systems: Clerk for auth, TypeORM for database access, Axios for HTTP calls to kebi, and any future integrations. ADR-030 establishes that interfaces are implemented via classes. This ADR extends that to require an interface abstraction for any dependency that meets one or more criteria: (1) has more than one possible implementation now or in the future, (2) is an external system that could be swapped for cost, performance, or availability reasons, (3) needs to be mockable in tests without hitting a real service. This mirrors ADR-039 in kebi and makes the rule consistent across both repos.\
-**Decision:** Any dependency meeting the criteria above must be abstracted behind a TypeScript interface before a concrete class is written. Concrete implementations live in their domain module or in a shared provider if used across multiple modules. Controllers and services depend on the interface only, injected via NestJS Depends(). No concrete class is imported directly in business logic. Swapping any dependency requires a config change and a new implementation class, never a change to business logic. AiServiceClient (ADR-016) is the first example of this pattern applied correctly — it abstracts all kebi HTTP forwarding behind a typed interface.\
-**Consequences:** Every new external dependency introduced must be evaluated against the three criteria before implementation begins. If it qualifies, an interface is defined first, then the concrete class. This rule is a Constitution Check item — any plan that introduces a concrete external dependency directly into a controller or service must be flagged and revised before implementation starts.
+**Context:** The repo depends on external systems (auth, database, HTTP to kebi). Any dependency that has more than one possible implementation, could be swapped for cost/performance/availability, or needs mocking in tests should not be hardwired into business logic.\
+**Decision:** Abstract any such dependency behind a TypeScript interface before writing the concrete class. Business code depends on the interface only; swapping a dependency is a config change plus a new implementation class, never a change to business logic.\
+**Consequences:** Every qualifying external dependency is defined interface-first. This is a Constitution Check item — plans that wire a concrete dependency directly into business logic are flagged and revised.
 
 ---
 
-## ADR-032: Facade pattern enforced on NestJS controllers
+## ADR-032: Facade pattern enforced on controllers
 
 **Date:** 2026-03-14\
 **Status:** accepted\
-**Context:** NestJS controllers are entry points into the domain layer. Without a constraint, controllers accumulate business logic, direct database calls, and inline HTTP forwarding to kebi when building quickly. This couples the HTTP layer to infrastructure and makes both harder to test.\
-**Decision:** Controllers are facades. Each controller method makes exactly one service call and returns the result. No direct database calls, no direct AiServiceClient calls, no Redis, no business logic appear inside any controller file. All orchestration lives in the service layer. The one exception is request validation via pipes and guards, which are decorators and do not count as logic inside the method body.\
-**Consequences:** Controller files stay under 50 lines. Infrastructure concerns are testable independently of HTTP routing. Violations of this rule must be flagged during Constitution Check in the Plan phase before implementation begins.
+**Context:** Without a constraint, controllers accumulate business logic, direct database calls, and inline forwarding — coupling the HTTP layer to infrastructure and hurting testability.\
+**Decision:** Controllers are facades. Each method makes one service call and returns the result — no database access, no AI-client calls, no business logic. All orchestration lives in the service layer. Guards and pipes (decorators) do not count as logic.\
+**Consequences:** Controllers stay thin and infrastructure is testable independently of routing. Violations are flagged during Constitution Check.
 
 ---
 
-## ADR-031: Agent Skills Integration in Development Workflow
+## ADR-031: Agent skills scoped to workflow stages
 
 **Date:** 2026-03-12\
 **Status:** accepted\
-**Context:** The Kebi project uses Claude Code with 8 agent skills installed to enhance development efficiency. Without a documented integration strategy, skills may be underutilized or invoked at the wrong workflow stage, wasting tokens or missing optimization opportunities.\
-**Decision:** Agent skills are scoped to specific workflow stages (from ADR-028) and invoked only when task context matches their domain. The mapping is:
-
-| Workflow Step | Active Skills | Activation Trigger |
-|---------------|---------------|-------------------|
-| **Clarify** | `nestjs-expert`, `nextjs16-skills` | Architecture questions, design uncertainty |
-| **Plan** | `composition-patterns` | Multi-file changes, architecture decisions |
-| **Implement** | `web-design-guidelines`, `react-best-practices`, `clerk-auth`, `nestjs-expert` | Writing code for respective domains |
-| **Verify** | _(built-in)_ | `pnpm nx affected -t test,lint` |
-| **Complete** | `vercel-deploy-claimable`, `use-railway` | Deployment required |
-
-**Skill Details:**
-
-- `nestjs-expert` — NestJS patterns, module architecture, dependency injection, guard/middleware design
-- `nextjs16-skills` — Next.js 16 features, server/client component patterns, data fetching, middleware
-- `composition-patterns` — Component composition, architectural refactoring, multi-layer design decisions
-- `web-design-guidelines` — UI/UX consistency, component design, accessibility, design systems
-- `react-best-practices` — React patterns, performance optimization, hooks, state management
-- `clerk-auth` — Clerk authentication integration with Next.js, SDK usage, session handling
-- `vercel-deploy-claimable` — Vercel deployment workflows, environment setup, optimization
-- `use-railway` — Railway infrastructure, service provisioning, environment variables, troubleshooting
-
-**Invocation Rule:** A skill is invoked only if task context shows (1) the skill domain is directly relevant, AND (2) the workflow step matches the table above. Example: Implementing a NestJS guard uses `nestjs-expert` in the Implement phase; optimizing a React component uses `react-best-practices` in the Implement phase; designing a module structure uses `composition-patterns` in the Plan phase.
-
-**Consequences:** Skills reduce implementation time and token cost by providing focused guidance. Skills are available in every session for this project (installed in `.claude/skills/`). Developers invoking Claude Code get domain-specific support without manual configuration. Token efficiency improves through targeted skill use instead of exploratory implementations.
+**Context:** The project uses Claude Code agent skills. Without a strategy, skills get invoked at the wrong stage — wasting tokens or missing optimization opportunities.\
+**Decision:** Scope each skill to a workflow stage (per ADR-028) and invoke it only when both the skill's domain and the current stage match. The concrete skill-to-stage mapping is maintained in `.claude/workflows.md` (so it can evolve with the installed skill set without touching this log).\
+**Consequences:** Focused guidance at the right moment and lower token cost. The skill set is configured in the repo and available every session.
 
 ---
 
-## ADR-030: Interfaces implemented only via classes, never via factory functions
+## ADR-030: Interfaces implemented only via classes, never factory functions
 
 **Date:** 2026-03-11\
 **Status:** accepted\
-**Context:** When defining injectable abstractions (like HttpClient), there are two patterns: factory functions that return objects, or classes that implement the interface. Factory functions are lighter but obscure the shape of what's being created. Classes are more explicit and composable.\
-**Decision:** All interfaces in the codebase are implemented via classes that explicitly implement the interface (e.g., `class FetchClient implements HttpClient`). Never use factory functions to return objects that satisfy an interface. This makes the type visible in code and enables constructor-based dependency injection.\
-**Consequences:** Every transport is a class. Every service is a class. Dependency injection (both manual and framework-based like NestJS) works the same way everywhere. Code is more discoverable — developers see the concrete type, not a factory.
+**Context:** Injectable abstractions can be built via factory functions or classes. Factories are lighter but hide the shape of what's created; classes are explicit and composable.\
+**Decision:** Implement all interfaces via classes that explicitly implement them, never factory functions. This keeps the type visible in code and enables constructor-based dependency injection.\
+**Consequences:** Every transport and service is a class; dependency injection works the same way everywhere; the concrete type is discoverable instead of hidden behind a factory.
 
 ---
 
@@ -111,75 +191,19 @@ Format:
 
 **Date:** 2026-03-11\
 **Status:** accepted\
-**Context:** Fetch calls are written inline inside Server Components and Server Actions, making it hard to swap the HTTP client, reuse calls, or change the base URL in one place. Testing and future transport swaps (axios, GraphQL) require tight coupling to a specific implementation.\
-**Decision:** Create an API client layer at `apps/web/src/api/` with an injectable `HttpClient` interface. Each transport (fetch, axios, GraphQL) implements this interface as a class (`FetchClient implements HttpClient`). Nothing outside `apps/web/src/api/` imports fetch, axios, or any HTTP library directly.
-
-**Split reads and mutations.** Reads are plain async functions (queries) — no `'use server'` directive. Next.js caching works normally on them. Mutations have `'use server'` and are called from forms and Client Components via Server Actions. Both go through the same transport layer underneath.
-
-Structure:
-
-```
-apps/web/src/api/
-  types.ts              — HttpClient interface (get, post)
-  transports/
-    fetch.transport.ts  — FetchClient class implementing HttpClient
-  server.ts             — getApiClient() using Clerk server SDK
-  queries/
-    places.query.ts     — plain async functions, no directive
-  mutations/
-    places.mutation.ts  — 'use server'
-    consult.mutation.ts — 'use server'
-  index.ts              — re-exports all queries and mutations
-```
-
-**The rule:** Reads are queries, mutations are Server Actions, both go through the same transport layer.
-
-**Client-side hook for token management:** Client components need tokens from Clerk when calling the API. The `useApiClient()` hook in `apps/web/src/api/hooks.ts` wraps `createApiClient()` with Clerk's `useAuth().getToken()`:
-
-```ts
-// apps/web/src/api/hooks.ts
-export function useApiClient() {
-  const { getToken } = useAuth();
-  return createApiClient(async () => {
-    const token = await getToken();
-    return token ?? '';
-  });
-}
-```
-
-Components never import HttpClient, FetchClient, createApiClient, or getApiClient directly. Usage:
-
-```ts
-// Server Component — read
-import { getPlaces } from "@/api";
-const places = await getPlaces();
-
-// Client Component — use the hook
-const api = useApiClient();
-const result = await api.post('/consult', { query });
-
-// Or use Server Actions (mutations)
-import { extractPlace } from "@/api";
-await extractPlace({ input });
-```
-
-**Instance lifecycle:** `getApiClient()` creates a fresh `FetchClient` on every call. This is fine because `FetchClient` is stateless — the constructor must stay cheap and do no I/O. If the constructor ever needs to do async work (e.g., connection pooling), refactor to a singleton pattern.
-
-**Error handling:** `FetchClient` throws a typed `ApiError` (extending `Error`) with `status`, `statusText`, and parsed response body. API functions do not catch or normalise errors — they let the error propagate to the caller. Components handle errors via try/catch or React error boundaries. This keeps the API layer thin and gives components full control over error UX.
-
-See `docs/examples/consult-example.ts` for the full flow.
-
-**Consequences:** Swapping transports requires changing one class. Components stay thin — one function call, typed response. Reads benefit from Next.js caching. Mutations run as Server Actions. No DI library needed. Request/response types come from `@kebi-app/shared` when implemented.
+**Context:** Inline fetch calls make it hard to swap the HTTP client, reuse calls, or change the base URL in one place, and they couple components to a specific implementation.\
+**Decision:** Route all of `apps/web`'s HTTP through an injectable `HttpClient` interface with class-based transports; nothing outside the api layer imports a HTTP library directly. Reads are plain query functions, mutations are Server Actions, and both share the transport. Client components obtain tokens via a hook that wraps the client with the auth provider's token getter. Errors propagate as a typed error for components to handle.\
+**Consequences:** Swapping transports changes one class; components stay thin with typed responses; reads keep Next.js caching. Targets `apps/web`, currently parked per ADR-040.
 
 ---
 
-## ADR-028: 5-Step Token-Efficient Workflow (Clarify → Plan → Implement → Verify → Complete)
+## ADR-028: 5-Step token-efficient workflow
 
 **Date:** 2026-03-09\
 **Status:** accepted\
-**Context:** Previous workflow was unclear about when to use agents, causing token waste through unnecessary subagent dispatches and review loops. Needed a standardized approach that scales from simple 1-file tasks to complex multi-repo changes.\
-**Decision:** Adopt 5-step workflow with specific Claude model per step: (1) **Clarify** (Haiku) — If ambiguous, ask 5 questions; (2) **Plan** (Sonnet) — If 3+ files, create docs/plans/\*.md with phases + Constitution Check against docs/decisions.md; (3) **Implement** (Haiku/Sonnet per complexity) — Follow plan checklist, write code, commit; (4) **Verify** (Haiku) — Run commands, all must pass; (5) **Complete** (Haiku) — Mark task done. See `.claude/workflows.md` for flow, `.claude/constitution.md` for check process.\
-**Consequences:** Average task cost reduced from 250K to 13-18K tokens (~95% savings). Clear decision points on when to plan vs implement. Constitution Check catches architectural violations early (in Plan phase, not Implement phase). Plan doc becomes single source of truth for implementation. Workflow applies consistently across all repos (kebi-app, kebi, future repos).
+**Context:** The prior workflow was unclear about when to use agents, wasting tokens through unnecessary dispatches. Needed an approach that scales from one-file tasks to multi-repo changes.\
+**Decision:** Adopt a 5-step workflow — Clarify → Plan → Implement → Verify → Complete — with planning gated on size (3+ files or a cross-repo boundary) and a Constitution Check against this log during the Plan step. Step-by-step detail and per-step model assignments live in `.claude/workflows.md`.\
+**Consequences:** Far lower average task cost, clear plan-vs-implement decision points, and architectural violations caught in the Plan phase rather than mid-implementation. Applies across repos.
 
 ---
 
@@ -192,17 +216,17 @@ See `docs/examples/consult-example.ts` for the full flow.
 **Date:** 2026-03-09\
 **Status:** superseded\
 **Context:** Originally defined how two ORM tools would share one PostgreSQL instance.\
-**Decision:** Superseded by ADR-035. Current state: NestJS uses TypeORM with `synchronize: true` for `users` and `user_settings`; Alembic in kebi owns all AI tables. See ADR-035 for details.
+**Decision:** Superseded by ADR-035. The gateway owns its two product tables; kebi's Alembic owns all AI tables.
 
 ---
 
-## ADR-025: Secrets in .env.local, non-secrets in config/app.yaml (NestJS); .env.local for Next.js; config/.local.yaml for FastAPI
+## ADR-025: Secrets in gitignored local files, non-secrets in committed config
 
 **Date:** 2026-03-09\
 **Status:** accepted\
-**Context:** Secrets must never be stored in version control. Each service needs a simple way to manage its own secrets without external dependencies or complex setup.\
-**Decision:** (1) **NestJS** (kebi-app/services/api) — secrets in `.env.local` (gitignored, symlinked to `kebi-config/secrets/api.env.local`); non-secrets in `services/api/config/app.yaml` (committed). `ConfigModule` loads `.env.local` via `envFilePath` for local dev; Railway injects the same variable names as env vars in production. (2) **Next.js** (kebi-app/apps/web) — secrets in `.env.local` (gitignored). (3) **FastAPI** (kebi) — secrets in `config/.local.yaml` (gitignored). Secret files are never committed.\
-**Consequences:** Non-secret NestJS config (`app.yaml`) is version-controlled and reviewable. Secrets are isolated in gitignored files symlinked from `kebi-config/secrets/`. Railway variable names are the canonical names — `.env.local` keys must match them exactly for local/prod parity.
+**Context:** Secrets must never be in version control, and each service needs simple, self-contained secret management.\
+**Decision:** Keep secrets in gitignored per-service local files (sourced from a shared secrets store, `kebi-config/secrets`) and non-secret config in committed files. In production the platform injects the same names as environment variables. Secret files are never committed.\
+**Consequences:** Non-secret config is reviewable in version control; secrets stay isolated. Deploy-time variable names are canonical and must match the local names for parity.
 
 ---
 
@@ -210,29 +234,29 @@ See `docs/examples/consult-example.ts` for the full flow.
 
 **Date:** 2026-03-08\
 **Status:** accepted\
-**Context:** The Next.js frontend needs minimal global client state — query input, active recommendation, modal visibility. Most data fetching is handled by TanStack Query (server state) or Next.js server components. A full state management solution like Redux would be overkill.\
-**Decision:** Use Zustand for client-side UI state in `apps/web`. TanStack Query handles all async server state (API calls, caching, mutation lifecycle). Zustand handles lightweight UI state that must be shared across components (current query string, active recommendation result, drawer/modal open state). Auth state is owned by Clerk. Locale and i18n routing is owned by `next-intl`. Theme is owned by `next-themes`. Zustand does not replace any of these.\
-**Consequences:** Client bundle stays lean (~1KB for Zustand). No Redux boilerplate. Store is defined once in `apps/web/src/store/` and consumed via hooks. If a piece of state is only needed in one component, it stays local with `useState` — Zustand is only for cross-component shared state.
+**Context:** The frontend needs minimal global client UI state; most data is server state, so a full solution like Redux would be overkill.\
+**Decision:** Use Zustand for lightweight shared UI state in `apps/web`. Server state stays in the data-fetching layer; auth, locale, and theme stay with their existing owners; component-local state stays in `useState`.\
+**Consequences:** Lean client bundle and no Redux boilerplate. Zustand is only for cross-component UI state.
 
 ---
 
-## ADR-023: @Serialize() decorator for controller response shaping
+## ADR-023: Response shaping through DTOs
 
 **Date:** 2026-03-08\
 **Status:** accepted\
-**Context:** Controllers returning raw TypeORM entity objects or AI response objects would expose internal fields and couple the response shape to the persistence layer. A consistent serialization mechanism is needed across all controllers.\
-**Decision:** A custom `@Serialize(DtoClass)` decorator applies an interceptor that calls `plainToInstance(DtoClass, data, { excludeExtraneousValues: true })` on every response. All controller methods that return data use `@Serialize(ResponseDto)`. Response DTOs use `@Expose()` on fields that should be included. Raw entity objects and AI response objects are never returned directly.\
-**Consequences:** Response shape is decoupled from persistence layer. Adding or removing a response field requires only updating the DTO. Controllers stay clean — no manual mapping logic.
+**Context:** Returning raw entities or AI response objects from controllers would leak internal fields and couple the response shape to the persistence layer.\
+**Decision:** Shape every controller response through a response DTO via a serialization decorator that drops non-exposed fields. Raw entities and AI objects are never returned directly.\
+**Consequences:** Response shape is decoupled from persistence; adding or removing a response field is a DTO edit; controllers stay clean.
 
 ---
 
-## ADR-022: AiEnabledGuard with per-user flag and global kill switch
+## ADR-022: AI access gated by a per-user flag and a global kill switch
 
 **Date:** 2026-03-08\
 **Status:** accepted\
-**Context:** AI requests to kebi are expensive and may need to be disabled — either globally (service outage, cost control) or per-user (abuse, account restriction). This must be enforced at the NestJS boundary before any forwarding happens.\
-**Decision:** `AiEnabledGuard` in `services/api/src/common/guards/ai-enabled.guard.ts` runs after `ClerkMiddleware` on AI routes only. It checks two things in order: (1) `AI_GLOBAL_KILL_SWITCH` Railway environment variable — if set to the string `"true"`, blocks all AI requests with 503, no redeploy needed; (2) `req.user.ai_enabled` from the verified Clerk JWT — if false, blocks that user's AI requests with 403, defaults to true if the field is absent. Applied via the `@RequiresAi()` decorator (shorthand for `@UseGuards(AiEnabledGuard)`) on endpoints that call the AI service. New users get `ai_enabled: true` and `plan: "homebody"` set in Clerk `publicMetadata` via the `user.created` webhook handler.\
-**Consequences:** AI can be killed globally by setting `AI_GLOBAL_KILL_SWITCH=true` in Railway without a redeploy. Individual users can be disabled via Clerk dashboard or API without touching the codebase. The `@RequiresAi()` decorator provides a clean, reusable pattern for guard application across multiple endpoints. Guard order matters — `ClerkMiddleware` must run first to populate `req.user`.
+**Context:** AI calls to kebi are expensive and may need disabling — globally (outage, cost control) or per-user (abuse). This must be enforced at the gateway before any forwarding.\
+**Decision:** A guard on AI routes checks a global kill switch (an env flag, togglable without a redeploy) and a per-user `ai_enabled` flag from the verified token. Either can block AI access (503 global, 403 per-user) while the rest of the API keeps working. New users default to AI-enabled.\
+**Consequences:** AI can be killed globally without a redeploy and per-user without code changes. The guard depends on auth running first to populate the user.
 
 ---
 
@@ -240,9 +264,9 @@ See `docs/examples/consult-example.ts` for the full flow.
 
 **Date:** 2026-03-08\
 **Status:** accepted\
-**Context:** The NestJS API needs a way to document and test endpoints. Swagger (`@nestjs/swagger`) would duplicate the contract already maintained in `docs/api-contract.md` and add runtime overhead.\
-**Decision:** No Swagger. Bruno is the API testing and documentation tool. Every new NestJS endpoint gets a corresponding `.bru` request file in `kebi-config/bruno/`. `docs/api-contract.md` remains the human-readable source of truth for the NestJS ↔ kebi contract.\
-**Consequences:** No `@ApiProperty()` decorators in DTOs. No Swagger UI endpoint. New endpoints require a `.bru` file — this is the acceptance signal that an endpoint is documented and testable.
+**Context:** The API needs documentation and testing. Swagger would duplicate the contract already maintained in `docs/api-contract.md` and add runtime overhead.\
+**Decision:** No Swagger. Use Bruno for API testing and documentation; every new endpoint gets a Bruno request file. `docs/api-contract.md` stays the human-readable contract source.\
+**Consequences:** No Swagger decorators or UI. A Bruno file is the signal that an endpoint is documented and testable.
 
 ---
 
@@ -250,9 +274,9 @@ See `docs/examples/consult-example.ts` for the full flow.
 
 **Date:** 2026-03-07\
 **Status:** accepted\
-**Context:** The repo was initially set up with Yarn (ADR-006). Yarn was migrated away from in commit `eadf081` ("chore: migrate from yarn to pnpm"). pnpm has stricter dependency isolation, faster installs via a content-addressable store, and good Nx monorepo support with workspace protocol. CLAUDE.md and all dev commands already reference pnpm.\
-**Decision:** pnpm is the package manager for the entire monorepo. All installs use `pnpm install`. Workspace packages reference each other via `workspace:*`. All scripts in CLAUDE.md and CI use `pnpm nx …`. No `yarn.lock` or `package-lock.json` is committed — only `pnpm-lock.yaml`.\
-**Consequences:** Developers must have pnpm installed (`npm i -g pnpm`). Phantom dependency bugs are caught earlier due to pnpm's strict hoisting. ADR-006 is superseded and its Yarn-specific guidance no longer applies.
+**Context:** The repo was initially on Yarn (ADR-006). pnpm has stricter dependency isolation, faster installs, and good Nx monorepo support.\
+**Decision:** pnpm is the package manager for the whole monorepo; workspace packages reference each other via the workspace protocol; only the pnpm lockfile is committed. Supersedes ADR-006.\
+**Consequences:** Phantom-dependency bugs surface earlier from strict hoisting. Developers must have pnpm installed.
 
 ---
 
@@ -260,39 +284,39 @@ See `docs/examples/consult-example.ts` for the full flow.
 
 **Date:** 2026-03-07\
 **Status:** accepted\
-**Context:** The api-contract.md explicitly states that the kebi response schema will evolve and clients must not fail on extra keys. DTOs that strip or reject unknown fields would break silently when kebi adds new fields.\
-**Decision:** AI service response DTOs in `services/api/src/ai-service/dto/` declare all currently known fields and mark every field optional with `@IsOptional()`. Unknown fields from the AI response are not stripped at the NestJS boundary — they pass through to the frontend or are ignored. Implementation is pending.\
-**Consequences:** NestJS tolerates kebi API evolution without breaking. Frontend receives richer payloads as new fields are added. DTOs must be updated when new fields become required by business logic.
+**Context:** The kebi response schema will evolve and clients must not fail on extra keys. DTOs that reject unknown fields would break when kebi adds fields.\
+**Decision:** AI-response DTOs declare known fields as optional and do not strip unknown fields — they pass through to the client.\
+**Consequences:** The gateway tolerates kebi API evolution and the frontend receives new fields as they appear. DTOs are updated when a field becomes business-required.
 
 ---
 
-## ADR-018: Global exception filter mapping AI service errors to frontend responses
+## ADR-018: Global exception filter for upstream errors
 
 **Date:** 2026-03-07\
 **Status:** accepted\
-**Context:** kebi returns 400, 422, 500, and timeout conditions that require different user-facing messages. Without a consistent translation layer, error handling would be duplicated across every controller.\
-**Decision:** A global `AllExceptionsFilter` registered in `services/api/src/main.ts` catches Axios errors from AI service calls and HTTP exceptions from NestJS itself. It maps AI service 400 → 400, 422 → 422 with "couldn't understand" message, 500 → 503 with retry suggestion, and timeout → 503. The filter lives in `services/api/src/common/filters/all-exceptions.filter.ts`. Implementation is pending.\
-**Consequences:** All controllers get consistent error translation for free. AI service error shape changes require only updating this filter, not each controller. No raw Axios errors reach the frontend.
+**Context:** kebi returns several error and timeout conditions that need different user-facing messages. Without a translation layer, error handling would be duplicated across every controller.\
+**Decision:** A global exception filter catches AI-service and framework errors and maps them to consistent client responses (for example, upstream 5xx/timeout → 503 with a retry suggestion).\
+**Consequences:** All controllers get consistent error translation; changes live in one filter; no raw upstream errors reach the frontend.
 
 ---
 
-## ADR-017: Global ValidationPipe with whitelist mode
+## ADR-017: Global validation in whitelist mode
 
 **Date:** 2026-03-07\
 **Status:** accepted\
-**Context:** Without a global validation pipe, invalid request bodies would reach controllers and services, causing hard-to-debug runtime errors. Without whitelist mode, extra fields sent by clients could leak into service logic.\
-**Decision:** `ValidationPipe` is registered globally in `services/api/src/main.ts` with `{ whitelist: true, forbidNonWhitelisted: true, transform: true }`. All request DTOs in `services/api/src/<domain>/dto/` use `class-validator` decorators. Implementation is pending.\
-**Consequences:** Invalid requests are rejected at the pipe before reaching controllers. DTOs are the authoritative contract for incoming data. `transform: true` means the parsed class instance (not plain object) reaches controllers, enabling typed access.
+**Context:** Without global validation, invalid request bodies reach services and cause hard-to-debug errors; without whitelisting, extra client fields leak into logic.\
+**Decision:** Register a global validation pipe in whitelist mode that rejects unknown fields and transforms payloads into typed DTO instances; request DTOs carry validation decorators.\
+**Consequences:** Invalid requests are rejected before controllers; DTOs are the authoritative contract for incoming data.
 
 ---
 
-## ADR-016: AiServiceClient encapsulating all forwarding to kebi _(superseded by ADR-036)_
+## ADR-016: A single client encapsulating all forwarding to kebi _(superseded by ADR-036)_
 
 **Date:** 2026-03-07\
 **Status:** superseded\
-**Context:** Both the places and recommendations domains need to call kebi. Without a shared abstraction, each service would duplicate base URL config, timeout setup, and error normalization.\
-**Decision:** `AiServiceModule` in `services/api/src/ai-service/` wraps NestJS `HttpModule` (Axios). `AiServiceClient` (injectable service) exposes two typed methods: `extractPlace(payload)` → calls `POST /v1/extract-place` and `consult(payload)` → calls `POST /v1/consult`. Base URL is read from `ConfigService` (`ai_service.base_url`). Timeouts are set per endpoint: 10s for extract-place, 20s for consult. Implementation is pending.\
-**Consequences:** All AI forwarding is in one place. Domain services call `AiServiceClient` methods rather than raw HTTP. Timeout policy from api-contract.md is enforced consistently. Future auth header between services (shared secret) is added once in this module.
+**Context:** Multiple domains needed to call kebi; without a shared abstraction each would duplicate base URL, timeouts, and error handling.\
+**Decision:** Superseded by ADR-036. Originally: wrap all kebi forwarding behind a single injectable client with configured base URL, per-endpoint timeouts, and one place to add the service-to-service auth header.\
+**Consequences:** Superseded by ADR-036 (single chat endpoint).
 
 ---
 
@@ -301,82 +325,77 @@ See `docs/examples/consult-example.ts` for the full flow.
 **Date:** 2026-03-07\
 **Status:** superseded\
 **Context:** Originally specified the shape of a global DB service provider.\
-**Decision:** Superseded by ADR-035. `TypeOrmModule.forRootAsync()` now provides the global DataSource; domain services inject repositories via `@InjectRepository()`.
+**Decision:** Superseded by ADR-035. TypeORM now provides the global data source and domain services inject repositories.
 
 ---
 
-## ADR-014: One NestJS module per domain bounded context
+## ADR-014: One module per domain bounded context
 
 **Date:** 2026-03-07\
 **Status:** accepted\
-**Context:** NestJS applications that grow without module boundaries become coupled monoliths where any service can call any other. The architecture limits NestJS to three concerns: users, recommendations, and AI forwarding. Each needs clear isolation.\
-**Decision:** Domain modules are: `UsersModule` (`services/api/src/users/`), `RecommendationsModule` (`services/api/src/recommendations/`), and `AiServiceModule` (`services/api/src/ai-service/`). Each module contains its own controller, service, and `dto/` subdirectory. `AppModule` imports all domain modules. No cross-domain service injection — domains communicate only through `AiServiceClient`. Implementation is pending.\
-**Consequences:** Adding a new domain (e.g., feedback) requires creating one new module folder. Controller and service responsibilities stay narrow. DTO types are local to their domain unless promoted to `libs/shared`.
+**Context:** Without module boundaries, the gateway's services become a coupled monolith where any service can call any other.\
+**Decision:** One module per domain, each with its own controller, service, and DTOs; the app module composes them. No cross-domain service injection — domains integrate only through the AI client.\
+**Consequences:** Adding a domain is one new module; responsibilities stay narrow; DTOs stay local unless promoted to `libs/shared`.
 
 ---
 
-## ADR-013: Clerk auth middleware applied globally with public path opt-out
+## ADR-013: Auth applied globally with a public-path opt-out
 
 **Date:** 2026-03-07\
 **Status:** accepted\
-**Context:** Every authenticated endpoint needs Clerk token verification. Applying checks per-controller would be error-prone — a missed guard means an unprotected endpoint. A global check with opt-out is safer. Auth must be enforced at both the Next.js edge (for page protection) and the NestJS API (for endpoint protection).\
-**Decision:** Two complementary layers:
-
-1. **Frontend (Next.js edge):** `clerkMiddleware()` from `@clerk/nextjs/server` in `apps/web/src/middleware.ts` protects all routes except those matched by `createRouteMatcher(['/sign-in(.*)', '/sign-up(.*)'])`. Unauthenticated requests are redirected to sign-in at the edge (before the app loads).
-
-2. **Backend (NestJS):** `ClerkMiddleware` in `services/api/src/common/middleware/clerk.middleware.ts` verifies bearer tokens from the `Authorization` header using the `@clerk/backend` SDK. Routes matching `auth.public_paths` from config (e.g., `/health`, `/webhooks/clerk`) skip verification. The verified user context (`userId`, `ai_enabled`) is attached to `req.user` for downstream use. A `@Public()` decorator marks routes as documentation; the middleware uses config, not decorators, to determine public access.
-
-**Consequences:** All pages are protected at the edge — no unprotected pages. All API endpoints are authenticated by default. Public endpoints are explicitly listed in config, not marked with decorators. `req.user` is available in all NestJS controllers without re-verifying downstream. Clerk tokens are automatically handled by middleware, not repeated in every handler. Config is the single source of truth for public routes.
+**Context:** Every authenticated endpoint needs token verification. Per-controller checks are error-prone — a missed guard means an open endpoint. Auth must hold at both the web edge (page protection) and the API (endpoint protection).\
+**Decision:** Apply auth globally with an explicit public-path opt-out, at two layers: the web edge protects all pages except matched public routes, and the gateway verifies bearer tokens on all routes except a configured public-paths list, attaching the verified user to the request. Public access is driven by config, not decorators.\
+**Consequences:** No accidentally-unprotected pages or endpoints; the verified user is available to all handlers; config is the single source of truth for public routes. Provider specifics are per ADR-042.
 
 ---
 
-## ADR-012: YAML ConfigModule for non-secret configuration
+## ADR-012: YAML config module for non-secret configuration
 
 **Date:** 2026-03-07\
 **Status:** accepted\
-**Context:** NestJS needs access to non-secret config values like `ai_service.base_url`. Using environment variables for non-secrets defeats the purpose of YAML config (ADR-003). Without a structured loader, config access would be ad-hoc string lookups.\
-**Decision:** NestJS `ConfigModule` is registered as global in `AppModule` with a custom YAML loader that reads the appropriate `config/<environment>.yml` file based on `NODE_ENV`. `ConfigService` is injected wherever config values are needed. Non-secret keys follow dot-notation paths (e.g., `ai_service.base_url`). Implementation is pending.\
-**Consequences:** All non-secret config is version-controlled and environment-specific. Services access config via typed `ConfigService.get<T>()` calls. Adding a new config key requires only updating `config/*.yml` — no code changes needed for the loader.
+**Context:** The gateway needs non-secret config values; using env vars for non-secrets defeats YAML config (ADR-003), and ad-hoc lookups are fragile.\
+**Decision:** Register a global config module with a YAML loader keyed by environment, inject a typed config service wherever config is needed, and address non-secret keys by dot-notation paths.\
+**Consequences:** Non-secret config is version-controlled and environment-specific; adding a key is a YAML edit, not a code change.
 
 ---
 
-## ADR-011: Bootstrap PORT env-var guard with explicit error
+## ADR-011: Fail fast on missing PORT at bootstrap
 
 **Date:** 2026-03-07\
 **Status:** accepted\
-**Context:** If `PORT` is not set (e.g., `.env.local` is missing or incomplete), the NestJS app would start on an undefined port and fail silently or bind to `NaN`. Developers would see a confusing error rather than a clear fix instruction.\
-**Decision:** `services/api/src/main.ts` checks `process.env.PORT` after calling `NestFactory.create()`. If absent, it throws `new Error('PORT environment variable is not set. Create a .env.local file and populate it with your secrets.')` before calling `app.listen()`. This is already implemented in `bootstrap()` in `services/api/src/main.ts`.\
-**Consequences:** Misconfigured environments fail fast with a clear fix instruction. No silent startup on port `undefined`. Pattern established for future required env-var guards at bootstrap.
+**Context:** If `PORT` is unset, the app would bind to an undefined port and fail silently or confusingly.\
+**Decision:** At bootstrap, check for `PORT` and throw a clear, actionable error before listening if it is missing.\
+**Consequences:** Misconfigured environments fail fast with a clear fix instruction; pattern set for future required-env guards.
 
 ---
 
-## ADR-010: Global API prefix driven by shared constant
+## ADR-010: Global API prefix driven by a shared constant
 
 **Date:** 2026-03-07\
 **Status:** accepted\
-**Context:** The `/api/v1/` prefix must be consistent across NestJS routing and any TypeScript code that builds URLs to call the NestJS API (e.g., the frontend fetch client). Hardcoding it in `main.ts` alone would create drift if it ever changes.\
-**Decision:** `API_GLOBAL_PREFIX = 'api/v1'` is defined in `libs/shared/src/lib/constants.ts` and exported from `libs/shared/src/index.ts`. `services/api/src/main.ts` calls `app.setGlobalPrefix(API_GLOBAL_PREFIX)` using this constant. The frontend fetch client will import the same constant via `@kebi-app/shared` when implemented. This is already implemented.\
-**Consequences:** The prefix is defined once and consumed wherever needed. A prefix change requires editing one constant. Nx boundary rules ensure `apps/web` can import `@kebi-app/shared` where this constant lives.
+**Context:** The `/api/v1` prefix must stay consistent across the gateway's routing and any client that builds URLs to it; hardcoding it in one place risks drift.\
+**Decision:** Define the prefix once as a shared constant in `libs/shared` and consume it from both the gateway and clients.\
+**Consequences:** Changing the prefix is a one-constant edit.
 
 ---
 
-## ADR-009: SSE streaming as future consult response mode _(superseded by ADR-036)_
+## ADR-009: SSE streaming as a future consult response mode _(superseded by ADR-036)_
 
 **Date:** 2026-03-05\
 **Status:** superseded\
-**Context:** The consult endpoint returns reasoning_steps in a synchronous JSON response. When the frontend needs to show agent thinking in real time, the API contract would need redesigning mid-build without a plan.\
-**Decision:** Document SSE as a future response mode now. When needed, FastAPI streams reasoning steps as they complete, NestJS proxies the SSE stream to the frontend. The synchronous mode remains the default. No implementation until the frontend requires it.\
-**Consequences:** API contract is forward-compatible. No work needed today. When SSE is implemented, NestJS must proxy the stream and the frontend must handle incremental rendering.
+**Context:** The consult response was synchronous; showing agent thinking in real time would have required a mid-build contract redesign without a plan.\
+**Decision:** Superseded by ADR-036. Originally documented SSE as a future streaming mode, kept synchronous as the default until needed.\
+**Consequences:** Superseded by ADR-036.
 
 ---
 
-## ADR-008: reasoning_steps in consult response
+## ADR-008: reasoning_steps in the consult response
 
 **Date:** 2026-03-05\
 **Status:** accepted\
-**Context:** When a bad recommendation comes back, there is no way to tell if intent parsing failed, retrieval missed the right place, or ranking scored incorrectly. The eval pipeline also needs per-step accuracy measurement.\
-**Decision:** The consult response includes a `reasoning_steps` array. Each entry has a `step` identifier and a human-readable `summary` of what happened at that stage. kebi produces it, this repo consumes and renders it.\
-**Consequences:** Frontend can display agent thinking steps. DTOs must include the new field. Both repos' API contract docs updated.
+**Context:** When a bad recommendation comes back there is no way to tell which stage failed, and the eval pipeline needs per-step measurement.\
+**Decision:** The response includes a `reasoning_steps` array — each entry a step identifier plus a human-readable summary. kebi produces it; this repo renders it.\
+**Consequences:** The frontend can display agent thinking steps; the contract carries the field.
 
 ---
 
@@ -384,9 +403,9 @@ See `docs/examples/consult-example.ts` for the full flow.
 
 **Date:** 2026-03-04\
 **Status:** accepted\
-**Context:** The UI needs a component library with Dialog, Sheet, Toast, Skeleton, and Command — all required for Kebi's core UX. Tailwind v4 was available but shadcn/ui was not fully stable on it at project start.\
-**Decision:** Use Tailwind CSS v3 with shadcn/ui. shadcn components are copied into `libs/ui` (not installed as a package) so the code is owned and can be modified freely. Alternatives considered: Tailwind v4, Radix primitives without shadcn, Material UI.\
-**Consequences:** shadcn components are fully customisable with no upstream dependency. Tailwind v3 patterns apply throughout — see `.claude/rules/tailwind-patterns.md`. If upgrading to Tailwind v4 in future, shadcn components will need re-testing.
+**Context:** The UI needs a component library (Dialog, Sheet, Toast, Skeleton, Command). Tailwind v4 was available but shadcn/ui was not fully stable on it at project start.\
+**Decision:** Use Tailwind v3 with shadcn/ui, with shadcn components copied into the design-system lib (owned, not a dependency) so they can be modified freely.\
+**Consequences:** Fully customizable components with no upstream dependency; a future v4 upgrade would need re-testing. Applies to `apps/web`/`libs/ui`, now parked per ADR-040.
 
 ---
 
@@ -394,9 +413,8 @@ See `docs/examples/consult-example.ts` for the full flow.
 
 **Date:** 2026-03-04\
 **Status:** superseded\
-**Context:** A package manager was needed for the Nx monorepo at project creation. Yarn with `nodeLinker: node-modules` was chosen to avoid PnP compatibility issues.\
-**Decision:** Use Yarn with `nodeLinker: node-modules`. Alternatives considered: pnpm, npm.\
-**Consequences:** Superseded by ADR-020. The repo has since migrated to pnpm.
+**Context:** A package manager was needed for the Nx monorepo at project creation, avoiding PnP compatibility issues.\
+**Decision:** Superseded by ADR-020. The repo has since migrated to pnpm.
 
 ---
 
@@ -404,18 +422,18 @@ See `docs/examples/consult-example.ts` for the full flow.
 
 **Date:** 2026-03-04\
 **Status:** superseded\
-**Context:** Initial ORM decision for services/api.\
+**Context:** Initial ORM decision for the gateway.\
 **Decision:** Superseded by ADR-035. Current ORM: TypeORM.
 
 ---
 
-## ADR-004: Clerk over custom auth
+## ADR-004: Clerk over custom auth _(superseded by ADR-042)_
 
 **Date:** 2026-03-04\
-**Status:** accepted\
-**Context:** Implementing auth from scratch (JWT issuance, refresh tokens, session management) would consume weeks of development time better spent on AI features.\
-**Decision:** Use Clerk for authentication across both Next.js and NestJS. Clerk's free tier covers 50K MAU and provides SDKs for both runtimes. Alternatives considered: NextAuth/Auth.js, Supabase Auth, custom JWT.\
-**Consequences:** Auth is fully delegated to Clerk. No custom session logic exists in this repo. The `userId` from Clerk is the canonical user identifier throughout the system.
+**Status:** superseded\
+**Context:** Implementing auth from scratch would consume weeks better spent on AI features.\
+**Decision:** Superseded by ADR-042. Originally: use Clerk across both runtimes for its free tier and SDKs.\
+**Consequences:** Superseded by ADR-042 (Supabase Auth).
 
 ---
 
@@ -423,9 +441,9 @@ See `docs/examples/consult-example.ts` for the full flow.
 
 **Date:** 2026-03-04\
 **Status:** accepted\
-**Context:** Non-secret config values like `ai_service.base_url` need structure and environment-specificity that flat `.env` files cannot provide cleanly.\
-**Decision:** Use YAML files (`config/dev.yml`, `config/prod.yml`) for all non-secret configuration. Secrets are stored in per-repo local files (`.env.local` for NestJS/Next.js, `config/.local.yaml` for FastAPI), gitignored and created locally by developers. No committed `.env` or secret files. Alternatives considered: dotenv for everything, JSON config files, environment variable-based secrets.\
-**Consequences:** Config is version-controlled and structured. Secrets never appear in config files. Adding a new non-secret value requires only a YAML edit, not a code change.
+**Context:** Non-secret config values need structure and environment-specificity that flat `.env` files cannot provide cleanly.\
+**Decision:** Use YAML files for all non-secret configuration; keep secrets in gitignored per-repo local files; commit no secret files.\
+**Consequences:** Config is structured and version-controlled; secrets never appear in config; adding a non-secret value is a YAML edit.
 
 ---
 
@@ -433,9 +451,9 @@ See `docs/examples/consult-example.ts` for the full flow.
 
 **Date:** 2026-03-04\
 **Status:** accepted\
-**Context:** All AI/ML logic requires Python, a different deployment target (Python runtime with GPU), and a faster iteration cycle than product code. Mixing languages in one repo would complicate CI, deployments, and dependency management.\
-**Decision:** Keep all AI/ML code in a separate Python repository (`kebi`). This repo communicates with it via HTTP only. Alternatives considered: Python in a monorepo subfolder, AI logic as a microservice within this repo.\
-**Consequences:** A stable HTTP contract (see `docs/api-contract.md`) is the boundary between repos. Changes to the AI pipeline do not require touching this repo unless the contract changes. Each repo deploys independently.
+**Context:** All AI/ML logic needs Python, a different deployment target, and a faster iteration cycle; mixing languages in one repo would complicate CI, deploys, and dependency management.\
+**Decision:** Keep all AI/ML code in a separate Python repository (kebi); this repo communicates with it over HTTP only.\
+**Consequences:** A stable HTTP contract is the boundary between repos; AI-pipeline changes do not touch this repo unless the contract changes; each repo deploys independently.
 
 ---
 
@@ -443,6 +461,6 @@ See `docs/examples/consult-example.ts` for the full flow.
 
 **Date:** 2026-03-04\
 **Status:** accepted\
-**Context:** The monorepo contains a Next.js frontend, NestJS backend, and shared libraries. Module boundary enforcement is critical to prevent `apps/web` from importing backend code and vice versa.\
-**Decision:** Use Nx as the monorepo tool. Nx provides built-in module boundary lint rules, dependency graph visualisation, and first-class generators for both Next.js and NestJS. Alternatives considered: Turborepo, plain Yarn workspaces.\
-**Consequences:** Module boundaries are enforced by Nx ESLint rules. Violating a boundary produces a lint error, not a runtime failure. All task execution (build, test, lint) goes through `pnpm nx`.
+**Context:** The monorepo holds a frontend, a backend, and shared libraries; module-boundary enforcement is critical to stop them importing each other's internals.\
+**Decision:** Use Nx for its built-in module-boundary lint rules, dependency-graph tooling, and framework generators.\
+**Consequences:** Boundary violations are lint errors, not runtime failures; all task execution goes through Nx.

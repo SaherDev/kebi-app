@@ -11,10 +11,7 @@ import { AppModule } from './app/app.module';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 
 async function bootstrap() {
-  // Create app with rawBody enabled for webhook signature verification
-  const app = await NestFactory.create(AppModule, {
-    rawBody: true,
-  });
+  const app = await NestFactory.create(AppModule);
   const configService = app.get(ConfigService);
 
   const apiPrefix = configService.get<string>('app.api_prefix');

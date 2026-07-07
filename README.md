@@ -49,12 +49,16 @@ Secrets go in `apps/web/.env.local` (gitignored).
 ## Commands
 
 ```bash
-pnpm nx dev web                    # Next.js dev server
-pnpm nx serve api                  # NestJS dev server
-pnpm nx test web                   # frontend tests
+# Mobile (iOS simulator — Expo Go)
+pnpm nx run mobile:start           # start Metro bundler, then press i for iOS
+pnpm nx run mobile:run-ios         # boot directly in the iOS simulator
+
+# Backend
+pnpm nx serve api                  # NestJS on http://localhost:3333/api/v1
+
+# Tests & quality
+pnpm nx test mobile                # mobile tests
 pnpm nx test api                   # backend tests
 pnpm nx run-many -t test           # all tests
 pnpm nx run-many -t lint           # lint all
-pnpm nx build web                  # build frontend
-pnpm nx build api                  # build backend
 ```

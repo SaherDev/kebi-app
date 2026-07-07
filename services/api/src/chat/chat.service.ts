@@ -1,10 +1,8 @@
-import { Injectable, Inject, Logger } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { IncomingMessage } from 'http';
 import type { Response } from 'express';
-import {
-  IAiServiceClient,
-  AI_SERVICE_CLIENT,
-} from '../ai-service/ai-service-client.interface';
+import type { AuthUser, ChatRequestDto } from '@kebi-app/shared';
+import { KebiHttpClient } from '../kebi/kebi-http.client';
 import { RateLimitService } from '../rate-limit/rate-limit.service';
 import { ChatRequestBodyDto } from './dto/chat-request.dto';
 
@@ -20,28 +18,31 @@ export class ChatService {
   private readonly logger = new Logger(ChatService.name);
 
   constructor(
-    @Inject(AI_SERVICE_CLIENT) private readonly aiClient: IAiServiceClient,
+    private readonly kebi: KebiHttpClient,
     private readonly rateLimitService: RateLimitService,
   ) {}
 
   async pipeStream(
-    userId: string,
+    user: AuthUser,
     dto: ChatRequestBodyDto,
     req: IncomingMessage,
     res: Response,
   ): Promise<void> {
-    this.rateLimitService.incrementTurns(userId);
+    this.rateLimitService.incrementTurns(user.id);
 
     const controller = new AbortController();
 
-    const stream = await this.aiClient.chatStream(
-      {
-        user_id: userId,
-        message: dto.message,
-        location: dto.location ?? null,
-        signal_tier: dto.signal_tier ?? null,
-      },
+    const payload: ChatRequestDto = {
+      message: dto.message,
+      location: dto.location ?? null,
+      movement_profile: user.movement_profile ?? null,
+    };
+    const stream = await this.kebi.postStream(
+      '/v1/chat/stream',
+      user.id,
+      payload,
       controller.signal,
+      user.plan,
     );
 
     res.setHeader('Content-Type', 'text/event-stream');

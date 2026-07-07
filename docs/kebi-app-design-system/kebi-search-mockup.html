@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Kebi · Library search</title>
+<style>
+  .theme {
+    --bg: #FAFAF9; --surface: #F1F1EF; --surface-2: #E8E8E5;
+    --text: #1A1A1A; --text-muted: #8A8A87; --text-soft: #B5B5B1; --like:#C2410C;
+  }
+  .theme.dark {
+    --bg: #13110F; --surface: #1C1A17; --surface-2: #26231F;
+    --text: #F5F1EA; --text-muted: #9A938A; --text-soft: #6E6862; --like:#E8B894;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; font-family: 'Inter', system-ui, sans-serif; background: #d9d9d6;
+    padding: 34px; display: flex; gap: 34px; flex-wrap: wrap; align-items: flex-start;
+  }
+  .theme {
+    background: var(--bg); color: var(--text); width: 320px;
+    border-radius: 28px; padding: 0 0 24px; overflow: hidden;
+    box-shadow: 0 8px 40px rgba(0,0,0,.18);
+  }
+  .head { padding: 18px 18px 4px; }
+  .head h1 { font-size: 16px; margin: 0; }
+  .head .scheme { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+  .state { font-size: 10px; text-transform: uppercase; letter-spacing: .08em;
+    color: var(--text-soft); margin: 18px 18px 8px; font-weight: 600; }
+  .pad { padding: 0 18px; }
+
+  /* ---------- interactive reveal-from-corner (Option A) ---------- */
+  .frame {
+    position: relative; height: 250px; margin: 0 14px; border-radius: 22px;
+    background: var(--bg); overflow: hidden; cursor: pointer;
+    border: 1px solid var(--surface-2);
+  }
+  .tb { position: absolute; top: 0; left: 0; right: 0; z-index: 3;
+    display: flex; align-items: center; gap: 8px; padding: 12px; }
+  .ico { width: 32px; height: 32px; border-radius: 999px; display: flex;
+    align-items: center; justify-content: center; color: var(--text-muted); }
+  .pill { display: flex; gap: 2px; background: var(--surface); border-radius: 999px; padding: 3px; }
+  .tb .grow { flex: 1; }
+  .ico svg { width: 16px; height: 16px; }
+  .hero { position: absolute; top: 58px; left: 16px; z-index: 1; }
+  .hero .eye { font-size: 9px; letter-spacing: .08em; text-transform: uppercase; color: var(--text-soft); }
+  .hero .h { font-size: 22px; font-weight: 800; margin-top: 3px; }
+  .hero .h span { color: var(--text-muted); }
+  .ph-card { position: absolute; left: 16px; right: 16px; height: 52px;
+    background: var(--surface); border-radius: 14px; z-index: 1; }
+
+  /* the bar scales out of the 🔍 corner (origin top-right), like the chat reveal */
+  .reveal {
+    position: absolute; top: 12px; left: 14px; right: 14px; z-index: 4;
+    transform-origin: top right; transform: scale(.7); opacity: 0; pointer-events: none;
+    transition: transform .30s cubic-bezier(.2,.8,.2,1), opacity .2s ease;
+  }
+  .frame.on .reveal { transform: scale(1); opacity: 1; pointer-events: auto; }
+  .frame.on .pill { opacity: 0; transition: opacity .15s; }
+  .searchbar { display: flex; align-items: center; gap: 9px; background: var(--surface);
+    border-radius: 999px; padding: 10px 13px; }
+  .searchbar svg { width: 16px; height: 16px; color: var(--text-soft); flex: none; }
+  .searchbar .q { flex: 1; font-size: 14px; color: var(--text-soft); }
+  .searchbar .x { width: 17px; height: 17px; border-radius: 999px; background: var(--surface-2);
+    display: flex; align-items: center; justify-content: center; flex: none; }
+  .searchbar .x svg { width: 10px; height: 10px; color: var(--text-muted); }
+  .tag { position: absolute; bottom: 10px; left: 0; right: 0; text-align: center;
+    font-size: 11px; color: var(--text-soft); z-index: 5; }
+
+  /* ---------- static states ---------- */
+  .bar { display: flex; align-items: center; gap: 9px; background: var(--surface);
+    border-radius: 999px; padding: 10px 13px; }
+  .bar svg { width: 16px; height: 16px; color: var(--text-soft); flex: none; }
+  .bar .q { flex: 1; font-size: 14px; }
+  .bar .ph { color: var(--text-soft); }
+  .bar .caret { border-right: 1.5px solid var(--text); }
+  .bar .x { width: 17px; height: 17px; border-radius: 999px; background: var(--surface-2);
+    display: flex; align-items: center; justify-content: center; flex: none; }
+  .bar .x svg { width: 10px; height: 10px; color: var(--text-muted); }
+  .scope { display: flex; align-items: center; gap: 7px; margin: 9px 4px 0;
+    font-size: 12px; color: var(--text-muted); }
+  .scope b { color: var(--text); font-weight: 600; }
+  .spin { width: 12px; height: 12px; border: 2px solid var(--surface-2);
+    border-top-color: var(--text-muted); border-radius: 999px; flex: none; }
+  .row { display: flex; align-items: center; gap: 11px; padding: 10px 4px; }
+  .row .av { width: 32px; height: 32px; border-radius: 9px; background: var(--surface-2);
+    display: flex; align-items: center; justify-content: center; font-size: 14px; flex: none; }
+  .row .nm { font-size: 14px; font-weight: 600; }
+  .row .sub { font-size: 12px; color: var(--text-muted); margin-top: 1px; }
+  mark { background: rgba(194,65,12,.16); color: var(--like); border-radius: 3px; padding: 0 1px; }
+  .empty { text-align: center; padding: 22px 16px 4px; }
+  .empty .big { font-size: 14px; font-weight: 600; }
+  .empty .small { font-size: 12px; color: var(--text-muted); margin-top: 5px; }
+  .empty .link { color: var(--like); font-weight: 600; }
+</style>
+</head>
+<body>
+<template id="panel">
+  <div>
+    <div class="head">
+      <h1>Library search</h1>
+      <div class="scheme">SCHEME · simple client-side search · opens from the 🔍 corner</div>
+    </div>
+
+    <div class="state">open — tap the frame (bar scales out of the 🔍 corner)</div>
+    <div class="frame" onclick="this.classList.toggle('on')">
+      <div class="tb">
+        <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 18l-6-6 6-6"/></svg></div>
+        <div class="grow"></div>
+        <div class="pill">
+          <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg></div>
+          <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M5 21h14"/></svg></div>
+        </div>
+      </div>
+      <div class="hero"><div class="eye">your stash</div><div class="h">5 places<span>, saved up</span></div></div>
+      <div class="ph-card" style="top:108px"></div>
+      <div class="ph-card" style="top:172px"></div>
+      <div class="reveal">
+        <div class="searchbar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+          <span class="q">search your stash…</span>
+          <span class="x"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M5 5l14 14M19 5L5 19"/></svg></span>
+        </div>
+      </div>
+      <div class="tag">tap to open / close</div>
+    </div>
+
+    <div class="state">typing</div>
+    <div class="pad">
+      <div class="bar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+        <span class="q">sush<span class="caret">&nbsp;</span></span>
+        <span class="x"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M5 5l14 14M19 5L5 19"/></svg></span>
+      </div>
+    </div>
+
+    <div class="state">results</div>
+    <div class="pad">
+      <div class="bar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+        <span class="q">sushi</span>
+        <span class="x"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M5 5l14 14M19 5L5 19"/></svg></span>
+      </div>
+      <div class="scope">3 results for <b>“sushi”</b></div>
+      <div class="row"><div class="av">🍣</div><div><div class="nm"><mark>Sushi</mark> Masa</div><div class="sub">restaurant · omakase · $$$</div></div></div>
+      <div class="row"><div class="av">🍱</div><div><div class="nm">Kanto <mark>Sushi</mark></div><div class="sub">restaurant · casual · $$</div></div></div>
+    </div>
+
+    <div class="state">no matches</div>
+    <div class="pad">
+      <div class="bar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+        <span class="q">xyzzy</span>
+        <span class="x"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M5 5l14 14M19 5L5 19"/></svg></span>
+      </div>
+      <div class="empty">
+        <div class="big">no matches for “xyzzy”</div>
+        <div class="small">try a different word or <span class="link">clear search</span></div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<div class="theme" id="light"></div>
+<div class="theme dark" id="dark"></div>
+
+<script>
+  const tpl = document.getElementById('panel').content;
+  for (const [id, label] of [['light','light'], ['dark','dark']]) {
+    const node = tpl.cloneNode(true);
+    node.querySelector('.scheme').textContent =
+      label + ' · simple client-side search · opens from the 🔍 corner';
+    document.getElementById(id).appendChild(node);
+  }
+</script>
+</body>
+</html>

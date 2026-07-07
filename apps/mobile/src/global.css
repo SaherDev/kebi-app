@@ -1,0 +1,134 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+  Kebi design tokens — single source of hex values.
+  All values sourced verbatim from docs/kebi-app-design-system/kebi-tokens-mockup.html.
+  NativeWind reads these via the :root / .dark selectors and injects them as
+  CSS custom properties at runtime via react-native-css-interop.
+
+  Components MUST NOT contain any hex values — use semantic class names only
+  (bg-bg, text-text-muted, bg-pill-green-bg, etc.).
+*/
+
+@layer base {
+  :root {
+    /* Canvas */
+    --bg:        #FAFAF9;
+    --surface:   #F1F1EF;
+    --surface-2: #E8E8E5;
+
+    /* Text */
+    --text:       #1A1A1A;
+    --text-muted: #8A8A87;
+    --text-soft:  #B5B5B1;
+
+    /* Semantic */
+    --success: #4A7C3A;
+    --like:    #C2410C;
+    --warn:    #B45309;
+    --danger:  #D14343;
+
+    /* Status pill backgrounds */
+    --pill-green-bg:  #E8F2E1;
+    --pill-warm-bg:   #FEE4D4;
+    --pill-amber-bg:  #FEF3C7;
+    --pill-danger-bg: #FCEEEE;
+
+    /* Toast — inverts vs the page, so a dark pill in light mode (cream text).
+       Icon-circle tones sit on the dark pill: deep tint bg + light stroke. */
+    --toast-bg:    #1A1A1A;
+    --toast-fg:    #F5F1EA;
+    --toast-muted: rgba(245, 241, 234, 0.5);
+    --toast-success-bg: #1F2E1A;
+    --toast-success-fg: #A8C293;
+    --toast-warm-bg:    #3A1F12;
+    --toast-warm-fg:    #E8B894;
+    --toast-danger-bg:  #3A1818;
+    --toast-danger-fg:  #E89090;
+    --toast-neutral-bg: rgba(245, 241, 234, 0.10);
+    --toast-neutral-fg: #F5F1EA;
+
+    /* Content sitting on a `--text`-filled surface (the popular plan card, the
+       active billing-toggle segment). Opacity modifiers can't apply to a var()
+       color in NativeWind, so these translucent tones are pre-composed and
+       theme-aware, like the --toast-* tokens. Light mode: fill is dark → light
+       fg. */
+    --on-fill-muted:   rgba(250, 250, 249, 0.70);
+    --on-fill-faint:   rgba(250, 250, 249, 0.40);
+    --on-fill-divider: rgba(250, 250, 249, 0.14);
+    --on-fill-chip:    rgba(250, 250, 249, 0.16);
+  }
+
+  /*
+    NativeWind requires the dark overrides on `.dark:root` (or `:root[class~="dark"]`)
+    so react-native-css-interop registers them as global root/dark variables that
+    swap on setColorScheme. A bare `.dark { }` block is treated as a class rule
+    scoped to an element with className="dark" (which never exists) and does nothing.
+  */
+  .dark:root {
+    /* Canvas */
+    --bg:        #13110F;
+    --surface:   #1C1A17;
+    --surface-2: #26231F;
+
+    /* Text */
+    --text:       #F5F1EA;
+    --text-muted: #9A938A;
+    --text-soft:  #6E6862;
+
+    /* Semantic */
+    --success: #A8C293;
+    --like:    #E8B894;
+    --warn:    #E5C078;
+    --danger:  #E89090;
+
+    /* Status pill backgrounds */
+    --pill-green-bg:  #1F2E1A;
+    --pill-warm-bg:   #3A1F12;
+    --pill-amber-bg:  #3A2A0E;
+    --pill-danger-bg: #3A1818;
+
+    /* Toast — cream pill in dark mode (kebi-toasts-dark-mockup). Icon tones
+       sit on the cream pill: light tint bg + saturated stroke. */
+    --toast-bg:    #F5F1EA;
+    --toast-fg:    #1A1A1A;
+    --toast-muted: rgba(26, 26, 26, 0.5);
+    --toast-success-bg: #DCEAD3;
+    --toast-success-fg: #4A7C3A;
+    --toast-warm-bg:    #FBE0CE;
+    --toast-warm-fg:    #C2410C;
+    --toast-danger-bg:  #FCDEDE;
+    --toast-danger-fg:  #D14343;
+    --toast-neutral-bg: rgba(26, 26, 26, 0.08);
+    --toast-neutral-fg: #1A1A1A;
+
+    /* On-fill tones — dark mode: the `--text` fill is light, so fg is dark. */
+    --on-fill-muted:   rgba(26, 26, 26, 0.65);
+    --on-fill-faint:   rgba(26, 26, 26, 0.40);
+    --on-fill-divider: rgba(26, 26, 26, 0.14);
+    --on-fill-chip:    rgba(26, 26, 26, 0.12);
+  }
+}
+
+/*
+  Mascot breathing loop (kebi-tokens-mockup.html §16 motion, §17 mascot).
+  scale 1→1.02 + translateY 0→-2px and back — expressed at 0/50/100% so it
+  returns to rest without relying on animation-direction: alternate. Driven via
+  the `animate-breathe` utility (animation defined in tailwind.config.js).
+*/
+@keyframes breathe {
+  0%   { transform: scale(1)    translateY(0); }
+  50%  { transform: scale(1.02) translateY(-2px); }
+  100% { transform: scale(1)    translateY(0); }
+}
+
+/*
+  Save-sheet "saving" spinner (kebi-save-sheet-saving-mockup.html `.sheet-cta-
+  spinner`). A single full turn, driven via the `animate-spin` utility
+  (animation defined in tailwind.config.js).
+*/
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}

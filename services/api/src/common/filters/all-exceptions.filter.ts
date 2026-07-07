@@ -6,7 +6,7 @@ import {
   HttpStatus,
 } from '@nestjs/common';
 import { Response } from 'express';
-import axios, { AxiosError } from 'axios';
+import axios from 'axios';
 
 @Catch()
 export class AllExceptionsFilter implements ExceptionFilter {

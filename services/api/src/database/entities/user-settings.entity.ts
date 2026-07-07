@@ -7,33 +7,38 @@ import {
   OneToOne,
   JoinColumn,
   BeforeInsert,
+  Relation,
 } from 'typeorm';
 import { createId } from '@paralleldrive/cuid2';
+import type { UserSettingsData } from '@kebi-app/shared';
 import { UserEntity } from './user.entity';
 
+/**
+ * Our per-user product data, keyed by the internal user id — the source of truth
+ * for the plan/ai_enabled/movement_profile claims stamped into the token
+ * (ADR-045). Stored as one JSON document so new preferences need no migration;
+ * read/written whole, by `userId`.
+ */
 @Entity('user_settings')
 export class UserSettingsEntity {
   @PrimaryColumn({ type: 'varchar' })
-  id: string;
+  id!: string;
 
   @Column({ name: 'userId', unique: true })
-  userId: string;
+  userId!: string;
 
   @OneToOne(() => UserEntity, (user) => user.settings)
   @JoinColumn({ name: 'userId' })
-  user: UserEntity;
+  user!: Relation<UserEntity>;
 
-  @Column({ default: 'en' })
-  locale: string;
-
-  @Column({ default: 'system' })
-  theme: string;
+  @Column({ type: 'jsonb' })
+  settings!: UserSettingsData;
 
   @CreateDateColumn({ name: 'createdAt' })
-  createdAt: Date;
+  createdAt!: Date;
 
   @UpdateDateColumn({ name: 'updatedAt' })
-  updatedAt: Date;
+  updatedAt!: Date;
 
   @BeforeInsert()
   generateId() {

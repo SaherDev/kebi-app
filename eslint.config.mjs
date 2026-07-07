@@ -41,6 +41,10 @@ export default [
                         {
                             sourceTag: "scope:api",
                             onlyDependOnLibsWithTags: ["scope:shared"]
+                        },
+                        {
+                            sourceTag: "scope:mobile",
+                            onlyDependOnLibsWithTags: ["scope:shared"]
                         }
                     ]
                 }

@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Kebi · Status Pills — full matrix</title>
+<style>
+  /* ---- tokens (from kebi-tokens-mockup.html) ---- */
+  .theme {
+    --bg: #FAFAF9;
+    --surface: #F1F1EF;
+    --surface-2: #E8E8E5;
+    --text: #1A1A1A;
+    --text-muted: #8A8A87;
+    --text-soft: #B5B5B1;
+    --success: #4A7C3A;
+    --like: #C2410C;
+    --warn: #B45309;
+    --danger: #D14343;
+    --pill-green-bg: #E8F2E1;
+    --pill-warm-bg: #FEE4D4;
+    --pill-amber-bg: #FEF3C7;
+    --pill-danger-bg: #FCEEEE;
+  }
+  .theme.dark {
+    --bg: #13110F;
+    --surface: #1C1A17;
+    --surface-2: #26231F;
+    --text: #F5F1EA;
+    --text-muted: #9A938A;
+    --text-soft: #6E6862;
+    --success: #A8C293;
+    --like: #E8B894;
+    --warn: #E5C078;
+    --danger: #E89090;
+    --pill-green-bg: #1F2E1A;
+    --pill-warm-bg: #3A1F12;
+    --pill-amber-bg: #3A2A0E;
+    --pill-danger-bg: #3A1818;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: 'Inter', system-ui, sans-serif;
+    background: #d9d9d6;
+    color: var(--text);
+    padding: 32px;
+    display: flex;
+    gap: 28px;
+    flex-wrap: wrap;
+    align-items: flex-start;
+  }
+  .theme {
+    background: var(--bg);
+    color: var(--text);
+    width: 420px;
+    border-radius: 28px;
+    padding: 24px 22px 28px;
+    box-shadow: 0 8px 40px rgba(0,0,0,.18);
+  }
+  h1 { font-size: 17px; margin: 0 0 2px; letter-spacing: -0.01em; }
+  .scheme { font-size: 12px; color: var(--text-muted); margin-bottom: 20px; }
+  h2 {
+    font-size: 11px; text-transform: uppercase; letter-spacing: .08em;
+    color: var(--text-muted); margin: 22px 0 10px; font-weight: 600;
+  }
+
+  /* ---- pill (verbatim from kebi-library-mockup.html) ---- */
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: -0.005em;
+  }
+  .pill::before { content: ''; width: 5px; height: 5px; border-radius: 50%; }
+  .pill.green  { background: var(--pill-green-bg);  color: var(--success); }
+  .pill.green::before  { background: var(--success); }
+  .pill.warm   { background: var(--pill-warm-bg);   color: var(--like); }
+  .pill.warm::before   { background: var(--like); }
+  .pill.amber  { background: var(--pill-amber-bg);  color: var(--warn); }
+  .pill.amber::before  { background: var(--warn); }
+  .pill.danger { background: var(--pill-danger-bg); color: var(--danger); }
+  .pill.danger::before { background: var(--danger); }
+  /* glyph variant for the like/dislike axis: thumb instead of the dot */
+  .pill.glyph::before { content: none; }
+  .pill.glyph { padding: 2px 9px; }
+  .pill .tg { font-size: 11px; line-height: 1; }
+
+  /* ---- matrix rows ---- */
+  .axis {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 0; border-bottom: 1px solid var(--surface-2);
+  }
+  .axis:last-child { border-bottom: none; }
+  .axis .field {
+    width: 136px; flex: none;
+    font-family: 'SF Mono', Menlo, Consolas, monospace;
+    font-size: 11px; color: var(--text-muted);
+  }
+  .axis .field b { color: var(--text); font-weight: 600; }
+  .pills { display: flex; gap: 6px; flex-wrap: wrap; }
+
+  /* ---- example card (trimmed from library mockup) ---- */
+  .card {
+    background: var(--surface); border-radius: 16px;
+    padding: 13px 14px; margin-bottom: 10px;
+  }
+  .card .top { display: flex; align-items: center; gap: 10px; }
+  .card .avatar {
+    width: 34px; height: 34px; border-radius: 10px; flex: none;
+    background: var(--surface-2); display: flex; align-items: center;
+    justify-content: center; font-size: 15px;
+  }
+  .card .name { font-size: 14px; font-weight: 600; flex: 1; }
+  .card .pill-row { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+  .note {
+    font-size: 11px; color: var(--text-soft); margin-top: 14px;
+    line-height: 1.5;
+  }
+  .none { font-size: 11px; color: var(--text-soft); font-style: italic; }
+</style>
+</head>
+<body>
+<template id="panel">
+  <div>
+    <h1>Status pills</h1>
+    <div class="scheme">SCHEME</div>
+
+    <h2>approved — bool (default true)</h2>
+    <div class="axis">
+      <div class="field"><b>approved</b> = true</div>
+      <div class="pills"><span class="pill green">approved</span></div>
+    </div>
+    <div class="axis">
+      <div class="field"><b>approved</b> = false</div>
+      <div class="pills"><span class="pill amber">needs review</span></div>
+    </div>
+
+    <h2>visited — bool (default false)</h2>
+    <div class="axis">
+      <div class="field"><b>visited</b> = true</div>
+      <div class="pills"><span class="pill green">visited</span></div>
+    </div>
+    <div class="axis">
+      <div class="field"><b>visited</b> = false</div>
+      <div class="pills"><span class="pill warm">not visited</span></div>
+    </div>
+
+    <h2>liked — bool | null (default null, tri-state)</h2>
+    <div class="axis">
+      <div class="field"><b>liked</b> = true</div>
+      <div class="pills">
+        <span class="pill warm glyph"><span class="tg">👍</span></span>
+      </div>
+    </div>
+    <div class="axis">
+      <div class="field"><b>liked</b> = false</div>
+      <div class="pills">
+        <span class="pill danger glyph"><span class="tg">👎</span></span>
+      </div>
+    </div>
+    <div class="axis">
+      <div class="field"><b>liked</b> = null</div>
+      <div class="pills"><span class="none">— no pill (neutral) —</span></div>
+    </div>
+
+    <h2>on a card · realistic combinations</h2>
+
+    <div class="card">
+      <div class="top">
+        <div class="avatar">🍽️</div>
+        <div class="name">coco tam</div>
+      </div>
+      <div class="pill-row">
+        <span class="pill warm">not visited</span>
+        <span class="pill amber">needs review</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="top">
+        <div class="avatar">🍜</div>
+        <div class="name">Kamachiku</div>
+      </div>
+      <div class="pill-row">
+        <span class="pill green">visited</span>
+        <span class="pill green">approved</span>
+        <span class="pill warm glyph"><span class="tg">👍</span></span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="top">
+        <div class="avatar">🍷</div>
+        <div class="name">Saint Jardim</div>
+      </div>
+      <div class="pill-row">
+        <span class="pill green">visited</span>
+        <span class="pill green">approved</span>
+        <span class="pill danger glyph"><span class="tg">👎</span></span>
+      </div>
+    </div>
+
+    <p class="note">
+      Each card shows <b>visited</b> + <b>approved</b> always; the <b>liked</b>
+      pill appears only when true/false (<code>null</code> → omitted). The like
+      axis is <b>glyph-only</b> (👍 warm / 👎 danger) — no text, so it never
+      collides with <b>not&nbsp;visited</b> (also warm) and stays compact next
+      to the two word pills.
+    </p>
+  </div>
+</template>
+
+<div class="theme" id="light"></div>
+<div class="theme dark" id="dark"></div>
+
+<script>
+  const tpl = document.getElementById('panel').content;
+  for (const [id, label] of [['light','light'], ['dark','dark']]) {
+    const node = tpl.cloneNode(true);
+    node.querySelector('.scheme').textContent = label;
+    document.getElementById(id).appendChild(node);
+  }
+</script>
+</body>
+</html>

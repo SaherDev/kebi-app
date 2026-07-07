@@ -23,18 +23,20 @@ docs/              → Operational docs (architecture, API contract, decisions)
 ## Common Commands
 
 ```bash
-# Dev servers
-pnpm nx dev web                # Next.js on http://localhost:4200
+# Mobile (iOS simulator — Expo Go, no native build needed)
+pnpm nx run mobile:start       # Metro bundler → press i for iOS simulator
+pnpm nx run mobile:run-ios     # boot directly in iOS simulator
+
+# Backend
 pnpm nx serve api              # NestJS on http://localhost:3333/api/v1
 
 # Testing
-pnpm nx test web               # Frontend tests (Jest + RTL)
+pnpm nx test mobile            # Mobile tests (jest-expo)
 pnpm nx test api               # Backend tests (Jest)
 pnpm nx run-many -t test       # All tests
 
 # Lint & Build
 pnpm nx run-many -t lint
-pnpm nx build web
 pnpm nx build api
 
 

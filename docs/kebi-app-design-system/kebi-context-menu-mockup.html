@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Kebi — Long-Press Context Menu</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #FAFAF9;
+    --surface: #F1F1EF;
+    --surface-2: #E8E8E5;
+    --text: #1A1A1A;
+    --text-muted: #8A8A87;
+    --text-soft: #B5B5B1;
+    --success: #4A7C3A;
+    --like: #C2410C;
+    --warn: #B45309;
+    --danger: #D14343;
+    --pill-green-bg: #E8F2E1;
+    --pill-warm-bg: #FEE4D4;
+    --pill-amber-bg: #FEF3C7;
+    --pill-danger-bg: #FCEEEE;
+    /* scrim — matches save-sheet backdrop */
+    --scrim: rgba(0,0,0,0.45);
+    --lift-shadow: 0 18px 50px rgba(0,0,0,0.22), 0 4px 12px rgba(0,0,0,0.10);
+    --menu-shadow: 0 12px 40px rgba(0,0,0,0.16), 0 2px 8px rgba(0,0,0,0.08);
+  }
+
+  body.dark {
+    --bg: #13110F;
+    --surface: #1C1A17;
+    --surface-2: #26231F;
+    --text: #F5F1EA;
+    --text-muted: #9A938A;
+    --text-soft: #6E6862;
+    --success: #A8C293;
+    --like: #E8B894;
+    --warn: #E5C078;
+    --danger: #E89090;
+    --pill-green-bg: #1F2E1A;
+    --pill-warm-bg: #3A1F12;
+    --pill-amber-bg: #3A2A0E;
+    --pill-danger-bg: #3A1818;
+    --scrim: rgba(0,0,0,0.55);
+    --lift-shadow: 0 18px 50px rgba(0,0,0,0.55), 0 4px 12px rgba(0,0,0,0.35);
+    --menu-shadow: 0 12px 40px rgba(0,0,0,0.5), 0 2px 8px rgba(0,0,0,0.3);
+  }
+
+  html, body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+    transition: background 200ms;
+  }
+  body.dark { background: #0A0908; }
+
+  .page { max-width: 1100px; margin: 0 auto; padding: 56px 32px 96px; }
+
+  .header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding-bottom: 32px; border-bottom: 1px solid var(--surface-2); margin-bottom: 40px;
+  }
+  .header h1 { font-size: 24px; font-weight: 700; letter-spacing: -0.025em; }
+  .header-meta { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+
+  .theme-toggle { display: flex; background: var(--surface); border-radius: 999px; padding: 3px; }
+  .theme-toggle button {
+    padding: 6px 14px; background: transparent; border: none; border-radius: 999px;
+    font-family: inherit; font-size: 12px; font-weight: 500; color: var(--text-muted);
+    cursor: pointer; letter-spacing: -0.005em;
+  }
+  .theme-toggle button.active { background: var(--text); color: var(--bg); }
+
+  .section { margin-bottom: 56px; }
+  .section-head {
+    display: flex; align-items: baseline; justify-content: space-between;
+    margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid var(--surface-2);
+  }
+  .section-title { font-size: 11px; font-weight: 600; color: var(--text-soft); text-transform: uppercase; letter-spacing: 0.08em; }
+  .section-count { font-size: 12px; color: var(--text-soft); }
+  .section-h2 { font-size: 28px; font-weight: 700; letter-spacing: -0.025em; margin-bottom: 8px; }
+  .section-desc { font-size: 14px; color: var(--text-muted); line-height: 1.5; max-width: 680px; margin-bottom: 28px; }
+
+  .phones { display: flex; flex-wrap: wrap; gap: 40px; }
+  .phone-wrap { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+  .phone-label { font-size: 13px; font-weight: 600; letter-spacing: -0.01em; }
+  .phone-sub { font-size: 11px; color: var(--text-muted); margin-top: -8px; }
+
+  /* ---- phone frame ---- */
+  .phone {
+    position: relative;
+    width: 300px; height: 600px;
+    background: var(--bg);
+    border-radius: 40px;
+    border: 10px solid #000;
+    overflow: hidden;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.18);
+  }
+  body.dark .phone { border-color: #2a2a2a; }
+
+  .status-bar {
+    height: 44px; display: flex; align-items: center; justify-content: space-between;
+    padding: 0 22px; font-size: 13px; font-weight: 600; color: var(--text);
+  }
+  .nav-title { padding: 6px 20px 16px; font-size: 26px; font-weight: 700; letter-spacing: -0.03em; }
+
+  .list { display: flex; flex-direction: column; gap: 8px; padding: 0 16px; }
+
+  .row {
+    display: flex; align-items: center; gap: 10px;
+    background: var(--surface); border-radius: 14px; padding: 12px 14px;
+  }
+  .row-avatar {
+    width: 36px; height: 36px; border-radius: 9px; background: var(--surface-2);
+    display: flex; align-items: center; justify-content: center; font-size: 18px; line-height: 1; flex-shrink: 0;
+  }
+  .row-title { flex: 1; font-weight: 500; font-size: 15px; color: var(--text); letter-spacing: -0.01em; }
+  .row-chevron { color: var(--text-soft); flex-shrink: 0; }
+
+  /* ---- active (menu open) overlay ---- */
+  .scrim {
+    position: absolute; inset: 0; z-index: 5;
+    background: var(--scrim);
+  }
+  .scrim.frosted { backdrop-filter: blur(14px) saturate(115%); -webkit-backdrop-filter: blur(14px) saturate(115%); }
+
+  .lifted {
+    position: absolute; z-index: 6; left: 16px; right: 16px;
+    transform: scale(1.03);
+    box-shadow: var(--lift-shadow);
+    border-radius: 14px;
+  }
+  .lifted .row { box-shadow: none; }
+
+  /* dashed outline of the card's original (pre-slide) position */
+  .ghost {
+    position: absolute; left: 16px; right: 16px; z-index: 6; height: 60px;
+    border: 1.5px dashed var(--text-soft); border-radius: 14px;
+    opacity: 0.6; display: flex; align-items: center; gap: 10px; padding: 0 14px;
+  }
+  .ghost .row-title { color: var(--text-soft); }
+  .slide-note {
+    position: absolute; z-index: 7; display: flex; flex-direction: column; align-items: center; gap: 4px;
+    font-size: 10px; font-weight: 600; color: var(--text-soft); letter-spacing: 0.01em; text-align: center;
+  }
+
+  /* the menu card */
+  .menu {
+    position: absolute; z-index: 7; left: 16px;
+    width: 168px;
+    background: var(--bg);
+    border: 1px solid var(--surface-2);
+    border-radius: 14px;
+    padding: 4px;
+    box-shadow: var(--menu-shadow);
+  }
+  .menu-item {
+    display: flex; align-items: center; gap: 9px;
+    padding: 8px 10px; border-radius: 10px;
+    font-size: 13px; font-weight: 500; color: var(--text); letter-spacing: -0.01em;
+    cursor: default;
+  }
+  .menu-item .glyph { width: 16px; text-align: center; font-size: 14px; line-height: 1; }
+  .menu-item.destructive { color: var(--danger); }
+  .menu-divider { height: 1px; background: var(--surface-2); margin: 4px 8px; }
+  .menu.anchor-right { left: auto; right: 16px; }
+
+  /* place-page top pill (for the action-sheet demo) */
+  .pill-bar { display: flex; align-items: center; justify-content: space-between; padding: 6px 16px 16px; }
+  .pill {
+    display: flex; align-items: center; gap: 7px;
+    background: var(--surface); border-radius: 999px; padding: 8px 14px;
+    font-size: 13px; font-weight: 600; color: var(--text); letter-spacing: -0.01em;
+  }
+  .more-btn {
+    width: 36px; height: 36px; border-radius: 999px; background: var(--surface);
+    display: flex; align-items: center; justify-content: center; gap: 3px;
+  }
+  .more-btn span { width: 4px; height: 4px; border-radius: 999px; background: var(--text); }
+  .hero {
+    margin: 0 16px; height: 150px; border-radius: 18px; background: var(--surface);
+    display: flex; align-items: center; justify-content: center; font-size: 44px;
+  }
+  .hero-title { padding: 18px 18px 6px; font-size: 22px; font-weight: 700; letter-spacing: -0.025em; }
+  .hero-sub { padding: 0 18px; font-size: 13px; color: var(--text-muted); }
+
+  .caption {
+    font-size: 13px; color: var(--text-muted); line-height: 1.6; max-width: 680px;
+    margin-top: 8px; padding: 16px 18px; background: var(--surface); border-radius: 12px;
+  }
+  .caption b { color: var(--text); font-weight: 600; }
+  .kbd { font-size: 12px; background: var(--surface-2); border-radius: 5px; padding: 1px 6px; }
+
+  /* ••• bottom action sheet — matches kebi-save-sheet-mockup.html */
+  .sheet-scrim {
+    position: absolute; inset: 0; z-index: 5;
+    background: rgba(15,13,10,0.45);
+    backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px);
+  }
+  .sheet {
+    position: absolute; left: 0; right: 0; bottom: 0; z-index: 6;
+    background: var(--bg); border-radius: 24px 24px 0 0;
+    padding: 10px 16px 16px; display: flex; flex-direction: column; gap: 12px;
+    box-shadow: 0 -16px 48px rgba(0,0,0,0.16);
+  }
+  .grabber { width: 36px; height: 4px; border-radius: 2px; background: var(--surface-2); margin: 0 auto 2px; }
+  .sheet-head { display: flex; align-items: center; gap: 11px; padding: 2px 4px 4px; }
+  .sheet-head .demo-avatar { width: 36px; height: 36px; border-radius: 9px; font-size: 19px; }
+  .sheet-eyebrow { font-size: 10px; font-weight: 600; color: var(--text-soft); text-transform: uppercase; letter-spacing: 0.08em; }
+  .sheet-title { font-size: 18px; font-weight: 700; color: var(--text); letter-spacing: -0.02em; }
+  .sheet-group { background: var(--surface); border-radius: 14px; overflow: hidden; }
+  .sheet-row {
+    display: flex; align-items: center; gap: 12px; padding: 14px 14px;
+    font-size: 15px; font-weight: 500; color: var(--text); letter-spacing: -0.01em;
+  }
+  .sheet-row + .sheet-row { border-top: 1px solid var(--bg); }
+  .sheet-row .glyph { width: 20px; text-align: center; font-size: 17px; line-height: 1; }
+  .sheet-row.destructive { color: var(--danger); }
+  .home-bar { width: 120px; height: 5px; border-radius: 999px; background: var(--text); opacity: 0.85; margin: 6px auto 0; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="header">
+    <div>
+      <h1>long-press context menu</h1>
+      <div class="header-meta">replaces swipe-to-delete · iOS lift + blur · generic (any card) · review mockup</div>
+    </div>
+    <div class="theme-toggle">
+      <button class="active" data-theme="light">light</button>
+      <button data-theme="dark">dark</button>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       PLACEMENT — below vs above (auto-flips near screen edge)
+       ============================================================ -->
+  <div class="section">
+    <div class="section-head">
+      <span class="section-title">placement</span>
+      <span class="section-count">menu always below</span>
+    </div>
+    <h2 class="section-h2">how the menu anchors</h2>
+    <p class="section-desc">
+      long-press a card (500ms hold). it lifts (scale 1.03 + shadow) over a dimmed,
+      <b>frosted-blur</b> backdrop, and the menu <b>always opens directly below it</b> (10px gap).
+      when the card sits too low for the menu to fit, the <b>card itself slides up</b> so the whole
+      stack fits on screen — the menu never flips. the card <b>stops at the top safe area</b> (never
+      off-screen); if even then the menu is taller than the screen, the <b>menu scrolls</b>.
+      <i>(blur is long-press only — the place ••• action sheet below uses a plain dim scrim.)</i>
+    </p>
+
+    <div class="phones">
+
+      <!-- Variant A: menu below -->
+      <div class="phone-wrap">
+        <div class="phone">
+          <div class="status-bar"><span>9:41</span><span>􀙇 􀛨 􀋊</span></div>
+          <div class="nav-title">library</div>
+          <div class="list">
+            <div class="row"><div class="row-avatar">☕</div><div class="row-title">Fuglen</div>
+              <svg class="row-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="9 6 15 12 9 18"/></svg></div>
+            <div class="row" style="opacity:0;">spacer</div>
+            <div class="row"><div class="row-avatar">⛩️</div><div class="row-title">Nezu Shrine</div>
+              <svg class="row-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="9 6 15 12 9 18"/></svg></div>
+            <div class="row"><div class="row-avatar">🍜</div><div class="row-title">Afuri Ramen</div>
+              <svg class="row-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="9 6 15 12 9 18"/></svg></div>
+          </div>
+
+          <!-- active overlay -->
+          <div class="scrim frosted"></div>
+          <div class="lifted" style="top: 126px;">
+            <div class="row"><div class="row-avatar">⛩️</div><div class="row-title">Nezu Shrine</div></div>
+          </div>
+          <div class="menu" style="top: 196px;">
+            <div class="menu-item"><span class="glyph">👍</span>looks right</div>
+            <div class="menu-item"><span class="glyph">❤️</span>i like this one</div>
+            <div class="menu-item"><span class="glyph">✅</span>been there</div>
+            <div class="menu-divider"></div>
+            <div class="menu-item destructive"><span class="glyph">🗑️</span>forget this place</div>
+          </div>
+        </div>
+        <div class="phone-label">A · menu below</div>
+        <div class="phone-sub">default — card has room beneath it</div>
+      </div>
+
+      <!-- Variant B: card slides up so the (always-below) menu fits -->
+      <div class="phone-wrap">
+        <div class="phone">
+          <div class="status-bar"><span>9:41</span><span>􀙇 􀛨 􀋊</span></div>
+          <div class="nav-title">library</div>
+          <div class="list">
+            <div class="row"><div class="row-avatar">☕</div><div class="row-title">Fuglen</div>
+              <svg class="row-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="9 6 15 12 9 18"/></svg></div>
+            <div class="row"><div class="row-avatar">⛩️</div><div class="row-title">Nezu Shrine</div>
+              <svg class="row-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="9 6 15 12 9 18"/></svg></div>
+            <div class="row"><div class="row-avatar">🍜</div><div class="row-title">Afuri Ramen</div>
+              <svg class="row-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="9 6 15 12 9 18"/></svg></div>
+          </div>
+
+          <div class="scrim frosted"></div>
+
+          <!-- where Bar Trench sat before the press (near the bottom) -->
+          <div class="ghost" style="top: 470px;">
+            <div class="row-avatar" style="opacity: 0.6;">🍷</div>
+            <div class="row-title">Bar Trench</div>
+          </div>
+
+          <!-- the card, slid up so card + gap + menu all fit -->
+          <div class="lifted" style="top: 270px;">
+            <div class="row"><div class="row-avatar">🍷</div><div class="row-title">Bar Trench</div></div>
+          </div>
+          <!-- menu still directly below the card (10px) -->
+          <div class="menu" style="top: 340px;">
+            <div class="menu-item"><span class="glyph">👍</span>looks right</div>
+            <div class="menu-item"><span class="glyph">❤️</span>i like this one</div>
+            <div class="menu-item"><span class="glyph">✅</span>been there</div>
+            <div class="menu-divider"></div>
+            <div class="menu-item destructive"><span class="glyph">🗑️</span>forget this place</div>
+          </div>
+
+          <!-- annotation: the card travelled up -->
+          <div class="slide-note" style="right: 12px; top: 300px;">
+            <svg width="22" height="150" viewBox="0 0 22 150" fill="none" stroke="var(--text-soft)" stroke-width="1.5">
+              <line x1="11" y1="148" x2="11" y2="12" stroke-dasharray="4 5" />
+              <polyline points="5 22 11 10 17 22" />
+            </svg>
+            <span>slid up<br/>to fit</span>
+          </div>
+        </div>
+        <div class="phone-label">B · card slides up</div>
+        <div class="phone-sub">near bottom — card lifts up, menu stays below</div>
+      </div>
+
+      <!-- Variant C: stack taller than the screen → card pinned to top, menu scrolls -->
+      <div class="phone-wrap">
+        <div class="phone">
+          <div class="status-bar"><span>9:41</span><span>􀙇 􀛨 􀋊</span></div>
+          <div class="nav-title">library</div>
+          <div class="scrim frosted"></div>
+
+          <!-- top safe-area limit: the card stops here, never above -->
+          <div style="position: absolute; top: 50px; left: 16px; right: 16px; border-top: 1.5px dashed var(--text-soft); opacity: 0.5; z-index: 6;"></div>
+
+          <!-- card pinned to the top clamp -->
+          <div class="lifted" style="top: 58px;">
+            <div class="row"><div class="row-avatar">🍷</div><div class="row-title">Bar Trench</div></div>
+          </div>
+
+          <!-- long menu — clipped to the screen, scrolls (fade hints more below) -->
+          <div class="menu" style="top: 128px; max-height: 430px; overflow: hidden;">
+            <div class="menu-item"><span class="glyph">👍</span>looks right</div>
+            <div class="menu-item"><span class="glyph">❤️</span>i like this one</div>
+            <div class="menu-item"><span class="glyph">✅</span>been there</div>
+            <div class="menu-item"><span class="glyph">📌</span>add to a plan</div>
+            <div class="menu-item"><span class="glyph">🔗</span>copy link</div>
+            <div class="menu-item"><span class="glyph">🗺️</span>open in maps</div>
+            <div class="menu-item"><span class="glyph">✏️</span>edit details</div>
+            <div class="menu-item"><span class="glyph">📷</span>add a photo</div>
+            <div class="menu-divider"></div>
+            <div class="menu-item destructive"><span class="glyph">🗑️</span>forget this place</div>
+            <!-- fade + scroll hint: there are more rows below the fold -->
+            <div style="position: absolute; left: 0; right: 0; bottom: 0; height: 44px; background: linear-gradient(transparent, var(--bg)); border-radius: 0 0 14px 14px;"></div>
+            <div style="position: absolute; right: 4px; top: 8px; bottom: 8px; width: 3px; border-radius: 999px; background: var(--surface-2);"></div>
+          </div>
+
+          <div class="slide-note" style="right: 12px; top: 56px;">
+            <span>pinned<br/>at top</span>
+          </div>
+        </div>
+        <div class="phone-label">C · menu taller than screen</div>
+        <div class="phone-sub">card pinned to top — the menu scrolls</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ============================================================
+       ••• ACTION SHEET — tap the ••• on the place page (options)
+       ============================================================ -->
+  <div class="section">
+    <div class="section-head">
+      <span class="section-title">••• action sheet</span>
+      <span class="section-count">place ••• menu</span>
+    </div>
+    <h2 class="section-h2">place ••• → bottom action sheet</h2>
+    <p class="section-desc">
+      the long-press lift+blur menu handles all card actions. on the <b>place page</b> there's no card to
+      long-press, so the ••• <b>taps open a bottom sheet</b> that springs up — same language as the
+      <b>save sheet</b> (grabber, dim+blur scrim, spring 320ms). positives grouped on a <span class="kbd">surface</span>
+      block, <b>forget set apart</b> in its own group below.
+    </p>
+
+    <div class="phones">
+
+      <!-- Option A: grouped (save-sheet style) -->
+      <div class="phone-wrap">
+        <div class="phone">
+          <div class="status-bar"><span>9:41</span><span>􀙇 􀛨 􀋊</span></div>
+          <div class="pill-bar">
+            <div class="pill"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>back</div>
+            <div class="more-btn"><span></span><span></span><span></span></div>
+          </div>
+          <div class="hero">☕</div>
+          <div class="hero-title">Fuglen</div>
+          <div class="hero-sub">cafe · cozy · oslo-style · Tomigaya, Tokyo</div>
+
+          <div class="sheet-scrim"></div>
+          <div class="sheet">
+            <div class="grabber"></div>
+            <div class="sheet-head">
+              <div class="demo-avatar">☕</div>
+              <div><div class="sheet-eyebrow">this place</div><div class="sheet-title">Fuglen</div></div>
+            </div>
+            <div class="sheet-group">
+              <div class="sheet-row"><span class="glyph">👍</span>looks right</div>
+              <div class="sheet-row"><span class="glyph">❤️</span>i like this one</div>
+              <div class="sheet-row"><span class="glyph">✅</span>been there</div>
+            </div>
+            <div class="sheet-group">
+              <div class="sheet-row destructive"><span class="glyph">🗑️</span>forget this place</div>
+            </div>
+            <div class="home-bar"></div>
+          </div>
+        </div>
+        <div class="phone-label">place ••• action sheet</div>
+        <div class="phone-sub">positives grouped · forget set apart · springs up from the bottom</div>
+      </div>
+
+    </div>
+
+    <div class="caption">
+      <b>recap.</b> cards use the <b>long-press</b> lift+blur menu. the place page ••• <b>taps a bottom sheet</b>
+      that springs up over a dim+blur scrim (swipe-down or backdrop to dismiss). same actions everywhere:
+      👍 looks right · ❤️ i like this one · ✅ been there · 🗑️ forget this place (danger + warning haptic + undo toast).
+    </div>
+  </div>
+
+</div>
+
+<script>
+  document.querySelectorAll('.theme-toggle button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.theme-toggle button').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      document.body.classList.toggle('dark', btn.dataset.theme === 'dark');
+    });
+  });
+</script>
+</body>
+</html>
