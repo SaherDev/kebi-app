@@ -31,6 +31,8 @@ user_settings:
   defaults:
     plan: homebody
     ai_enabled: true
+    # Curator role is admin-granted only (ADR-121) — new users start without it.
+    can_curate: false
     movement_profile:
       available_modes:
         - walking

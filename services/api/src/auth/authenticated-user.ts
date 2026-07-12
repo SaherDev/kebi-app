@@ -11,6 +11,7 @@ export class AuthenticatedUser implements AuthUser {
   readonly ai_enabled: boolean;
   readonly plan?: PlanTier;
   readonly movement_profile?: MovementProfile;
+  readonly can_curate?: boolean;
 
   constructor(params: AuthUser) {
     this.id = params.id;
@@ -19,5 +20,6 @@ export class AuthenticatedUser implements AuthUser {
     if (params.movement_profile !== undefined) {
       this.movement_profile = params.movement_profile;
     }
+    if (params.can_curate !== undefined) this.can_curate = params.can_curate;
   }
 }

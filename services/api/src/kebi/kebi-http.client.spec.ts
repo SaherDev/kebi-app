@@ -282,4 +282,47 @@ describe('KebiHttpClient', () => {
       expect(entitlementsService.resolve).toHaveBeenCalledWith('local_legend');
     });
   });
+
+  describe('curator capability header (ADR-121)', () => {
+    it('stamps X-Gateway-Can-Curate: true when granted (no plan → no entitlement headers)', async () => {
+      (httpService.post as jest.Mock).mockReturnValueOnce(
+        of({ data: { claims_written: 0, claims: [] } } as AxiosResponse)
+      );
+
+      await client.post('/v1/knowledge/curate', USER_ID, { text: 'x' }, undefined, {
+        canCurate: true,
+      });
+
+      const config = (httpService.post as jest.Mock).mock.calls[0][2];
+      expect(config.headers).toEqual({
+        ...GATEWAY_HEADERS,
+        'X-Gateway-Can-Curate': 'true',
+      });
+      expect(entitlementsService.resolve).not.toHaveBeenCalled();
+    });
+
+    it('sends X-Gateway-Can-Curate: false for an ungranted user (fail closed)', async () => {
+      (httpService.post as jest.Mock).mockReturnValueOnce(
+        of({ data: { claims_written: 0, claims: [] } } as AxiosResponse)
+      );
+
+      await client.post('/v1/knowledge/curate', USER_ID, { text: 'x' }, undefined, {
+        canCurate: false,
+      });
+
+      const config = (httpService.post as jest.Mock).mock.calls[0][2];
+      expect(config.headers['X-Gateway-Can-Curate']).toBe('false');
+    });
+
+    it('omits the header entirely on calls that pass no capability set', async () => {
+      (httpService.post as jest.Mock).mockReturnValueOnce(
+        of({ data: { ok: true } } as AxiosResponse)
+      );
+
+      await client.post('/v1/signal', USER_ID, { a: 1 });
+
+      const config = (httpService.post as jest.Mock).mock.calls[0][2];
+      expect(config.headers).not.toHaveProperty('X-Gateway-Can-Curate');
+    });
+  });
 });

@@ -17,6 +17,16 @@ Format:
 
 ---
 
+## ADR-049: The curator role is an admin-granted grant in `user_settings`, not a plan tier
+
+**Date:** 2026-07-12\
+**Status:** accepted\
+**Context:** kebi's knowledge layer (ADR-121) accepts expert prose at `POST /v1/knowledge/curate` and stores it as **global** `curated_expert` claims, gated by the `X-Gateway-Can-Curate` capability (ADR-112). The gateway must decide who is trusted to make these global writes. The plan-tier entitlement machinery already forwards `X-Gateway-*` capability headers, so reusing it is tempting — but curation is not something a user *buys*. The product intent is that a curator is *vouched for by us*: today the owner, later a team, then vetted external travelers who apply in-app and we approve. Deriving trust from billing plan would wrongly couple "is a curator" to "which subscription they pay for," and the numeric/boolean entitlement headers all resolve from the plan claim.\
+**Decision:** Model the curator role as an **admin-granted boolean stored in `user_settings.can_curate`** (our product data, ADR-045) — independent of plan, defaulting closed, and never derivable from the request body. It is a **sealed token claim like `plan`/`ai_enabled`**: provisioning stamps it from settings into `app_metadata`, so the request path reads the role claim-first with no per-request DB hit. Two gates enforce it, defense in depth: a gateway-side guard denies non-curators at the edge (read from the token claim, fail closed), and the gateway forwards `X-Gateway-Can-Curate` (sourced from the same claim, curate call **only**, bypassing the plan-derived entitlement path) so kebi independently returns `403` when it is false. Granting is operator-only — set out-of-band by us (a one-off write today; an admin-gated surface later), never self-served. Constitution §V preserved: NestJS writes only its own product table and forwards; kebi owns the claim writes and the 403.\
+**Consequences:** A curator is onboarded or revoked without a billing change; the grant takes effect on the target's next token refresh (a pre-grant token is denied, fail closed), auditable to their user id (kebi records it as provenance). Being a sealed claim, `can_curate` now travels the same stamp/read/inSync path as the other claims — a new claim there is a known, small change set. The grant is a one-off write for now (`UserSettingsService.updateCanCurate`); the operator surface that calls it and the in-app "apply to become a curator" flow are separable follow-ups.
+
+---
+
 ## ADR-048: Mobile ships a native dev/prod build; iOS share extension feeds the existing save flow
 
 **Date:** 2026-07-02\

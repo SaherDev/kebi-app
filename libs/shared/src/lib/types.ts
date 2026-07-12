@@ -365,6 +365,9 @@ export interface AuthUser {
   ai_enabled: boolean;
   plan?: PlanTier;
   movement_profile?: MovementProfile;
+  // Admin-granted curator role (ADR-121), carried claim-first in the token.
+  // Absent on a pre-grant/pre-migration token → treated as not a curator.
+  can_curate?: boolean;
 }
 
 /**
@@ -376,6 +379,10 @@ export interface UserSettingsData {
   plan: PlanTier;
   ai_enabled: boolean;
   movement_profile: MovementProfile | null;
+  // Admin-granted curator role (ADR-121 knowledge curation) — independent of the
+  // billing plan, never self-asserted. Defaults false (fail closed); the gateway
+  // forwards it as the X-Gateway-Can-Curate capability header.
+  can_curate: boolean;
 }
 
 /**
@@ -387,6 +394,8 @@ export interface IdentityClaims {
   ai_enabled?: boolean;
   plan?: PlanTier;
   movement_profile?: MovementProfile;
+  // Admin-granted curator role (ADR-121), stamped from user_settings.
+  can_curate?: boolean;
   // Our stable internal user id, stamped into the signed token claim so the
   // request path resolves identity without a DB lookup. Absent until stamped.
   internal_id?: string;
@@ -440,6 +449,28 @@ export interface SignalRequest {
 
 export interface SignalResponse {
   status: string;
+}
+
+// Knowledge curation (POST /v1/knowledge/curate) — ADR-121. Expert prose is
+// structured by kebi into geo-scoped `curated_expert` claims.
+export type CurateScope = "country" | "city" | "neighborhood";
+
+export interface CurateClaim {
+  scope: CurateScope;
+  entity_name: string;
+  claim: string;
+  tags: string[];
+}
+
+/**
+ * kebi's response after structuring curated prose. `claims_written` counts only
+ * NEW rows — dedup collapses re-submissions, and unkeyable/accessibility claims
+ * are dropped, so it may be less than the prose implied. `claims` is empty when
+ * nothing was stored.
+ */
+export interface CurateKnowledgeResponse {
+  claims_written: number;
+  claims: CurateClaim[];
 }
 
 // User data deletion scope (DELETE /v1/user/data?scope=...)

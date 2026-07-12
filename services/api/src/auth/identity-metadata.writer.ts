@@ -10,6 +10,7 @@ export interface StampClaims {
   plan?: PlanTier;
   movement_profile?: MovementProfile;
   ai_enabled?: boolean;
+  can_curate?: boolean;
 }
 
 /**
