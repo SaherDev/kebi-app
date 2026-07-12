@@ -70,7 +70,7 @@ export default function HomeScreen() {
           left={<HomeLocationLine city={home.city} weather={home.weather} />}
           right={
             <TopPill>
-              <IconButton icon="share-in" label={t('nav.savePlace')} onPress={saveSheet.open} />
+              <IconButton icon="share-in" label={t('nav.savePlace')} onPress={() => saveSheet.open()} />
               <IconButton icon="book" label={t('nav.library')} onPress={() => router.push('/library')} />
               <IconButton icon="gear" label={t('nav.settings')} onPress={() => router.push('/settings')} />
             </TopPill>
