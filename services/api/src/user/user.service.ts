@@ -84,6 +84,7 @@ export class UserService {
       internal_id: user.id,
       ai_enabled: settings.ai_enabled,
       plan: settings.plan,
+      can_curate: settings.can_curate,
       ...(settings.movement_profile !== null && {
         movement_profile: settings.movement_profile,
       }),

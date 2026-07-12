@@ -108,6 +108,7 @@ describe('UserService', () => {
       userSettings.updatePlan.mockResolvedValueOnce({
         plan: 'explorer',
         ai_enabled: true,
+        can_curate: false,
         movement_profile: { available_modes: ['walking'], reach: 'normal' },
       });
 
@@ -119,6 +120,7 @@ describe('UserService', () => {
         internal_id: USER_ID,
         ai_enabled: true,
         plan: 'explorer',
+        can_curate: false,
         movement_profile: { available_modes: ['walking'], reach: 'normal' },
       });
       expect(profile).toEqual({ name: 'saher', email: 'saher@kebi.app', plan: 'explorer' });
@@ -128,6 +130,7 @@ describe('UserService', () => {
       userSettings.updatePlan.mockResolvedValueOnce({
         plan: 'local_legend',
         ai_enabled: true,
+        can_curate: false,
         movement_profile: null,
       });
 
@@ -137,6 +140,7 @@ describe('UserService', () => {
         internal_id: USER_ID,
         ai_enabled: true,
         plan: 'local_legend',
+        can_curate: false,
       });
     });
   });

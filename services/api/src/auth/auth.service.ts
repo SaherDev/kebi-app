@@ -49,6 +49,7 @@ export class AuthService {
       claims.internal_id === userId &&
       claims.plan === settings.plan &&
       claims.ai_enabled === settings.ai_enabled &&
+      claims.can_curate === settings.can_curate &&
       JSON.stringify(claims.movement_profile ?? null) ===
         JSON.stringify(settings.movement_profile);
     if (inSync) return;
@@ -57,6 +58,7 @@ export class AuthService {
       internal_id: userId,
       ai_enabled: settings.ai_enabled,
       plan: settings.plan,
+      can_curate: settings.can_curate,
       ...(settings.movement_profile !== null && {
         movement_profile: settings.movement_profile,
       }),

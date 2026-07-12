@@ -41,7 +41,10 @@ export function SaveSheetProvider({ children }: { children: ReactNode }) {
   const [status, setStatus] = useState<'idle' | 'saving'>('idle');
 
   const open = useCallback((prefillText?: string) => {
-    setPrefill(prefillText ?? '');
+    // Guard the draft: only a real string seeds it. A caller that wires this to
+    // an onPress (`onPress={open}`) would otherwise pass the press event as the
+    // prefill, and the non-string draft crashes detectSource (value.trim).
+    setPrefill(typeof prefillText === 'string' ? prefillText : '');
     setIsOpen(true);
   }, []);
   const close = useCallback(() => setIsOpen(false), []);

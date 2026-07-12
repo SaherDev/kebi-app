@@ -10,6 +10,7 @@ import { UserSettingsService } from './user-settings.service';
 const DEFAULT_SETTINGS: UserSettingsData = {
   plan: 'homebody',
   ai_enabled: true,
+  can_curate: false,
   movement_profile: null,
 };
 
@@ -48,6 +49,7 @@ describe('AuthService.provision', () => {
       internal_id: 'user_internal_1',
       ai_enabled: true,
       plan: 'homebody',
+      can_curate: false,
     });
   });
 
@@ -56,7 +58,12 @@ describe('AuthService.provision', () => {
 
     await service.provision({
       externalId: 'ext_1',
-      claims: { internal_id: 'user_internal_1', plan: 'homebody', ai_enabled: true },
+      claims: {
+        internal_id: 'user_internal_1',
+        plan: 'homebody',
+        ai_enabled: true,
+        can_curate: false,
+      },
     });
 
     expect(userSettings.ensureForUser).toHaveBeenCalled(); // row is still ensured

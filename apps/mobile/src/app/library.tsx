@@ -157,7 +157,7 @@ export default function LibraryScreen() {
   return (
     <View className="flex-1">
       <ScreenScaffold
-        topBar={<LibraryTopBar query={query} onQueryChange={setQuery} onSave={saveSheet.open} />}
+        topBar={<LibraryTopBar query={query} onQueryChange={setQuery} onSave={() => saveSheet.open()} />}
       >
         {body}
       </ScreenScaffold>

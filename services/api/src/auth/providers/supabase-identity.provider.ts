@@ -23,6 +23,7 @@ interface SupabaseAppMetadata {
   ai_enabled?: boolean;
   plan?: PlanTier;
   movement_profile?: MovementProfile;
+  can_curate?: boolean;
   internal_id?: string;
 }
 
@@ -97,6 +98,7 @@ export class SupabaseIdentityProvider implements IdentityProvider {
         ai_enabled: meta.ai_enabled,
         plan: meta.plan,
         movement_profile: meta.movement_profile,
+        can_curate: meta.can_curate,
         internal_id: meta.internal_id,
       }),
       email: payload.email,

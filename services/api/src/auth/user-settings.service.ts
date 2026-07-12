@@ -55,11 +55,24 @@ export class UserSettingsService {
     return next;
   }
 
+  /**
+   * Grant or revoke the admin-only curator role, preserving every other setting.
+   * A plain product-data write — unlike `plan`, `can_curate` is not sealed into
+   * the token, so no re-stamp is needed; the curate path reads it from settings.
+   */
+  async updateCanCurate(userId: string, canCurate: boolean): Promise<UserSettingsData> {
+    const current = await this.ensureForUser(userId);
+    const next: UserSettingsData = { ...current, can_curate: canCurate };
+    await this.settings.update(userId, next);
+    return next;
+  }
+
   /** Default settings for a new user, seeded from `user_settings.defaults` config. */
   private defaults(): UserSettingsData {
     return {
       plan: this.configService.get<PlanTier>('user_settings.defaults.plan', 'homebody'),
       ai_enabled: this.configService.get<boolean>('user_settings.defaults.ai_enabled', true),
+      can_curate: this.configService.get<boolean>('user_settings.defaults.can_curate', false),
       movement_profile: this.configService.get<MovementProfile>(
         'user_settings.defaults.movement_profile',
         DEFAULT_MOVEMENT_PROFILE,

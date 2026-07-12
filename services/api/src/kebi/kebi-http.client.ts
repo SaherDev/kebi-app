@@ -18,6 +18,14 @@ const ENTITLEMENT_HEADERS = {
   consultsPerDay: 'X-Gateway-Consults-Per-Day',
 } as const;
 
+/** ADR-121 curator role — a per-user grant, not a plan entitlement. */
+const CAN_CURATE_HEADER = 'X-Gateway-Can-Curate';
+
+/** Per-user role capabilities sourced from settings (not plan). Fail-closed on kebi's side. */
+export interface GatewayCapabilities {
+  canCurate?: boolean;
+}
+
 /**
  * Shared signed-HTTP transport to the kebi service. The single place that knows
  * the base URL, the timeout, and the service-to-service auth: every protected
@@ -70,9 +78,10 @@ export class KebiHttpClient {
     userId: string,
     body?: unknown,
     plan?: PlanTier,
+    capabilities?: GatewayCapabilities,
   ): Promise<T> {
     const response = await firstValueFrom(
-      this.httpService.post<T>(this.url(path), body, this.config(userId, plan)),
+      this.httpService.post<T>(this.url(path), body, this.config(userId, plan, capabilities)),
     );
     return response.data;
   }
@@ -107,7 +116,7 @@ export class KebiHttpClient {
       this.httpService.post<Readable>(
         this.url(path),
         body,
-        this.config(userId, plan, { responseType: 'stream', signal }),
+        this.config(userId, plan, undefined, { responseType: 'stream', signal }),
       ),
     );
     return response.data;
@@ -124,6 +133,7 @@ export class KebiHttpClient {
   private config(
     userId: string,
     plan?: PlanTier,
+    capabilities?: GatewayCapabilities,
     extra?: AxiosRequestConfig,
   ): AxiosRequestConfig {
     return {
@@ -133,9 +143,20 @@ export class KebiHttpClient {
         'X-Gateway-Token': this.gatewaySecret,
         'X-Gateway-User-Id': userId,
         ...this.entitlementHeaders(plan),
+        ...this.capabilityHeaders(capabilities),
         ...extra?.headers,
       },
     };
+  }
+
+  /**
+   * Per-user role headers (ADR-121). `X-Gateway-Can-Curate` is sent as an explicit
+   * `"true"`/`"false"` whenever a capability set is supplied — kebi fails closed, so
+   * an omitted set (all non-curate calls) sends nothing.
+   */
+  private capabilityHeaders(capabilities?: GatewayCapabilities): Record<string, string> {
+    if (capabilities?.canCurate === undefined) return {};
+    return { [CAN_CURATE_HEADER]: String(capabilities.canCurate) };
   }
 
   /**
