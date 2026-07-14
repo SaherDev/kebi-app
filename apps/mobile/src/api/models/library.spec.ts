@@ -62,7 +62,15 @@ describe('LibraryResponseSchema', () => {
             place: PLACE,
             user_data: USER_DATA,
             claims: [
-              { text: 'order the omakase', tags: ['food'], source: 'community', from_shared: true },
+              {
+                id: 'claim_1',
+                text: 'order the omakase',
+                tags: ['food'],
+                source: 'community',
+                from_shared: true,
+                agree_count: 3,
+                disagree_count: 1,
+              },
             ],
           },
         ],
@@ -73,8 +81,11 @@ describe('LibraryResponseSchema', () => {
     );
 
     expect(res.places[0].claims[0]).toBeInstanceOf(PlaceNote);
+    expect(res.places[0].claims[0].id).toBe('claim_1');
     expect(res.places[0].claims[0].text).toBe('order the omakase');
     expect(res.places[0].claims[0].from_shared).toBe(true);
+    expect(res.places[0].claims[0].agree_count).toBe(3);
+    expect(res.places[0].claims[0].disagree_count).toBe(1);
   });
 
   it('tolerates a missing total (pre-rollout) → null', () => {

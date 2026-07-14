@@ -205,17 +205,24 @@ export interface UserPlace {
 
 /**
  * An insider note tied to a place from the knowledge layer (ADR-127) — the
- * Library's payoff surface. `source` is a coarse origin label: `community`
- * (harvested from shared content), `expert` (curated), or `kebi` (the user's
- * own saved-recommendation reason). `from_shared` is `true` when the note was
- * mined from the very post the user shared for this save (badge it "from what
- * you shared"). Approved claims only, strongest first, capped.
+ * Library's payoff surface. `id` is the claim's stable id (use as the list key
+ * and, later, the agree/disagree vote target). `source` is a coarse origin
+ * label: `community` (harvested from shared content), `expert` (curated), or
+ * `kebi` (the user's own saved-recommendation reason). `from_shared` is `true`
+ * when the note was mined from the very post the user shared for this save
+ * (badge it "from what you shared"). `agree_count` / `disagree_count` are the
+ * corroboration tally — both `0` until the vote write-path ships, surfaced now
+ * so the client can render them without a later contract change. Approved
+ * claims only, strongest first, capped.
  */
 export interface PlaceNote {
+  id: string;
   text: string;
   tags: string[];
   source: "community" | "expert" | "kebi";
   from_shared: boolean;
+  agree_count: number;
+  disagree_count: number;
 }
 
 /**

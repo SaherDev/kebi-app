@@ -64,26 +64,36 @@ export const UserPlaceSchema = z
   .transform((p) => new UserPlace(p));
 
 export class PlaceNote implements PlaceNoteContract {
+  readonly id: string;
   readonly text: string;
   readonly tags: string[];
   readonly source: 'community' | 'expert' | 'kebi';
   readonly from_shared: boolean;
+  readonly agree_count: number;
+  readonly disagree_count: number;
 
   constructor(p: PlaceNoteContract) {
+    this.id = p.id;
     this.text = p.text;
     this.tags = p.tags;
     this.source = p.source;
     this.from_shared = p.from_shared;
+    this.agree_count = p.agree_count;
+    this.disagree_count = p.disagree_count;
   }
 }
 
 export const PlaceNoteSchema = z
   .object({
+    id: z.string(),
     text: z.string(),
     tags: z.array(z.string()),
     // Tolerant (ADR-019): a new coarse-origin label never breaks the client.
     source: z.custom<PlaceNoteContract['source']>((v) => typeof v === 'string'),
     from_shared: z.boolean(),
+    // 0 until the vote write-path ships; default guards a mid-rollout kebi.
+    agree_count: z.number().nullish().transform((v) => v ?? 0),
+    disagree_count: z.number().nullish().transform((v) => v ?? 0),
   })
   .transform((p) => new PlaceNote(p));
 
