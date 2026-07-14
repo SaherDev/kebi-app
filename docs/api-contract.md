@@ -10,9 +10,11 @@ source of truth.
 
 ## Where it is
 
-- **Canonical:** `kebi` repo → `docs/api-contract.md`
-- Locally, `kebi` is a sibling of this repo, so the file is at
-  `../kebi/docs/api-contract.md` relative to the repo root.
+- **Repo:** `kebi` — https://github.com/SaherDev/kebi
+- **File:** `docs/api-contract.md` in that repo
+
+(Referenced by repo, not by filesystem path, so it holds however the repos are
+checked out — siblings, nested, or cloned independently.)
 
 ## Why kebi is canonical
 
