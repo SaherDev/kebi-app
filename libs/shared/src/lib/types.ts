@@ -203,10 +203,29 @@ export interface UserPlace {
   visited_at: string | null;
 }
 
-/** A library entry: the catalog place plus the caller's user-state. */
+/**
+ * An insider note tied to a place from the knowledge layer (ADR-127) — the
+ * Library's payoff surface. `source` is a coarse origin label: `community`
+ * (harvested from shared content), `expert` (curated), or `kebi` (the user's
+ * own saved-recommendation reason). `from_shared` is `true` when the note was
+ * mined from the very post the user shared for this save (badge it "from what
+ * you shared"). Approved claims only, strongest first, capped.
+ */
+export interface PlaceNote {
+  text: string;
+  tags: string[];
+  source: "community" | "expert" | "kebi";
+  from_shared: boolean;
+}
+
+/**
+ * A library entry: the catalog place, the caller's user-state, and the place's
+ * insider notes (`claims`, ADR-127). `claims` is `[]` when a place has none.
+ */
 export interface SavedPlaceView {
   place: PlaceCore;
   user_data: UserPlace;
+  claims: PlaceNote[];
 }
 
 /**
@@ -253,11 +272,13 @@ export interface SaveUserPlaceRequest {
   place_core_id: string;
   recommendation_id: string;
   /**
-   * Free text stored on the save — typically the recommendation's reason the
-   * client is showing (the reason is not persisted server-side, so the client
-   * supplies it). Applied only on create; omit or `null` for no note.
+   * The pick's rationale the card is showing — the client supplies it since the
+   * reason isn't otherwise stored server-side. On create, kebi writes it to the
+   * knowledge layer as a user-scoped `kebi_message` claim on the place (ADR-127)
+   * — it is no longer stored on the save as `user_data.note`. Omit or `null` for
+   * no reason; a re-tap adds nothing (claim-text dedup).
    */
-  note?: string | null;
+  reason?: string | null;
 }
 
 // ── Home screen (greeting + recall) ─────────────────────────────────────────

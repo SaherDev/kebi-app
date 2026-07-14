@@ -2,6 +2,7 @@ import { z } from 'zod';
 import type {
   LibraryResponse as LibraryResponseContract,
   PlaceCore as PlaceCoreContract,
+  PlaceNote as PlaceNoteContract,
   PlaceSource,
   SavedPlaceView as SavedPlaceViewContract,
   UserPlace as UserPlaceContract,
@@ -62,13 +63,39 @@ export const UserPlaceSchema = z
   })
   .transform((p) => new UserPlace(p));
 
+export class PlaceNote implements PlaceNoteContract {
+  readonly text: string;
+  readonly tags: string[];
+  readonly source: 'community' | 'expert' | 'kebi';
+  readonly from_shared: boolean;
+
+  constructor(p: PlaceNoteContract) {
+    this.text = p.text;
+    this.tags = p.tags;
+    this.source = p.source;
+    this.from_shared = p.from_shared;
+  }
+}
+
+export const PlaceNoteSchema = z
+  .object({
+    text: z.string(),
+    tags: z.array(z.string()),
+    // Tolerant (ADR-019): a new coarse-origin label never breaks the client.
+    source: z.custom<PlaceNoteContract['source']>((v) => typeof v === 'string'),
+    from_shared: z.boolean(),
+  })
+  .transform((p) => new PlaceNote(p));
+
 export class SavedPlaceView implements SavedPlaceViewContract {
   readonly place: PlaceCoreContract;
   readonly user_data: UserPlaceContract;
+  readonly claims: PlaceNoteContract[];
 
   constructor(p: SavedPlaceViewContract) {
     this.place = p.place;
     this.user_data = p.user_data;
+    this.claims = p.claims;
   }
 }
 
@@ -76,6 +103,11 @@ export const SavedPlaceViewSchema = z
   .object({
     place: PlaceCoreSchema,
     user_data: UserPlaceSchema,
+    // Rollout-tolerant: a pre-ADR-127 kebi omits `claims` → treat as none.
+    claims: z
+      .array(PlaceNoteSchema)
+      .nullish()
+      .transform((v) => v ?? []),
   })
   .transform((p) => new SavedPlaceView(p));
 

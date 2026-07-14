@@ -65,6 +65,7 @@ function makeView(over: Partial<SavedPlaceView> = {}): SavedPlaceView {
       saved_at: '2026-05-01T08:00:00Z',
       visited_at: null,
     },
+    claims: [],
     ...over,
   };
 }

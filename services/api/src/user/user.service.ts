@@ -144,9 +144,9 @@ export class UserService {
     const body: SaveUserPlaceRequest = {
       place_core_id: dto.place_core_id,
       recommendation_id: dto.recommendation_id,
-      // The consult reason the card is showing — kebi persists it per-save, since
-      // the reason is not otherwise stored server-side (api-contract.md).
-      ...(dto.note != null ? { note: dto.note } : {}),
+      // The consult reason the card is showing — kebi writes it as a kebi_message
+      // claim on the place (ADR-127), since it is not otherwise stored server-side.
+      ...(dto.reason != null ? { reason: dto.reason } : {}),
     };
     // plan rides along so kebi can enforce the save_limit (ADR-112); a re-save
     // of an existing place is idempotent and never counts against the cap.

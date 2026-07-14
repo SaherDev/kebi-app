@@ -40,6 +40,7 @@ const view: SavedPlaceView = {
     refreshed_at: null,
   },
   user_data: userData,
+  claims: [],
 };
 
 function Harness() {

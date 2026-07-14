@@ -154,8 +154,8 @@ export function ChatPlaceCard({ toolResults }: { toolResults: readonly SseToolRe
         const userPlace = await saveUserPlace(client, {
           place_core_id: placeCoreId as string,
           recommendation_id: recommendationId,
-          // Persist the reason the card is showing — it isn't stored server-side.
-          note: primary.candidate.reason ?? null,
+          // The reason the card is showing — kebi stores it as a claim (ADR-127).
+          reason: primary.candidate.reason ?? null,
         });
         savedPlaces.add([place]);
         showToast({

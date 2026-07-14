@@ -60,6 +60,7 @@ describe("placeDisplayName", () => {
   const view = (u: Partial<UserPlace>): SavedPlaceView => ({
     place: place({ place_name: "Canonical Name" }),
     user_data: userData(u),
+    claims: [],
   });
 
   it("prefers the source label", () => {
