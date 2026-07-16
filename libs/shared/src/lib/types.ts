@@ -91,12 +91,37 @@ export interface PlaceCore {
 }
 
 // ── Chat response (POST /v1/chat) ────────────────────────────────────────────
-// The agent runs a LangGraph turn with the consult-family tools. Each tool
-// returns a ConsultResult surfaced in `data.tool_results`. The top-level
-// `type` is only ever "agent" or "error" — all downstream failures are caught
-// and returned as type="error" with HTTP 200 (see api-contract.md).
+// The agent runs a LangGraph turn with the consult-family tools plus the
+// knowledge tool `research` (kebi ADR-129). Each tool's structured payload is
+// surfaced in `data.tool_results`; the payload union is discriminated by
+// `tool` — NEVER by payload shape (ConsultResult and ResearchResult even share
+// an `empty_reason` field name with disjoint value sets). The top-level `type`
+// is only ever "agent" or "error" — all downstream failures are caught and
+// returned as type="error" with HTTP 200 (see api-contract.md).
 
 export type ConsultTool = "find_saved" | "suggest_places" | "discover_places";
+
+export type ResearchTool = "research";
+
+export type ChatTool = ConsultTool | ResearchTool;
+
+export const CONSULT_TOOLS = [
+  "find_saved",
+  "suggest_places",
+  "discover_places",
+] as const satisfies readonly ConsultTool[];
+
+export const RESEARCH_TOOL: ResearchTool = "research";
+
+/**
+ * Whether a tool result belongs to the consult family (place candidates) —
+ * the canonical discrimination for `ToolResult.payload` (ADR-050). Unknown,
+ * future, and `null` tool names are NOT consult (ADR-019): a new kebi tool
+ * degrades to the prose path, never to a broken place card.
+ */
+export function isConsultTool(tool: string | null): tool is ConsultTool {
+  return tool !== null && (CONSULT_TOOLS as readonly string[]).includes(tool);
+}
 
 export type ConsultCandidateSource = "saved" | "suggested" | "discovered";
 
@@ -121,11 +146,57 @@ export interface ConsultResult {
   recommendation_id: string;
 }
 
-export interface ToolResult {
+/** Why research produced no notes (e.g. "no_claims", "unresolved"). */
+export type ResearchEmptyReason = LiteralUnion<
+  "unresolved" | "ambiguous" | "no_claims" | "no_topic_match"
+>;
+
+/**
+ * One insider note from the knowledge layer, scoped to an area rather than a
+ * place — the research analogue of {@link PlaceNote} (no `from_shared`, plus
+ * the retrieval `confidence`). `id` is the underlying claim's stable id.
+ */
+export interface ResearchNote {
+  id: string;
+  text: string;
+  tags: string[];
+  source: "community" | "expert" | "kebi";
+  confidence: number;
+  agree_count: number;
+  disagree_count: number;
+}
+
+/**
+ * The `research` tool's payload (kebi ADR-129): knowledge notes about the
+ * resolved area (`entity_name`/`entity_key`), not place candidates — there is
+ * no `recommendation_id` and nothing in it is save/signal-able. The turn's
+ * user-facing answer is the `message` prose; clients don't render this payload
+ * yet (runtime validation is deferred to the surface that first consumes it,
+ * ADR-046/ADR-050). `empty_reason` + `clarification` are set when `notes` is
+ * empty.
+ */
+export interface ResearchResult {
+  entity_name: string;
+  entity_key: string;
+  notes: ResearchNote[];
+  empty_reason?: ResearchEmptyReason | null;
+  clarification?: string | null;
+}
+
+export interface ConsultToolResult {
   tool: ConsultTool;
   tool_call_id: string;
   payload: ConsultResult;
 }
+
+export interface ResearchToolResult {
+  tool: ResearchTool;
+  tool_call_id: string;
+  payload: ResearchResult;
+}
+
+/** Discriminated by `tool` — never sniff the payload shape (ADR-050). */
+export type ToolResult = ConsultToolResult | ResearchToolResult;
 
 export interface AgentResponseData {
   reasoning_steps: ReasoningStep[];
