@@ -302,8 +302,26 @@ const DEMO_TAGS: PlaceTag[] = [
   { type: 'season', value: 'summer', source: 'llm' },
 ];
 
-// Sample ADR-127 claims covering the meta-line variants: from_shared pill +
-// tally, labelled expert origin, and the user's own kebi save reason.
+// Uniform from_shared batch (> preview cap): exercises the header-level share
+// pill and the show all / show less toggle.
+const DEMO_CLAIMS_SHARED: PlaceNote[] = [
+  'entry prices are considered far from affordable',
+  'located between a jungle and cliffs 100 meters above the ocean',
+  'VIP table service, noted for high-quality sushi',
+  'sunbeds by the pool need a separate reservation',
+  'dress code enforced after 6pm — no swimwear inside',
+].map((text, i) => ({
+  id: `shr_${i}`,
+  text,
+  tags: [],
+  source: 'community',
+  from_shared: true,
+  agree_count: i === 3 ? 14 : 0,
+  disagree_count: 0,
+}));
+
+// Mixed-source batch: per-row share pill, labelled expert origin, and the
+// user's own kebi save reason.
 const DEMO_CLAIMS: PlaceNote[] = [
   {
     id: 'clm_1',
@@ -457,8 +475,12 @@ export default function GalleryScreen() {
           </View>
         </Section>
 
-        <Section title="Insider notes — claims quote list (place page)">
+        <Section title="Insider notes — mixed sources (place page)">
           <PlaceClaimsSection claims={DEMO_CLAIMS} />
+        </Section>
+
+        <Section title="Insider notes — all from share, capped + toggle">
+          <PlaceClaimsSection claims={DEMO_CLAIMS_SHARED} />
         </Section>
 
         <Section title="Reasoning block — real stream (replay, real timing)">

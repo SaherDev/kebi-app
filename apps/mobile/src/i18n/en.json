@@ -81,10 +81,12 @@
       "accessibility": "accessibility"
     },
     "claims": {
-      "fromShared": "from what you shared",
+      "fromShared": "from your share",
       "expert": "expert",
       "saveReason": "your save reason",
-      "agree": "{{count}} agree"
+      "agree": "{{count}} agree",
+      "showAll": "show all {{count}} notes",
+      "showLess": "show less"
     },
     "maps": {
       "title": "open directions in",

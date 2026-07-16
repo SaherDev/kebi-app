@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Kebi Place — Insider Notes v2 (capped + de-duped badge)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg:#FAFAF9; --surface:#F1F1EF; --surface-2:#E8E8E5;
+    --text:#1A1A1A; --text-muted:#8A8A87; --text-soft:#B5B5B1;
+    --success:#5B8A4E; --pill-green:#E8F2E1;
+    --like:#C2632F;   --pill-warm:#FEE4D4;
+  }
+  html,body{ background:#2A2A28; font-family:'Inter',system-ui,sans-serif;
+    -webkit-font-smoothing:antialiased; min-height:100vh; color:#EDEDEA; padding:40px 24px 64px; }
+  h1{ font-size:22px; font-weight:700; letter-spacing:-.01em; margin-bottom:6px; }
+  .lede{ font-size:14px; color:#B5B5B1; max-width:840px; line-height:1.55; margin-bottom:30px; }
+  .lede b{ color:#D9D9D5; font-weight:600; }
+  .cols{ display:flex; gap:40px; align-items:flex-start; flex-wrap:wrap; }
+  .cap{ font-size:13px; font-weight:600; color:#9A9A96; margin-bottom:12px; max-width:340px; line-height:1.5; }
+  .cap b{ color:#D9D9D5; }
+
+  .stage{ background:var(--bg); border-radius:24px; padding:20px 24px; width:342px;
+    display:flex; flex-direction:column; gap:16px; }
+
+  /* ── page vocabulary ── */
+  .tag-header-row{ display:flex; align-items:center; gap:8px; }
+  .tag-header{ font-size:13px; font-weight:600; color:var(--text-soft);
+    text-transform:uppercase; letter-spacing:.08em; }
+  .tag-chips{ display:flex; flex-wrap:wrap; gap:6px; }
+  .tag-chip{ padding:6px 12px; border-radius:999px; background:var(--surface); font-size:13px;
+    font-weight:500; color:var(--text); letter-spacing:-.005em; }
+  .pill{ display:inline-flex; align-items:center; gap:5px; padding:2px 8px; border-radius:999px;
+    font-size:11px; font-weight:600; }
+  .pill::before{ content:''; width:5px; height:5px; border-radius:50%; background:currentColor; }
+  .pill.warm{ background:var(--pill-warm); color:var(--like); }
+
+  /* ── claims quote list (option A base) ── */
+  .quote-list{ display:flex; flex-direction:column; gap:14px; }
+  .quote{ display:flex; flex-direction:column; gap:6px; padding-left:14px; position:relative; }
+  .quote::before{ content:''; position:absolute; left:0; top:2px; bottom:2px; width:2px;
+    border-radius:2px; background:var(--surface-2); }
+  .quote-text{ font-size:15px; line-height:1.5; color:var(--text); letter-spacing:-.005em; }
+  .claim-meta{ display:flex; align-items:center; gap:8px; font-size:12px; color:var(--text-muted);
+    letter-spacing:-.005em; }
+  .claim-meta svg{ width:12px; height:12px; stroke:var(--text-muted); stroke-width:1.8; fill:none; flex-shrink:0; }
+  .claim-meta .sep{ color:var(--text-soft); }
+
+  /* show all / show less tail — same voice as the library "show all" link */
+  .show-toggle{ display:flex; align-items:center; gap:6px; padding-left:14px;
+    font-size:13px; font-weight:500; color:var(--text-muted); cursor:pointer; }
+  .show-toggle svg{ width:12px; height:12px; stroke:var(--text-muted); stroke-width:2; fill:none; }
+
+  .context-dim{ opacity:.4; }
+</style>
+</head>
+<body>
+
+<h1>insider notes v2 — cap + collapse, badge said once</h1>
+<p class="lede">
+  fixes from the live screenshot: <b>1)</b> the list is capped at 3 notes with a
+  <b>"show all N" / "show less" toggle</b> (the same quiet text affordance as the collapsible
+  "others" tag section — no card, no chrome). <b>2)</b> when <b>every</b> note came from the post you
+  shared, the warm pill moves up <b>next to the section header, said once</b> — the rows stay clean
+  prose. per-row badges appear only when sources are <b>mixed</b> (the badge is then information,
+  not wallpaper).
+</p>
+
+<div class="cols">
+
+  <!-- state 1: default (capped, uniform from_shared) -->
+  <div>
+    <div class="cap"><b>1 · default</b> — all 6 notes are from your share → one pill in the header
+      row; first 3 notes shown; quiet "show all 6" tail.</div>
+    <div class="stage">
+
+      <div class="tag-header-row">
+        <span class="tag-header">insider notes</span>
+        <span class="pill warm">from your share</span>
+      </div>
+
+      <div class="quote-list">
+        <div class="quote">
+          <div class="quote-text">entry prices at Savaya Bali are considered far from affordable</div>
+        </div>
+        <div class="quote">
+          <div class="quote-text">located between a jungle and cliffs 100 meters above the Indian Ocean — incredible sunset views</div>
+        </div>
+        <div class="quote">
+          <div class="quote-text">VIP table service, noted for high-quality sushi</div>
+        </div>
+      </div>
+
+      <div class="show-toggle">
+        show all 6 notes
+        <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+      </div>
+
+      <div class="tag-header context-dim">atmosphere</div>
+      <div class="tag-chips context-dim">
+        <span class="tag-chip">🪩 high-end</span>
+        <span class="tag-chip">🌅 sunset views</span>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- state 2: expanded -->
+  <div>
+    <div class="cap"><b>2 · expanded</b> — after tapping: all notes, "show less" to fold back.
+      counts (when &gt; 0) stay per-row, they're per-claim data.</div>
+    <div class="stage">
+
+      <div class="tag-header-row">
+        <span class="tag-header">insider notes</span>
+        <span class="pill warm">from your share</span>
+      </div>
+
+      <div class="quote-list">
+        <div class="quote">
+          <div class="quote-text">entry prices at Savaya Bali are considered far from affordable</div>
+        </div>
+        <div class="quote">
+          <div class="quote-text">located between a jungle and cliffs 100 meters above the Indian Ocean — incredible sunset views</div>
+        </div>
+        <div class="quote">
+          <div class="quote-text">VIP table service, noted for high-quality sushi</div>
+        </div>
+        <div class="quote">
+          <div class="quote-text">known for its high-end clubbing experience, hosts big DJs</div>
+          <div class="claim-meta">14 agree</div>
+        </div>
+        <div class="quote">
+          <div class="quote-text">sunbeds by the pool need a separate reservation</div>
+        </div>
+        <div class="quote">
+          <div class="quote-text">dress code enforced after 6pm — no swimwear inside</div>
+        </div>
+      </div>
+
+      <div class="show-toggle">
+        show less
+        <svg viewBox="0 0 24 24"><polyline points="18 15 12 9 6 15"/></svg>
+      </div>
+
+      <div class="tag-header context-dim">atmosphere</div>
+      <div class="tag-chips context-dim">
+        <span class="tag-chip">🪩 high-end</span>
+        <span class="tag-chip">🌅 sunset views</span>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- state 3: mixed sources -->
+  <div>
+    <div class="cap"><b>3 · mixed sources</b> — not all notes share an origin → no header pill;
+      the badge/labels go back per-row, only where they differ from the default (community).</div>
+    <div class="stage">
+
+      <div class="tag-header-row">
+        <span class="tag-header">insider notes</span>
+      </div>
+
+      <div class="quote-list">
+        <div class="quote">
+          <div class="quote-text">entry prices are considered far from affordable</div>
+          <div class="claim-meta"><span class="pill warm">from your share</span></div>
+        </div>
+        <div class="quote">
+          <div class="quote-text">corkage waived on mondays if you buy from their shelf</div>
+          <div class="claim-meta">
+            <svg viewBox="0 0 24 24"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/></svg>
+            expert <span class="sep">·</span> 12 agree
+          </div>
+        </div>
+        <div class="quote">
+          <div class="quote-text">you saved this for the sunset day-to-night sessions</div>
+          <div class="claim-meta">
+            <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+            your save reason
+          </div>
+        </div>
+      </div>
+
+      <div class="show-toggle">
+        show all 5 notes
+        <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+      </div>
+
+      <div class="tag-header context-dim">atmosphere</div>
+      <div class="tag-chips context-dim">
+        <span class="tag-chip">🪩 high-end</span>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>
