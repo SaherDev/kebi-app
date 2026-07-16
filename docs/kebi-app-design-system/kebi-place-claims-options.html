@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Kebi Place — Insider Notes (ADR-127 claims) options</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg:#FAFAF9; --surface:#F1F1EF; --surface-2:#E8E8E5;
+    --text:#1A1A1A; --text-muted:#8A8A87; --text-soft:#B5B5B1;
+    --success:#5B8A4E; --pill-green:#E8F2E1;
+    --like:#C2632F;   --pill-warm:#FEE4D4;
+    --warn:#B45309;   --pill-amber:#FDEDD3;
+  }
+  html,body{ background:#2A2A28; font-family:'Inter',system-ui,sans-serif;
+    -webkit-font-smoothing:antialiased; min-height:100vh; color:#EDEDEA; padding:40px 24px 64px; }
+  h1{ font-size:22px; font-weight:700; letter-spacing:-.01em; margin-bottom:6px; }
+  .lede{ font-size:14px; color:#B5B5B1; max-width:820px; line-height:1.55; margin-bottom:30px; }
+  .lede b{ color:#D9D9D5; font-weight:600; }
+  .cols{ display:flex; gap:40px; align-items:flex-start; flex-wrap:wrap; }
+  .cap{ font-size:13px; font-weight:600; color:#9A9A96; margin-bottom:12px; max-width:340px; line-height:1.5; }
+  .cap b{ color:#D9D9D5; }
+
+  /* stage = a slice of the place page, in context */
+  .stage{ background:var(--bg); border-radius:24px; padding:20px 24px; width:342px;
+    display:flex; flex-direction:column; gap:16px; }
+
+  /* ── shared place-page vocabulary (kebi-place-mockup.html) ── */
+  .tag-header{ display:flex; align-items:center; gap:8px; font-size:13px; font-weight:600;
+    color:var(--text-soft); text-transform:uppercase; letter-spacing:.08em; }
+  .info-row{ display:flex; align-items:center; justify-content:space-between;
+    padding:14px 16px; background:var(--surface); border-radius:12px; }
+  .info-row-left{ display:flex; align-items:center; gap:10px; }
+  .info-row-left svg{ width:16px; height:16px; stroke:var(--text); stroke-width:1.6; fill:none; }
+  .info-row-label{ font-size:15px; font-weight:500; color:var(--text); letter-spacing:-.005em; }
+  .chevron{ width:14px; height:14px; stroke:var(--text-soft); stroke-width:2; fill:none; }
+  .tag-chips{ display:flex; flex-wrap:wrap; gap:6px; }
+  .tag-chip{ padding:6px 12px; border-radius:999px; background:var(--surface); font-size:13px;
+    font-weight:500; color:var(--text); letter-spacing:-.005em; }
+  .pill{ display:inline-flex; align-items:center; gap:5px; padding:3px 9px; border-radius:999px;
+    font-size:11px; font-weight:600; align-self:flex-start; }
+  .pill::before{ content:''; width:5px; height:5px; border-radius:50%; background:currentColor; }
+  .pill.warm{ background:var(--pill-warm); color:var(--like); }
+  .pill.amber{ background:var(--pill-amber); color:var(--warn); }
+
+  /* claim meta line: source + tally, shared by all options */
+  .claim-meta{ display:flex; align-items:center; gap:8px; font-size:12px; color:var(--text-muted);
+    letter-spacing:-.005em; }
+  .claim-meta svg{ width:12px; height:12px; stroke:var(--text-muted); stroke-width:1.8; fill:none; flex-shrink:0; }
+  .claim-meta .sep{ color:var(--text-soft); }
+
+  /* agree/disagree ghost affordance (mockup .reaction-btn, scaled down) */
+  .vote-row{ display:flex; align-items:center; gap:6px; }
+  .vote-btn{ display:inline-flex; align-items:center; gap:5px; padding:5px 10px; border-radius:999px;
+    border:1px solid var(--surface-2); background:transparent; font-family:inherit; font-size:12px;
+    font-weight:500; color:var(--text-muted); cursor:pointer; }
+  .vote-btn svg{ width:12px; height:12px; stroke:var(--text-muted); stroke-width:1.8; fill:none; }
+
+  /* ── OPTION A · quiet quote list ── */
+  .quote{ display:flex; flex-direction:column; gap:6px; padding-left:14px; position:relative; }
+  .quote::before{ content:''; position:absolute; left:0; top:2px; bottom:2px; width:2px;
+    border-radius:2px; background:var(--surface-2); }
+  .quote-text{ font-size:15px; line-height:1.5; color:var(--text); letter-spacing:-.005em; }
+  .quote-list{ display:flex; flex-direction:column; gap:14px; }
+
+  /* ── OPTION B · surface cards ── */
+  .claim-card{ background:var(--surface); border-radius:12px; padding:14px 16px;
+    display:flex; flex-direction:column; gap:10px; }
+  .claim-card .quote-text{ font-size:14px; }
+  .claim-foot{ display:flex; align-items:center; justify-content:space-between; }
+
+  /* ── OPTION C · one grouped container ── */
+  .claim-group{ background:var(--surface); border-radius:14px; padding:4px 16px; }
+  .claim-item{ padding:13px 0; display:flex; flex-direction:column; gap:6px; }
+  .claim-item + .claim-item{ border-top:1px solid var(--surface-2); }
+  .claim-item .quote-text{ font-size:14px; }
+  .show-more{ display:flex; align-items:center; gap:6px; padding:11px 0 13px; font-size:13px;
+    font-weight:500; color:var(--text-muted); border-top:1px solid var(--surface-2); cursor:pointer; }
+  .show-more svg{ width:12px; height:12px; stroke:var(--text-muted); stroke-width:2; fill:none; }
+
+  .context-dim{ opacity:.4; }
+</style>
+</head>
+<body>
+
+<h1>place page — insider notes (ADR-127 claims)</h1>
+<p class="lede">
+  three ways to surface a place's <b>claims</b> (<code>PlaceNote</code>: text · source
+  <code>community/expert/kebi</code> · <code>from_shared</code> · agree/disagree tally) on the place page,
+  between the <b>source row</b> and <b>atmosphere</b>. all reuse the page's vocabulary: uppercase
+  <b>eyebrow header</b>, <code>--surface</code> fills, status-pill accents only where a claim earns one
+  (<span style="color:#E8A87C">warm</span> = from what you shared, <span style="color:#E3B34B">amber</span> = expert).
+  the tally renders only when &gt; 0 (it's 0 for everyone until the vote write-path ships).
+</p>
+
+<div class="cols">
+
+  <!-- ═══ OPTION A ═══ -->
+  <div>
+    <div class="cap"><b>option a · quiet quotes</b> — claims as an editorial list with a hanging rule,
+      meta line beneath. lightest; reads like the page's own prose.</div>
+    <div class="stage">
+
+      <div class="info-row context-dim">
+        <div class="info-row-left">
+          <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/></svg>
+          <span class="info-row-label">@tokyofoodreport</span>
+        </div>
+        <svg class="chevron" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>
+      </div>
+
+      <div class="tag-header">insider notes</div>
+
+      <div class="quote-list">
+        <div class="quote">
+          <div class="quote-text">book the counter, not the tables — the tasting menu changes weekly</div>
+          <div class="claim-meta">
+            <span class="pill warm" style="padding:2px 8px">from what you shared</span>
+            <span class="sep">·</span> 8 agree
+          </div>
+        </div>
+        <div class="quote">
+          <div class="quote-text">corkage waived on mondays if you buy from their shelf</div>
+          <div class="claim-meta">
+            <svg viewBox="0 0 24 24"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/></svg>
+            expert <span class="sep">·</span> 12 agree
+          </div>
+        </div>
+        <div class="quote">
+          <div class="quote-text">you saved this for quiet solo counter dinners</div>
+          <div class="claim-meta">
+            <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+            your save reason
+          </div>
+        </div>
+      </div>
+
+      <div class="tag-header context-dim">atmosphere</div>
+      <div class="tag-chips context-dim">
+        <span class="tag-chip">🕯️ intimate</span>
+        <span class="tag-chip">🍷 natural wine</span>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ═══ OPTION B ═══ -->
+  <div>
+    <div class="cap"><b>option b · note cards</b> — each claim on its own <code>--surface</code> card
+      (same shape as the source row), footer = source left, agree/disagree ghosts right. strongest
+      presence; the votes have a natural home.</div>
+    <div class="stage">
+
+      <div class="info-row context-dim">
+        <div class="info-row-left">
+          <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/></svg>
+          <span class="info-row-label">@tokyofoodreport</span>
+        </div>
+        <svg class="chevron" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>
+      </div>
+
+      <div class="tag-header">insider notes</div>
+
+      <div class="claim-card">
+        <span class="pill warm">from what you shared</span>
+        <div class="quote-text">book the counter, not the tables — the tasting menu changes weekly</div>
+        <div class="claim-foot">
+          <div class="claim-meta">community</div>
+          <div class="vote-row">
+            <button class="vote-btn"><svg viewBox="0 0 24 24"><path d="M7 10v12M15 5.88L14 10h5.83a2 2 0 011.92 2.56l-2.33 8A2 2 0 0117.5 22H4a2 2 0 01-2-2v-8a2 2 0 012-2h2.76a2 2 0 001.79-1.11L12 2a3.13 3.13 0 013 3.88z"/></svg>8</button>
+            <button class="vote-btn"><svg viewBox="0 0 24 24"><path d="M17 14V2M9 18.12L10 14H4.17a2 2 0 01-1.92-2.56l2.33-8A2 2 0 016.5 2H20a2 2 0 012 2v8a2 2 0 01-2 2h-2.76a2 2 0 00-1.79 1.11L12 22a3.13 3.13 0 01-3-3.88z"/></svg>1</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="claim-card">
+        <div class="quote-text">corkage waived on mondays if you buy from their shelf</div>
+        <div class="claim-foot">
+          <div class="claim-meta">
+            <svg viewBox="0 0 24 24"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/></svg>
+            expert
+          </div>
+          <div class="vote-row">
+            <button class="vote-btn"><svg viewBox="0 0 24 24"><path d="M7 10v12M15 5.88L14 10h5.83a2 2 0 011.92 2.56l-2.33 8A2 2 0 0117.5 22H4a2 2 0 01-2-2v-8a2 2 0 012-2h2.76a2 2 0 001.79-1.11L12 2a3.13 3.13 0 013 3.88z"/></svg>12</button>
+            <button class="vote-btn"><svg viewBox="0 0 24 24"><path d="M17 14V2M9 18.12L10 14H4.17a2 2 0 01-1.92-2.56l2.33-8A2 2 0 016.5 2H20a2 2 0 012 2v8a2 2 0 01-2 2h-2.76a2 2 0 00-1.79 1.11L12 22a3.13 3.13 0 01-3-3.88z"/></svg></button>
+          </div>
+        </div>
+      </div>
+
+      <div class="claim-card">
+        <div class="quote-text">you saved this for quiet solo counter dinners</div>
+        <div class="claim-foot">
+          <div class="claim-meta">
+            <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+            your save reason
+          </div>
+        </div>
+      </div>
+
+      <div class="tag-header context-dim">atmosphere</div>
+      <div class="tag-chips context-dim">
+        <span class="tag-chip">🕯️ intimate</span>
+        <span class="tag-chip">🍷 natural wine</span>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ═══ OPTION C ═══ -->
+  <div>
+    <div class="cap"><b>option c · grouped stack</b> — all claims in one <code>--surface</code> container
+      (meta-wrapper shape) with hairline dividers + a "show all" tail when capped. most compact;
+      one calm block, votes deferred to a claim tap.</div>
+    <div class="stage">
+
+      <div class="info-row context-dim">
+        <div class="info-row-left">
+          <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/></svg>
+          <span class="info-row-label">@tokyofoodreport</span>
+        </div>
+        <svg class="chevron" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>
+      </div>
+
+      <div class="tag-header">insider notes</div>
+
+      <div class="claim-group">
+        <div class="claim-item">
+          <div class="quote-text">book the counter, not the tables — the tasting menu changes weekly</div>
+          <div class="claim-meta">
+            <span class="pill warm" style="padding:2px 8px">from what you shared</span>
+            <span class="sep">·</span> 8 agree
+          </div>
+        </div>
+        <div class="claim-item">
+          <div class="quote-text">corkage waived on mondays if you buy from their shelf</div>
+          <div class="claim-meta">
+            <svg viewBox="0 0 24 24"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/></svg>
+            expert <span class="sep">·</span> 12 agree
+          </div>
+        </div>
+        <div class="claim-item">
+          <div class="quote-text">you saved this for quiet solo counter dinners</div>
+          <div class="claim-meta">
+            <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+            your save reason
+          </div>
+        </div>
+        <div class="show-more">
+          show all 6 notes
+          <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+      </div>
+
+      <div class="tag-header context-dim">atmosphere</div>
+      <div class="tag-chips context-dim">
+        <span class="tag-chip">🕯️ intimate</span>
+        <span class="tag-chip">🍷 natural wine</span>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

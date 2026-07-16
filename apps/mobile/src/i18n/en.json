@@ -74,10 +74,17 @@
       "went": "went"
     },
     "sections": {
+      "insiderNotes": "insider notes",
       "atmosphere": "atmosphere",
       "features": "features",
       "others": "others",
       "accessibility": "accessibility"
+    },
+    "claims": {
+      "fromShared": "from what you shared",
+      "expert": "expert",
+      "saveReason": "your save reason",
+      "agree": "{{count}} agree"
     },
     "maps": {
       "title": "open directions in",

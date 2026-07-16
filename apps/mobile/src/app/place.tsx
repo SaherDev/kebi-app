@@ -20,6 +20,7 @@ import { StatusPill } from '../components/status-pill';
 import { PlaceMetaWrapper } from '../components/place-meta-wrapper';
 import { PlaceTagSection } from '../components/place-tag-section';
 import { PlaceSourceRow } from '../components/place-source-row';
+import { PlaceClaimsSection } from '../components/place-claims-section';
 import { ActionSheet } from '../components/action-sheet';
 import { MapsChooserSheet } from '../components/maps-chooser-sheet';
 import { usePlaceMenuItems } from '../components/use-place-menu-items';
@@ -182,6 +183,8 @@ function PlaceContent({ view, back }: { view: SavedPlaceView; back: React.ReactN
         </View>
 
         <PlaceSourceRow view={resolvedView} />
+
+        <PlaceClaimsSection claims={view.claims} />
 
         <PlaceTagSection header={t('place.sections.atmosphere')} tags={tagsOfType(place, 'atmosphere')} />
         <PlaceTagSection header={t('place.sections.features')} tags={tagsOfType(place, 'feature')} />
