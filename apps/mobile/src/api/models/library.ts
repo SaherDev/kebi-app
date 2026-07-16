@@ -2,6 +2,7 @@ import { z } from 'zod';
 import type {
   LibraryResponse as LibraryResponseContract,
   PlaceCore as PlaceCoreContract,
+  PlaceNote as PlaceNoteContract,
   PlaceSource,
   SavedPlaceView as SavedPlaceViewContract,
   UserPlace as UserPlaceContract,
@@ -62,13 +63,49 @@ export const UserPlaceSchema = z
   })
   .transform((p) => new UserPlace(p));
 
+export class PlaceNote implements PlaceNoteContract {
+  readonly id: string;
+  readonly text: string;
+  readonly tags: string[];
+  readonly source: 'community' | 'expert' | 'kebi';
+  readonly from_shared: boolean;
+  readonly agree_count: number;
+  readonly disagree_count: number;
+
+  constructor(p: PlaceNoteContract) {
+    this.id = p.id;
+    this.text = p.text;
+    this.tags = p.tags;
+    this.source = p.source;
+    this.from_shared = p.from_shared;
+    this.agree_count = p.agree_count;
+    this.disagree_count = p.disagree_count;
+  }
+}
+
+export const PlaceNoteSchema = z
+  .object({
+    id: z.string(),
+    text: z.string(),
+    tags: z.array(z.string()),
+    // Tolerant (ADR-019): a new coarse-origin label never breaks the client.
+    source: z.custom<PlaceNoteContract['source']>((v) => typeof v === 'string'),
+    from_shared: z.boolean(),
+    // 0 until the vote write-path ships; default guards a mid-rollout kebi.
+    agree_count: z.number().nullish().transform((v) => v ?? 0),
+    disagree_count: z.number().nullish().transform((v) => v ?? 0),
+  })
+  .transform((p) => new PlaceNote(p));
+
 export class SavedPlaceView implements SavedPlaceViewContract {
   readonly place: PlaceCoreContract;
   readonly user_data: UserPlaceContract;
+  readonly claims: PlaceNoteContract[];
 
   constructor(p: SavedPlaceViewContract) {
     this.place = p.place;
     this.user_data = p.user_data;
+    this.claims = p.claims;
   }
 }
 
@@ -76,6 +113,11 @@ export const SavedPlaceViewSchema = z
   .object({
     place: PlaceCoreSchema,
     user_data: UserPlaceSchema,
+    // Rollout-tolerant: a pre-ADR-127 kebi omits `claims` → treat as none.
+    claims: z
+      .array(PlaceNoteSchema)
+      .nullish()
+      .transform((v) => v ?? []),
   })
   .transform((p) => new SavedPlaceView(p));
 

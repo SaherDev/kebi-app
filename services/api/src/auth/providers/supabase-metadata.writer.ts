@@ -64,6 +64,7 @@ export class SupabaseMetadataWriter implements IdentityMetadataWriter {
     if (claims.ai_enabled !== undefined) sealed.ai_enabled = claims.ai_enabled;
     if (claims.movement_profile !== undefined)
       sealed.movement_profile = claims.movement_profile;
+    if (claims.can_curate !== undefined) sealed.can_curate = claims.can_curate;
     const appMetadata = { [this.cipher.field]: this.cipher.encrypt(sealed) };
 
     try {
@@ -101,6 +102,7 @@ export class SupabaseMetadataWriter implements IdentityMetadataWriter {
       claims.plan ?? null,
       claims.ai_enabled ?? null,
       claims.movement_profile ?? null,
+      claims.can_curate ?? null,
     ]);
   }
 }

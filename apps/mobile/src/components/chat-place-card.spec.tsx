@@ -134,12 +134,12 @@ describe('ChatPlaceCard', () => {
 
     fireEvent.press(getByLabelText('save it'));
 
-    // The consult reason rides along as the note (not persisted server-side).
+    // The consult reason rides along as `reason` — kebi stores it as a claim (ADR-127).
     await waitFor(() =>
       expect(mockedSaveUserPlace).toHaveBeenCalledWith(expect.anything(), {
         place_core_id: 'place_1',
         recommendation_id: 'rec_1',
-        note: 'great deep house',
+        reason: 'great deep house',
       }),
     );
     // The save button is replaced by the inert "saved" slot.

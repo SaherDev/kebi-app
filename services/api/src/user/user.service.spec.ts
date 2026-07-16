@@ -108,6 +108,7 @@ describe('UserService', () => {
       userSettings.updatePlan.mockResolvedValueOnce({
         plan: 'explorer',
         ai_enabled: true,
+        can_curate: false,
         movement_profile: { available_modes: ['walking'], reach: 'normal' },
       });
 
@@ -119,6 +120,7 @@ describe('UserService', () => {
         internal_id: USER_ID,
         ai_enabled: true,
         plan: 'explorer',
+        can_curate: false,
         movement_profile: { available_modes: ['walking'], reach: 'normal' },
       });
       expect(profile).toEqual({ name: 'saher', email: 'saher@kebi.app', plan: 'explorer' });
@@ -128,6 +130,7 @@ describe('UserService', () => {
       userSettings.updatePlan.mockResolvedValueOnce({
         plan: 'local_legend',
         ai_enabled: true,
+        can_curate: false,
         movement_profile: null,
       });
 
@@ -137,6 +140,7 @@ describe('UserService', () => {
         internal_id: USER_ID,
         ai_enabled: true,
         plan: 'local_legend',
+        can_curate: false,
       });
     });
   });
@@ -218,12 +222,12 @@ describe('UserService', () => {
       expect(result).toBe(saved);
     });
 
-    it('forwards the note (consult reason) when present', async () => {
+    it('forwards the reason (consult rationale) when present', async () => {
       (kebi.post as jest.Mock).mockResolvedValueOnce(saved);
       const dto: SaveUserPlaceDto = {
         place_core_id: 'place_1',
         recommendation_id: 'rec_1',
-        note: 'great deep house',
+        reason: 'great deep house',
       };
 
       await service.savePlace(USER_ID, dto, 'homebody');
@@ -231,7 +235,7 @@ describe('UserService', () => {
       expect(kebi.post).toHaveBeenCalledWith(
         '/v1/user/places',
         USER_ID,
-        { place_core_id: 'place_1', recommendation_id: 'rec_1', note: 'great deep house' },
+        { place_core_id: 'place_1', recommendation_id: 'rec_1', reason: 'great deep house' },
         'homebody'
       );
     });

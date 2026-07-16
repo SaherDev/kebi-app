@@ -1,6 +1,12 @@
 import { validate } from '../validate';
 import { SchemaValidationError } from '../validate';
-import { LibraryResponse, LibraryResponseSchema, SavedPlaceView, UserPlace } from './library';
+import {
+  LibraryResponse,
+  LibraryResponseSchema,
+  PlaceNote,
+  SavedPlaceView,
+  UserPlace,
+} from './library';
 import { PlaceCore } from './place-core';
 
 const PLACE = {
@@ -43,6 +49,43 @@ describe('LibraryResponseSchema', () => {
     expect(res.places[0].user_data).toBeInstanceOf(UserPlace);
     expect(res.next_cursor).toBeNull();
     expect(res.total).toBe(42);
+    // A place with no `claims` key (pre-ADR-127 or empty) → [].
+    expect(res.places[0].claims).toEqual([]);
+  });
+
+  it('parses ADR-127 claims into PlaceNote instances', () => {
+    const res = validate(
+      LibraryResponseSchema,
+      {
+        places: [
+          {
+            place: PLACE,
+            user_data: USER_DATA,
+            claims: [
+              {
+                id: 'claim_1',
+                text: 'order the omakase',
+                tags: ['food'],
+                source: 'community',
+                from_shared: true,
+                agree_count: 3,
+                disagree_count: 1,
+              },
+            ],
+          },
+        ],
+        next_cursor: null,
+        total: 1,
+      },
+      'LibraryResponse',
+    );
+
+    expect(res.places[0].claims[0]).toBeInstanceOf(PlaceNote);
+    expect(res.places[0].claims[0].id).toBe('claim_1');
+    expect(res.places[0].claims[0].text).toBe('order the omakase');
+    expect(res.places[0].claims[0].from_shared).toBe(true);
+    expect(res.places[0].claims[0].agree_count).toBe(3);
+    expect(res.places[0].claims[0].disagree_count).toBe(1);
   });
 
   it('tolerates a missing total (pre-rollout) → null', () => {

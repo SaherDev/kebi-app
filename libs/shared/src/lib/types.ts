@@ -203,10 +203,36 @@ export interface UserPlace {
   visited_at: string | null;
 }
 
-/** A library entry: the catalog place plus the caller's user-state. */
+/**
+ * An insider note tied to a place from the knowledge layer (ADR-127) — the
+ * Library's payoff surface. `id` is the claim's stable id (use as the list key
+ * and, later, the agree/disagree vote target). `source` is a coarse origin
+ * label: `community` (harvested from shared content), `expert` (curated), or
+ * `kebi` (the user's own saved-recommendation reason). `from_shared` is `true`
+ * when the note was mined from the very post the user shared for this save
+ * (badge it "from what you shared"). `agree_count` / `disagree_count` are the
+ * corroboration tally — both `0` until the vote write-path ships, surfaced now
+ * so the client can render them without a later contract change. Approved
+ * claims only, strongest first, capped.
+ */
+export interface PlaceNote {
+  id: string;
+  text: string;
+  tags: string[];
+  source: "community" | "expert" | "kebi";
+  from_shared: boolean;
+  agree_count: number;
+  disagree_count: number;
+}
+
+/**
+ * A library entry: the catalog place, the caller's user-state, and the place's
+ * insider notes (`claims`, ADR-127). `claims` is `[]` when a place has none.
+ */
 export interface SavedPlaceView {
   place: PlaceCore;
   user_data: UserPlace;
+  claims: PlaceNote[];
 }
 
 /**
@@ -253,11 +279,13 @@ export interface SaveUserPlaceRequest {
   place_core_id: string;
   recommendation_id: string;
   /**
-   * Free text stored on the save — typically the recommendation's reason the
-   * client is showing (the reason is not persisted server-side, so the client
-   * supplies it). Applied only on create; omit or `null` for no note.
+   * The pick's rationale the card is showing — the client supplies it since the
+   * reason isn't otherwise stored server-side. On create, kebi writes it to the
+   * knowledge layer as a user-scoped `kebi_message` claim on the place (ADR-127)
+   * — it is no longer stored on the save as `user_data.note`. Omit or `null` for
+   * no reason; a re-tap adds nothing (claim-text dedup).
    */
-  note?: string | null;
+  reason?: string | null;
 }
 
 // ── Home screen (greeting + recall) ─────────────────────────────────────────
@@ -365,6 +393,9 @@ export interface AuthUser {
   ai_enabled: boolean;
   plan?: PlanTier;
   movement_profile?: MovementProfile;
+  // Admin-granted curator role (ADR-121), carried claim-first in the token.
+  // Absent on a pre-grant/pre-migration token → treated as not a curator.
+  can_curate?: boolean;
 }
 
 /**
@@ -376,6 +407,10 @@ export interface UserSettingsData {
   plan: PlanTier;
   ai_enabled: boolean;
   movement_profile: MovementProfile | null;
+  // Admin-granted curator role (ADR-121 knowledge curation) — independent of the
+  // billing plan, never self-asserted. Defaults false (fail closed); the gateway
+  // forwards it as the X-Gateway-Can-Curate capability header.
+  can_curate: boolean;
 }
 
 /**
@@ -387,6 +422,8 @@ export interface IdentityClaims {
   ai_enabled?: boolean;
   plan?: PlanTier;
   movement_profile?: MovementProfile;
+  // Admin-granted curator role (ADR-121), stamped from user_settings.
+  can_curate?: boolean;
   // Our stable internal user id, stamped into the signed token claim so the
   // request path resolves identity without a DB lookup. Absent until stamped.
   internal_id?: string;
@@ -440,6 +477,28 @@ export interface SignalRequest {
 
 export interface SignalResponse {
   status: string;
+}
+
+// Knowledge curation (POST /v1/knowledge/curate) — ADR-121. Expert prose is
+// structured by kebi into geo-scoped `curated_expert` claims.
+export type CurateScope = "country" | "city" | "neighborhood";
+
+export interface CurateClaim {
+  scope: CurateScope;
+  entity_name: string;
+  claim: string;
+  tags: string[];
+}
+
+/**
+ * kebi's response after structuring curated prose. `claims_written` counts only
+ * NEW rows — dedup collapses re-submissions, and unkeyable/accessibility claims
+ * are dropped, so it may be less than the prose implied. `claims` is empty when
+ * nothing was stored.
+ */
+export interface CurateKnowledgeResponse {
+  claims_written: number;
+  claims: CurateClaim[];
 }
 
 // User data deletion scope (DELETE /v1/user/data?scope=...)

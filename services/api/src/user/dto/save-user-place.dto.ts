@@ -16,11 +16,11 @@ export class SaveUserPlaceDto {
   recommendation_id!: string;
 
   /**
-   * Free text stored on the save — typically the recommendation's reason the
-   * client is showing (not persisted server-side, so the client supplies it).
-   * Applied only on create; omit or `null` for no note.
+   * The pick's rationale the card is showing — the client supplies it since the
+   * reason isn't otherwise stored server-side. kebi writes it as a `kebi_message`
+   * claim on the place (ADR-127), not as `user_data.note`. Omit or `null` for none.
    */
   @IsOptional()
   @IsString()
-  note?: string | null;
+  reason?: string | null;
 }

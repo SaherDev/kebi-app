@@ -159,7 +159,7 @@ export function useLibrary(): UseLibrary {
   const patchLocally = useCallback((userPlaceId: string, userData: UserPlace) => {
     setViews((prev) =>
       prev.map((v) =>
-        v.user_data.user_place_id === userPlaceId ? { place: v.place, user_data: userData } : v,
+        v.user_data.user_place_id === userPlaceId ? { ...v, user_data: userData } : v,
       ),
     );
   }, []);

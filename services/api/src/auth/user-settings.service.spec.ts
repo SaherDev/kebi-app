@@ -12,6 +12,7 @@ function makeConfig() {
   const values: Record<string, unknown> = {
     'user_settings.defaults.plan': 'explorer',
     'user_settings.defaults.ai_enabled': false,
+    'user_settings.defaults.can_curate': true,
     'user_settings.defaults.movement_profile': MOVEMENT,
   };
   return {
@@ -49,6 +50,7 @@ describe('UserSettingsService.ensureForUser', () => {
     expect(repo.create).toHaveBeenCalledWith('user_1', {
       plan: 'explorer',
       ai_enabled: false,
+      can_curate: true,
       movement_profile: MOVEMENT,
     });
     expect(settings.plan).toBe('explorer');
@@ -58,6 +60,7 @@ describe('UserSettingsService.ensureForUser', () => {
     const existing: UserSettingsData = {
       plan: 'local_legend',
       ai_enabled: true,
+      can_curate: false,
       movement_profile: null,
     };
     repo.findByUserId.mockResolvedValue(rowWith(existing));
@@ -73,6 +76,7 @@ describe('UserSettingsService.ensureForUser', () => {
       const existing: UserSettingsData = {
         plan: 'homebody',
         ai_enabled: true,
+        can_curate: false,
         movement_profile: MOVEMENT,
       };
       repo.findByUserId.mockResolvedValue(rowWith(existing));
@@ -85,14 +89,45 @@ describe('UserSettingsService.ensureForUser', () => {
       expect(repo.update).toHaveBeenCalledWith('user_1', {
         plan: 'explorer',
         ai_enabled: true,
+        can_curate: false,
         movement_profile: MOVEMENT,
       });
       expect(next.plan).toBe('explorer');
     });
   });
 
+  describe('updateCanCurate', () => {
+    it('grants the curator role, preserving the other settings, and returns the new doc', async () => {
+      const existing: UserSettingsData = {
+        plan: 'explorer',
+        ai_enabled: true,
+        can_curate: false,
+        movement_profile: MOVEMENT,
+      };
+      repo.findByUserId.mockResolvedValue(rowWith(existing));
+      repo.update.mockImplementation((_userId: string, settings: UserSettingsData) =>
+        Promise.resolve(rowWith(settings)),
+      );
+
+      const next = await service.updateCanCurate('user_1', true);
+
+      expect(repo.update).toHaveBeenCalledWith('user_1', {
+        plan: 'explorer',
+        ai_enabled: true,
+        can_curate: true,
+        movement_profile: MOVEMENT,
+      });
+      expect(next.can_curate).toBe(true);
+    });
+  });
+
   it('re-reads the winner when the create loses the unique-constraint race', async () => {
-    const winner: UserSettingsData = { plan: 'homebody', ai_enabled: true, movement_profile: null };
+    const winner: UserSettingsData = {
+      plan: 'homebody',
+      ai_enabled: true,
+      can_curate: false,
+      movement_profile: null,
+    };
     repo.findByUserId
       .mockResolvedValueOnce(null) // initial lookup
       .mockResolvedValueOnce(rowWith(winner)); // post-conflict re-read
