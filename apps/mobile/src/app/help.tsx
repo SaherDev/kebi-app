@@ -1,13 +1,22 @@
 import { useState } from 'react';
-import { ScrollView, View, Text } from 'react-native';
+import { ScrollView, View, Text, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import Constants from 'expo-constants';
+import * as Device from 'expo-device';
+import type { FeedbackCategory, FeedbackRequest } from '@kebi-app/shared';
 import { ScreenScaffold } from '../components/screen-scaffold';
 import { TopBar } from '../components/top-bar';
 import { IconButton } from '../components/icon-button';
 import { Icon } from '../components/icon';
 import { Group } from '../components/group';
 import { SettingsRow } from '../components/settings-row';
+import { FeedbackFormSheet } from '../components/feedback-form-sheet';
+import { ReportWrongAnswerSheet } from '../components/report-wrong-answer-sheet';
+import { useChatTranscript } from '../components/chat-transcript-context';
+import { useToast } from '../components/toast-context';
+import { useApiClient } from '../api/hooks';
+import { sendFeedback } from '../api/feedback';
+import { latestExchange, toFeedbackTranscript } from '../lib/feedback-transcript';
 import { useTranslation } from '../i18n/context';
 
 /**
@@ -16,9 +25,22 @@ import { useTranslation } from '../i18n/context';
  * feedback form sheets; no FAQ in v1 (reports will tell us what a FAQ should
  * say). Footer is the app version only.
  */
+/** App + device context stamped onto every report (bug triage asked for it). */
+function deviceMeta(): Pick<FeedbackRequest, 'app_version' | 'platform' | 'os_version' | 'device'> {
+  return {
+    app_version: Constants.expoConfig?.version ?? undefined,
+    platform: Platform.OS === 'android' ? 'android' : 'ios',
+    os_version: Device.osVersion ?? undefined,
+    device: Device.modelName ?? undefined,
+  };
+}
+
 export default function HelpScreen() {
   const { t } = useTranslation();
   const router = useRouter();
+  const toast = useToast();
+  const client = useApiClient();
+  const { turns } = useChatTranscript();
 
   const [wrongOpen, setWrongOpen] = useState(false);
   const [bugOpen, setBugOpen] = useState(false);
@@ -27,6 +49,32 @@ export default function HelpScreen() {
 
   const version = Constants.expoConfig?.version ?? '';
   const chevron = <Icon name="chevron-right" size={14} className="text-text-soft" />;
+  const exchange = latestExchange(turns);
+
+  // Resolving closes the sheet + toasts; throwing keeps it open (draft intact)
+  // behind the error toast, so a network blip isn't a dead end.
+  const submit = async (body: FeedbackRequest, close: () => void) => {
+    try {
+      await sendFeedback(client, body);
+    } catch (error) {
+      toast.show({ tone: 'danger', icon: 'alert', text: t('help.toastError') });
+      throw error;
+    }
+    close();
+    toast.show({ tone: 'success', icon: 'check', text: t('help.toastSent') });
+  };
+
+  const submitWrongAnswer = (payload: { category?: FeedbackCategory; text?: string }) =>
+    submit(
+      {
+        kind: 'wrong_answer',
+        ...payload,
+        exchange,
+        transcript: toFeedbackTranscript(turns),
+        ...deviceMeta(),
+      },
+      () => setWrongOpen(false),
+    );
 
   return (
     <ScreenScaffold
@@ -80,6 +128,33 @@ export default function HelpScreen() {
           {t('help.footerVersion', { version })}
         </Text>
       </ScrollView>
+
+      <ReportWrongAnswerSheet
+        open={wrongOpen}
+        onClose={() => setWrongOpen(false)}
+        onSubmit={submitWrongAnswer}
+        exchange={exchange}
+      />
+      <FeedbackFormSheet
+        open={bugOpen}
+        onClose={() => setBugOpen(false)}
+        onSubmit={(text) => submit({ kind: 'bug', text, ...deviceMeta() }, () => setBugOpen(false))}
+        eyebrow={t('help.sheetBugEyebrow')}
+        title={t('help.sheetBugTitle')}
+        placeholder={t('help.sheetBugPlaceholder')}
+        note={t('help.sheetBugNote')}
+      />
+      <FeedbackFormSheet
+        open={messageOpen}
+        onClose={() => setMessageOpen(false)}
+        onSubmit={(text) =>
+          submit({ kind: 'message', text, ...deviceMeta() }, () => setMessageOpen(false))
+        }
+        eyebrow={t('help.sheetMessageEyebrow')}
+        title={t('help.sheetMessageTitle')}
+        placeholder={t('help.sheetMessagePlaceholder')}
+        note={t('help.sheetMessageNote')}
+      />
     </ScreenScaffold>
   );
 }
