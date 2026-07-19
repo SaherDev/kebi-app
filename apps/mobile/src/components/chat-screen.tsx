@@ -20,6 +20,7 @@ import { TopBar } from './top-bar';
 import { IconButton } from './icon-button';
 import { Icon } from './icon';
 import { Mascot } from './mascot';
+import { ActionSheet } from './action-sheet';
 import { ReasoningBlock } from './reasoning-block';
 import { PlaceCardSkeleton } from './place-card-skeleton';
 import { ChatPlaceCard } from './chat-place-card';
@@ -33,6 +34,8 @@ import {
 } from './chat-transcript-context';
 import { useApiClient } from '../api/hooks';
 import { streamChat } from '../api/chat';
+import { deleteUserData } from '../api/user-data';
+import { TOAST_DISMISS_MS } from '../theme/motion';
 import { getDeviceLocation } from '../lib/location';
 import { formatClockTime } from '../lib/format-relative-time';
 import { triggerHaptic } from '../lib/haptics';
@@ -70,10 +73,11 @@ export function ChatScreen({ onClose, seed }: ChatScreenProps) {
   const { show: showToast, reserveTopAnchor } = useToast();
   const showUpgrade = useUpgradeToast();
   const transcript = useChatTranscript();
-  const { turns, startTurn, upsertStep, setMessage, addToolResult, finishTurn, stopTurn, failTurn, toggleCollapse } =
+  const { turns, startTurn, upsertStep, setMessage, addToolResult, finishTurn, stopTurn, failTurn, toggleCollapse, clearTranscript, restoreTranscript } =
     transcript;
 
   const [draft, setDraft] = useState('');
+  const [menuOpen, setMenuOpen] = useState(false);
   // Stable across renders so the memoized TurnRow isn't invalidated each frame.
   const turnLabels = useMemo(() => labels(t), [t]);
   const listRef = useRef<FlatList<ChatTurn>>(null);
@@ -122,6 +126,46 @@ export function ChatScreen({ onClose, seed }: ChatScreenProps) {
   const last = turns[turns.length - 1];
   const isStreaming = last?.role === 'kebi' && last.status === 'streaming';
   const canSend = draft.trim().length > 0;
+
+  /**
+   * Clear the chat history (••• menu). No confirm sheet — destructive actions
+   * get undo, not dialogs (kebi-chat-clear-mockup): the toast carries an undo
+   * that restores the exact snapshot for ~5s. A streaming turn is snapshotted as
+   * stopped (its stream is aborted here), so undo never revives a dead spinner.
+   *
+   * kebi's server-side conversation memory (LangGraph checkpoint + recalled
+   * intents — api-contract §DELETE /v1/user/data, scope=chat_history) is wiped
+   * only once the undo window closes: the server delete is irreversible, so it
+   * must not race a possible undo. Undo cancels it and screen/server agree.
+   */
+  function clearChat() {
+    const snapshot: ChatTurn[] = turns.map((turn) =>
+      turn.role === 'kebi' && turn.status === 'streaming'
+        ? { ...turn, status: 'done', stopped: true, durationMs: Date.now() - turn.startedAt }
+        : turn,
+    );
+    abortRef.current?.abort();
+    clearTranscript();
+    triggerHaptic('confirm-delete');
+    const serverWipe = setTimeout(() => {
+      deleteUserData(client, ['chat_history']).catch((err) => {
+        // Screen is already cleared; a failed server wipe just means kebi still
+        // remembers — log it, next clear retries. No user-facing error.
+        console.warn('[chat] clear history server wipe failed', err);
+      });
+    }, TOAST_DISMISS_MS.withAction);
+    showToast({
+      text: t('chat.menu.cleared'),
+      icon: 'trash',
+      action: {
+        label: t('chat.menu.undo'),
+        onPress: () => {
+          clearTimeout(serverWipe);
+          restoreTranscript(snapshot);
+        },
+      },
+    });
+  }
 
   /** Cancel the in-flight stream: flag the turn stopped, then abort it. */
   function stop() {
@@ -205,7 +249,15 @@ export function ChatScreen({ onClose, seed }: ChatScreenProps) {
             <Text className="font-semibold text-[14px] text-text">kebi</Text>
           </View>
         }
-        right={<View className="w-10" />}
+        // ••• overflow (kebi-chat-clear-mockup) — only once there's history to
+        // act on; an empty chat keeps the balancing spacer.
+        right={
+          turns.length > 0 ? (
+            <IconButton icon="ellipsis" label={t('common.more')} onPress={() => setMenuOpen(true)} />
+          ) : (
+            <View className="w-10" />
+          )
+        }
       />
 
       <Animated.View className="flex-1" style={bottomPad}>
@@ -269,6 +321,28 @@ export function ChatScreen({ onClose, seed }: ChatScreenProps) {
           </Pressable>
         </View>
       </Animated.View>
+
+      {/* ••• bottom sheet — one destructive row; the row itself clears (no
+          confirm), the cleared toast's undo is the safety net. */}
+      <ActionSheet
+        open={menuOpen}
+        onClose={() => setMenuOpen(false)}
+        header={{
+          avatar: <Mascot size={30} />,
+          eyebrow: t('chat.menu.thisChat'),
+          title: t('chat.kebi'),
+        }}
+        items={[
+          {
+            emoji: '🗑️',
+            label: t('chat.menu.clear'),
+            sub: t('chat.menu.clearSub'),
+            destructive: true,
+            onPress: clearChat,
+          },
+        ]}
+        closeLabel={t('common.close')}
+      />
     </View>
   );
 }

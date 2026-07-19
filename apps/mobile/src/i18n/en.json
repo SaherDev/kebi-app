@@ -185,6 +185,13 @@
     "thinking": "thinking",
     "thought": "done",
     "interrupted": "interrupted",
+    "menu": {
+      "thisChat": "this chat",
+      "clear": "clear this chat",
+      "clearSub": "wipes the conversation on screen",
+      "cleared": "chat cleared",
+      "undo": "undo"
+    },
     "placeCard": {
       "savedByYou": "you saved this",
       "goodPick": "good pick",

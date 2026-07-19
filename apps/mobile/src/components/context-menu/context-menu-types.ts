@@ -14,6 +14,8 @@ export interface ContextMenuItem {
   /** Emoji glyph in the leading slot (tokens §13/§14 use emoji, not icons). */
   emoji: string;
   label: string;
+  /** Muted second line under the label — rendered by the ••• action sheet only. */
+  sub?: string;
   destructive?: boolean;
   onPress: () => void;
 }
