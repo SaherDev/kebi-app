@@ -1,5 +1,5 @@
-import { useCallback, useState, type ReactNode } from 'react';
-import { ScrollView, View, Text, Pressable } from 'react-native';
+import { useCallback, useState } from 'react';
+import { ScrollView, View, Text } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import Constants from 'expo-constants';
 import { PLAN_TIERS } from '@kebi-app/shared';
@@ -8,6 +8,7 @@ import { TopBar } from '../components/top-bar';
 import { IconButton } from '../components/icon-button';
 import { Icon, type IconName } from '../components/icon';
 import { Group } from '../components/group';
+import { SettingsRow } from '../components/settings-row';
 import { StatusPill } from '../components/status-pill';
 import { ProfileAvatar } from '../components/profile-avatar';
 import { SegmentedControl } from '../components/segmented-control';
@@ -19,7 +20,6 @@ import { useToast } from '../components/toast-context';
 import { useApiClient } from '../api/hooks';
 import { updateProfile } from '../api/profile';
 import { deleteUserData } from '../api/user-data';
-import { PRESS } from '../theme/motion';
 import { useTranslation } from '../i18n/context';
 import { useAuth } from '../auth/auth-context';
 import { supabase } from '../lib/supabase';
@@ -33,65 +33,6 @@ import type { ThemeChoice } from '../lib/theme-preference';
  * rendered but inert, export is intentionally absent, and there's no plan status
  * pill (no subscription-status data exists yet).
  */
-
-/** A settings row: icon-square (or emoji) + label + optional sublabel + trailing. */
-function SettingsRow({
-  icon,
-  emoji,
-  label,
-  sublabel,
-  danger = false,
-  trailing,
-  onPress,
-}: {
-  icon?: IconName;
-  emoji?: string;
-  label: string;
-  sublabel?: string;
-  danger?: boolean;
-  trailing?: ReactNode;
-  onPress?: () => void;
-}) {
-  const body = (
-    <>
-      <View
-        className={`h-8 w-8 items-center justify-center rounded-small ${
-          danger ? 'bg-pill-danger-bg' : 'bg-bg'
-        }`}
-      >
-        {emoji ? (
-          // Emoji glyphs render taller than their font box; a tight lineHeight
-          // (leading-none) clips them on iOS, so give it room and let the
-          // centering container place it.
-          <Text style={{ fontSize: 16, lineHeight: 20 }}>{emoji}</Text>
-        ) : icon ? (
-          <Icon name={icon} size={15} className={danger ? 'text-danger' : 'text-text'} />
-        ) : null}
-      </View>
-      <View className="flex-1 gap-0.5">
-        <Text className={`text-body font-medium ${danger ? 'text-danger' : 'text-text'}`}>
-          {label}
-        </Text>
-        {sublabel ? <Text className="text-small text-text-muted">{sublabel}</Text> : null}
-      </View>
-      {trailing}
-    </>
-  );
-
-  if (!onPress) {
-    return <View className="flex-row items-center gap-3 py-2">{body}</View>;
-  }
-  return (
-    <Pressable
-      onPress={onPress}
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      className={`flex-row items-center gap-3 py-2 ${PRESS}`}
-    >
-      {body}
-    </Pressable>
-  );
-}
 
 const THEME_OPTIONS: { value: ThemeChoice; labelKey: string; icon: IconName }[] = [
   { value: 'light', labelKey: 'settings.themeLight', icon: 'sun' },
@@ -236,6 +177,17 @@ export default function SettingsScreen() {
               onChange={setChoice}
             />
           </View>
+        </Group>
+
+        {/* Help */}
+        <Group eyebrow={t('settings.help')}>
+          <SettingsRow
+            emoji="🛟"
+            label={t('settings.rowHelp')}
+            sublabel={t('settings.rowHelpSub')}
+            onPress={() => router.push('/help')}
+            trailing={<Icon name="chevron-right" size={14} className="text-text-soft" />}
+          />
         </Group>
 
         {/* Data */}

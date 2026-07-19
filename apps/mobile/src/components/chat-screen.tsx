@@ -9,6 +9,7 @@ import {
   type NativeSyntheticEvent,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
 import { useUnstableNativeVariable } from 'nativewind';
 import * as Clipboard from 'expo-clipboard';
 import Animated, {
@@ -66,6 +67,7 @@ interface ChatScreenProps {
  */
 export function ChatScreen({ onClose, seed }: ChatScreenProps) {
   const { t } = useTranslation();
+  const router = useRouter();
   const insets = useSafeAreaInsets();
   const reducedMotion = useReducedMotion();
   const softColor = useUnstableNativeVariable('--text-soft') ?? undefined;
@@ -249,11 +251,27 @@ export function ChatScreen({ onClose, seed }: ChatScreenProps) {
             <Text className="font-semibold text-[14px] text-text">kebi</Text>
           </View>
         }
-        // ••• overflow (kebi-chat-clear-mockup) — only once there's history to
-        // act on; an empty chat keeps the balancing spacer.
+        // ? + ••• (kebi-help-mockup / kebi-chat-clear-mockup) — only once
+        // there's history to act on; an empty chat keeps the balancing spacer.
+        // Chat is an overlay above the router, so the ? closes it first —
+        // the transcript lives above the overlay and survives for /help.
         right={
           turns.length > 0 ? (
-            <IconButton icon="ellipsis" label={t('common.more')} onPress={() => setMenuOpen(true)} />
+            <View className="flex-row items-center gap-2">
+              <IconButton
+                icon="help"
+                label={t('chat.help')}
+                onPress={() => {
+                  onClose();
+                  router.push('/help');
+                }}
+              />
+              <IconButton
+                icon="ellipsis"
+                label={t('common.more')}
+                onPress={() => setMenuOpen(true)}
+              />
+            </View>
           ) : (
             <View className="w-10" />
           )

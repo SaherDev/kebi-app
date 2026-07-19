@@ -53,7 +53,8 @@ export type IconName =
   | 'moon'
   | 'monitor'
   | 'card'
-  | 'log-out';
+  | 'log-out'
+  | 'help';
 
 // Path data verbatim from docs/kebi-app-design-system mockups (top-bar icons)
 // and kebi-tokens-mockup.html §15. viewBox 0 0 24 24, 1.8px stroke, fill none —
@@ -271,6 +272,14 @@ const ICONS: Record<IconName, ReactNode> = {
       <Path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" />
       <Polyline points="16 17 21 12 16 7" />
       <Line x1={21} y1={12} x2={9} y2={12} />
+    </>
+  ),
+  // Chat bubble with a question mark — the help entry (kebi-help-mockup.html).
+  help: (
+    <>
+      <Path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z" />
+      <Path d="M9.9 9.6a2.3 2.3 0 014.5.7c0 1.5-2.2 2-2.2 3" />
+      <Line x1={12.2} y1={16} x2={12.21} y2={16} />
     </>
   ),
 };

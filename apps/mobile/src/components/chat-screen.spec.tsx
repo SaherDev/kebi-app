@@ -21,6 +21,11 @@ jest.mock('react-native-gesture-handler', () => ({
 jest.mock('../api/chat', () => ({ streamChat: jest.fn() }));
 // Avoid the real api client (createApiClient throws without EXPO_PUBLIC_API_URL).
 jest.mock('../api/hooks', () => ({ useApiClient: () => ({}) }));
+// The ? help button navigates via the route graph — mock the router surface.
+const mockPush = jest.fn();
+jest.mock('expo-router', () => ({
+  useRouter: () => ({ push: mockPush, back: jest.fn() }),
+}));
 jest.mock('../lib/location', () => ({ getDeviceLocation: async () => null }));
 // The clear-history server wipe (scope=chat_history) — asserted, never sent.
 jest.mock('../api/user-data', () => ({ deleteUserData: jest.fn(async () => undefined) }));
@@ -75,11 +80,11 @@ const researchFrame = (over: Record<string, unknown> = {}) =>
     },
   });
 
-function renderChat() {
+function renderChat(onClose: () => void = () => undefined) {
   const utils = render(
     <ToastProvider>
       <ChatTranscriptProvider>
-        <ChatScreen onClose={() => undefined} />
+        <ChatScreen onClose={onClose} />
       </ChatTranscriptProvider>
     </ToastProvider>,
   );
@@ -95,6 +100,7 @@ describe('ChatScreen', () => {
   beforeEach(() => {
     mockedStreamChat.mockReset();
     mockedDeleteUserData.mockClear();
+    mockPush.mockClear();
   });
 
   it('renders the user turn, streamed steps, message, and a place skeleton', async () => {
@@ -350,6 +356,21 @@ describe('ChatScreen', () => {
     expect(getByText('chat cleared')).toBeTruthy(); // toast with undo
     jest.clearAllTimers();
     jest.useRealTimers();
+  });
+
+  it('shows the ? with the ••• and it closes the chat then pushes /help', async () => {
+    scriptStream([frame('message', { content: 'hey saher' }), frame('done', { tool_calls_used: 0 })]);
+    const onClose = jest.fn();
+    const { submit, getByText, getByLabelText, queryByLabelText } = renderChat(onClose);
+
+    expect(queryByLabelText('help')).toBeNull(); // empty chat — no ? either
+    submit('hey');
+    await waitFor(() => expect(getByText('hey saher')).toBeTruthy());
+
+    fireEvent.press(getByLabelText('help'));
+    // Chat is an overlay above the router — it must collapse before the push.
+    expect(onClose).toHaveBeenCalledTimes(1);
+    expect(mockPush).toHaveBeenCalledWith('/help');
   });
 
   it('undo on the cleared toast restores the transcript', async () => {
