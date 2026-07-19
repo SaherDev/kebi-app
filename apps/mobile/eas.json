@@ -1,5 +1,15 @@
 {
+  "cli": {
+    "appVersionSource": "local"
+  },
   "build": {
+    "simulator": {
+      "distribution": "internal",
+      "ios": {
+        "simulator": true
+      },
+      "environment": "development"
+    },
     "production": {
       "android": {
         "buildType": "app-bundle"

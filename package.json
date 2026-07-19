@@ -112,6 +112,13 @@
     ],
     "patchedDependencies": {
       "xcode@3.0.1": "patches/xcode@3.0.1.patch"
+    },
+    "packageExtensions": {
+      "babel-plugin-react-compiler": {
+        "dependencies": {
+          "@babel/plugin-transform-react-jsx": "*"
+        }
+      }
     }
   }
 }
