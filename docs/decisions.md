@@ -17,6 +17,16 @@ Format:
 
 ---
 
+## ADR-051: In-app feedback is a gateway→Notion fire-and-forget; no storage, no AI involvement
+
+**Date:** 2026-07-19\
+**Status:** accepted\
+**Context:** Users had no way to report a wrong answer, a bug, or reach us from inside the app, and we wanted a reviewable, triage-able record of where kebi struggles — without new storage, and without a report ever failing visibly because a downstream tool is down.\
+**Decision:** One authenticated `POST /api/v1/feedback` on the gateway stamps the verified user id and the token-claim email (ADR-044/045 — no DB lookup) and creates a page in a Notion database via the Notion API; no gateway DB writes, no kebi involvement, and no AI gating (ADR-022 — bug reports must flow when AI is killed). The endpoint always returns 202: missing Notion credentials or a Notion failure is logged, never surfaced. Only `wrong_answer` reports attach conversation context, and it is deliberately lean — turn text, reasoning step titles, and tool names, never tool payloads — matching the in-app disclosure shown before sending. A small per-user hourly cap guards the fan-out. The client entry points are the chat top bar's `?` (visible once the chat has turns; chat is an overlay, so it closes before `/help` pushes) and a settings help row; home stays entry-free (top-pill cap).\
+**Consequences:** Notion becomes a PII sink (account email plus conversation excerpts) governed by workspace access rather than our DB; feedback has no user-visible history or delivery guarantee; the in-memory cap resets on restart and is not multi-instance safe; rotating credentials is an env change (`NOTION_FEEDBACK_TOKEN` / `NOTION_FEEDBACK_DATABASE_ID`). Screenshot attachments are a known follow-up via Notion's file-upload API.
+
+---
+
 ## ADR-050: Chat tool results discriminate by tool name; the place card is a consult-only surface
 
 **Date:** 2026-07-16\
