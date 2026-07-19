@@ -336,11 +336,13 @@ describe('ChatScreen', () => {
     expect(mockedStreamChat).toHaveBeenCalledTimes(1);
   });
 
-  it('shows the ••• only once there are turns, and clearing empties the chat', async () => {
+  it('clearing from the ••• empties the chat', async () => {
     scriptStream([frame('message', { content: 'hey saher' }), frame('done', { tool_calls_used: 0 })]);
-    const { submit, getByText, getByLabelText, queryByText, queryByLabelText } = renderChat();
+    const { submit, getByText, getByLabelText, queryByText } = renderChat();
 
-    expect(queryByLabelText('more')).toBeNull(); // empty chat — no overflow
+    // Both top-bar buttons render even on an empty chat.
+    expect(getByLabelText('more')).toBeTruthy();
+    expect(getByLabelText('help')).toBeTruthy();
     submit('hey');
     await waitFor(() => expect(getByText('hey saher')).toBeTruthy());
 
@@ -352,21 +354,16 @@ describe('ChatScreen', () => {
 
     expect(queryByText('hey saher')).toBeNull();
     expect(queryByText('hey')).toBeNull();
-    expect(queryByLabelText('more')).toBeNull(); // ••• hides again
     expect(getByText('chat cleared')).toBeTruthy(); // toast with undo
     jest.clearAllTimers();
     jest.useRealTimers();
   });
 
-  it('shows the ? with the ••• and it closes the chat then pushes /help', async () => {
-    scriptStream([frame('message', { content: 'hey saher' }), frame('done', { tool_calls_used: 0 })]);
+  it('the ? is always available and closes the chat then pushes /help', () => {
     const onClose = jest.fn();
-    const { submit, getByText, getByLabelText, queryByLabelText } = renderChat(onClose);
+    const { getByLabelText } = renderChat(onClose);
 
-    expect(queryByLabelText('help')).toBeNull(); // empty chat — no ? either
-    submit('hey');
-    await waitFor(() => expect(getByText('hey saher')).toBeTruthy());
-
+    // Works on an empty chat too — help never hides.
     fireEvent.press(getByLabelText('help'));
     // Chat is an overlay above the router — it must collapse before the push.
     expect(onClose).toHaveBeenCalledTimes(1);

@@ -251,30 +251,26 @@ export function ChatScreen({ onClose, seed }: ChatScreenProps) {
             <Text className="font-semibold text-[14px] text-text">kebi</Text>
           </View>
         }
-        // ? + ••• (kebi-help-mockup / kebi-chat-clear-mockup) — only once
-        // there's history to act on; an empty chat keeps the balancing spacer.
-        // Chat is an overlay above the router, so the ? closes it first —
-        // the transcript lives above the overlay and survives for /help.
+        // ? + ••• (kebi-help-mockup / kebi-chat-clear-mockup) — both always
+        // visible, chat history or not. Chat is an overlay above the router,
+        // so the ? closes it first — the transcript lives above the overlay
+        // and survives for /help.
         right={
-          turns.length > 0 ? (
-            <View className="flex-row items-center gap-2">
-              <IconButton
-                icon="help"
-                label={t('chat.help')}
-                onPress={() => {
-                  onClose();
-                  router.push('/help');
-                }}
-              />
-              <IconButton
-                icon="ellipsis"
-                label={t('common.more')}
-                onPress={() => setMenuOpen(true)}
-              />
-            </View>
-          ) : (
-            <View className="w-10" />
-          )
+          <View className="flex-row items-center gap-2">
+            <IconButton
+              icon="help"
+              label={t('chat.help')}
+              onPress={() => {
+                onClose();
+                router.push('/help');
+              }}
+            />
+            <IconButton
+              icon="ellipsis"
+              label={t('common.more')}
+              onPress={() => setMenuOpen(true)}
+            />
+          </View>
         }
       />
 
