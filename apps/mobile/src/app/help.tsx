@@ -43,9 +43,10 @@ export default function HelpScreen() {
   const { turns } = useChatTranscript();
 
   const [wrongOpen, setWrongOpen] = useState(false);
+  const [saveOpen, setSaveOpen] = useState(false);
   const [bugOpen, setBugOpen] = useState(false);
   const [messageOpen, setMessageOpen] = useState(false);
-  const anySheetOpen = wrongOpen || bugOpen || messageOpen;
+  const anySheetOpen = wrongOpen || saveOpen || bugOpen || messageOpen;
 
   const version = Constants.expoConfig?.version ?? '';
   const chevron = <Icon name="chevron-right" size={14} className="text-text-soft" />;
@@ -106,6 +107,13 @@ export default function HelpScreen() {
             trailing={chevron}
           />
           <SettingsRow
+            emoji="🔖"
+            label={t('help.rowSave')}
+            sublabel={t('help.rowSaveSub')}
+            onPress={() => setSaveOpen(true)}
+            trailing={chevron}
+          />
+          <SettingsRow
             emoji="🐛"
             label={t('help.rowBug')}
             sublabel={t('help.rowBugSub')}
@@ -134,6 +142,18 @@ export default function HelpScreen() {
         onClose={() => setWrongOpen(false)}
         onSubmit={submitWrongAnswer}
         exchange={exchange}
+      />
+      <FeedbackFormSheet
+        open={saveOpen}
+        onClose={() => setSaveOpen(false)}
+        onSubmit={(text, input) =>
+          submit({ kind: 'extraction', text, input, ...deviceMeta() }, () => setSaveOpen(false))
+        }
+        eyebrow={t('help.sheetSaveEyebrow')}
+        title={t('help.sheetSaveTitle')}
+        placeholder={t('help.sheetSavePlaceholder')}
+        note={t('help.sheetSaveNote')}
+        inputPlaceholder={t('help.sheetSaveInputPlaceholder')}
       />
       <FeedbackFormSheet
         open={bugOpen}

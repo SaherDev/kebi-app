@@ -37,11 +37,14 @@ import { Icon } from './icon';
 interface FeedbackFormSheetProps {
   open: boolean;
   onClose: () => void;
-  onSubmit: (text: string) => Promise<void>;
+  onSubmit: (text: string, input?: string) => Promise<void>;
   eyebrow: string;
   title: string;
   placeholder: string;
   note: string;
+  /** When set, shows a single-line field above the textarea (e.g. the link a
+   *  save report is about). Optional to fill; sent as `input`. */
+  inputPlaceholder?: string;
 }
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
@@ -58,6 +61,7 @@ export function FeedbackFormSheet({
   title,
   placeholder,
   note,
+  inputPlaceholder,
 }: FeedbackFormSheetProps) {
   const { t } = useTranslation();
   const { reserveTopAnchor } = useToast();
@@ -67,6 +71,7 @@ export function FeedbackFormSheet({
 
   const [mounted, setMounted] = useState(open);
   const [value, setValue] = useState('');
+  const [input, setInput] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const scrim = useSharedValue(0);
   const translateY = useSharedValue(height);
@@ -85,6 +90,7 @@ export function FeedbackFormSheet({
   useEffect(() => {
     if (open) {
       setValue('');
+      setInput('');
       setSubmitting(false);
     }
   }, [open]);
@@ -131,7 +137,7 @@ export function FeedbackFormSheet({
     if (!canSend) return;
     setSubmitting(true);
     try {
-      await onSubmit(value.trim());
+      await onSubmit(value.trim(), input.trim() || undefined);
       triggerHaptic('save-sheet-confirm');
     } catch {
       // The caller toasts; the draft survives for a retry.
@@ -160,6 +166,21 @@ export function FeedbackFormSheet({
             <Text className="text-subtitle font-bold text-text">{title}</Text>
           </View>
 
+          {inputPlaceholder ? (
+            <View className="rounded-large bg-surface px-3.5 py-3">
+              <TextInput
+                value={input}
+                onChangeText={setInput}
+                placeholder={inputPlaceholder}
+                placeholderTextColor={softColor}
+                autoCapitalize="none"
+                autoCorrect={false}
+                editable={!submitting}
+                className="p-0 text-[16px] leading-6 text-text"
+              />
+            </View>
+          ) : null}
+
           <View className="rounded-large bg-surface px-3.5 pb-3 pt-3.5">
             <TextInput
               value={value}
@@ -168,7 +189,7 @@ export function FeedbackFormSheet({
               placeholderTextColor={softColor}
               multiline
               textAlignVertical="top"
-              autoFocus
+              autoFocus={!inputPlaceholder}
               editable={!submitting}
               className="min-h-14 p-0 text-[16px] leading-6 text-text"
             />

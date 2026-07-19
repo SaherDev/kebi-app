@@ -88,6 +88,18 @@ describe('buildFeedbackPage', () => {
     );
   });
 
+  it('extraction reports quote the saved input', () => {
+    const page = build({
+      kind: 'extraction',
+      text: 'it saved a ramen place, the video was a cocktail bar',
+      input: 'https://www.tiktok.com/@tokyo/video/123',
+    });
+
+    const texts = page.children.map((b) => (b['type'] === 'divider' ? '---' : plainText(b)));
+    expect(texts[0]).toBe('what went wrong with the save');
+    expect(texts).toContain('input: https://www.tiktok.com/@tokyo/video/123');
+  });
+
   it('bug and message reports carry no transcript machinery', () => {
     const page = build({ kind: 'message', text: 'love the app' });
 

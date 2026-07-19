@@ -29,6 +29,7 @@ export interface NotionPageBody {
 
 const KIND_HEADINGS: Record<FeedbackKind, string> = {
   wrong_answer: 'what they expected',
+  extraction: 'what went wrong with the save',
   bug: 'what happened',
   message: 'message',
 };
@@ -105,6 +106,14 @@ export function buildFeedbackPage(params: {
     heading(KIND_HEADINGS[dto.kind]),
     paragraph(dto.text ?? '(no text — category only)'),
   ];
+
+  if (dto.input) {
+    children.push({
+      object: 'block',
+      type: 'quote',
+      quote: { rich_text: rt(`input: ${dto.input}`) },
+    });
+  }
 
   if (dto.exchange) {
     children.push({

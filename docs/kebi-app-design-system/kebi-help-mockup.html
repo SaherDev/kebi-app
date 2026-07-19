@@ -284,7 +284,7 @@
     <p class="section-desc">
       a <b>? bubble button</b> beside the ••• in the chat top bar — same 34px circle chrome,
       <b>both always visible</b>, chat history or not (help doesn't hide). tap → the <b>help page</b>
-      pushes in (standard 240ms slide), chat stays intact behind it. the page has exactly three
+      pushes in (standard 240ms slide), chat stays intact behind it. the page has four
       rows in two groups plus a version footer — <b>no faq in v1</b>, reports will tell us what a
       faq should say. a <b>help row in settings</b> opens the same page from outside the chat.
     </p>
@@ -358,6 +358,11 @@
                 <div class="g-row">
                   <span class="glyph">🤔</span>
                   <div class="g-body"><span class="g-title">kebi got it wrong</span><span class="g-sub">a weird answer? show us what you expected</span></div>
+                  <span class="g-chev">›</span>
+                </div>
+                <div class="g-row">
+                  <span class="glyph">🔖</span>
+                  <div class="g-body"><span class="g-title">a save went wrong</span><span class="g-sub">shared a link and the place came out wrong, or not at all</span></div>
                   <span class="g-chev">›</span>
                 </div>
                 <div class="g-row">
@@ -462,6 +467,11 @@
                   <span class="g-chev">›</span>
                 </div>
                 <div class="g-row">
+                  <span class="glyph">🔖</span>
+                  <div class="g-body"><span class="g-title">a save went wrong</span><span class="g-sub">shared a link and the place came out wrong, or not at all</span></div>
+                  <span class="g-chev">›</span>
+                </div>
+                <div class="g-row">
                   <span class="glyph">🐛</span>
                   <div class="g-body"><span class="g-title">something broke</span><span class="g-sub">crashes, glitches, dead buttons</span></div>
                   <span class="g-chev">›</span>
@@ -494,7 +504,7 @@
       <b>recap.</b> the ? and the ••• always render in the chat top bar (supersedes the clear-chat
       mockup's turns-only rule). tap the ? → help page
       (eyebrow <span class="kbd">help</span>, hero <span class="kbd">what's up?</span>) with
-      <b>something's off</b> (🤔 kebi got it wrong · 🐛 something broke) and
+      <b>something's off</b> (🤔 kebi got it wrong · 🔖 a save went wrong · 🐛 something broke) and
       <b>talk to us</b> (💬 message us), version line at the bottom. settings gets one
       🛟 <b>help</b> row opening the same page. sending any form dismisses its sheet and drops
       a 3s confirmation toast. no faq, no legal links in v1. <b>home deliberately has no ?</b> —
@@ -514,7 +524,8 @@
     <h2 class="section-h2">expected vs. got, with the receipts attached</h2>
     <p class="section-desc">
       each row opens a <b>form sheet over the help page</b> (grabber, scrim, spring — save-sheet
-      language). only <b>kebi got it wrong</b> attaches the conversation: it quotes the latest
+      language). <b>a save went wrong</b> (kind <b>extraction</b>) is the bug form plus a
+      single-line field for the link/text they tried to save. only <b>kebi got it wrong</b> attaches the conversation: it quotes the latest
       exchange so the user sees exactly what they're reporting, and the paperclip line
       <b>always discloses</b> the attach. send is disabled until the form has content.
     </p>

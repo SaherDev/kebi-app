@@ -69,6 +69,11 @@ export class FeedbackRequestDto {
   text?: string;
 
   @IsOptional()
+  @IsString()
+  @MaxLength(1000)
+  input?: string;
+
+  @IsOptional()
   @IsIn(FEEDBACK_CATEGORIES)
   category?: FeedbackCategory;
 

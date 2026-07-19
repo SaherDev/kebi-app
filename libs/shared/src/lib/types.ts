@@ -580,10 +580,11 @@ export const DATA_SCOPES: readonly DataScope[] = ["all", "chat_history"] as cons
 // In-app feedback (POST /api/v1/feedback) — ADR-051. Gateway-only: stamps the
 // verified user id + token-claim email and forwards to a Notion database.
 // Never reaches kebi, never stored in the gateway DB.
-export type FeedbackKind = "wrong_answer" | "bug" | "message";
+export type FeedbackKind = "wrong_answer" | "extraction" | "bug" | "message";
 
 export const FEEDBACK_KINDS: readonly FeedbackKind[] = [
   "wrong_answer",
+  "extraction",
   "bug",
   "message",
 ] as const;
@@ -617,6 +618,8 @@ export interface FeedbackTranscriptTurn {
 export interface FeedbackRequest {
   kind: FeedbackKind;
   text?: string;
+  /** Extraction reports: the raw link/text the user tried to save. */
+  input?: string;
   category?: FeedbackCategory;
   exchange?: { you: string; kebi: string };
   transcript?: FeedbackTranscriptTurn[];
