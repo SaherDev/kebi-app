@@ -576,3 +576,72 @@ export interface CurateKnowledgeResponse {
 export type DataScope = "all" | "chat_history";
 
 export const DATA_SCOPES: readonly DataScope[] = ["all", "chat_history"] as const;
+
+// In-app feedback (POST /api/v1/feedback) — ADR-051. Gateway-only: stamps the
+// verified user id + token-claim email and forwards to a Notion database.
+// Never reaches kebi, never stored in the gateway DB.
+export type FeedbackKind = "wrong_answer" | "extraction" | "bug" | "message";
+
+export const FEEDBACK_KINDS: readonly FeedbackKind[] = [
+  "wrong_answer",
+  "extraction",
+  "bug",
+  "message",
+] as const;
+
+export type FeedbackCategory = "wrong_place" | "didnt_get_me" | "missing_info";
+
+export const FEEDBACK_CATEGORIES: readonly FeedbackCategory[] = [
+  "wrong_place",
+  "didnt_get_me",
+  "missing_info",
+] as const;
+
+/**
+ * One transcript turn attached to a `wrong_answer` report. Deliberately lean:
+ * reasoning step titles and tool names only — never tool payloads (large,
+ * PII-adjacent, and beyond what the in-app disclosure promises).
+ */
+export interface FeedbackTranscriptTurn {
+  role: "you" | "kebi";
+  text: string;
+  at: string;
+  step_titles?: string[];
+  tool_names?: string[];
+}
+
+/**
+ * One recorded save attempt attached to an `extraction` report: the raw
+ * link/text the user submitted and a one-line summary of what kebi made of it
+ * (saved place names, or the failure reason).
+ */
+export interface FeedbackSaveAttempt {
+  input: string;
+  result: string;
+  at: string;
+}
+
+/**
+ * Feedback body the client sends to the gateway. Identity is never a body
+ * field (stamped server-side from the verified token). `category`, `exchange`,
+ * and `transcript` travel only on `wrong_answer` reports; `input` and
+ * `save_attempts` only on `extraction` reports.
+ */
+export interface FeedbackRequest {
+  kind: FeedbackKind;
+  text?: string;
+  /** Manual fallback: the link/text the save was about (no recorded attempts). */
+  input?: string;
+  save_attempts?: FeedbackSaveAttempt[];
+  category?: FeedbackCategory;
+  exchange?: { you: string; kebi: string };
+  transcript?: FeedbackTranscriptTurn[];
+  app_version?: string;
+  platform?: "ios" | "android";
+  os_version?: string;
+  device?: string;
+}
+
+export interface FeedbackResponse {
+  status: "received";
+}

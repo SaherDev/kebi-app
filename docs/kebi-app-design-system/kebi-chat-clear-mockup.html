@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Kebi — Clear Chat History</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #FAFAF9;
+    --surface: #F1F1EF;
+    --surface-2: #E8E8E5;
+    --text: #1A1A1A;
+    --text-muted: #8A8A87;
+    --text-soft: #B5B5B1;
+    --success: #4A7C3A;
+    --danger: #D14343;
+    --pill-danger-bg: #FCEEEE;
+    --scrim: rgba(15,13,10,0.45);
+    --toast-bg: #1A1A1A;
+    --toast-text: #FAFAF9;
+  }
+
+  body.dark {
+    --bg: #13110F;
+    --surface: #1C1A17;
+    --surface-2: #26231F;
+    --text: #F5F1EA;
+    --text-muted: #9A938A;
+    --text-soft: #6E6862;
+    --success: #A8C293;
+    --danger: #E89090;
+    --pill-danger-bg: #3A1818;
+    --scrim: rgba(0,0,0,0.55);
+    --toast-bg: #F5F1EA;
+    --toast-text: #13110F;
+  }
+
+  html, body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+    transition: background 200ms;
+  }
+  body.dark { background: #0A0908; }
+
+  .page { max-width: 1400px; margin: 0 auto; padding: 56px 32px 96px; }
+
+  .header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding-bottom: 32px; border-bottom: 1px solid var(--surface-2); margin-bottom: 40px;
+  }
+  .header h1 { font-size: 24px; font-weight: 700; letter-spacing: -0.025em; }
+  .header-meta { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+
+  .theme-toggle { display: flex; background: var(--surface); border-radius: 999px; padding: 3px; }
+  .theme-toggle button {
+    padding: 6px 14px; background: transparent; border: none; border-radius: 999px;
+    font-family: inherit; font-size: 12px; font-weight: 500; color: var(--text-muted);
+    cursor: pointer; letter-spacing: -0.005em;
+  }
+  .theme-toggle button.active { background: var(--text); color: var(--bg); }
+
+  .section { margin-bottom: 56px; }
+  .section-head {
+    display: flex; align-items: baseline; justify-content: space-between;
+    margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid var(--surface-2);
+  }
+  .section-title { font-size: 11px; font-weight: 600; color: var(--text-soft); text-transform: uppercase; letter-spacing: 0.08em; }
+  .section-count { font-size: 12px; color: var(--text-soft); }
+  .section-h2 { font-size: 28px; font-weight: 700; letter-spacing: -0.025em; margin-bottom: 8px; }
+  .section-desc { font-size: 14px; color: var(--text-muted); line-height: 1.5; max-width: 680px; margin-bottom: 28px; }
+  .section-desc b { color: var(--text); font-weight: 600; }
+  .kbd { font-size: 12px; background: var(--surface-2); border-radius: 5px; padding: 1px 6px; }
+
+  .phones { display: flex; flex-wrap: wrap; gap: 40px; }
+  .phone-wrap { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+  .phone-label { font-size: 13px; font-weight: 600; letter-spacing: -0.01em; }
+  .phone-sub { font-size: 11px; color: var(--text-muted); margin-top: -8px; max-width: 300px; text-align: center; }
+
+  /* ---- phone frame (matches kebi-context-menu-mockup) ---- */
+  .phone {
+    position: relative;
+    width: 300px; height: 600px;
+    background: var(--bg);
+    border-radius: 40px;
+    border: 10px solid #000;
+    overflow: hidden;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.18);
+    display: flex; flex-direction: column;
+  }
+  body.dark .phone { border-color: #2a2a2a; }
+
+  .status-bar {
+    height: 44px; display: flex; align-items: center; justify-content: space-between;
+    padding: 0 22px; font-size: 13px; font-weight: 600; color: var(--text); flex-shrink: 0;
+  }
+
+  /* ---- chat top bar (kebi-chat-mockup .top-bar, scaled to the 300px frame) ---- */
+  .top-bar {
+    padding: 6px 12px; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0;
+  }
+  .icon-btn {
+    width: 34px; height: 34px; border-radius: 50%; background: var(--surface);
+    display: flex; align-items: center; justify-content: center; border: none; cursor: pointer;
+  }
+  .icon-btn svg { width: 15px; height: 15px; stroke: var(--text); stroke-width: 1.8; fill: none; }
+  /* ••• overflow — three filled dots, same button chrome as the close X */
+  .icon-btn.more { gap: 2.5px; }
+  .icon-btn.more span { width: 3.5px; height: 3.5px; border-radius: 999px; background: var(--text); }
+  .title-pill {
+    background: var(--surface); border-radius: 999px; padding: 6px 12px 6px 6px;
+    display: flex; align-items: center; gap: 7px;
+    font-size: 12px; font-weight: 600; color: var(--text); letter-spacing: -0.01em;
+  }
+  .title-avatar {
+    width: 19px; height: 19px; border-radius: 5px; overflow: hidden;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .title-avatar svg { width: 16px; height: 16px; }
+
+  /* ---- mini transcript ---- */
+  .chat-area { flex: 1; padding: 6px 18px 12px; display: flex; flex-direction: column; gap: 16px; overflow: hidden; }
+  .turn { display: flex; flex-direction: column; gap: 4px; }
+  .turn.you { align-items: flex-end; text-align: right; }
+  .turn-meta {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 9px; font-weight: 600; color: var(--text-soft);
+    text-transform: uppercase; letter-spacing: 0.08em;
+  }
+  .turn.you .turn-meta { flex-direction: row-reverse; }
+  .turn-time { text-transform: none; letter-spacing: -0.005em; font-weight: 500; }
+  .turn-text { font-size: 13px; line-height: 1.5; color: var(--text); letter-spacing: -0.01em; max-width: 85%; }
+  .turn-text.muted { color: var(--text-muted); }
+  .reasoning-line { display: flex; align-items: center; gap: 6px; font-size: 10px; color: var(--text-muted); }
+  .reasoning-line .dot { width: 5px; height: 5px; border-radius: 50%; background: var(--success); }
+  .reasoning-line .chev { color: var(--text-soft); font-size: 8px; }
+
+  .heading { font-size: 24px; font-weight: 700; line-height: 1.15; letter-spacing: -0.02em; color: var(--text); margin-top: 6px; }
+
+  /* ---- composer ---- */
+  .editor-area { padding: 6px 18px 10px; flex-shrink: 0; }
+  .editor-placeholder { font-size: 13px; color: var(--text-soft); letter-spacing: -0.01em; }
+  .toolbar {
+    margin: 0 12px 10px; background: var(--surface); border-radius: 999px; padding: 9px 16px;
+    display: inline-flex; align-items: center; gap: 18px; align-self: flex-end; width: fit-content; flex-shrink: 0;
+  }
+  .toolbar svg { width: 14px; height: 14px; stroke: var(--text); stroke-width: 1.6; fill: none; }
+  .toolbar svg.soft { stroke: var(--text-soft); }
+  .home-bar { width: 100px; height: 4px; border-radius: 999px; background: var(--text); opacity: 0.85; margin: 0 auto 8px; flex-shrink: 0; }
+
+  /* ---- ••• bottom action sheet (kebi-context-menu-mockup .sheet) ---- */
+  .sheet-scrim {
+    position: absolute; inset: 0; z-index: 5;
+    background: var(--scrim);
+    backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px);
+  }
+  .sheet {
+    position: absolute; left: 0; right: 0; bottom: 0; z-index: 6;
+    background: var(--bg); border-radius: 24px 24px 0 0;
+    padding: 10px 16px 16px; display: flex; flex-direction: column; gap: 12px;
+    box-shadow: 0 -16px 48px rgba(0,0,0,0.16);
+  }
+  .grabber { width: 36px; height: 4px; border-radius: 2px; background: var(--surface-2); margin: 0 auto 2px; }
+  .sheet-head { display: flex; align-items: center; gap: 11px; padding: 2px 4px 4px; }
+  .sheet-avatar {
+    width: 36px; height: 36px; border-radius: 9px; background: var(--surface-2);
+    display: flex; align-items: center; justify-content: center; font-size: 19px; line-height: 1; flex-shrink: 0;
+    overflow: hidden;
+  }
+  .sheet-avatar svg { width: 30px; height: 30px; }
+  .sheet-eyebrow { font-size: 10px; font-weight: 600; color: var(--text-soft); text-transform: uppercase; letter-spacing: 0.08em; }
+  .sheet-title { font-size: 18px; font-weight: 700; color: var(--text); letter-spacing: -0.02em; }
+  .sheet-group { background: var(--surface); border-radius: 14px; overflow: hidden; }
+  .sheet-row {
+    display: flex; align-items: center; gap: 12px; padding: 14px 14px;
+    font-size: 15px; font-weight: 500; color: var(--text); letter-spacing: -0.01em;
+  }
+  .sheet-row + .sheet-row { border-top: 1px solid var(--bg); }
+  .sheet-row .glyph { width: 20px; text-align: center; font-size: 17px; line-height: 1; }
+  .sheet-row.destructive { color: var(--danger); }
+  .sheet-row-sub { font-size: 11px; color: var(--text-muted); font-weight: 400; margin-top: 2px; letter-spacing: -0.005em; }
+  .sheet-row .row-body { display: flex; flex-direction: column; }
+
+  /* ---- toast (kebi-toasts-dark-mockup .toast — top-anchored in chat) ---- */
+  .toast {
+    position: absolute; top: 54px; left: 50%; transform: translateX(-50%); z-index: 8;
+    background: var(--toast-bg); color: var(--toast-text);
+    border-radius: 14px; padding: 9px 14px;
+    display: flex; align-items: center; gap: 9px;
+    font-size: 13px; font-weight: 500; letter-spacing: -0.01em; white-space: nowrap;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.18), 0 2px 6px rgba(0,0,0,0.12);
+  }
+  .toast svg { width: 14px; height: 14px; stroke: var(--toast-text); stroke-width: 2; fill: none; flex-shrink: 0; }
+  .toast-divider { width: 1px; height: 14px; background: var(--toast-text); opacity: 0.25; }
+  .toast-action {
+    background: transparent; border: none; cursor: pointer; padding: 0;
+    font-family: inherit; font-size: 13px; font-weight: 700; letter-spacing: -0.01em;
+    color: var(--toast-text);
+  }
+
+  .caption {
+    font-size: 13px; color: var(--text-muted); line-height: 1.6; max-width: 680px;
+    margin-top: 8px; padding: 16px 18px; background: var(--surface); border-radius: 12px;
+  }
+  .caption b { color: var(--text); font-weight: 600; }
+
+  /* tap-marker ring on the pressed control */
+  .tap-ring { position: absolute; z-index: 9; width: 46px; height: 46px; border-radius: 50%;
+    border: 2px solid var(--danger); opacity: 0.7; pointer-events: none; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="header">
+    <div>
+      <h1>clear chat history</h1>
+      <div class="header-meta">chat ••• overflow → action sheet → cleared, undo on the toast · review mockup</div>
+    </div>
+    <div class="theme-toggle">
+      <button class="active" data-theme="light">light</button>
+      <button data-theme="dark">dark</button>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       THE FLOW — four states, left to right
+       ============================================================ -->
+  <div class="section">
+    <div class="section-head">
+      <span class="section-title">flow</span>
+      <span class="section-count">3 states</span>
+    </div>
+    <h2 class="section-h2">••• → clear this chat → cleared, undo on the toast</h2>
+    <p class="section-desc">
+      the chat top bar's empty right slot becomes a <b>••• overflow button</b> — same chrome as the
+      close X on the left, same language as the place page's •••. it only renders once the transcript
+      has turns (an empty chat has nothing to clear). tapping it springs up the standard
+      <b>bottom action sheet</b> (grabber, dim scrim) with one destructive row. <b>no confirm sheet</b>
+      — the row clears immediately (aborting any in-flight stream) and the <b>top-anchored toast</b>
+      carries an <b>undo</b> action for ~5s. undo restores the exact transcript; when the toast
+      expires, the turns are gone for real. toasts anchor top while chat is open because the composer
+      owns the bottom.
+    </p>
+
+    <div class="phones">
+
+      <!-- State 1: entry — ••• in the top bar -->
+      <div class="phone-wrap">
+        <div class="phone">
+          <div class="status-bar"><span>9:41</span><span>􀙇 􀛨 􀋊</span></div>
+          <div class="top-bar">
+            <button class="icon-btn" aria-label="close">
+              <svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
+            </button>
+            <div class="title-pill">
+              <div class="title-avatar">
+                <svg viewBox="0 0 64 64"><ellipse cx="32" cy="38" rx="20" ry="20" fill="#D4B891"/><ellipse cx="32" cy="42" rx="13" ry="13" fill="#F5EBD3"/><circle cx="25" cy="30" r="3.5" fill="white"/><circle cx="39" cy="30" r="3.5" fill="white"/><circle cx="25" cy="30" r="1.7" fill="#1A1A1A"/><circle cx="39" cy="30" r="1.7" fill="#1A1A1A"/><path d="M30 33 L34 33 L32 36 Z" fill="#C87A4A"/></svg>
+              </div>
+              <span>kebi</span>
+            </div>
+            <button class="icon-btn more" aria-label="more"><span></span><span></span><span></span></button>
+          </div>
+          <div class="tap-ring" style="top: 47px; right: 6px;"></div>
+
+          <div class="chat-area">
+            <div class="turn you">
+              <div class="turn-meta"><span>you</span><span class="turn-time">9:38 pm</span></div>
+              <div class="turn-text">drinks tonight, somewhere with energy</div>
+            </div>
+            <div class="turn">
+              <div class="turn-meta"><span>kebi</span><span class="turn-time">9:39 pm</span></div>
+              <div class="reasoning-line"><span class="dot"></span>done · 4 steps · 1.8s <span class="chev">▸</span></div>
+              <div class="turn-text muted">Contact Tokyo — underground house, smaller crowd, actually good music.</div>
+            </div>
+            <div class="turn you">
+              <div class="turn-meta"><span>you</span><span class="turn-time">9:42 pm</span></div>
+              <div class="turn-text">k now where do i eat after</div>
+            </div>
+            <div class="turn">
+              <div class="turn-meta"><span>kebi</span><span class="turn-time">9:42 pm</span></div>
+              <div class="turn-text muted">late night after shibuya — ramen. Ichiran on Meiji-dori is open till 6am.</div>
+            </div>
+          </div>
+
+          <div class="editor-area"><span class="editor-placeholder">tell me what you want...</span></div>
+          <div class="toolbar">
+            <svg viewBox="0 0 24 24"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10v2a7 7 0 0014 0v-2M12 19v3"/></svg>
+            <svg class="soft" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          </div>
+          <div class="home-bar"></div>
+        </div>
+        <div class="phone-label">1 · entry — ••• in the right slot</div>
+        <div class="phone-sub">shown only when the transcript has turns · same 40px circle chrome as the close X</div>
+      </div>
+
+      <!-- State 2: ••• action sheet -->
+      <div class="phone-wrap">
+        <div class="phone">
+          <div class="status-bar"><span>9:41</span><span>􀙇 􀛨 􀋊</span></div>
+          <div class="top-bar">
+            <button class="icon-btn"><svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+            <div class="title-pill">
+              <div class="title-avatar">
+                <svg viewBox="0 0 64 64"><ellipse cx="32" cy="38" rx="20" ry="20" fill="#D4B891"/><ellipse cx="32" cy="42" rx="13" ry="13" fill="#F5EBD3"/><circle cx="25" cy="30" r="3.5" fill="white"/><circle cx="39" cy="30" r="3.5" fill="white"/><circle cx="25" cy="30" r="1.7" fill="#1A1A1A"/><circle cx="39" cy="30" r="1.7" fill="#1A1A1A"/><path d="M30 33 L34 33 L32 36 Z" fill="#C87A4A"/></svg>
+              </div>
+              <span>kebi</span>
+            </div>
+            <button class="icon-btn more"><span></span><span></span><span></span></button>
+          </div>
+
+          <div class="chat-area">
+            <div class="turn you">
+              <div class="turn-meta"><span>you</span><span class="turn-time">9:38 pm</span></div>
+              <div class="turn-text">drinks tonight, somewhere with energy</div>
+            </div>
+            <div class="turn">
+              <div class="turn-meta"><span>kebi</span><span class="turn-time">9:39 pm</span></div>
+              <div class="turn-text muted">Contact Tokyo — underground house, smaller crowd, actually good music.</div>
+            </div>
+          </div>
+
+          <div class="sheet-scrim"></div>
+          <div class="sheet">
+            <div class="grabber"></div>
+            <div class="sheet-head">
+              <div class="sheet-avatar">
+                <svg viewBox="0 0 64 64"><ellipse cx="32" cy="38" rx="20" ry="20" fill="#D4B891"/><ellipse cx="32" cy="42" rx="13" ry="13" fill="#F5EBD3"/><circle cx="25" cy="30" r="3.5" fill="white"/><circle cx="39" cy="30" r="3.5" fill="white"/><circle cx="25" cy="30" r="1.7" fill="#1A1A1A"/><circle cx="39" cy="30" r="1.7" fill="#1A1A1A"/><path d="M30 33 L34 33 L32 36 Z" fill="#C87A4A"/></svg>
+              </div>
+              <div><div class="sheet-eyebrow">this chat</div><div class="sheet-title">kebi</div></div>
+            </div>
+            <div class="sheet-group">
+              <div class="sheet-row destructive">
+                <span class="glyph">🗑️</span>
+                <span class="row-body">clear this chat<span class="sheet-row-sub">wipes the conversation on screen</span></span>
+              </div>
+            </div>
+            <div class="home-bar" style="margin: 6px auto 0;"></div>
+          </div>
+        </div>
+        <div class="phone-label">2 · ••• action sheet</div>
+        <div class="phone-sub">place-page ••• language: grabber + dim scrim + destructive row in its own group · tapping the row clears immediately (confirm-delete haptic) — the safety net is undo on the toast</div>
+      </div>
+
+      <!-- State 3: cleared — greeting + undo toast -->
+      <div class="phone-wrap">
+        <div class="phone">
+          <div class="status-bar"><span>9:41</span><span>􀙇 􀛨 􀋊</span></div>
+          <div class="top-bar">
+            <button class="icon-btn"><svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+            <div class="title-pill">
+              <div class="title-avatar">
+                <svg viewBox="0 0 64 64"><ellipse cx="32" cy="38" rx="20" ry="20" fill="#D4B891"/><ellipse cx="32" cy="42" rx="13" ry="13" fill="#F5EBD3"/><circle cx="25" cy="30" r="3.5" fill="white"/><circle cx="39" cy="30" r="3.5" fill="white"/><circle cx="25" cy="30" r="1.7" fill="#1A1A1A"/><circle cx="39" cy="30" r="1.7" fill="#1A1A1A"/><path d="M30 33 L34 33 L32 36 Z" fill="#C87A4A"/></svg>
+              </div>
+              <span>kebi</span>
+            </div>
+            <div style="width: 34px;"></div>
+          </div>
+
+          <div class="toast">
+            <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
+            chat cleared
+            <span class="toast-divider"></span>
+            <button class="toast-action">undo</button>
+          </div>
+
+          <div class="chat-area">
+            <div class="heading">what's the move?</div>
+          </div>
+
+          <div class="editor-area"><span class="editor-placeholder">tell me what you want...</span></div>
+          <div class="toolbar">
+            <svg viewBox="0 0 24 24"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10v2a7 7 0 0014 0v-2M12 19v3"/></svg>
+            <svg class="soft" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          </div>
+          <div class="home-bar"></div>
+        </div>
+        <div class="phone-label">3 · cleared + undo</div>
+        <div class="phone-sub">back to the empty-chat greeting · toast top-anchored (composer owns the bottom) with an undo action for ~5s · ••• hides again · undo restores the exact transcript</div>
+      </div>
+
+    </div>
+
+    <div class="caption">
+      <b>recap.</b> the ••• appears in the chat top bar's right slot only when there are turns.
+      tap → bottom action sheet (<span class="kbd">this chat / kebi</span> header, one destructive
+      row: 🗑️ <b>clear this chat</b>) → clears immediately (<span class="kbd">confirm-delete</span>
+      haptic, in-flight stream aborts) → greeting returns, <b>chat cleared · undo</b> toast at the
+      top, ••• disappears. undo (~5s window) restores the exact transcript; when the toast
+      expires unused, the client fires <span class="kbd">DELETE /user/data?scope=chat_history</span>
+      so kebi's server-side conversation memory (LangGraph checkpoint + recalled intents — which
+      also feed home's "what you wanted" rows) is wiped too. the irreversible server call waits
+      out the undo window, so undo keeps screen and server consistent. same pattern as
+      forget-place — destructive actions get undo, not confirm dialogs. saved places and the
+      taste model are never touched.
+    </div>
+  </div>
+
+</div>
+
+<script>
+  document.querySelectorAll('.theme-toggle button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.theme-toggle button').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      document.body.classList.toggle('dark', btn.dataset.theme === 'dark');
+    });
+  });
+</script>
+</body>
+</html>

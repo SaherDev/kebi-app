@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { Modal, Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -25,6 +25,8 @@ import type { ContextMenuItem } from './context-menu/context-menu-types';
 export interface ActionSheetHeader {
   /** Emoji shown in the header avatar tile. */
   emoji?: string;
+  /** Custom avatar in the tile instead of an emoji (e.g. the chat's mascot). */
+  avatar?: ReactNode;
   /** Small uppercase line above the title (e.g. "this place"). */
   eyebrow?: string;
   title: string;
@@ -122,9 +124,9 @@ export function ActionSheet({ open, onClose, header, items, closeLabel }: Action
           <View className="mx-auto mb-0.5 h-1 w-9 rounded-full bg-surface-2" />
 
           <View className="flex-row items-center gap-3 px-1 pb-1 pt-0.5">
-            {header.emoji ? (
-              <View className="size-9 items-center justify-center rounded-[10px] bg-surface-2">
-                <Text className="text-[19px]">{header.emoji}</Text>
+            {header.avatar || header.emoji ? (
+              <View className="size-9 items-center justify-center overflow-hidden rounded-[10px] bg-surface-2">
+                {header.avatar ?? <Text className="text-[19px]">{header.emoji}</Text>}
               </View>
             ) : null}
             <View>
@@ -137,7 +139,7 @@ export function ActionSheet({ open, onClose, header, items, closeLabel }: Action
             </View>
           </View>
 
-            <SheetGroup items={positives} onClose={onClose} />
+            {positives.length > 0 ? <SheetGroup items={positives} onClose={onClose} /> : null}
             {destructives.length > 0 ? <SheetGroup items={destructives} onClose={onClose} /> : null}
           </Animated.View>
         </GestureDetector>
@@ -165,9 +167,14 @@ function SheetGroup({ items, onClose }: { items: ContextMenuItem[]; onClose: () 
           <View className="w-6 items-center">
             <Text className="text-[17px]">{item.emoji}</Text>
           </View>
-          <Text className={`text-body font-medium ${item.destructive ? 'text-danger' : 'text-text'}`}>
-            {item.label}
-          </Text>
+          <View>
+            <Text
+              className={`text-body font-medium ${item.destructive ? 'text-danger' : 'text-text'}`}
+            >
+              {item.label}
+            </Text>
+            {item.sub ? <Text className="mt-0.5 text-[11px] text-text-muted">{item.sub}</Text> : null}
+          </View>
         </Pressable>
       ))}
     </View>

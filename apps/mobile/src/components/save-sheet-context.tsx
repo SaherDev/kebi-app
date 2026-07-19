@@ -6,6 +6,7 @@ import { SaveSheet } from './save-sheet';
 import { useToast } from './toast-context';
 import { useUpgradeToast } from './use-upgrade-toast';
 import { useSavedPlaces } from './saved-places-context';
+import { recordSaveAttempt } from '../lib/save-history';
 
 /**
  * Save-sheet host. A `SaveSheetProvider` mounts the sheet once and exposes
@@ -61,6 +62,8 @@ export function SaveSheetProvider({ children }: { children: ReactNode }) {
         const res = await extractPlace(client, text, controller.signal);
         if (res.status === 'completed' && res.results.length > 0) {
           const places = res.results.map((r) => r.place);
+          // Feed the help page's "a save went wrong" report (lib/save-history).
+          recordSaveAttempt(text, `saved: ${places.map((p) => p.place_name).join(', ')}`);
           add(places);
           toast.show({
             tone: 'success',
@@ -75,6 +78,7 @@ export function SaveSheetProvider({ children }: { children: ReactNode }) {
           return;
         }
         // Domain failure (failed / pending / empty) — keep the sheet open to retry.
+        recordSaveAttempt(text, `failed: ${res.failure_reason ?? res.status}`);
         if (res.failure_reason === 'save_limit_reached') {
           // Library is full on the free tier (ADR-112) — point to plans.
           showUpgrade(t('plans.limitReached.save'));
@@ -91,6 +95,7 @@ export function SaveSheetProvider({ children }: { children: ReactNode }) {
         setStatus('idle');
       } catch {
         // Transport error, schema drift, or timeout abort.
+        recordSaveAttempt(text, 'failed: network or timeout');
         toast.show({ tone: 'danger', icon: 'alert', text: t('toast.saveFailed') });
         setStatus('idle');
       } finally {

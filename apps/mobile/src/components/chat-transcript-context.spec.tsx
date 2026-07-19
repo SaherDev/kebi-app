@@ -29,12 +29,18 @@ const TOOL: SseToolResult = { tool: 'find_saved', tool_call_id: 'c1', payload: {
 function Probe() {
   const tr = useChatTranscript();
   const key = useRef('');
+  const snapshot = useRef<ReturnType<typeof useChatTranscript>['turns']>([]);
   const act = (label: string, fn: () => void) => (
     <Pressable accessibilityLabel={label} onPress={fn} />
   );
   return (
     <>
       {act('start', () => (key.current = tr.startTurn('hey')))}
+      {act('clear', () => {
+        snapshot.current = tr.turns;
+        tr.clearTranscript();
+      })}
+      {act('restore', () => tr.restoreTranscript(snapshot.current))}
       {act('step-active', () => tr.upsertStep(key.current, step({ status: 'active', summary: null })))}
       {act('step-done', () => tr.upsertStep(key.current, step({ status: 'done', summary: '2 spots' })))}
       {act('step-other', () => tr.upsertStep(key.current, step({ id: 'rank#1', title: 'ranked' })))}
@@ -145,5 +151,38 @@ describe('ChatTranscriptProvider', () => {
     press('fail');
     expect(kebi()).toContain('status:error');
     expect(kebi()).toContain('st:active'); // interrupted step stays a skeleton
+  });
+
+  it('clearTranscript empties the transcript', () => {
+    const { press, queryByText } = setup();
+    press('start');
+    press('clear');
+    expect(queryByText(/you\|hey/)).toBeNull();
+    expect(queryByText(/kebi\|/)).toBeNull();
+  });
+
+  it('restoreTranscript puts the cleared turns back (undo)', () => {
+    const { press, getByText } = setup();
+    press('start');
+    press('finish');
+    press('clear');
+    press('restore');
+    expect(getByText(/you\|hey/)).toBeTruthy();
+    expect(getByText(/kebi\|status:done/)).toBeTruthy();
+  });
+
+  it('restore prepends the snapshot before turns sent after the clear', () => {
+    const { press, getAllByText } = setup();
+    press('start');
+    press('clear');
+    press('start'); // a new turn sent during the undo window
+    press('restore');
+    const you = getAllByText(/you\|hey/);
+    expect(you).toHaveLength(2);
+    const kebiLines = getAllByText(/kebi\|/).map((n) => n.props.children as string);
+    expect(kebiLines).toHaveLength(2);
+    // Restored (older) turn first, the newer turn keeps its place after it.
+    expect(kebiLines[0]).toContain('kebi-1|');
+    expect(kebiLines[1]).toContain('kebi-2|');
   });
 });

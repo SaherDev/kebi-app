@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Kebi — Help Page Options</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #FAFAF9;
+    --surface: #F1F1EF;
+    --surface-2: #E8E8E5;
+    --text: #1A1A1A;
+    --text-muted: #8A8A87;
+    --text-soft: #B5B5B1;
+    --success: #4A7C3A;
+    --danger: #D14343;
+    --pill-danger-bg: #FCEEEE;
+    --scrim: rgba(15,13,10,0.45);
+    --toast-bg: #1A1A1A;
+    --toast-text: #FAFAF9;
+    --tag-rec: #A7C7A0;
+    --tag: #D4B891;
+  }
+
+  body.dark {
+    --bg: #13110F;
+    --surface: #1C1A17;
+    --surface-2: #26231F;
+    --text: #F5F1EA;
+    --text-muted: #9A938A;
+    --text-soft: #6E6862;
+    --success: #A8C293;
+    --danger: #E89090;
+    --pill-danger-bg: #3A1818;
+    --scrim: rgba(0,0,0,0.55);
+    --toast-bg: #F5F1EA;
+    --toast-text: #13110F;
+  }
+
+  html, body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+    transition: background 200ms;
+  }
+  body.dark { background: #0A0908; }
+
+  .page { max-width: 1400px; margin: 0 auto; padding: 56px 32px 96px; }
+
+  .header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding-bottom: 32px; border-bottom: 1px solid var(--surface-2); margin-bottom: 40px;
+  }
+  .header h1 { font-size: 24px; font-weight: 700; letter-spacing: -0.025em; }
+  .header-meta { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+
+  .theme-toggle { display: flex; background: var(--surface); border-radius: 999px; padding: 3px; }
+  .theme-toggle button {
+    padding: 6px 14px; background: transparent; border: none; border-radius: 999px;
+    font-family: inherit; font-size: 12px; font-weight: 500; color: var(--text-muted);
+    cursor: pointer; letter-spacing: -0.005em;
+  }
+  .theme-toggle button.active { background: var(--text); color: var(--bg); }
+
+  .section { margin-bottom: 64px; }
+  .section-head {
+    display: flex; align-items: baseline; justify-content: space-between;
+    margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid var(--surface-2);
+  }
+  .section-title { font-size: 11px; font-weight: 600; color: var(--text-soft); text-transform: uppercase; letter-spacing: 0.08em; }
+  .section-count { font-size: 12px; color: var(--text-soft); }
+  .section-h2 { font-size: 28px; font-weight: 700; letter-spacing: -0.025em; margin-bottom: 8px; }
+  .section-desc { font-size: 14px; color: var(--text-muted); line-height: 1.5; max-width: 680px; margin-bottom: 28px; }
+  .section-desc b { color: var(--text); font-weight: 600; }
+  .kbd { font-size: 12px; background: var(--surface-2); border-radius: 5px; padding: 1px 6px; }
+
+  .phones { display: flex; flex-wrap: wrap; gap: 40px; }
+  .phone-wrap { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+  .phone-label { font-size: 13px; font-weight: 600; letter-spacing: -0.01em; }
+  .phone-sub { font-size: 11px; color: var(--text-muted); margin-top: -8px; max-width: 300px; text-align: center; line-height: 1.5; }
+  .opt-tag {
+    display: inline-block; font-size: 10px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
+    color: #1A1A1A; background: var(--tag); border-radius: 999px; padding: 3px 10px; margin-bottom: -4px;
+  }
+  .opt-tag.rec { background: var(--tag-rec); }
+
+  /* ---- phone frame (matches kebi-chat-clear-mockup) ---- */
+  .phone {
+    position: relative;
+    width: 300px; height: 600px;
+    background: var(--bg);
+    border-radius: 40px;
+    border: 10px solid #000;
+    overflow: hidden;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.18);
+    display: flex; flex-direction: column;
+  }
+  body.dark .phone { border-color: #2a2a2a; }
+
+  .status-bar {
+    height: 44px; display: flex; align-items: center; justify-content: space-between;
+    padding: 0 22px; font-size: 13px; font-weight: 600; color: var(--text); flex-shrink: 0;
+  }
+
+  /* ---- top bar ---- */
+  .top-bar {
+    padding: 6px 12px; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0;
+  }
+  .bar-side { display: flex; align-items: center; gap: 8px; }
+  .icon-btn {
+    width: 34px; height: 34px; border-radius: 50%; background: var(--surface);
+    display: flex; align-items: center; justify-content: center; border: none; cursor: pointer;
+  }
+  .icon-btn svg { width: 15px; height: 15px; stroke: var(--text); stroke-width: 1.8; fill: none; }
+  .icon-btn.more { gap: 2.5px; }
+  .icon-btn.more span { width: 3.5px; height: 3.5px; border-radius: 999px; background: var(--text); }
+  .title-pill {
+    background: var(--surface); border-radius: 999px; padding: 6px 12px 6px 6px;
+    display: flex; align-items: center; gap: 7px;
+    font-size: 12px; font-weight: 600; color: var(--text); letter-spacing: -0.01em;
+  }
+  .title-avatar {
+    width: 19px; height: 19px; border-radius: 5px; overflow: hidden;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .title-avatar svg { width: 16px; height: 16px; }
+
+  /* ---- mini transcript ---- */
+  .chat-area { flex: 1; padding: 6px 18px 12px; display: flex; flex-direction: column; gap: 16px; overflow: hidden; }
+  .turn { display: flex; flex-direction: column; gap: 4px; }
+  .turn.you { align-items: flex-end; text-align: right; }
+  .turn-meta {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 9px; font-weight: 600; color: var(--text-soft);
+    text-transform: uppercase; letter-spacing: 0.08em;
+  }
+  .turn.you .turn-meta { flex-direction: row-reverse; }
+  .turn-time { text-transform: none; letter-spacing: -0.005em; font-weight: 500; }
+  .turn-text { font-size: 13px; line-height: 1.5; color: var(--text); letter-spacing: -0.01em; max-width: 85%; }
+  .turn-text.muted { color: var(--text-muted); }
+  .reasoning-line { display: flex; align-items: center; gap: 6px; font-size: 10px; color: var(--text-muted); }
+  .reasoning-line .dot { width: 5px; height: 5px; border-radius: 50%; background: var(--success); }
+  .reasoning-line .chev { color: var(--text-soft); font-size: 8px; }
+
+  /* ---- composer ---- */
+  .editor-area { padding: 6px 18px 10px; flex-shrink: 0; }
+  .editor-placeholder { font-size: 13px; color: var(--text-soft); letter-spacing: -0.01em; }
+  .toolbar {
+    margin: 0 12px 10px; background: var(--surface); border-radius: 999px; padding: 9px 16px;
+    display: inline-flex; align-items: center; gap: 18px; align-self: flex-end; width: fit-content; flex-shrink: 0;
+  }
+  .toolbar svg { width: 14px; height: 14px; stroke: var(--text); stroke-width: 1.6; fill: none; }
+  .toolbar svg.soft { stroke: var(--text-soft); }
+  .home-bar { width: 100px; height: 4px; border-radius: 999px; background: var(--text); opacity: 0.85; margin: 0 auto 8px; flex-shrink: 0; }
+
+  /* ---- help page content ---- */
+  .page-area { flex: 1; padding: 8px 18px 12px; display: flex; flex-direction: column; gap: 16px; overflow: hidden; }
+  .page-eyebrow { font-size: 10px; font-weight: 600; color: var(--text-soft); text-transform: uppercase; letter-spacing: 0.08em; }
+  .page-hero { font-size: 24px; font-weight: 700; letter-spacing: -0.02em; margin-top: 2px; }
+  .page-lede { font-size: 12.5px; color: var(--text-muted); line-height: 1.5; letter-spacing: -0.005em; margin-top: 4px; }
+
+  .g-eyebrow { font-size: 10px; font-weight: 600; color: var(--text-soft); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 7px; }
+  .g-group { background: var(--surface); border-radius: 14px; overflow: hidden; }
+  .g-row { display: flex; align-items: center; gap: 11px; padding: 13px 14px; }
+  .g-row + .g-row { border-top: 1px solid var(--surface-2); }
+  .g-row .glyph { width: 22px; text-align: center; font-size: 17px; line-height: 1; flex-shrink: 0; }
+  .g-body { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+  .g-title { font-size: 14px; font-weight: 500; letter-spacing: -0.01em; }
+  .g-sub { font-size: 11px; color: var(--text-muted); margin-top: 1px; letter-spacing: -0.005em; line-height: 1.4; }
+  .g-chev { color: var(--text-soft); font-size: 14px; flex-shrink: 0; }
+  .page-foot { font-size: 10.5px; color: var(--text-soft); text-align: center; margin-top: auto; padding-bottom: 4px; letter-spacing: -0.005em; }
+
+  /* big cards (option c) */
+  .big-card { background: var(--surface); border-radius: 14px; padding: 15px 14px; display: flex; gap: 12px; align-items: flex-start; }
+  .big-emoji { font-size: 22px; line-height: 1.2; flex-shrink: 0; }
+  .big-body { flex: 1; }
+  .big-title { font-size: 15px; font-weight: 600; letter-spacing: -0.01em; }
+  .big-sub { font-size: 11.5px; color: var(--text-muted); margin-top: 2px; line-height: 1.45; letter-spacing: -0.005em; }
+
+  /* segmented chips (option b) */
+  .chip-row { display: flex; flex-wrap: wrap; gap: 7px; }
+  .chip {
+    font-size: 12px; font-weight: 500; letter-spacing: -0.005em; color: var(--text);
+    background: var(--surface); border-radius: 999px; padding: 7px 13px;
+  }
+  .chip.selected { background: var(--text); color: var(--bg); font-weight: 600; }
+
+  /* ---- form pieces ---- */
+  .quote-block {
+    background: var(--surface); border-radius: 14px; padding: 11px 13px;
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .quote-block.on-sheet .quote-turn .quote-text { color: var(--text-muted); }
+  .quote-turn { display: flex; gap: 8px; align-items: baseline; }
+  .quote-who {
+    font-size: 9px; font-weight: 700; color: var(--text-soft);
+    text-transform: uppercase; letter-spacing: 0.08em; flex-shrink: 0; width: 28px;
+  }
+  .quote-text {
+    font-size: 12px; line-height: 1.45; color: var(--text-muted); letter-spacing: -0.005em;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  }
+
+  .field {
+    background: var(--surface); border-radius: 14px; padding: 12px 13px;
+    min-height: 74px; font-size: 13.5px; line-height: 1.5; letter-spacing: -0.01em;
+  }
+  .field.short { min-height: 52px; }
+  .field .ph { color: var(--text-soft); }
+  .field .typed { color: var(--text); }
+  .caret { display: inline-block; width: 1.5px; height: 14px; background: var(--text); vertical-align: -2px; }
+
+  .attach-note {
+    display: flex; align-items: flex-start; gap: 7px;
+    font-size: 11px; color: var(--text-muted); line-height: 1.45; letter-spacing: -0.005em;
+    padding: 0 3px;
+  }
+  .attach-note svg { width: 12px; height: 12px; stroke: var(--text-muted); stroke-width: 1.8; fill: none; flex-shrink: 0; margin-top: 1px; }
+
+  .btn-primary {
+    display: flex; align-items: center; justify-content: center; gap: 7px;
+    background: var(--text); color: var(--bg); border-radius: 12px;
+    font-size: 14px; font-weight: 600; letter-spacing: -0.01em; padding: 13px;
+  }
+  .btn-primary svg { width: 14px; height: 14px; stroke: var(--bg); stroke-width: 2.2; fill: none; }
+  .btn-primary.disabled { opacity: 0.35; }
+
+  .form-label {
+    font-size: 11px; font-weight: 600; color: var(--text-soft);
+    text-transform: uppercase; letter-spacing: 0.08em; padding: 2px 3px 0;
+  }
+
+  /* ---- bottom sheet (forms open over the help page) ---- */
+  .sheet-scrim {
+    position: absolute; inset: 0; z-index: 5;
+    background: var(--scrim);
+    backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px);
+  }
+  .sheet {
+    position: absolute; left: 0; right: 0; bottom: 0; z-index: 6;
+    background: var(--bg); border-radius: 24px 24px 0 0;
+    padding: 10px 16px 16px; display: flex; flex-direction: column; gap: 12px;
+    box-shadow: 0 -16px 48px rgba(0,0,0,0.16);
+  }
+  .grabber { width: 36px; height: 4px; border-radius: 2px; background: var(--surface-2); margin: 0 auto 2px; }
+  .sheet-head { display: flex; align-items: center; gap: 11px; padding: 2px 4px 4px; }
+  .sheet-avatar {
+    width: 36px; height: 36px; border-radius: 9px; background: var(--surface-2);
+    display: flex; align-items: center; justify-content: center; font-size: 19px; line-height: 1; flex-shrink: 0;
+  }
+  .sheet-eyebrow { font-size: 10px; font-weight: 600; color: var(--text-soft); text-transform: uppercase; letter-spacing: 0.08em; }
+  .sheet-title { font-size: 18px; font-weight: 700; color: var(--text); letter-spacing: -0.02em; }
+
+  /* ---- toast ---- */
+  .toast {
+    position: absolute; top: 54px; left: 50%; transform: translateX(-50%); z-index: 8;
+    background: var(--toast-bg); color: var(--toast-text);
+    border-radius: 14px; padding: 9px 14px;
+    display: flex; align-items: center; gap: 9px;
+    font-size: 13px; font-weight: 500; letter-spacing: -0.01em; white-space: nowrap;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.18), 0 2px 6px rgba(0,0,0,0.12);
+  }
+  .toast svg { width: 14px; height: 14px; stroke: var(--toast-text); stroke-width: 2; fill: none; flex-shrink: 0; }
+
+  .caption {
+    font-size: 13px; color: var(--text-muted); line-height: 1.6; max-width: 680px;
+    margin-top: 8px; padding: 16px 18px; background: var(--surface); border-radius: 12px;
+  }
+  .caption b { color: var(--text); font-weight: 600; }
+
+  .tap-ring { position: absolute; z-index: 9; width: 46px; height: 46px; border-radius: 50%;
+    border: 2px solid var(--danger); opacity: 0.7; pointer-events: none; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="header">
+    <div>
+      <h1>help page</h1>
+      <div class="header-meta">? button → help page (weird answers · bugs · contact) · form sheets · design options</div>
+    </div>
+    <div class="theme-toggle">
+      <button class="active" data-theme="light">light</button>
+      <button data-theme="dark">dark</button>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       SECTION 1 — ENTRY
+       ============================================================ -->
+  <div class="section">
+    <div class="section-head">
+      <span class="section-title">1 · entry — the ? button</span>
+      <span class="section-count">1 state</span>
+    </div>
+    <h2 class="section-h2">? in the chat top bar → the help page</h2>
+    <p class="section-desc">
+      a <b>? bubble button</b> sits beside the ••• in the chat top bar — same 34px circle chrome,
+      same visibility rule (renders once the chat has turns). tapping it <b>pushes the help page</b>
+      as a full screen (standard 240ms slide), chat state stays intact behind it. a
+      <b>help row in settings</b> opens the same page for people who go looking there.
+    </p>
+
+    <div class="phones">
+      <div class="phone-wrap">
+        <div class="phone">
+          <div class="status-bar"><span>9:41</span><span>􀙇 􀛨 􀋊</span></div>
+          <div class="top-bar">
+            <button class="icon-btn" aria-label="close">
+              <svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
+            </button>
+            <div class="title-pill">
+              <div class="title-avatar">
+                <svg viewBox="0 0 64 64"><ellipse cx="32" cy="38" rx="20" ry="20" fill="#D4B891"/><ellipse cx="32" cy="42" rx="13" ry="13" fill="#F5EBD3"/><circle cx="25" cy="30" r="3.5" fill="white"/><circle cx="39" cy="30" r="3.5" fill="white"/><circle cx="25" cy="30" r="1.7" fill="#1A1A1A"/><circle cx="39" cy="30" r="1.7" fill="#1A1A1A"/><path d="M30 33 L34 33 L32 36 Z" fill="#C87A4A"/></svg>
+              </div>
+              <span>kebi</span>
+            </div>
+            <div class="bar-side">
+              <button class="icon-btn" aria-label="help">
+                <svg viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/><path d="M9.9 9.6a2.3 2.3 0 014.5.7c0 1.5-2.2 2-2.2 3"/><line x1="12.2" y1="16" x2="12.2" y2="16.01"/></svg>
+              </button>
+              <button class="icon-btn more" aria-label="more"><span></span><span></span><span></span></button>
+            </div>
+          </div>
+          <div class="tap-ring" style="top: 47px; right: 48px;"></div>
+
+          <div class="chat-area">
+            <div class="turn you">
+              <div class="turn-meta"><span>you</span><span class="turn-time">9:38 pm</span></div>
+              <div class="turn-text">quiet cafe to work from, near shibuya</div>
+            </div>
+            <div class="turn">
+              <div class="turn-meta"><span>kebi</span><span class="turn-time">9:39 pm</span></div>
+              <div class="reasoning-line"><span class="dot"></span>done · 4 steps · 1.8s <span class="chev">▸</span></div>
+              <div class="turn-text muted">Streamer Coffee — big tables, wifi, gets loud after 5.</div>
+            </div>
+          </div>
+
+          <div class="editor-area"><span class="editor-placeholder">tell me what you want...</span></div>
+          <div class="toolbar">
+            <svg viewBox="0 0 24 24"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10v2a7 7 0 0014 0v-2M12 19v3"/></svg>
+            <svg class="soft" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          </div>
+          <div class="home-bar"></div>
+        </div>
+        <div class="phone-label">? beside the •••</div>
+        <div class="phone-sub">appears with the ••• once the transcript has turns · tap → help page pushes in · from settings, a "help" row opens the same page</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       SECTION 2 — THE HELP PAGE (3 layout options)
+       ============================================================ -->
+  <div class="section">
+    <div class="section-head">
+      <span class="section-title">2 · the help page</span>
+      <span class="section-count">3 options</span>
+    </div>
+    <h2 class="section-h2">one page: weird answers, bugs, contact</h2>
+    <p class="section-desc">
+      the page carries the three jobs: <b>kebi got it wrong</b> (report a weird answer — the
+      taste-model gold), <b>something broke</b> (app bug), and <b>message us</b> (contact).
+      top bar is the standard back arrow, hero follows the settings pattern
+      (eyebrow + big lowercase title). options differ in how the jobs are laid out.
+    </p>
+
+    <div class="phones">
+
+      <!-- OPTION A — grouped rows (settings language) -->
+      <div class="phone-wrap">
+        <span class="opt-tag rec">option a · rec</span>
+        <div class="phone">
+          <div class="status-bar"><span>9:41</span><span>􀙇 􀛨 􀋊</span></div>
+          <div class="top-bar">
+            <button class="icon-btn"><svg viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"/></svg></button>
+            <div style="width:34px"></div>
+          </div>
+
+          <div class="page-area">
+            <div>
+              <div class="page-eyebrow">help</div>
+              <div class="page-hero">what's up?</div>
+            </div>
+
+            <div>
+              <div class="g-eyebrow">something's off</div>
+              <div class="g-group">
+                <div class="g-row">
+                  <span class="glyph">🤔</span>
+                  <div class="g-body"><span class="g-title">kebi got it wrong</span><span class="g-sub">a weird answer? show us what you expected</span></div>
+                  <span class="g-chev">›</span>
+                </div>
+                <div class="g-row">
+                  <span class="glyph">🐛</span>
+                  <div class="g-body"><span class="g-title">something broke</span><span class="g-sub">crashes, glitches, dead buttons</span></div>
+                  <span class="g-chev">›</span>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <div class="g-eyebrow">talk to us</div>
+              <div class="g-group">
+                <div class="g-row">
+                  <span class="glyph">💬</span>
+                  <div class="g-body"><span class="g-title">message us</span><span class="g-sub">questions, ideas, anything else</span></div>
+                  <span class="g-chev">›</span>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <div class="g-eyebrow">how kebi works</div>
+              <div class="g-group">
+                <div class="g-row">
+                  <span class="glyph">🧠</span>
+                  <div class="g-body"><span class="g-title">how kebi learns your taste</span></div>
+                  <span class="g-chev">›</span>
+                </div>
+                <div class="g-row">
+                  <span class="glyph">🔖</span>
+                  <div class="g-body"><span class="g-title">what happens when you save a place</span></div>
+                  <span class="g-chev">›</span>
+                </div>
+                <div class="g-row">
+                  <span class="glyph">🔒</span>
+                  <div class="g-body"><span class="g-title">your data, what kebi keeps</span></div>
+                  <span class="g-chev">›</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="page-foot">kebi 0.4.3 · we read everything</div>
+          </div>
+          <div class="home-bar"></div>
+        </div>
+        <div class="phone-label">a · grouped rows</div>
+        <div class="phone-sub">settings language — three groups: something's off, talk to us, how kebi works (tiny starter faq, cuttable) · rows open form sheets over the page</div>
+      </div>
+
+      <!-- OPTION B — forms inline, chip-switched -->
+      <div class="phone-wrap">
+        <span class="opt-tag">option b</span>
+        <div class="phone">
+          <div class="status-bar"><span>9:41</span><span>􀙇 􀛨 􀋊</span></div>
+          <div class="top-bar">
+            <button class="icon-btn"><svg viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"/></svg></button>
+            <div style="width:34px"></div>
+          </div>
+
+          <div class="page-area">
+            <div>
+              <div class="page-eyebrow">help</div>
+              <div class="page-hero">what's up?</div>
+            </div>
+
+            <div class="chip-row">
+              <span class="chip selected">🤔 wrong answer</span>
+              <span class="chip">🐛 bug</span>
+              <span class="chip">💬 message</span>
+            </div>
+
+            <div class="quote-block">
+              <div class="quote-turn"><span class="quote-who">you</span><span class="quote-text">quiet cafe to work from, near shibuya</span></div>
+              <div class="quote-turn"><span class="quote-who">kebi</span><span class="quote-text">Streamer Coffee — big tables, wifi, gets loud after 5.</span></div>
+            </div>
+
+            <div class="field">
+              <span class="ph">what did you expect instead?</span>
+            </div>
+
+            <div class="attach-note">
+              <svg viewBox="0 0 24 24"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></svg>
+              this report includes the conversation and kebi's reasoning, so we can see what it saw
+            </div>
+
+            <div class="btn-primary disabled">
+              <svg viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+              send it
+            </div>
+
+            <div class="page-foot">kebi 0.4.3 · we read everything</div>
+          </div>
+          <div class="home-bar"></div>
+        </div>
+        <div class="phone-label">b · form on the page</div>
+        <div class="phone-sub">no second hop — chips switch the form (wrong answer / bug / message), the report form is already open when the page lands · fastest to a sent report</div>
+      </div>
+
+      <!-- OPTION C — big cards -->
+      <div class="phone-wrap">
+        <span class="opt-tag">option c</span>
+        <div class="phone">
+          <div class="status-bar"><span>9:41</span><span>􀙇 􀛨 􀋊</span></div>
+          <div class="top-bar">
+            <button class="icon-btn"><svg viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"/></svg></button>
+            <div style="width:34px"></div>
+          </div>
+
+          <div class="page-area">
+            <div>
+              <div class="page-eyebrow">help</div>
+              <div class="page-hero">what's up?</div>
+              <div class="page-lede">tell us what happened. every report makes kebi sharper.</div>
+            </div>
+
+            <div class="big-card">
+              <span class="big-emoji">🤔</span>
+              <div class="big-body">
+                <div class="big-title">kebi got it wrong</div>
+                <div class="big-sub">a weird pick, missed the vibe, wrong neighborhood. show us what you expected instead.</div>
+              </div>
+              <span class="g-chev">›</span>
+            </div>
+
+            <div class="big-card">
+              <span class="big-emoji">🐛</span>
+              <div class="big-body">
+                <div class="big-title">something broke</div>
+                <div class="big-sub">crashes, glitches, buttons that do nothing.</div>
+              </div>
+              <span class="g-chev">›</span>
+            </div>
+
+            <div class="big-card">
+              <span class="big-emoji">💬</span>
+              <div class="big-body">
+                <div class="big-title">message us</div>
+                <div class="big-sub">questions, ideas, anything else on your mind.</div>
+              </div>
+              <span class="g-chev">›</span>
+            </div>
+
+            <div class="page-foot">kebi 0.4.3 · we read everything</div>
+          </div>
+          <div class="home-bar"></div>
+        </div>
+        <div class="phone-label">c · big cards</div>
+        <div class="phone-sub">three fat tap targets with a line of voice each — warmer, more "page-like" than settings rows · same form sheets behind them · no faq</div>
+      </div>
+
+    </div>
+
+    <div class="caption">
+      <b>read.</b> option a scales — the "how kebi works" group grows into a real faq later
+      without redesign, and the row language matches settings exactly. option b is the shortest
+      path to a report (the form is just there) but the page can't grow and mixing three forms
+      behind chips gets cramped. option c reads the friendliest and makes the three jobs
+      unmissable, but is a dead end once you want faq content. a and c can share everything
+      behind the first tap.
+    </div>
+  </div>
+
+  <!-- ============================================================
+       SECTION 3 — THE FORM SHEETS + AFTER SEND
+       ============================================================ -->
+  <div class="section">
+    <div class="section-head">
+      <span class="section-title">3 · the forms · after send</span>
+      <span class="section-count">3 states</span>
+    </div>
+    <h2 class="section-h2">expected vs. got, with the receipts attached</h2>
+    <p class="section-desc">
+      tapping a row opens a <b>form sheet over the help page</b> (grabber, scrim, spring —
+      save-sheet language). the report form quotes the <b>latest exchange</b> so the user sees
+      exactly what they're reporting, and auto-attaches the conversation + reasoning trace —
+      <b>always disclosed</b> via the paperclip line. bug and message share one lighter anatomy.
+    </p>
+
+    <div class="phones">
+
+      <!-- report form -->
+      <div class="phone-wrap">
+        <div class="phone">
+          <div class="status-bar"><span>9:41</span><span>􀙇 􀛨 􀋊</span></div>
+          <div class="page-area" style="opacity:.35">
+            <div>
+              <div class="page-eyebrow">help</div>
+              <div class="page-hero">what's up?</div>
+            </div>
+          </div>
+
+          <div class="sheet-scrim"></div>
+          <div class="sheet">
+            <div class="grabber"></div>
+            <div class="sheet-head">
+              <div class="sheet-avatar">🤔</div>
+              <div><div class="sheet-eyebrow">kebi got it wrong</div><div class="sheet-title">what did you expect?</div></div>
+            </div>
+
+            <div class="quote-block on-sheet">
+              <div class="quote-turn"><span class="quote-who">you</span><span class="quote-text">quiet cafe to work from, near shibuya</span></div>
+              <div class="quote-turn"><span class="quote-who">kebi</span><span class="quote-text">Streamer Coffee — big tables, wifi, gets loud after 5.</span></div>
+            </div>
+
+            <div class="chip-row">
+              <span class="chip selected">wrong place</span>
+              <span class="chip">didn't get me</span>
+              <span class="chip">missing info</span>
+            </div>
+
+            <div class="field">
+              <span class="typed">somewhere actually quiet. this one's a zoo after lunch</span><span class="caret"></span>
+            </div>
+
+            <div class="attach-note">
+              <svg viewBox="0 0 24 24"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></svg>
+              this report includes the conversation and kebi's reasoning, so we can see what it saw
+            </div>
+
+            <div class="btn-primary">
+              <svg viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+              send it
+            </div>
+            <div class="home-bar" style="margin: 4px auto 0;"></div>
+          </div>
+        </div>
+        <div class="phone-label">report form · "kebi got it wrong"</div>
+        <div class="phone-sub">quoted latest exchange · one tap category · one field · paperclip disclosure · send disabled until a chip or the field has something</div>
+      </div>
+
+      <!-- bug / message form -->
+      <div class="phone-wrap">
+        <div class="phone">
+          <div class="status-bar"><span>9:41</span><span>􀙇 􀛨 􀋊</span></div>
+          <div class="page-area" style="opacity:.35">
+            <div>
+              <div class="page-eyebrow">help</div>
+              <div class="page-hero">what's up?</div>
+            </div>
+          </div>
+
+          <div class="sheet-scrim"></div>
+          <div class="sheet">
+            <div class="grabber"></div>
+            <div class="sheet-head">
+              <div class="sheet-avatar">🐛</div>
+              <div><div class="sheet-eyebrow">something broke</div><div class="sheet-title">what happened?</div></div>
+            </div>
+
+            <div class="field">
+              <span class="ph">it crashed when...</span>
+            </div>
+
+            <div class="attach-note">
+              <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+              includes app version and device so we can reproduce it · replies go to your account email
+            </div>
+
+            <div class="btn-primary disabled">
+              <svg viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+              send it
+            </div>
+            <div class="home-bar" style="margin: 4px auto 0;"></div>
+          </div>
+        </div>
+        <div class="phone-label">bug form · message us is identical</div>
+        <div class="phone-sub">one field, no quote, no chips · message us swaps the eyebrow (support / talk to us) and placeholder · nothing from the chat is attached on these two</div>
+      </div>
+
+      <!-- after send -->
+      <div class="phone-wrap">
+        <div class="phone">
+          <div class="status-bar"><span>9:41</span><span>􀙇 􀛨 􀋊</span></div>
+          <div class="top-bar">
+            <button class="icon-btn"><svg viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"/></svg></button>
+            <div style="width:34px"></div>
+          </div>
+
+          <div class="toast">
+            <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+            sent. this is how kebi gets better
+          </div>
+
+          <div class="page-area">
+            <div>
+              <div class="page-eyebrow">help</div>
+              <div class="page-hero">what's up?</div>
+            </div>
+
+            <div>
+              <div class="g-eyebrow">something's off</div>
+              <div class="g-group">
+                <div class="g-row">
+                  <span class="glyph">🤔</span>
+                  <div class="g-body"><span class="g-title">kebi got it wrong</span><span class="g-sub">a weird answer? show us what you expected</span></div>
+                  <span class="g-chev">›</span>
+                </div>
+                <div class="g-row">
+                  <span class="glyph">🐛</span>
+                  <div class="g-body"><span class="g-title">something broke</span><span class="g-sub">crashes, glitches, dead buttons</span></div>
+                  <span class="g-chev">›</span>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <div class="g-eyebrow">talk to us</div>
+              <div class="g-group">
+                <div class="g-row">
+                  <span class="glyph">💬</span>
+                  <div class="g-body"><span class="g-title">message us</span><span class="g-sub">questions, ideas, anything else</span></div>
+                  <span class="g-chev">›</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="page-foot">kebi 0.4.3 · we read everything</div>
+          </div>
+          <div class="home-bar"></div>
+        </div>
+        <div class="phone-label">after send</div>
+        <div class="phone-sub">sheet dismisses on success · confirmation toast, 3s · success haptic fires on the send tap, not the toast · back arrow returns to the chat</div>
+      </div>
+
+    </div>
+
+    <div class="caption">
+      <b>backend, for the record.</b> all three forms post to one gateway endpoint
+      (<span class="kbd">POST /api/v1/feedback</span>) with a <span class="kbd">kind</span> of
+      <span class="kbd">wrong_answer</span> · <span class="kbd">bug</span> · <span class="kbd">message</span>.
+      nestjs validates, stamps the verified user id + account email + app version, and forwards to a
+      <b>slack webhook</b> — no database, no fastapi, kebi's brain never hears about it.
+      only <span class="kbd">wrong_answer</span> attaches the transcript turns with reasoning steps
+      and tool results. rate-limited like the other gateway routes.
+    </div>
+  </div>
+
+</div>
+
+<script>
+  document.querySelectorAll('.theme-toggle button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.theme-toggle button').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      document.body.classList.toggle('dark', btn.dataset.theme === 'dark');
+    });
+  });
+</script>
+</body>
+</html>

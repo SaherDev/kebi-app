@@ -18,6 +18,7 @@ import { UserSettingsEntity } from '../database/entities/user-settings.entity';
 import { DatabaseModule } from '../database/database.module';
 import { ChatModule } from '../chat/chat.module';
 import { ExtractModule } from '../extract/extract.module';
+import { FeedbackModule } from '../feedback/feedback.module';
 import { HomeModule } from '../home/home.module';
 import { KnowledgeModule } from '../knowledge/knowledge.module';
 import { RateLimitModule } from '../rate-limit/rate-limit.module';
@@ -78,6 +79,7 @@ function resolveSynchronize(config: ConfigService): boolean {
     AuthModule,
     ChatModule,
     ExtractModule,
+    FeedbackModule,
     HomeModule,
     KnowledgeModule,
     RateLimitModule,

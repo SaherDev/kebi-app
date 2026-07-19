@@ -70,7 +70,9 @@ type Action =
   | { type: 'FINISH'; kebiKey: string; toolCallsUsed: number; now: number }
   | { type: 'STOP'; kebiKey: string; now: number }
   | { type: 'FAIL'; kebiKey: string; detail: string }
-  | { type: 'TOGGLE_COLLAPSE'; kebiKey: string; collapsed: boolean };
+  | { type: 'TOGGLE_COLLAPSE'; kebiKey: string; collapsed: boolean }
+  | { type: 'CLEAR' }
+  | { type: 'RESTORE'; turns: ChatTurn[] };
 
 /** Map an SSE reasoning step onto the presentational shape ReasoningBlock wants. */
 function toBlockStep(step: SseReasoningStep): ReasoningBlockStep {
@@ -168,6 +170,14 @@ function reducer(state: TranscriptState, action: Action): TranscriptState {
     case 'TOGGLE_COLLAPSE':
       return mapKebi(state, action.kebiKey, (turn) => ({ ...turn, collapsed: action.collapsed }));
 
+    case 'CLEAR':
+      return { turns: [] };
+
+    case 'RESTORE':
+      // Undo of a clear — put the snapshot back BEFORE any turns sent since
+      // (keys never collide: the provider's key counter isn't reset by CLEAR).
+      return { turns: [...action.turns, ...state.turns] };
+
     default:
       return state;
   }
@@ -185,6 +195,10 @@ export interface ChatTranscriptValue {
   stopTurn: (kebiKey: string) => void;
   failTurn: (kebiKey: string, detail: string) => void;
   toggleCollapse: (kebiKey: string, collapsed: boolean) => void;
+  /** Empty the transcript (clear chat history). Snapshot `turns` first for undo. */
+  clearTranscript: () => void;
+  /** Undo a clear — prepends the snapshot before any turns sent since. */
+  restoreTranscript: (turns: ChatTurn[]) => void;
 }
 
 const fallback: ChatTranscriptValue = {
@@ -197,6 +211,8 @@ const fallback: ChatTranscriptValue = {
   stopTurn: () => undefined,
   failTurn: () => undefined,
   toggleCollapse: () => undefined,
+  clearTranscript: () => undefined,
+  restoreTranscript: () => undefined,
 };
 
 const ChatTranscriptContext = createContext<ChatTranscriptValue>(fallback);
@@ -242,6 +258,14 @@ export function ChatTranscriptProvider({ children }: { children: ReactNode }) {
     dispatch({ type: 'TOGGLE_COLLAPSE', kebiKey, collapsed });
   }, []);
 
+  const clearTranscript = useCallback(() => {
+    dispatch({ type: 'CLEAR' });
+  }, []);
+
+  const restoreTranscript = useCallback((turns: ChatTurn[]) => {
+    dispatch({ type: 'RESTORE', turns });
+  }, []);
+
   const value = useMemo<ChatTranscriptValue>(
     () => ({
       turns: state.turns,
@@ -253,8 +277,10 @@ export function ChatTranscriptProvider({ children }: { children: ReactNode }) {
       stopTurn,
       failTurn,
       toggleCollapse,
+      clearTranscript,
+      restoreTranscript,
     }),
-    [state.turns, startTurn, upsertStep, setMessage, addToolResult, finishTurn, stopTurn, failTurn, toggleCollapse],
+    [state.turns, startTurn, upsertStep, setMessage, addToolResult, finishTurn, stopTurn, failTurn, toggleCollapse, clearTranscript, restoreTranscript],
   );
 
   return <ChatTranscriptContext.Provider value={value}>{children}</ChatTranscriptContext.Provider>;

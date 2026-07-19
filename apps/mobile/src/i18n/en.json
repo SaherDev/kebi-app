@@ -23,7 +23,8 @@
     "settings": "settings",
     "plans": "plans",
     "billing": "billing",
-    "chat": "chat"
+    "chat": "chat",
+    "help": "help"
   },
   "home": {
     "eyebrow": "kebi",
@@ -185,6 +186,13 @@
     "thinking": "thinking",
     "thought": "done",
     "interrupted": "interrupted",
+    "menu": {
+      "thisChat": "this chat",
+      "clear": "clear this chat",
+      "clearSub": "wipes the conversation on screen",
+      "cleared": "chat cleared",
+      "undo": "undo"
+    },
     "placeCard": {
       "savedByYou": "you saved this",
       "goodPick": "good pick",
@@ -203,7 +211,8 @@
         "retry": "retry",
         "error": "couldn't do that — try again"
       }
-    }
+    },
+    "help": "help"
   },
   "save": {
     "eyebrow": "save",
@@ -257,7 +266,10 @@
       "nameFailed": "couldn't save that — try again",
       "nuked": "your data's gone",
       "nukeFailed": "couldn't nuke that — try again"
-    }
+    },
+    "help": "help",
+    "rowHelp": "help",
+    "rowHelpSub": "weird answers, bugs, talk to us"
   },
   "plans": {
     "eyebrow": "plans",
@@ -354,5 +366,49 @@
     "errExpired": "code expired — tap resend",
     "errTooMany": "too many tries — wait a minute",
     "errNetwork": "couldn't reach us — try again"
+  },
+  "help": {
+    "eyebrow": "help",
+    "hero": "what's up?",
+    "groupIssues": "something's off",
+    "groupTalk": "talk to us",
+    "rowWrong": "kebi got it wrong",
+    "rowWrongSub": "a weird answer? show us what you expected",
+    "rowSave": "a save went wrong",
+    "rowSaveSub": "shared a link and the place came out wrong, or not at all",
+    "rowBug": "something broke",
+    "rowBugSub": "crashes, glitches, dead buttons",
+    "rowMessage": "message us",
+    "rowMessageSub": "questions, ideas, anything else",
+    "footerVersion": "kebi v{{version}}",
+    "send": "send it",
+    "quoteYou": "you",
+    "quoteKebi": "kebi",
+    "quoteSent": "sent",
+    "quoteGot": "got",
+    "sheetWrongEyebrow": "kebi got it wrong",
+    "sheetWrongTitle": "what did you expect?",
+    "chipWrongPlace": "wrong place",
+    "chipDidntGetMe": "didn't get me",
+    "chipMissingInfo": "missing info",
+    "sheetWrongPlaceholder": "i wanted...",
+    "sheetWrongNote": "this report includes the conversation and kebi's reasoning, so we can see what it saw",
+    "sheetWrongNoteEmpty": "no recent conversation to attach. tell us what happened",
+    "sheetSaveEyebrow": "a save went wrong",
+    "sheetSaveTitle": "what happened?",
+    "sheetSaveInputPlaceholder": "paste the link or what you typed...",
+    "sheetSavePlaceholder": "i shared a tiktok link and...",
+    "sheetSaveNote": "includes your recent saves and what kebi made of them, so we can see what went wrong",
+    "sheetSaveNoteEmpty": "no recent saves to attach. paste the link and tell us what happened",
+    "sheetBugEyebrow": "something broke",
+    "sheetBugTitle": "what happened?",
+    "sheetBugPlaceholder": "it crashed when...",
+    "sheetBugNote": "includes app version and device so we can reproduce it. replies go to your account email",
+    "sheetMessageEyebrow": "talk to us",
+    "sheetMessageTitle": "what's on your mind?",
+    "sheetMessagePlaceholder": "a question, an idea, anything else...",
+    "sheetMessageNote": "goes straight to the team. replies go to your account email",
+    "toastSent": "sent. this is how kebi gets better",
+    "toastError": "couldn't send — try again"
   }
 }

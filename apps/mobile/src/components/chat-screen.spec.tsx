@@ -2,7 +2,18 @@ import { render, fireEvent, waitFor } from '@testing-library/react-native';
 import type { SseEvent } from '@kebi-app/shared';
 import { ChatScreen } from './chat-screen';
 import { ChatTranscriptProvider } from './chat-transcript-context';
+import { ToastProvider } from './toast-context';
 import { streamChat } from '../api/chat';
+import { deleteUserData } from '../api/user-data';
+
+// A chainable no-op so the ActionSheet's `Gesture.Pan().activeOffsetY()...`
+// chain works (same pattern as save-sheet.spec).
+const mockChain = (): unknown => new Proxy({}, { get: () => () => mockChain() });
+jest.mock('react-native-gesture-handler', () => ({
+  GestureHandlerRootView: (p: { children: unknown }) => p.children,
+  GestureDetector: (p: { children: unknown }) => p.children,
+  Gesture: { Pan: () => mockChain() },
+}));
 
 // streamChat is replaced per test with a scripted frame sequence. The factory
 // returns a bare jest.fn() (no out-of-scope refs, per jest's hoist rule); each
@@ -10,9 +21,17 @@ import { streamChat } from '../api/chat';
 jest.mock('../api/chat', () => ({ streamChat: jest.fn() }));
 // Avoid the real api client (createApiClient throws without EXPO_PUBLIC_API_URL).
 jest.mock('../api/hooks', () => ({ useApiClient: () => ({}) }));
+// The ? help button navigates via the route graph — mock the router surface.
+const mockPush = jest.fn();
+jest.mock('expo-router', () => ({
+  useRouter: () => ({ push: mockPush, back: jest.fn() }),
+}));
 jest.mock('../lib/location', () => ({ getDeviceLocation: async () => null }));
+// The clear-history server wipe (scope=chat_history) — asserted, never sent.
+jest.mock('../api/user-data', () => ({ deleteUserData: jest.fn(async () => undefined) }));
 
 const mockedStreamChat = streamChat as jest.MockedFunction<typeof streamChat>;
+const mockedDeleteUserData = deleteUserData as jest.MockedFunction<typeof deleteUserData>;
 
 const frame = (type: SseEvent['type'], data: unknown): SseEvent => ({ type, data } as SseEvent);
 
@@ -61,11 +80,13 @@ const researchFrame = (over: Record<string, unknown> = {}) =>
     },
   });
 
-function renderChat() {
+function renderChat(onClose: () => void = () => undefined) {
   const utils = render(
-    <ChatTranscriptProvider>
-      <ChatScreen onClose={() => undefined} />
-    </ChatTranscriptProvider>,
+    <ToastProvider>
+      <ChatTranscriptProvider>
+        <ChatScreen onClose={onClose} />
+      </ChatTranscriptProvider>
+    </ToastProvider>,
   );
   const input = utils.getByPlaceholderText('tell me what you want...');
   const submit = (text: string) => {
@@ -76,7 +97,11 @@ function renderChat() {
 }
 
 describe('ChatScreen', () => {
-  beforeEach(() => mockedStreamChat.mockReset());
+  beforeEach(() => {
+    mockedStreamChat.mockReset();
+    mockedDeleteUserData.mockClear();
+    mockPush.mockClear();
+  });
 
   it('renders the user turn, streamed steps, message, and a place skeleton', async () => {
     scriptStream([
@@ -309,6 +334,93 @@ describe('ChatScreen', () => {
       </ChatTranscriptProvider>,
     );
     expect(mockedStreamChat).toHaveBeenCalledTimes(1);
+  });
+
+  it('clearing from the ••• empties the chat', async () => {
+    scriptStream([frame('message', { content: 'hey saher' }), frame('done', { tool_calls_used: 0 })]);
+    const { submit, getByText, getByLabelText, queryByText } = renderChat();
+
+    // Both top-bar buttons render even on an empty chat.
+    expect(getByLabelText('more')).toBeTruthy();
+    expect(getByLabelText('help')).toBeTruthy();
+    submit('hey');
+    await waitFor(() => expect(getByText('hey saher')).toBeTruthy());
+
+    // Fake timers around the clear so the scheduled server wipe and toast
+    // dismissal don't outlive the test (clearing is a synchronous dispatch).
+    jest.useFakeTimers();
+    fireEvent.press(getByLabelText('more'));
+    fireEvent.press(getByText('clear this chat'));
+
+    expect(queryByText('hey saher')).toBeNull();
+    expect(queryByText('hey')).toBeNull();
+    expect(getByText('chat cleared')).toBeTruthy(); // toast with undo
+    jest.clearAllTimers();
+    jest.useRealTimers();
+  });
+
+  it('the ? is always available and closes the chat then pushes /help', () => {
+    const onClose = jest.fn();
+    const { getByLabelText } = renderChat(onClose);
+
+    // Works on an empty chat too — help never hides.
+    fireEvent.press(getByLabelText('help'));
+    // Chat is an overlay above the router — it must collapse before the push.
+    expect(onClose).toHaveBeenCalledTimes(1);
+    expect(mockPush).toHaveBeenCalledWith('/help');
+  });
+
+  it('undo on the cleared toast restores the transcript', async () => {
+    scriptStream([frame('message', { content: 'hey saher' }), frame('done', { tool_calls_used: 0 })]);
+    const { submit, getByText, getByLabelText, queryByText } = renderChat();
+
+    submit('hey');
+    await waitFor(() => expect(getByText('hey saher')).toBeTruthy());
+    jest.useFakeTimers();
+    fireEvent.press(getByLabelText('more'));
+    fireEvent.press(getByText('clear this chat'));
+    expect(queryByText('hey saher')).toBeNull();
+
+    fireEvent.press(getByLabelText('undo'));
+    expect(getByText('hey saher')).toBeTruthy();
+    expect(getByText('hey')).toBeTruthy();
+    jest.clearAllTimers();
+    jest.useRealTimers();
+  });
+
+  it('wipes kebi conversation memory once the undo window closes', async () => {
+    scriptStream([frame('message', { content: 'hey saher' }), frame('done', { tool_calls_used: 0 })]);
+    const { submit, getByText, getByLabelText } = renderChat();
+    submit('hey');
+    await waitFor(() => expect(getByText('hey saher')).toBeTruthy());
+
+    // Fake timers from here so the 5s undo window can be fast-forwarded.
+    jest.useFakeTimers();
+    fireEvent.press(getByLabelText('more'));
+    fireEvent.press(getByText('clear this chat'));
+    expect(mockedDeleteUserData).not.toHaveBeenCalled(); // not before the window closes
+
+    jest.advanceTimersByTime(5000);
+    expect(mockedDeleteUserData).toHaveBeenCalledWith(expect.anything(), ['chat_history']);
+    jest.clearAllTimers();
+    jest.useRealTimers();
+  });
+
+  it('undo cancels the server wipe', async () => {
+    scriptStream([frame('message', { content: 'hey saher' }), frame('done', { tool_calls_used: 0 })]);
+    const { submit, getByText, getByLabelText } = renderChat();
+    submit('hey');
+    await waitFor(() => expect(getByText('hey saher')).toBeTruthy());
+
+    jest.useFakeTimers();
+    fireEvent.press(getByLabelText('more'));
+    fireEvent.press(getByText('clear this chat'));
+    fireEvent.press(getByLabelText('undo'));
+
+    jest.advanceTimersByTime(5000);
+    expect(mockedDeleteUserData).not.toHaveBeenCalled();
+    jest.clearAllTimers();
+    jest.useRealTimers();
   });
 
   it('shows the rate-limit message when the gateway returns 429', async () => {
