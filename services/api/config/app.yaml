@@ -54,6 +54,12 @@ rate_limits:
       tool_calls_per_day: 200
       turns_per_session: 30
 
+# In-app feedback forwarding to Notion (ADR-051). Credentials are secrets
+# (NOTION_FEEDBACK_TOKEN / NOTION_FEEDBACK_DATABASE_ID in .env.local).
+feedback:
+  max_per_hour: 5 # per-user submission cap (in-memory)
+  notion_timeout_ms: 10000
+
 # Plan-tier capabilities forwarded to kebi as X-Gateway-* headers (ADR-112).
 # The gateway owns plans/billing; kebi enforces these. Repricing or renaming a
 # tier is a change here only — kebi never sees the plan name. Booleans fail
