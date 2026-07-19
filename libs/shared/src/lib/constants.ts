@@ -20,3 +20,10 @@ export const PLAN_TIERS: Record<PlanTier, PlanTierMeta> = {
   explorer: { emoji: '🧭', label: 'explorer', price: '$5/mo' },
   local_legend: { emoji: '🌟', label: 'local legend', price: '$10/mo' },
 };
+
+/**
+ * How many insider notes the place page shows before folding the rest behind
+ * "show all N notes" (kebi-place-claims-v2.html). Claims arrive strongest-first
+ * from kebi, so the preview is the best ones.
+ */
+export const PLACE_CLAIMS_PREVIEW_COUNT = 3;

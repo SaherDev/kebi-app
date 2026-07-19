@@ -7,11 +7,13 @@ import type {
   ConsultEmptyReason,
   ConsultResult as ConsultResultContract,
   ConsultTool,
+  ConsultToolResult as ToolResultContract,
   ErrorResponseData as ErrorResponseDataContract,
   PlaceCore as PlaceCoreContract,
   ReasoningStep as ReasoningStepContract,
-  ToolResult as ToolResultContract,
+  ToolResult as ToolResultUnionContract,
 } from '@kebi-app/shared';
+import { CONSULT_TOOLS } from '@kebi-app/shared';
 import { PlaceCoreSchema } from './place-core';
 
 /**
@@ -102,7 +104,11 @@ export const ConsultResultSchema = z
   })
   .transform((p) => new ConsultResult(p));
 
-// ── ToolResult ───────────────────────────────────────────────────────────────
+// ── ToolResult (consult arm only) ────────────────────────────────────────────
+// The shared `ToolResult` is a union discriminated by `tool` (ADR-050); this
+// model covers the consult arm. A `research` tool result would fail this
+// schema — fine for now, the module has no runtime consumers; the research
+// model lands with the surface that first renders research payloads.
 
 export class ToolResult implements ToolResultContract {
   readonly tool: ConsultTool;
@@ -118,7 +124,7 @@ export class ToolResult implements ToolResultContract {
 
 export const ToolResultSchema = z
   .object({
-    tool: z.enum(['find_saved', 'suggest_places', 'discover_places']),
+    tool: z.enum(CONSULT_TOOLS),
     tool_call_id: z.string(),
     payload: ConsultResultSchema,
   })
@@ -128,7 +134,7 @@ export const ToolResultSchema = z
 
 export class AgentResponseData implements AgentResponseDataContract {
   readonly reasoning_steps: ReasoningStepContract[];
-  readonly tool_results: ToolResultContract[];
+  readonly tool_results: ToolResultUnionContract[];
 
   constructor(p: AgentResponseDataContract) {
     this.reasoning_steps = p.reasoning_steps;

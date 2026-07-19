@@ -23,6 +23,7 @@ import { Mascot } from './mascot';
 import { ReasoningBlock } from './reasoning-block';
 import { PlaceCardSkeleton } from './place-card-skeleton';
 import { ChatPlaceCard } from './chat-place-card';
+import { hasConsultResults, hasPlaceCandidates } from './chat-place-card-data';
 import {
   useChatTranscript,
   type ChatTranscriptValue,
@@ -360,6 +361,12 @@ function KebiTurnRow({
   labels: TurnLabels;
   onToggle: ChatTranscriptValue['toggleCollapse'];
 }) {
+  // Consult-vs-prose gate (ADR-050): the card surface keys on actual place
+  // candidates, never on the mere presence of a tool result (a research turn
+  // has one too — its answer is the prose).
+  const hasCandidates = hasPlaceCandidates(turn.toolResults);
+  const isConsultTurn = hasConsultResults(turn.toolResults);
+
   // Show the thinking panel once steps arrive, or while still streaming with no
   // answer yet (a simple greeting that runs no tools collapses to just text).
   const showReasoning =
@@ -387,18 +394,21 @@ function KebiTurnRow({
         />
       ) : null}
 
-      {/* The agent's prose answer — shown only when the turn has no place cards
-          (with cards, the cards are the answer; the prose would just re-list them). */}
-      {turn.message && turn.toolResults.length === 0 ? (
+      {/* The agent's prose answer — suppressed only when the turn produced
+          place candidates (then the card is the whole answer, ADR-050). On
+          every other turn — plain chat, research, consult that found nothing —
+          the prose carries the conversation. */}
+      {turn.message && !hasCandidates ? (
         <Text className="text-[17px] leading-relaxed text-text-muted">
           {renderInlineMarkdown(turn.message)}
         </Text>
       ) : null}
 
-      {/* Places: a shimmer skeleton while still streaming in, then the real
-          recommendation card once the turn is done. */}
-      {turn.status === 'streaming' && turn.toolResults.length > 0 ? <PlaceCardSkeleton /> : null}
-      {turn.status === 'done' && turn.toolResults.length > 0 ? (
+      {/* The place card is a consult-only surface: skeleton while candidates
+          stream in, then the card. A candidate-less consult turn with no prose
+          still gets the card's empty-reason line (no_location is actionable). */}
+      {turn.status === 'streaming' && hasCandidates ? <PlaceCardSkeleton /> : null}
+      {turn.status === 'done' && (hasCandidates || (isConsultTurn && !turn.message)) ? (
         <ChatPlaceCard toolResults={turn.toolResults} />
       ) : null}
 

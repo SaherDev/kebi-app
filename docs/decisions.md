@@ -17,6 +17,16 @@ Format:
 
 ---
 
+## ADR-050: Chat tool results discriminate by tool name; the place card is a consult-only surface
+
+**Date:** 2026-07-16\
+**Status:** accepted\
+**Context:** kebi's agent gained a `research` tool (kebi ADR-129/130) whose `tool_result` payload is a `ResearchResult` — knowledge notes about an area, no place candidates, nothing save- or signal-able — and whose user-facing answer is the turn's `message` prose. The mobile chat predated it and treated *any* tool result as a place-card turn: prose suppressed, skeleton shown, and the non-consult payload pushed into the card's empty branch — so every research turn rendered "couldn't find a match" while kebi's actual answer streamed unseen. The contract makes `ToolResult.payload` a union **discriminated by `tool`**, and the two shapes even share an `empty_reason` field name with disjoint value sets — payload-shape sniffing is a trap.\
+**Decision:** The client classifies tool results by **tool name, never by payload shape**. The tool vocabulary and the tool-discriminated `ToolResult` union — including a typed `ResearchResult` — live in `libs/shared` as part of the canonical contract, so no component carries inline tool strings. The place card and its streaming skeleton are a consult-only surface, shown only when a consult payload produced at least one candidate (the card then remains the whole answer, prose suppressed, as before). On every other turn — plain chat, research (success or empty), a consult that returned nothing — kebi's `message` prose carries the conversation. A consult turn that produced neither candidates nor prose keeps the existing empty-reason line (`no_location` stays actionable). Unknown or future tool names are not consult: they fall to the prose path, so a new kebi tool degrades to a plain prose answer rather than a broken card (ADR-019). Research payloads are typed but not yet consumed; their runtime validation lands with the surface that first renders them (ADR-046 applies at the consuming boundary).\
+**Consequences:** Research turns read as authored conversation; place turns are unchanged; loading affordances no longer promise a card on turns that cannot produce one. kebi can add tools without breaking the client — a tool becomes a rich surface only by an explicit client decision keyed on its name, which also means a future consult-family tool renders as prose until the client adopts it. The consult data helpers ignore non-consult results outright, so a payload field collision (like `empty_reason`) can never be misread as an empty consult.
+
+---
+
 ## ADR-049: The curator role is an admin-granted grant in `user_settings`, not a plan tier
 
 **Date:** 2026-07-12\

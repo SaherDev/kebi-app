@@ -11,6 +11,7 @@ import { IconButton } from '../components/icon-button';
 import { PlaceAvatar } from '../components/place-avatar';
 import { PlaceCard } from '../components/place-card';
 import { PlaceChip } from '../components/place-chip';
+import { PlaceClaimsSection } from '../components/place-claims-section';
 import { Mascot } from '../components/mascot';
 import { Splash } from '../components/splash';
 import { SocialButton } from '../components/auth/social-button';
@@ -27,7 +28,7 @@ import { usePlaceMenuItems } from '../components/use-place-menu-items';
 import { useToast } from '../components/toast-context';
 import { triggerHaptic } from '../lib/haptics';
 import { makeSamplePlace } from '../lib/sample-place';
-import type { PlaceTag, ReasoningStepStatus } from '@kebi-app/shared';
+import type { PlaceNote, PlaceTag, ReasoningStepStatus } from '@kebi-app/shared';
 
 /**
  * Component gallery — a dev-only route (`/gallery`) for eyeballing the
@@ -301,6 +302,56 @@ const DEMO_TAGS: PlaceTag[] = [
   { type: 'season', value: 'summer', source: 'llm' },
 ];
 
+// Uniform from_shared batch (> preview cap): exercises the header-level share
+// pill and the show all / show less toggle.
+const DEMO_CLAIMS_SHARED: PlaceNote[] = [
+  'entry prices are considered far from affordable',
+  'located between a jungle and cliffs 100 meters above the ocean',
+  'VIP table service, noted for high-quality sushi',
+  'sunbeds by the pool need a separate reservation',
+  'dress code enforced after 6pm — no swimwear inside',
+].map((text, i) => ({
+  id: `shr_${i}`,
+  text,
+  tags: [],
+  source: 'community',
+  from_shared: true,
+  agree_count: i === 3 ? 14 : 0,
+  disagree_count: 0,
+}));
+
+// Mixed-source batch: per-row share pill, labelled expert origin, and the
+// user's own kebi save reason.
+const DEMO_CLAIMS: PlaceNote[] = [
+  {
+    id: 'clm_1',
+    text: 'book the counter, not the tables — the tasting menu changes weekly',
+    tags: [],
+    source: 'community',
+    from_shared: true,
+    agree_count: 8,
+    disagree_count: 1,
+  },
+  {
+    id: 'clm_2',
+    text: 'corkage waived on mondays if you buy from their shelf',
+    tags: [],
+    source: 'expert',
+    from_shared: false,
+    agree_count: 12,
+    disagree_count: 0,
+  },
+  {
+    id: 'clm_3',
+    text: 'you saved this for quiet solo counter dinners',
+    tags: [],
+    source: 'kebi',
+    from_shared: false,
+    agree_count: 0,
+    disagree_count: 0,
+  },
+];
+
 export default function GalleryScreen() {
   const { toggleColorScheme, colorScheme } = useColorScheme();
   const toast = useToast();
@@ -422,6 +473,14 @@ export default function GalleryScreen() {
               <PlaceChip key={String(t.value)} tag={t} />
             ))}
           </View>
+        </Section>
+
+        <Section title="Insider notes — mixed sources (place page)">
+          <PlaceClaimsSection claims={DEMO_CLAIMS} />
+        </Section>
+
+        <Section title="Insider notes — all from share, capped + toggle">
+          <PlaceClaimsSection claims={DEMO_CLAIMS_SHARED} />
         </Section>
 
         <Section title="Reasoning block — real stream (replay, real timing)">
