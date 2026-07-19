@@ -576,3 +576,56 @@ export interface CurateKnowledgeResponse {
 export type DataScope = "all" | "chat_history";
 
 export const DATA_SCOPES: readonly DataScope[] = ["all", "chat_history"] as const;
+
+// In-app feedback (POST /api/v1/feedback) — ADR-051. Gateway-only: stamps the
+// verified user id + token-claim email and forwards to a Notion database.
+// Never reaches kebi, never stored in the gateway DB.
+export type FeedbackKind = "wrong_answer" | "bug" | "message";
+
+export const FEEDBACK_KINDS: readonly FeedbackKind[] = [
+  "wrong_answer",
+  "bug",
+  "message",
+] as const;
+
+export type FeedbackCategory = "wrong_place" | "didnt_get_me" | "missing_info";
+
+export const FEEDBACK_CATEGORIES: readonly FeedbackCategory[] = [
+  "wrong_place",
+  "didnt_get_me",
+  "missing_info",
+] as const;
+
+/**
+ * One transcript turn attached to a `wrong_answer` report. Deliberately lean:
+ * reasoning step titles and tool names only — never tool payloads (large,
+ * PII-adjacent, and beyond what the in-app disclosure promises).
+ */
+export interface FeedbackTranscriptTurn {
+  role: "you" | "kebi";
+  text: string;
+  at: string;
+  step_titles?: string[];
+  tool_names?: string[];
+}
+
+/**
+ * Feedback body the client sends to the gateway. Identity is never a body
+ * field (stamped server-side from the verified token). `category`, `exchange`,
+ * and `transcript` travel only on `wrong_answer` reports.
+ */
+export interface FeedbackRequest {
+  kind: FeedbackKind;
+  text?: string;
+  category?: FeedbackCategory;
+  exchange?: { you: string; kebi: string };
+  transcript?: FeedbackTranscriptTurn[];
+  app_version?: string;
+  platform?: "ios" | "android";
+  os_version?: string;
+  device?: string;
+}
+
+export interface FeedbackResponse {
+  status: "received";
+}
