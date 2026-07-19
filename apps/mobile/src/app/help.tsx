@@ -11,12 +11,14 @@ import { Icon } from '../components/icon';
 import { Group } from '../components/group';
 import { SettingsRow } from '../components/settings-row';
 import { FeedbackFormSheet } from '../components/feedback-form-sheet';
+import { ReportSaveSheet } from '../components/report-save-sheet';
 import { ReportWrongAnswerSheet } from '../components/report-wrong-answer-sheet';
 import { useChatTranscript } from '../components/chat-transcript-context';
 import { useToast } from '../components/toast-context';
 import { useApiClient } from '../api/hooks';
 import { sendFeedback } from '../api/feedback';
 import { latestExchange, toFeedbackTranscript } from '../lib/feedback-transcript';
+import { recentSaveAttempts } from '../lib/save-history';
 import { useTranslation } from '../i18n/context';
 
 /**
@@ -51,6 +53,7 @@ export default function HelpScreen() {
   const version = Constants.expoConfig?.version ?? '';
   const chevron = <Icon name="chevron-right" size={14} className="text-text-soft" />;
   const exchange = latestExchange(turns);
+  const saveAttempts = recentSaveAttempts();
 
   // Resolving closes the sheet + toasts; throwing keeps it open (draft intact)
   // behind the error toast, so a network blip isn't a dead end.
@@ -143,17 +146,21 @@ export default function HelpScreen() {
         onSubmit={submitWrongAnswer}
         exchange={exchange}
       />
-      <FeedbackFormSheet
+      <ReportSaveSheet
         open={saveOpen}
         onClose={() => setSaveOpen(false)}
-        onSubmit={(text, input) =>
-          submit({ kind: 'extraction', text, input, ...deviceMeta() }, () => setSaveOpen(false))
+        onSubmit={(payload) =>
+          submit(
+            {
+              kind: 'extraction',
+              ...payload,
+              save_attempts: saveAttempts.length ? saveAttempts : undefined,
+              ...deviceMeta(),
+            },
+            () => setSaveOpen(false),
+          )
         }
-        eyebrow={t('help.sheetSaveEyebrow')}
-        title={t('help.sheetSaveTitle')}
-        placeholder={t('help.sheetSavePlaceholder')}
-        note={t('help.sheetSaveNote')}
-        inputPlaceholder={t('help.sheetSaveInputPlaceholder')}
+        latest={saveAttempts[saveAttempts.length - 1]}
       />
       <FeedbackFormSheet
         open={bugOpen}

@@ -18,6 +18,8 @@ const TEXT_MAX = 2000;
 const TURN_TEXT_MAX = 500;
 const TRANSCRIPT_MAX_TURNS = 40;
 const TITLES_MAX = 20;
+const INPUT_MAX = 1000;
+const SAVE_ATTEMPTS_MAX = 10;
 
 export class FeedbackExchangeDto {
   @IsString()
@@ -27,6 +29,19 @@ export class FeedbackExchangeDto {
   @IsString()
   @MaxLength(TURN_TEXT_MAX)
   kebi!: string;
+}
+
+export class FeedbackSaveAttemptDto {
+  @IsString()
+  @MaxLength(INPUT_MAX)
+  input!: string;
+
+  @IsString()
+  @MaxLength(TURN_TEXT_MAX)
+  result!: string;
+
+  @IsString()
+  at!: string;
 }
 
 export class FeedbackTranscriptTurnDto {
@@ -70,8 +85,15 @@ export class FeedbackRequestDto {
 
   @IsOptional()
   @IsString()
-  @MaxLength(1000)
+  @MaxLength(INPUT_MAX)
   input?: string;
+
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(SAVE_ATTEMPTS_MAX)
+  @ValidateNested({ each: true })
+  @Type(() => FeedbackSaveAttemptDto)
+  save_attempts?: FeedbackSaveAttemptDto[];
 
   @IsOptional()
   @IsIn(FEEDBACK_CATEGORIES)

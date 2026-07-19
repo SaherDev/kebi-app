@@ -3,6 +3,7 @@ import HelpScreen from './app/help';
 import { ChatTranscriptProvider } from './components/chat-transcript-context';
 import { ToastProvider } from './components/toast-context';
 import { sendFeedback } from './api/feedback';
+import { clearSaveHistory, recordSaveAttempt } from './lib/save-history';
 
 // Lives in src/ (not src/app/) so expo-router's require.context doesn't bundle
 // the test. jest.mock factories may only reference `mock`-prefixed variables.
@@ -50,6 +51,7 @@ describe('HelpScreen', () => {
   beforeEach(() => {
     mockedSendFeedback.mockClear();
     mockedSendFeedback.mockResolvedValue(undefined);
+    clearSaveHistory();
   });
 
   it('renders the hero, the three rows, and the version footer', () => {
@@ -93,7 +95,7 @@ describe('HelpScreen', () => {
     await waitFor(() => expect(getByText('sent. this is how kebi gets better')).toBeTruthy());
   });
 
-  it('save-went-wrong sheet sends kind extraction with the pasted input', async () => {
+  it('save-went-wrong with no recorded saves: manual link field, kind extraction', async () => {
     const { getByText, getByLabelText, getByPlaceholderText } = renderHelp();
 
     fireEvent.press(getByLabelText('a save went wrong'));
@@ -120,6 +122,35 @@ describe('HelpScreen', () => {
       platform: 'ios',
       os_version: '18.5',
       device: 'iPhone 15 Pro',
+    });
+  });
+
+  it('save-went-wrong with recorded saves: quotes the latest and attaches them all', async () => {
+    recordSaveAttempt('https://www.tiktok.com/@a/video/1', 'saved: Bar Trench');
+    recordSaveAttempt('gibberish input', 'failed: no_candidates');
+    const { getByText, getByLabelText, getByPlaceholderText, queryByPlaceholderText } =
+      renderHelp();
+
+    fireEvent.press(getByLabelText('a save went wrong'));
+    // Latest attempt quoted; the manual link field is gone.
+    expect(getByText('gibberish input')).toBeTruthy();
+    expect(getByText('failed: no_candidates')).toBeTruthy();
+    expect(queryByPlaceholderText('paste the link or what you typed...')).toBeNull();
+
+    fireEvent.changeText(
+      getByPlaceholderText('i shared a tiktok link and...'),
+      'it said no candidates but the video names the place',
+    );
+    fireEvent.press(getByLabelText('send it'));
+
+    await waitFor(() => expect(mockedSendFeedback).toHaveBeenCalledTimes(1));
+    const body = mockedSendFeedback.mock.calls[0][1];
+    expect(body.kind).toBe('extraction');
+    expect(body.input).toBeUndefined();
+    expect(body.save_attempts).toHaveLength(2);
+    expect(body.save_attempts?.[1]).toMatchObject({
+      input: 'gibberish input',
+      result: 'failed: no_candidates',
     });
   });
 

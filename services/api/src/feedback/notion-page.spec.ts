@@ -100,6 +100,22 @@ describe('buildFeedbackPage', () => {
     expect(texts).toContain('input: https://www.tiktok.com/@tokyo/video/123');
   });
 
+  it('extraction reports render each recorded save attempt', () => {
+    const page = build({
+      kind: 'extraction',
+      text: 'no candidates but the video names the place',
+      save_attempts: [
+        { input: 'https://www.tiktok.com/@a/video/1', result: 'saved: Bar Trench', at: '2026-07-19T11:00:00Z' },
+        { input: 'gibberish input', result: 'failed: no_candidates', at: '2026-07-19T11:05:00Z' },
+      ],
+    });
+
+    const texts = page.children.map((b) => (b['type'] === 'divider' ? '---' : plainText(b)));
+    expect(texts).toContain('recent saves');
+    expect(texts).toContain('sent: https://www.tiktok.com/@a/video/1\ngot: saved: Bar Trench');
+    expect(texts).toContain('sent: gibberish input\ngot: failed: no_candidates');
+  });
+
   it('bug and message reports carry no transcript machinery', () => {
     const page = build({ kind: 'message', text: 'love the app' });
 

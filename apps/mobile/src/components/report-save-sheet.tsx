@@ -18,6 +18,7 @@ import Animated, {
   withSpring,
   withTiming,
 } from 'react-native-reanimated';
+import type { FeedbackSaveAttempt } from '@kebi-app/shared';
 import { DURATION, PRESS, SPRING_CONFIG } from '../theme/motion';
 import { triggerHaptic } from '../lib/haptics';
 import { useTranslation } from '../i18n/context';
@@ -25,23 +26,22 @@ import { useToast } from './toast-context';
 import { Icon } from './icon';
 
 /**
- * Feedback form sheet — the one-field bug/message form (kebi-help-mockup.html).
- * Shares the note-sheet language (grabber, scrim, spring up, drag/backdrop
- * dismiss, textarea floating above the keyboard); the caller supplies the
- * translated copy, so "something broke" and "message us" are the same sheet.
+ * "a save went wrong" report sheet (kebi-help-mockup.html, ADR-051). Quotes the
+ * latest recorded save attempt — what the user sent and what kebi made of it —
+ * the same way the wrong-answer sheet quotes the chat exchange; recent attempts
+ * ride the payload automatically (lib/save-history). With nothing recorded
+ * (help opened before any save this session) the quote is replaced by a manual
+ * link field and the disclosure switches to the nothing-attached variant.
  *
- * Presentational: the draft is local and resets on open. `onSubmit` resolving
- * means sent (the caller closes and toasts); rejecting keeps the sheet open
- * with the draft intact so the caller's error toast isn't a dead end.
+ * Presentational: `onSubmit` resolving means sent (the caller closes and
+ * toasts); rejecting keeps the sheet open with the draft intact.
  */
-interface FeedbackFormSheetProps {
+interface ReportSaveSheetProps {
   open: boolean;
   onClose: () => void;
-  onSubmit: (text: string) => Promise<void>;
-  eyebrow: string;
-  title: string;
-  placeholder: string;
-  note: string;
+  onSubmit: (payload: { text: string; input?: string }) => Promise<void>;
+  /** The latest recorded save attempt, or undefined when none this session. */
+  latest?: FeedbackSaveAttempt;
 }
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
@@ -50,15 +50,7 @@ const CLOSE_DISTANCE = 90;
 const CLOSE_VELOCITY = 800;
 const PAN_ACTIVATE_Y = 10;
 
-export function FeedbackFormSheet({
-  open,
-  onClose,
-  onSubmit,
-  eyebrow,
-  title,
-  placeholder,
-  note,
-}: FeedbackFormSheetProps) {
+export function ReportSaveSheet({ open, onClose, onSubmit, latest }: ReportSaveSheetProps) {
   const { t } = useTranslation();
   const { reserveTopAnchor } = useToast();
   const insets = useSafeAreaInsets();
@@ -67,6 +59,7 @@ export function FeedbackFormSheet({
 
   const [mounted, setMounted] = useState(open);
   const [value, setValue] = useState('');
+  const [input, setInput] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const scrim = useSharedValue(0);
   const translateY = useSharedValue(height);
@@ -85,6 +78,7 @@ export function FeedbackFormSheet({
   useEffect(() => {
     if (open) {
       setValue('');
+      setInput('');
       setSubmitting(false);
     }
   }, [open]);
@@ -131,7 +125,7 @@ export function FeedbackFormSheet({
     if (!canSend) return;
     setSubmitting(true);
     try {
-      await onSubmit(value.trim());
+      await onSubmit({ text: value.trim(), input: input.trim() || undefined });
       triggerHaptic('save-sheet-confirm');
     } catch {
       // The caller toasts; the draft survives for a retry.
@@ -156,15 +150,51 @@ export function FeedbackFormSheet({
           <View className="mx-auto mb-0.5 h-1 w-9 rounded-full bg-surface-2" />
 
           <View className="gap-1 px-1">
-            <Text className="text-eyebrow font-semibold uppercase text-text-soft">{eyebrow}</Text>
-            <Text className="text-subtitle font-bold text-text">{title}</Text>
+            <Text className="text-eyebrow font-semibold uppercase text-text-soft">
+              {t('help.sheetSaveEyebrow')}
+            </Text>
+            <Text className="text-subtitle font-bold text-text">{t('help.sheetSaveTitle')}</Text>
           </View>
+
+          {latest ? (
+            <View className="gap-2 rounded-large bg-surface px-3.5 py-3">
+              <View className="flex-row gap-2">
+                <Text className="w-10 text-eyebrow font-bold uppercase text-text-soft">
+                  {t('help.quoteSent')}
+                </Text>
+                <Text className="flex-1 text-small leading-5 text-text-muted" numberOfLines={2}>
+                  {latest.input}
+                </Text>
+              </View>
+              <View className="flex-row gap-2">
+                <Text className="w-10 text-eyebrow font-bold uppercase text-text-soft">
+                  {t('help.quoteGot')}
+                </Text>
+                <Text className="flex-1 text-small leading-5 text-text-muted" numberOfLines={2}>
+                  {latest.result}
+                </Text>
+              </View>
+            </View>
+          ) : (
+            <View className="rounded-large bg-surface px-3.5 py-3">
+              <TextInput
+                value={input}
+                onChangeText={setInput}
+                placeholder={t('help.sheetSaveInputPlaceholder')}
+                placeholderTextColor={softColor}
+                autoCapitalize="none"
+                autoCorrect={false}
+                editable={!submitting}
+                className="p-0 text-[16px] leading-6 text-text"
+              />
+            </View>
+          )}
 
           <View className="rounded-large bg-surface px-3.5 pb-3 pt-3.5">
             <TextInput
               value={value}
               onChangeText={setValue}
-              placeholder={placeholder}
+              placeholder={t('help.sheetSavePlaceholder')}
               placeholderTextColor={softColor}
               multiline
               textAlignVertical="top"
@@ -175,8 +205,10 @@ export function FeedbackFormSheet({
           </View>
 
           <View className="flex-row items-start gap-2 px-1">
-            <Icon name="alert" size={13} className="mt-0.5 text-text-muted" />
-            <Text className="flex-1 text-small leading-5 text-text-muted">{note}</Text>
+            <Icon name="link" size={13} className="mt-0.5 text-text-muted" />
+            <Text className="flex-1 text-small leading-5 text-text-muted">
+              {latest ? t('help.sheetSaveNote') : t('help.sheetSaveNoteEmpty')}
+            </Text>
           </View>
 
           <Pressable

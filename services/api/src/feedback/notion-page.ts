@@ -115,6 +115,17 @@ export function buildFeedbackPage(params: {
     });
   }
 
+  if (dto.save_attempts?.length) {
+    children.push({ object: 'block', type: 'divider', divider: {} }, heading('recent saves'));
+    for (const attempt of dto.save_attempts) {
+      children.push({
+        object: 'block',
+        type: 'quote',
+        quote: { rich_text: rt(`sent: ${attempt.input}\ngot: ${attempt.result}`) },
+      });
+    }
+  }
+
   if (dto.exchange) {
     children.push({
       object: 'block',

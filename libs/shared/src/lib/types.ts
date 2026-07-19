@@ -611,15 +611,28 @@ export interface FeedbackTranscriptTurn {
 }
 
 /**
+ * One recorded save attempt attached to an `extraction` report: the raw
+ * link/text the user submitted and a one-line summary of what kebi made of it
+ * (saved place names, or the failure reason).
+ */
+export interface FeedbackSaveAttempt {
+  input: string;
+  result: string;
+  at: string;
+}
+
+/**
  * Feedback body the client sends to the gateway. Identity is never a body
  * field (stamped server-side from the verified token). `category`, `exchange`,
- * and `transcript` travel only on `wrong_answer` reports.
+ * and `transcript` travel only on `wrong_answer` reports; `input` and
+ * `save_attempts` only on `extraction` reports.
  */
 export interface FeedbackRequest {
   kind: FeedbackKind;
   text?: string;
-  /** Extraction reports: the raw link/text the user tried to save. */
+  /** Manual fallback: the link/text the save was about (no recorded attempts). */
   input?: string;
+  save_attempts?: FeedbackSaveAttempt[];
   category?: FeedbackCategory;
   exchange?: { you: string; kebi: string };
   transcript?: FeedbackTranscriptTurn[];
