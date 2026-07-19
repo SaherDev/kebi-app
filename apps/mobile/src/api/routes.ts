@@ -28,4 +28,7 @@ export const API_ROUTES = {
   userData: '/user/data',
   /** Recommendation accept/reject signal (api-contract.md §POST /v1/signal). */
   signal: '/signal',
+
+  /** In-app feedback report — gateway-only, forwarded to Notion (ADR-051). */
+  feedback: '/feedback',
 } as const;
