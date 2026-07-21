@@ -1,6 +1,6 @@
 import { Share } from 'react-native';
 import { placeDisplayName, type SavedPlaceView } from '@kebi-app/shared';
-import { googlePlaceUrl } from './maps-links';
+import { googleMaps } from './maps-links';
 
 /**
  * Share a saved place via the OS share sheet. The message is the place's display
@@ -10,7 +10,7 @@ import { googlePlaceUrl } from './maps-links';
  */
 export async function sharePlace(view: SavedPlaceView): Promise<void> {
   const name = placeDisplayName(view);
-  const link = googlePlaceUrl(view.place) ?? view.user_data.source_ref ?? null;
+  const link = googleMaps.buildUrl(view.place) ?? view.user_data.source_ref ?? null;
   const message = link ? `${name}\n${link}` : name;
   try {
     await Share.share({ message });

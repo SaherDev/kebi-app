@@ -104,7 +104,7 @@ function PlaceContent({ view, back }: { view: SavedPlaceView; back: React.ReactN
   const dietary = dietaryLine(place);
   const note = userData.note;
   const access = accessibilityLine(place);
-  const hasDirections = buildMapsTargets(place).length > 0;
+  const hasMapTargets = buildMapsTargets(place).length > 0;
 
   return (
     <ScreenScaffold
@@ -168,10 +168,10 @@ function PlaceContent({ view, back }: { view: SavedPlaceView; back: React.ReactN
         )}
 
         <View className="flex-row flex-wrap items-center gap-2">
-          {hasDirections ? (
+          {hasMapTargets ? (
             <ServiceButton
-              icon="navigation"
-              label={t('place.actions.directions')}
+              icon="pin"
+              label={t('place.actions.map')}
               onPress={() => setMapsOpen(true)}
             />
           ) : null}

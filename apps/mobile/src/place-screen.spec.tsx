@@ -95,7 +95,7 @@ describe('PlaceScreen', () => {
     expect(getByText('liked')).toBeTruthy();
     expect(getByText('went')).toBeTruthy();
     expect(getByText('natural wine, 6 seats at the counter.')).toBeTruthy(); // note
-    expect(getByLabelText('directions')).toBeTruthy();
+    expect(getByLabelText('show on map')).toBeTruthy();
     expect(getByText('intimate')).toBeTruthy(); // atmosphere chip
     expect(getByText('private room')).toBeTruthy(); // feature chip
     expect(getByText('others')).toBeTruthy(); // catch-all section header
@@ -104,7 +104,7 @@ describe('PlaceScreen', () => {
     expect(getByText('@tokyofoodreport')).toBeTruthy(); // source handle
   });
 
-  it('hides the note, sections, meta and directions when their data is absent', () => {
+  it('hides the note, sections, meta and map when their data is absent', () => {
     const { queryByText, queryByLabelText } = renderPlace(
       makeView({
         place: {
@@ -136,7 +136,7 @@ describe('PlaceScreen', () => {
     expect(queryByText('Bare Place')).toBeTruthy(); // title still renders
     expect(queryByText('atmosphere')).toBeNull();
     expect(queryByText('features')).toBeNull();
-    expect(queryByLabelText('directions')).toBeNull(); // no provider id / coords
+    expect(queryByLabelText('show on map')).toBeNull(); // no provider id / coords
     expect(queryByText('liked')).toBeNull();
     expect(queryByText('went')).toBeNull();
   });
@@ -155,10 +155,10 @@ describe('PlaceScreen', () => {
     expect(getByText('forget this place')).toBeTruthy();
   });
 
-  it('opens the maps chooser from the directions button', () => {
+  it('opens the maps chooser from the map button', () => {
     const { getByLabelText, getByText } = renderPlace(makeView());
-    fireEvent.press(getByLabelText('directions'));
-    expect(getByText('open directions in')).toBeTruthy();
+    fireEvent.press(getByLabelText('show on map'));
+    expect(getByText('show on')).toBeTruthy();
     expect(getByText('google maps')).toBeTruthy();
   });
 });
