@@ -6,13 +6,15 @@ import { getDeviceCity, getDeviceLocation } from '../lib/location';
 import { getWeather, type Weather } from '../lib/weather';
 import { FALLBACK_CHIP_KEYS } from '../lib/home-config';
 import { useTranslation } from '../i18n/context';
+import { useAuth } from '../auth/auth-context';
 
 /**
  * Home greeting + chips (api-contract.md §GET /v1/home). The expensive,
  * taste-dependent surface — kept independent of the cheap recall/stash reads
  * (one screen, three lifecycles) and fetched on **mount only** (not focus) so a
  * return to home doesn't re-run the generation. The client supplies the local
- * context the server can't know: a fresh GPS fix (prompts on first open) is
+ * context the server can't know: a fresh GPS fix (prompts on first signed-in
+ * open — never over the login screen) is
  * reverse-geocoded to a city and turned into a weather hint, with the device's
  * local time. Every context lookup is best-effort — a missing one is just an
  * omitted query param.
@@ -44,6 +46,7 @@ export function useHome(): UseHome {
   const clientRef = useRef(client);
   clientRef.current = client;
   const { t } = useTranslation();
+  const { status } = useAuth();
 
   const [greeting, setGreeting] = useState<string | null>(null);
   const [chips, setChips] = useState<HomeChip[]>([]);
@@ -52,6 +55,9 @@ export function useHome(): UseHome {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Home mounts transiently on cold start while AuthGate is still resolving —
+    // don't prompt for location (or fetch) until the user is actually signed in.
+    if (status !== 'authenticated') return;
     let cancelled = false;
 
     (async () => {
@@ -88,10 +94,12 @@ export function useHome(): UseHome {
     return () => {
       cancelled = true;
     };
-    // Mount-only: the greeting is expensive and cached upstream; re-running it on
-    // every render/focus would defeat that. `t` is stable for the app's lifetime.
+    // Runs once when auth resolves to authenticated (a sign-out unmounts home via
+    // AuthGate, so it can't re-fire): the greeting is expensive and cached
+    // upstream; re-running it on every render/focus would defeat that. `t` is
+    // stable for the app's lifetime.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [status]);
 
   return { greeting, chips, city, weather, loading };
 }
