@@ -23,9 +23,6 @@ import { Icon } from './icon';
 import { Mascot } from './mascot';
 import { ActionSheet } from './action-sheet';
 import { ReasoningBlock } from './reasoning-block';
-import { PlaceCardSkeleton } from './place-card-skeleton';
-import { ChatPlaceCard } from './chat-place-card';
-import { hasConsultResults, hasPlaceCandidates } from './chat-place-card-data';
 import {
   useChatTranscript,
   type ChatTranscriptValue,
@@ -75,7 +72,7 @@ export function ChatScreen({ onClose, seed }: ChatScreenProps) {
   const { show: showToast, reserveTopAnchor } = useToast();
   const showUpgrade = useUpgradeToast();
   const transcript = useChatTranscript();
-  const { turns, startTurn, upsertStep, setMessage, addToolResult, finishTurn, stopTurn, failTurn, toggleCollapse, clearTranscript, restoreTranscript } =
+  const { turns, startTurn, upsertStep, setMessage, finishTurn, stopTurn, failTurn, toggleCollapse, clearTranscript, restoreTranscript } =
     transcript;
 
   const [draft, setDraft] = useState('');
@@ -199,10 +196,7 @@ export function ChatScreen({ onClose, seed }: ChatScreenProps) {
             upsertStep(kebiKey, ev.data);
             break;
           case 'message':
-            setMessage(kebiKey, ev.data.content);
-            break;
-          case 'tool_result':
-            addToolResult(kebiKey, ev.data);
+            setMessage(kebiKey, ev.data.content, ev.data.entities);
             break;
           case 'done':
             finishTurn(kebiKey, ev.data.tool_calls_used);
@@ -449,17 +443,10 @@ function KebiTurnRow({
   labels: TurnLabels;
   onToggle: ChatTranscriptValue['toggleCollapse'];
 }) {
-  // Consult-vs-prose gate (ADR-050): the card surface keys on actual place
-  // candidates, never on the mere presence of a tool result (a research turn
-  // has one too — its answer is the prose).
-  const hasCandidates = hasPlaceCandidates(turn.toolResults);
-  const isConsultTurn = hasConsultResults(turn.toolResults);
-
   // Show the thinking panel once steps arrive, or while still streaming with no
   // answer yet (a simple greeting that runs no tools collapses to just text).
   const showReasoning =
-    turn.steps.length > 0 ||
-    (turn.status === 'streaming' && turn.message === '' && turn.toolResults.length === 0);
+    turn.steps.length > 0 || (turn.status === 'streaming' && turn.message === '');
 
   return (
     <View className="gap-1.5">
@@ -482,22 +469,13 @@ function KebiTurnRow({
         />
       ) : null}
 
-      {/* The agent's prose answer — suppressed only when the turn produced
-          place candidates (then the card is the whole answer, ADR-050). On
-          every other turn — plain chat, research, consult that found nothing —
-          the prose carries the conversation. */}
-      {turn.message && !hasCandidates ? (
+      {/* The prose IS the answer on every turn (ADR-136): kebi no longer sends
+          place payloads to chat, it names the places in the text and links
+          them. */}
+      {turn.message ? (
         <Text className="text-[17px] leading-relaxed text-text-muted">
           {renderInlineMarkdown(turn.message)}
         </Text>
-      ) : null}
-
-      {/* The place card is a consult-only surface: skeleton while candidates
-          stream in, then the card. A candidate-less consult turn with no prose
-          still gets the card's empty-reason line (no_location is actionable). */}
-      {turn.status === 'streaming' && hasCandidates ? <PlaceCardSkeleton /> : null}
-      {turn.status === 'done' && (hasCandidates || (isConsultTurn && !turn.message)) ? (
-        <ChatPlaceCard toolResults={turn.toolResults} />
       ) : null}
 
       {turn.status === 'error' ? (
@@ -524,19 +502,35 @@ function errorMessage(err: unknown, t: (key: string) => string): string {
 
 /**
  * Render kebi's light markdown in an assistant message: `**bold**` spans become
- * semibold (and a touch darker); everything else is plain. kebi only sends bold
- * emphasis in conversational replies, so this stays minimal — no full parser.
+ * semibold (and a touch darker) and `[name](kebi://…)` entity links (ADR-136)
+ * render as their label, emphasized. Everything else is plain — kebi only sends
+ * these two forms, so this stays minimal, no full parser.
+ *
+ * The links are not yet tappable: opening one needs a place-detail fetch by id,
+ * which the contract does not expose yet. Until then the label reads as normal
+ * prose instead of leaking raw markdown.
  */
+const INLINE_MARKDOWN = /(\*\*[^*]+\*\*|\[[^\]]+\]\(kebi:\/\/[^)]+\))/g;
+
 function renderInlineMarkdown(text: string): ReactNode {
-  return text.split(/(\*\*[^*]+\*\*)/g).map((part, i) => {
+  return text.split(INLINE_MARKDOWN).map((part, i) => {
     const bold = /^\*\*([^*]+)\*\*$/.exec(part);
-    return bold ? (
-      <Text key={i} className="font-semibold text-text">
-        {bold[1]}
-      </Text>
-    ) : (
-      <Text key={i}>{part}</Text>
-    );
+    if (bold) {
+      return (
+        <Text key={i} className="font-semibold text-text">
+          {bold[1]}
+        </Text>
+      );
+    }
+    const link = /^\[([^\]]+)\]\(kebi:\/\/[^)]+\)$/.exec(part);
+    if (link) {
+      return (
+        <Text key={i} className="font-medium text-text">
+          {link[1]}
+        </Text>
+      );
+    }
+    return <Text key={i}>{part}</Text>;
   });
 }
 

@@ -7,7 +7,7 @@ import {
   useRef,
   type ReactNode,
 } from 'react';
-import type { SseReasoningStep, SseToolResult } from '@kebi-app/shared';
+import type { ChatEntity, SseReasoningStep } from '@kebi-app/shared';
 import type { ReasoningBlockStep } from './reasoning-block';
 
 /**
@@ -38,10 +38,11 @@ export interface KebiTurn {
   role: 'kebi';
   /** Reasoning steps, upserted by id — fed straight into <ReasoningBlock>. */
   steps: ReasoningBlockStep[];
-  /** Completed tool calls this turn, in arrival order (rendered in Task 2). */
-  toolResults: SseToolResult[];
-  /** Assistant text (the `message` frame content). */
+  /** Assistant text (the `message` frame content) — entity names in it are
+   *  markdown links to `kebi://{kind}/{key}` (ADR-136). */
   message: string;
+  /** One per link in `message`, resolving what a tap opens. */
+  entities: ChatEntity[];
   status: ChatTurnStatus;
   /** The user tapped "stop" — the turn finished early, not a natural completion. */
   stopped?: boolean;
@@ -65,8 +66,7 @@ interface TranscriptState {
 type Action =
   | { type: 'START_TURN'; text: string; userKey: string; kebiKey: string; at: number }
   | { type: 'UPSERT_STEP'; kebiKey: string; step: SseReasoningStep }
-  | { type: 'SET_MESSAGE'; kebiKey: string; content: string }
-  | { type: 'ADD_TOOL_RESULT'; kebiKey: string; result: SseToolResult }
+  | { type: 'SET_MESSAGE'; kebiKey: string; content: string; entities: ChatEntity[] }
   | { type: 'FINISH'; kebiKey: string; toolCallsUsed: number; now: number }
   | { type: 'STOP'; kebiKey: string; now: number }
   | { type: 'FAIL'; kebiKey: string; detail: string }
@@ -105,8 +105,8 @@ function reducer(state: TranscriptState, action: Action): TranscriptState {
         key: action.kebiKey,
         role: 'kebi',
         steps: [],
-        toolResults: [],
         message: '',
+        entities: [],
         status: 'streaming',
         startedAt: action.at,
         collapsed: false,
@@ -133,12 +133,10 @@ function reducer(state: TranscriptState, action: Action): TranscriptState {
     }
 
     case 'SET_MESSAGE':
-      return mapKebi(state, action.kebiKey, (turn) => ({ ...turn, message: action.content }));
-
-    case 'ADD_TOOL_RESULT':
       return mapKebi(state, action.kebiKey, (turn) => ({
         ...turn,
-        toolResults: [...turn.toolResults, action.result],
+        message: action.content,
+        entities: action.entities,
       }));
 
     case 'FINISH':
@@ -188,8 +186,7 @@ export interface ChatTranscriptValue {
   /** Append a user turn + an empty streaming kebi turn; returns the kebi key. */
   startTurn: (text: string) => string;
   upsertStep: (kebiKey: string, step: SseReasoningStep) => void;
-  setMessage: (kebiKey: string, content: string) => void;
-  addToolResult: (kebiKey: string, result: SseToolResult) => void;
+  setMessage: (kebiKey: string, content: string, entities: ChatEntity[]) => void;
   finishTurn: (kebiKey: string, toolCallsUsed: number) => void;
   /** User cancelled the stream — finish the turn and mark it stopped. */
   stopTurn: (kebiKey: string) => void;
@@ -206,7 +203,6 @@ const fallback: ChatTranscriptValue = {
   startTurn: () => '',
   upsertStep: () => undefined,
   setMessage: () => undefined,
-  addToolResult: () => undefined,
   finishTurn: () => undefined,
   stopTurn: () => undefined,
   failTurn: () => undefined,
@@ -234,13 +230,12 @@ export function ChatTranscriptProvider({ children }: { children: ReactNode }) {
     dispatch({ type: 'UPSERT_STEP', kebiKey, step });
   }, []);
 
-  const setMessage = useCallback((kebiKey: string, content: string) => {
-    dispatch({ type: 'SET_MESSAGE', kebiKey, content });
-  }, []);
-
-  const addToolResult = useCallback((kebiKey: string, result: SseToolResult) => {
-    dispatch({ type: 'ADD_TOOL_RESULT', kebiKey, result });
-  }, []);
+  const setMessage = useCallback(
+    (kebiKey: string, content: string, entities: ChatEntity[]) => {
+      dispatch({ type: 'SET_MESSAGE', kebiKey, content, entities });
+    },
+    [],
+  );
 
   const finishTurn = useCallback((kebiKey: string, toolCallsUsed: number) => {
     dispatch({ type: 'FINISH', kebiKey, toolCallsUsed, now: Date.now() });
@@ -272,7 +267,6 @@ export function ChatTranscriptProvider({ children }: { children: ReactNode }) {
       startTurn,
       upsertStep,
       setMessage,
-      addToolResult,
       finishTurn,
       stopTurn,
       failTurn,
@@ -280,7 +274,7 @@ export function ChatTranscriptProvider({ children }: { children: ReactNode }) {
       clearTranscript,
       restoreTranscript,
     }),
-    [state.turns, startTurn, upsertStep, setMessage, addToolResult, finishTurn, stopTurn, failTurn, toggleCollapse, clearTranscript, restoreTranscript],
+    [state.turns, startTurn, upsertStep, setMessage, finishTurn, stopTurn, failTurn, toggleCollapse, clearTranscript, restoreTranscript],
   );
 
   return <ChatTranscriptContext.Provider value={value}>{children}</ChatTranscriptContext.Provider>;

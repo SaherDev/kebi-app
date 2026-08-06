@@ -1,7 +1,7 @@
 import { useRef } from 'react';
 import { render, fireEvent } from '@testing-library/react-native';
 import { Pressable, Text } from 'react-native';
-import type { SseReasoningStep, SseToolResult } from '@kebi-app/shared';
+import type { ChatEntity, SseReasoningStep } from '@kebi-app/shared';
 import {
   ChatTranscriptProvider,
   useChatTranscript,
@@ -20,7 +20,13 @@ function step(over: Partial<SseReasoningStep>): SseReasoningStep {
   };
 }
 
-const TOOL: SseToolResult = { tool: 'find_saved', tool_call_id: 'c1', payload: { candidates: [] } };
+const LUIGIS: ChatEntity = {
+  kind: 'venue',
+  key: 'c0ffee00',
+  name: 'Luigis',
+  uri: 'kebi://venue/c0ffee00',
+  icon: '🍕',
+};
 
 /**
  * Probe: holds the active kebi key and exposes a button per action; renders each
@@ -45,9 +51,8 @@ function Probe() {
       {act('step-done', () => tr.upsertStep(key.current, step({ status: 'done', summary: '2 spots' })))}
       {act('step-other', () => tr.upsertStep(key.current, step({ id: 'rank#1', title: 'ranked' })))}
       {act('step-debug', () => tr.upsertStep(key.current, step({ id: 'dbg#9', visibility: 'debug' })))}
-      {act('msg', () => tr.setMessage(key.current, 'here you go'))}
-      {act('tool-a', () => tr.addToolResult(key.current, { ...TOOL, tool_call_id: 'a' }))}
-      {act('tool-b', () => tr.addToolResult(key.current, { ...TOOL, tool_call_id: 'b' }))}
+      {act('msg', () => tr.setMessage(key.current, 'here you go', []))}
+      {act('msg-linked', () => tr.setMessage(key.current, 'tonight is [Luigis](kebi://venue/c0ffee00)', [LUIGIS]))}
       {act('finish', () => tr.finishTurn(key.current, 1))}
       {act('stop', () => tr.stopTurn(key.current))}
       {act('fail', () => tr.failTurn(key.current, 'boom'))}
@@ -64,8 +69,8 @@ function Probe() {
 
 function line(t: KebiTurn): string {
   const statuses = t.steps.map((s) => s.status).join(',');
-  const tools = t.toolResults.map((r) => r.tool_call_id).join(',');
-  return `${t.key}|kebi|status:${t.status}|steps:${t.steps.length}|st:${statuses}|msg:${t.message}|tools:${tools}|collapsed:${t.collapsed}|stopped:${t.stopped ?? false}`;
+  const entities = t.entities.map((e) => `${e.kind}:${e.key}`).join(',');
+  return `${t.key}|kebi|status:${t.status}|steps:${t.steps.length}|st:${statuses}|msg:${t.message}|entities:${entities}|collapsed:${t.collapsed}|stopped:${t.stopped ?? false}`;
 }
 
 function setup() {
@@ -118,12 +123,11 @@ describe('ChatTranscriptProvider', () => {
     expect(kebi()).toContain('steps:2'); // debug not rendered
   });
 
-  it('keeps tool results in arrival order', () => {
+  it('stores the message frame entities alongside the text', () => {
     const { press, kebi } = setup();
     press('start');
-    press('tool-a');
-    press('tool-b');
-    expect(kebi()).toContain('tools:a,b');
+    press('msg-linked');
+    expect(kebi()).toContain('entities:venue:c0ffee00');
   });
 
   it('finishTurn marks the turn done', () => {

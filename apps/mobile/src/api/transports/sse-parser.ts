@@ -6,7 +6,6 @@ import {
   SseErrorSchema,
   SseMessageSchema,
   SseReasoningStepSchema,
-  SseToolResultSchema,
 } from '../models/sse';
 
 /**
@@ -27,7 +26,6 @@ import {
 /** Per-event payload validators, keyed by SSE `event:` name. */
 const FRAME_SCHEMAS = {
   reasoning_step: SseReasoningStepSchema,
-  tool_result: SseToolResultSchema,
   message: SseMessageSchema,
   done: SseDoneSchema,
   error: SseErrorSchema,
@@ -41,8 +39,8 @@ function isFrameType(name: string): name is FrameType {
 
 /** Validate a raw `data` JSON string for `type` into a typed {@link SseEvent}. */
 function toEvent(type: FrameType, data: string): SseEvent {
-  // Widen to a single schema type — indexing the map gives a union of the five
-  // schemas, which `validate`'s generic can't unify; the cast below is sound
+  // Widen to a single schema type — indexing the map gives a union of the
+  // frame schemas, which `validate`'s generic can't unify; the cast is sound
   // because each schema validates exactly its arm's payload.
   const schema: z.ZodTypeAny = FRAME_SCHEMAS[type];
   const parsed = validate(schema, JSON.parse(data), `Sse:${type}`);

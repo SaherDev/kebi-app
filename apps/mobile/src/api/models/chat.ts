@@ -1,31 +1,20 @@
 import { z } from 'zod';
 import type {
   AgentResponseData as AgentResponseDataContract,
+  ChatEntity as ChatEntityContract,
+  ChatEntityKind,
   ChatResponse as ChatResponseContract,
-  ConsultCandidate as ConsultCandidateContract,
-  ConsultCandidateSource,
-  ConsultEmptyReason,
-  ConsultResult as ConsultResultContract,
-  ConsultTool,
-  ConsultToolResult as ToolResultContract,
   ErrorResponseData as ErrorResponseDataContract,
-  PlaceCore as PlaceCoreContract,
   ReasoningStep as ReasoningStepContract,
-  ToolResult as ToolResultUnionContract,
 } from '@kebi-app/shared';
-import { CONSULT_TOOLS } from '@kebi-app/shared';
-import { PlaceCoreSchema } from './place-core';
 
 /**
  * Runtime models for the non-stream `POST /v1/chat` response (api-contract.md).
  * Same class+schema pattern as ./place-core: each class `implements` its
  * `@kebi-app/shared` interface and the paired `*Schema` `.transform()`s into it,
  * so a validated `ChatResponse` carries class instances all the way down
- * (ChatResponse → ToolResult → ConsultResult → ConsultCandidate → PlaceCore).
- *
- * Strict literal-union fields (`tool`, `source`) use `z.enum`; free-text /
- * `LiteralUnion` fields (`empty_reason`) accept any string for forward-compat
- * (ADR-019).
+ * (ChatResponse → AgentResponseData → ReasoningStep / ChatEntity). Tool
+ * payloads are not part of the response (ADR-136).
  */
 
 // ── ReasoningStep ────────────────────────────────────────────────────────────
@@ -62,90 +51,58 @@ export const ReasoningStepSchema = z
   })
   .transform((p) => new ReasoningStep(p));
 
-// ── ConsultResult / ConsultCandidate ─────────────────────────────────────────
+// ── ChatEntity ───────────────────────────────────────────────────────────────
+// One per `kebi://` link in the answer text (ADR-136). `kind` is a strict
+// literal union — an unknown kind is a link this build cannot open, so it must
+// fail validation rather than reach the link handler. `icon` is the emoji drawn
+// beside the name (ADR-146), nullable on both kinds.
 
-export class ConsultCandidate implements ConsultCandidateContract {
-  readonly place: PlaceCoreContract;
-  readonly source: ConsultCandidateSource;
-  readonly reason?: string | null;
+export class ChatEntity implements ChatEntityContract {
+  readonly kind: ChatEntityKind;
+  readonly key: string;
+  readonly name: string;
+  readonly uri: string;
+  readonly icon: string | null;
 
-  constructor(p: ConsultCandidateContract) {
-    this.place = p.place;
-    this.source = p.source;
-    if (p.reason !== undefined) this.reason = p.reason;
+  constructor(p: ChatEntityContract) {
+    this.kind = p.kind;
+    this.key = p.key;
+    this.name = p.name;
+    this.uri = p.uri;
+    this.icon = p.icon;
   }
 }
 
-export const ConsultCandidateSchema = z
+export const ChatEntitySchema = z
   .object({
-    place: PlaceCoreSchema,
-    source: z.enum(['saved', 'suggested', 'discovered']),
-    reason: z.string().nullable().optional(),
+    kind: z.enum(['venue', 'area']),
+    key: z.string(),
+    name: z.string(),
+    uri: z.string(),
+    // Nullable on both kinds (ADR-146); absent on a pre-ADR-146 payload.
+    icon: z.string().nullable().default(null),
   })
-  .transform((p) => new ConsultCandidate(p));
-
-export class ConsultResult implements ConsultResultContract {
-  readonly candidates: ConsultCandidateContract[];
-  readonly empty_reason?: ConsultEmptyReason | null;
-  readonly recommendation_id: string;
-
-  constructor(p: ConsultResultContract) {
-    this.candidates = p.candidates;
-    if (p.empty_reason !== undefined) this.empty_reason = p.empty_reason;
-    this.recommendation_id = p.recommendation_id;
-  }
-}
-
-export const ConsultResultSchema = z
-  .object({
-    candidates: z.array(ConsultCandidateSchema),
-    empty_reason: z.string().nullable().optional(),
-    recommendation_id: z.string(),
-  })
-  .transform((p) => new ConsultResult(p));
-
-// ── ToolResult (consult arm only) ────────────────────────────────────────────
-// The shared `ToolResult` is a union discriminated by `tool` (ADR-050); this
-// model covers the consult arm. A `research` tool result would fail this
-// schema — fine for now, the module has no runtime consumers; the research
-// model lands with the surface that first renders research payloads.
-
-export class ToolResult implements ToolResultContract {
-  readonly tool: ConsultTool;
-  readonly tool_call_id: string;
-  readonly payload: ConsultResultContract;
-
-  constructor(p: ToolResultContract) {
-    this.tool = p.tool;
-    this.tool_call_id = p.tool_call_id;
-    this.payload = p.payload;
-  }
-}
-
-export const ToolResultSchema = z
-  .object({
-    tool: z.enum(CONSULT_TOOLS),
-    tool_call_id: z.string(),
-    payload: ConsultResultSchema,
-  })
-  .transform((p) => new ToolResult(p));
+  .transform((p) => new ChatEntity(p));
 
 // ── Response data arms ───────────────────────────────────────────────────────
 
 export class AgentResponseData implements AgentResponseDataContract {
   readonly reasoning_steps: ReasoningStepContract[];
-  readonly tool_results: ToolResultUnionContract[];
+  readonly entities: ChatEntityContract[];
+  readonly recommendation_id: string | null;
 
   constructor(p: AgentResponseDataContract) {
     this.reasoning_steps = p.reasoning_steps;
-    this.tool_results = p.tool_results;
+    this.entities = p.entities;
+    this.recommendation_id = p.recommendation_id;
   }
 }
 
 export const AgentResponseDataSchema = z
   .object({
     reasoning_steps: z.array(ReasoningStepSchema),
-    tool_results: z.array(ToolResultSchema),
+    entities: z.array(ChatEntitySchema),
+    recommendation_id: z.string().nullable(),
   })
   .transform((p) => new AgentResponseData(p));
 

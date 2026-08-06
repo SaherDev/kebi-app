@@ -12,8 +12,8 @@ function kebi(message: string, over: Partial<KebiTurn> = {}, key = 'k1'): KebiTu
     key,
     role: 'kebi',
     steps: [],
-    toolResults: [],
     message,
+    entities: [],
     status: 'done',
     startedAt: AT,
     collapsed: true,
@@ -23,17 +23,13 @@ function kebi(message: string, over: Partial<KebiTurn> = {}, key = 'k1'): KebiTu
 }
 
 describe('toFeedbackTranscript', () => {
-  it('maps roles, texts, step titles, and tool names — never payloads', () => {
+  it('maps roles, texts, and step titles', () => {
     const turns: ChatTurn[] = [
       you('quiet cafe'),
       kebi('Streamer Coffee', {
         steps: [
           { id: 's1', status: 'done', title: 'reading your taste' },
           { id: 's2', status: 'done' }, // untitled step — dropped
-        ],
-        toolResults: [
-          { tool: 'suggest_places', tool_call_id: 'c1', payload: { huge: 'blob' } },
-          { tool: null, tool_call_id: null, payload: null },
         ],
       } as Partial<KebiTurn>),
     ];
@@ -45,7 +41,6 @@ describe('toFeedbackTranscript', () => {
         text: 'Streamer Coffee',
         at: '2026-07-19T12:00:00.000Z',
         step_titles: ['reading your taste'],
-        tool_names: ['suggest_places'],
       },
     ]);
   });

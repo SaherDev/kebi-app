@@ -1,12 +1,13 @@
 import { z } from 'zod';
 import type {
+  ChatEntity as ChatEntityContract,
   ReasoningStepStatus,
   SseDone as SseDoneContract,
   SseError as SseErrorContract,
   SseMessage as SseMessageContract,
   SseReasoningStep as SseReasoningStepContract,
-  SseToolResult as SseToolResultContract,
 } from '@kebi-app/shared';
+import { ChatEntitySchema } from './chat';
 
 /**
  * Runtime models for the `POST /v1/chat/stream` SSE frame payloads
@@ -55,36 +56,23 @@ export const SseReasoningStepSchema = z
   })
   .transform((p) => new SseReasoningStep(p));
 
-export class SseToolResult implements SseToolResultContract {
-  readonly tool: string | null;
-  readonly tool_call_id: string | null;
-  readonly payload: Record<string, unknown> | null;
-
-  constructor(p: SseToolResultContract) {
-    this.tool = p.tool;
-    this.tool_call_id = p.tool_call_id;
-    this.payload = p.payload;
-  }
-}
-
-export const SseToolResultSchema = z
-  .object({
-    tool: z.string().nullable(),
-    tool_call_id: z.string().nullable(),
-    payload: z.record(z.string(), z.unknown()).nullable(),
-  })
-  .transform((p) => new SseToolResult(p));
-
+/**
+ * The final `message` frame. `content` already carries the answer's entity
+ * names as markdown links to `kebi://{kind}/{key}`; `entities` resolves each
+ * link (ADR-136), in the order they appear.
+ */
 export class SseMessage implements SseMessageContract {
   readonly content: string;
+  readonly entities: ChatEntityContract[];
 
   constructor(p: SseMessageContract) {
     this.content = p.content;
+    this.entities = p.entities;
   }
 }
 
 export const SseMessageSchema = z
-  .object({ content: z.string() })
+  .object({ content: z.string(), entities: z.array(ChatEntitySchema) })
   .transform((p) => new SseMessage(p));
 
 export class SseDone implements SseDoneContract {

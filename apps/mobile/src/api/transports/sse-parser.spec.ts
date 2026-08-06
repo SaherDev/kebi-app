@@ -5,7 +5,6 @@ import {
   SseError,
   SseMessage,
   SseReasoningStep,
-  SseToolResult,
 } from '../models/sse';
 
 /** Build a `event:/data:` frame (with the trailing blank line) for a payload. */
@@ -30,16 +29,14 @@ describe('parseSseFrames', () => {
     const p = parseSseFrames();
     const events = [
       ...p.push(frame('reasoning_step', ACTIVE)),
-      ...p.push(frame('tool_result', { tool: 'find_saved', tool_call_id: 'c1', payload: { candidates: [] } })),
-      ...p.push(frame('message', { content: 'here you go' })),
+      ...p.push(frame('message', { content: 'here you go', entities: [] })),
       ...p.push(frame('done', { tool_calls_used: 1 })),
     ];
 
-    expect(events.map((e) => e.type)).toEqual(['reasoning_step', 'tool_result', 'message', 'done']);
+    expect(events.map((e) => e.type)).toEqual(['reasoning_step', 'message', 'done']);
     expect(events[0].data).toBeInstanceOf(SseReasoningStep);
-    expect(events[1].data).toBeInstanceOf(SseToolResult);
-    expect(events[2].data).toBeInstanceOf(SseMessage);
-    expect(events[3].data).toBeInstanceOf(SseDone);
+    expect(events[1].data).toBeInstanceOf(SseMessage);
+    expect(events[2].data).toBeInstanceOf(SseDone);
   });
 
   it('upserts a step lifecycle — active then done share the id', () => {
@@ -52,7 +49,7 @@ describe('parseSseFrames', () => {
 
   it('reassembles a frame split across two pushes', () => {
     const p = parseSseFrames();
-    const whole = frame('message', { content: 'split me' });
+    const whole = frame('message', { content: 'split me', entities: [] });
     const cut = Math.floor(whole.length / 2);
 
     expect(p.push(whole.slice(0, cut))).toHaveLength(0); // partial — nothing yet
@@ -63,7 +60,7 @@ describe('parseSseFrames', () => {
 
   it('emits multiple frames delivered in one chunk', () => {
     const p = parseSseFrames();
-    const events = p.push(frame('message', { content: 'a' }) + frame('done', { tool_calls_used: 0 }));
+    const events = p.push(frame('message', { content: 'a', entities: [] }) + frame('done', { tool_calls_used: 0 }));
     expect(events.map((e) => e.type)).toEqual(['message', 'done']);
   });
 
