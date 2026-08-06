@@ -35,6 +35,7 @@ export class ChatService {
     const payload: ChatRequestDto = {
       message: dto.message,
       location: dto.location ?? null,
+      local_time: dto.local_time ?? null,
       movement_profile: user.movement_profile ?? null,
     };
     const stream = await this.kebi.postStream(
