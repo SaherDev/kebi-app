@@ -375,7 +375,6 @@ export const useHomeStore = create<HomeState>()(
         const messageEvent = events.find(e => e.type === "message");
         const messageText =
           messageEvent?.type === "message" ? messageEvent.data.content : "";
-        const toolResults = events.filter(e => e.type === "tool_result");
         const errorEvent = events.find(e => e.type === "error");
         const reasoningSteps = events
           .filter(e => e.type === "reasoning_step")
@@ -429,77 +428,15 @@ export const useHomeStore = create<HomeState>()(
               message: streamError,
             });
           }
-        } else {
-          const consultResult = toolResults.find(
-            e => e.type === "tool_result" && e.data.tool === "consult",
-          );
-          const recallResult = toolResults.find(
-            e => e.type === "tool_result" && e.data.tool === "recall",
-          );
-          const saveResult = toolResults.find(
-            e => e.type === "tool_result" && e.data.tool === "save",
-          );
-
-          if (
-            consultResult &&
-            consultResult.type === "tool_result" &&
-            consultResult.data.payload
-          ) {
-            newEntries.push({
-              id: nextId(),
-              role: "assistant",
-              type: "consult",
-              message: messageText,
-              data: consultResult.data
-                .payload as unknown as ConsultResponseData,
-            });
-          } else if (
-            recallResult &&
-            recallResult.type === "tool_result" &&
-            recallResult.data.payload
-          ) {
-            newEntries.push({
-              id: nextId(),
-              role: "assistant",
-              type: "recall",
-              message: messageText,
-              data: recallResult.data.payload as unknown as RecallResponseData,
-            });
-          } else if (
-            saveResult &&
-            saveResult.type === "tool_result" &&
-            saveResult.data.payload
-          ) {
-            const payload = saveResult.data.payload as unknown as {
-              results?: ExtractPlaceItem[];
-              raw_input?: string;
-            };
-            const items = payload.results ?? [];
-            for (const item of items) {
-              newEntries.push({
-                id: nextId(),
-                role: "assistant",
-                type: "save",
-                item,
-                sourceUrl: payload.raw_input ?? null,
-              });
-            }
-            if (messageText) {
-              newEntries.push({
-                id: nextId(),
-                role: "assistant",
-                type: "assistant",
-                message: messageText,
-              });
-            }
-          } else if (messageText) {
-            newEntries.push({
-              id: nextId(),
-              role: "assistant",
-              type: "assistant",
-              message: messageText,
-            });
-          }
+        } else if (messageText) {
+          // Tool payloads are gone from the wire (kebi ADR-136): a turn's answer
+          // is the prose, with places named as `kebi://` links inside it.
+          newEntries.push({
+            id: nextId(),
+            role: "assistant",
+            type: "assistant",
+            message: messageText,
+          });
         }
 
         useChatStreamStore.getState().reset();
