@@ -31,6 +31,13 @@ import { useTranslation } from '../i18n/context';
  * card behind it and the tap looks like it did nothing. Closing first is the
  * same order the `?` help button uses.
  */
+/**
+ * `/place?from=…` marker meaning "chat opened this". The place screen reads it
+ * to decide whether popping should raise the chat again; it lives here, next to
+ * the only code that sets it, so the two never drift.
+ */
+export const PLACE_ORIGIN_CHAT = 'chat';
+
 export function useOpenChatVenue(closeChat: () => void): (entity: ChatEntity) => void {
   const router = useRouter();
   const client = useApiClient();
@@ -54,7 +61,10 @@ export function useOpenChatVenue(closeChat: () => void): (entity: ChatEntity) =>
           if (view) {
             placeDetail.set(view);
             closeChat();
-            router.push('/place');
+            // `from` tells the place screen to raise the chat again when it
+            // pops — chat is an overlay, so a plain back lands on home and the
+            // conversation the user was reading is gone from view.
+            router.push({ pathname: '/place', params: { from: PLACE_ORIGIN_CHAT } });
           } else {
             show({ text: t('chat.venueUnavailable'), icon: 'alert' });
           }

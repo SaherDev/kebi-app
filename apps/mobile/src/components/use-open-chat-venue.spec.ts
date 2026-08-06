@@ -95,7 +95,12 @@ describe('useOpenChatVenue', () => {
 
     open(closeChat);
 
-    await waitFor(() => expect(mockPush).toHaveBeenCalledWith('/place'));
+    await waitFor(() => expect(mockPush).toHaveBeenCalled());
+    // `from` is what tells the place screen to raise the chat again on pop.
+    expect(mockPush).toHaveBeenCalledWith({
+      pathname: '/place',
+      params: { from: 'chat' },
+    });
     // Pushing under an open chat lands the card behind it — the tap then looks
     // like it did nothing, which is exactly the bug this order prevents.
     expect(order).toEqual(['set', 'close', 'push']);

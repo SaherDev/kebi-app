@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import {
   accessibilityLine,
   buildPlaceEyebrow,
@@ -25,6 +25,8 @@ import { ActionSheet } from '../components/action-sheet';
 import { MapsChooserSheet } from '../components/maps-chooser-sheet';
 import { usePlaceMenuItems } from '../components/use-place-menu-items';
 import { usePlaceDetail } from '../components/place-detail-context';
+import { useChat } from '../components/chat-context';
+import { PLACE_ORIGIN_CHAT } from '../components/use-open-chat-venue';
 import { usePlaceActions } from '../components/place-actions-context';
 import { useNoteSheet } from '../components/note-sheet-context';
 import { buildMapsTargets } from '../lib/maps-links';
@@ -55,10 +57,29 @@ function ServiceButton({
   );
 }
 
+/**
+ * Raise the chat again when a place opened *from* chat goes away. Chat is an
+ * overlay, not a route, so popping this screen otherwise lands on home and the
+ * conversation the user was reading is off screen. Keyed to unmount rather than
+ * the back button so the iOS swipe-back gesture is covered too.
+ */
+function useReturnToChat() {
+  const { from } = useLocalSearchParams<{ from?: string }>();
+  const { open } = useChat();
+
+  useEffect(() => {
+    if (from !== PLACE_ORIGIN_CHAT) return;
+    // No seed — the transcript lives above the overlay, so it reopens on the
+    // same conversation rather than sending anything.
+    return () => open();
+  }, [from, open]);
+}
+
 export default function PlaceScreen() {
   const { t } = useTranslation();
   const router = useRouter();
   const { view } = usePlaceDetail();
+  useReturnToChat();
 
   const back = <IconButton icon="back" label={t('common.back')} onPress={() => router.back()} />;
 

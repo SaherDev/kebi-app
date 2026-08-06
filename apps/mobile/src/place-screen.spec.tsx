@@ -5,11 +5,18 @@ import PlaceScreen from './app/place';
 import { PlaceDetailProvider, usePlaceDetail } from './components/place-detail-context';
 
 // expo-router pulls in the native navigation runtime; mock the surface the
-// screen uses (useRouter). This spec lives in src/ (not src/app/) so expo-router's
-// require.context over the routes dir doesn't bundle it — see home-screen.spec.
+// screen uses (useRouter + useLocalSearchParams, which carries `from`). This
+// spec lives in src/ (not src/app/) so expo-router's require.context over the
+// routes dir doesn't bundle it — see home-screen.spec.
+const mockParams: { from?: string } = {};
 jest.mock('expo-router', () => ({
   useRouter: () => ({ push: jest.fn(), back: jest.fn(), replace: jest.fn() }),
+  useLocalSearchParams: () => mockParams,
 }));
+
+// The screen raises the chat again when it was opened from one (ADR-052).
+const mockOpenChat = jest.fn();
+jest.mock('./components/chat-context', () => ({ useChat: () => ({ open: mockOpenChat }) }));
 
 // Chainable no-op for Gesture.Pan().activeOffsetY().onUpdate().onEnd().
 const mockChain = (): unknown => new Proxy({}, { get: () => () => mockChain() });
@@ -87,6 +94,11 @@ function renderPlace(view: SavedPlaceView) {
 }
 
 describe('PlaceScreen', () => {
+  beforeEach(() => {
+    delete mockParams.from;
+    mockOpenChat.mockClear();
+  });
+
   it('renders the place from the selected view', () => {
     const { getByText, getByLabelText, queryByText } = renderPlace(makeView());
     expect(getByText('Saint Jardim')).toBeTruthy(); // title (source_label)
@@ -160,5 +172,26 @@ describe('PlaceScreen', () => {
     fireEvent.press(getByLabelText('show on map'));
     expect(getByText('show on')).toBeTruthy();
     expect(getByText('google maps')).toBeTruthy();
+  });
+
+  describe('opened from chat (ADR-052)', () => {
+    it('raises the chat again when the screen goes away', () => {
+      mockParams.from = 'chat';
+      const { unmount } = renderPlace(makeView());
+
+      expect(mockOpenChat).not.toHaveBeenCalled(); // not while the card is up
+
+      unmount(); // back button *or* the iOS swipe-back gesture
+      expect(mockOpenChat).toHaveBeenCalledTimes(1);
+      // No seed — the transcript survives above the overlay, so reopening must
+      // not re-send anything.
+      expect(mockOpenChat).toHaveBeenCalledWith();
+    });
+
+    it('leaves the chat alone when the place was opened from the library', () => {
+      const { unmount } = renderPlace(makeView());
+      unmount();
+      expect(mockOpenChat).not.toHaveBeenCalled();
+    });
   });
 });
