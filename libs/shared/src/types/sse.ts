@@ -1,4 +1,12 @@
-export type SseEventType = 'reasoning_step' | 'tool_result' | 'message' | 'done' | 'error';
+import type { ChatEntity } from '../lib/types.js';
+
+/**
+ * Frame names on `POST /v1/chat/stream`. There is no `tool_result` frame (kebi
+ * ADR-136) — the stream carries reasoning, then the answer text plus the
+ * entities resolving its links; every richer view lives on the detail screen a
+ * link opens.
+ */
+export type SseEventType = 'reasoning_step' | 'message' | 'done' | 'error';
 
 /**
  * Lifecycle marker on a streamed reasoning step (ADR-102). A step is emitted
@@ -31,14 +39,15 @@ export interface SseReasoningStep {
   timestamp?: string;
 }
 
-export interface SseToolResult {
-  tool: string | null;
-  tool_call_id: string | null;
-  payload: Record<string, unknown> | null;
-}
-
+/**
+ * The single `message` frame, emitted after the graph completes. `content` is
+ * the answer text with entity names already wrapped as markdown links to
+ * `kebi://{kind}/{key}`; `entities` resolves each of those links, in the order
+ * they appear (ADR-136).
+ */
 export interface SseMessage {
   content: string;
+  entities: ChatEntity[];
 }
 
 export interface SseDone {
@@ -51,7 +60,6 @@ export interface SseError {
 
 export type SseEvent =
   | { type: 'reasoning_step'; data: SseReasoningStep }
-  | { type: 'tool_result'; data: SseToolResult }
   | { type: 'message'; data: SseMessage }
   | { type: 'done'; data: SseDone }
   | { type: 'error'; data: SseError };

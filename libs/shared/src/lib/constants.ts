@@ -27,3 +27,10 @@ export const PLAN_TIERS: Record<PlanTier, PlanTierMeta> = {
  * from kebi, so the preview is the best ones.
  */
 export const PLACE_CLAIMS_PREVIEW_COUNT = 3;
+
+/**
+ * Cap on the chat request's client-supplied `local_time` (api-contract.md →
+ * POST /v1/chat). Mirrors kebi's own `max_length=40` on the field, so an
+ * oversized value is rejected at the gateway instead of round-tripping to a 422.
+ */
+export const CHAT_LOCAL_TIME_MAX_LENGTH = 40;

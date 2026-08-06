@@ -1,10 +1,6 @@
 import type { Location } from "../schemas/location.js";
 import type { PlaceSource } from "./category-emoji.js";
-import type {
-  LiteralUnion,
-  PlaceCategory,
-  PlaceTag,
-} from "./place-taxonomy.js";
+import type { PlaceCategory, PlaceTag } from "./place-taxonomy.js";
 
 /**
  * Chat request body the gateway sends to kebi (POST /v1/chat,
@@ -16,6 +12,12 @@ import type {
  * `location` is the user's actual position. The frontend attaches it from
  * a session-only store; `null` when geolocation was denied/unavailable.
  *
+ * `local_time` is the caller's wall-clock time, client-supplied for the same
+ * reason `location` is: only the device knows the user's real clock, and a
+ * server clock in another timezone answers for the wrong day. Day of week is
+ * load-bearing (kebi ADR-138). `null` → kebi answers without a schedule
+ * rather than guessing one.
+ *
  * `movement_profile` is a user mobility setting carried as a Clerk
  * `publicMetadata` token claim (like `plan`). The gateway reads it from the
  * verified token and injects it here — the client never sends it. `null`
@@ -24,6 +26,8 @@ import type {
 export interface ChatRequestDto {
   message: string;
   location: Location | null;
+  /** ISO-8601 wall-clock time with offset, e.g. `2026-08-10T19:30:00+08:00`. */
+  local_time: string | null;
   movement_profile: MovementProfile | null;
 }
 
@@ -92,115 +96,60 @@ export interface PlaceCore {
 
 // ── Chat response (POST /v1/chat) ────────────────────────────────────────────
 // The agent runs a LangGraph turn with the consult-family tools plus the
-// knowledge tool `research` (kebi ADR-129). Each tool's structured payload is
-// surfaced in `data.tool_results`; the payload union is discriminated by
-// `tool` — NEVER by payload shape (ConsultResult and ResearchResult even share
-// an `empty_reason` field name with disjoint value sets). The top-level `type`
-// is only ever "agent" or "error" — all downstream failures are caught and
-// returned as type="error" with HTTP 200 (see api-contract.md).
+// knowledge tool `research` (kebi ADR-129). Tool payloads stay server-side
+// (ADR-136): what the caller renders is `message` — prose with entity names
+// already wrapped as markdown links to `kebi://{kind}/{key}` — plus the flat
+// `entities` list resolving each link, and the turn's `recommendation_id`.
+// A new kebi tool therefore changes what the agent says, never what the client
+// draws. The top-level `type` is only ever "agent" or "error" — all downstream
+// failures are caught and returned as type="error" with HTTP 200 (see
+// api-contract.md).
 
-export type ConsultTool = "find_saved" | "suggest_places" | "discover_places";
-
-export type ResearchTool = "research";
-
-export type ChatTool = ConsultTool | ResearchTool;
-
-export const CONSULT_TOOLS = [
-  "find_saved",
-  "suggest_places",
-  "discover_places",
-] as const satisfies readonly ConsultTool[];
-
-export const RESEARCH_TOOL: ResearchTool = "research";
+/** Which detail surface a chat link opens (kebi ADR-136). */
+export type ChatEntityKind = "venue" | "area";
 
 /**
- * Whether a tool result belongs to the consult family (place candidates) —
- * the canonical discrimination for `ToolResult.payload` (ADR-050). Unknown,
- * future, and `null` tool names are NOT consult (ADR-019): a new kebi tool
- * degrades to the prose path, never to a broken place card.
+ * One linkable entity in a chat answer — one per markdown link in `message`,
+ * in the order the links appear. `kind` + `key` are `uri` pre-split so the
+ * client's link handler never parses: `key` is `places.id` for a venue and the
+ * slugged geo key (`{cc}[/{city}[/{neighborhood}]]`) for an area. `name` is the
+ * canonical display name, which may differ from the text the answer used
+ * ("Luigis" vs "Luigi's").
  */
-export function isConsultTool(tool: string | null): tool is ConsultTool {
-  return tool !== null && (CONSULT_TOOLS as readonly string[]).includes(tool);
-}
-
-export type ConsultCandidateSource = "saved" | "suggested" | "discovered";
-
-/** Why a tool produced no candidates (e.g. "no_location", "no_match"). */
-export type ConsultEmptyReason = LiteralUnion<"no_location" | "no_match">;
-
-export interface ConsultCandidate {
-  place: PlaceCore;
-  source: ConsultCandidateSource;
-  /** Namer's rationale, present for suggested/discovered candidates. */
-  reason?: string | null;
-}
-
-export interface ConsultResult {
-  candidates: ConsultCandidate[];
-  empty_reason?: ConsultEmptyReason | null;
+export interface ChatEntity {
+  kind: ChatEntityKind;
+  key: string;
+  name: string;
+  /** `kebi://{kind}/{key}`, pre-composed. */
+  uri: string;
   /**
-   * Per-recommendation id minted by kebi. The client echoes it back when the
-   * user accepts/rejects (`POST /v1/signal`) or saves (`POST /v1/user/places`) a
-   * candidate, so the signal attributes to that recommendation.
+   * Single emoji drawn beside the name (ADR-146). A venue's comes off its
+   * catalog row, where an LLM already picked it (ADR-117); an area's is picked
+   * by the turn's location resolver. **Nullable on both kinds by design** — a
+   * path with no model behind it leaves it unset and the client falls back to
+   * its own mapping. An area's icon is a per-conversation choice, not a stored
+   * one, so the same neighbourhood may carry different emoji for two users.
    */
-  recommendation_id: string;
+  icon: string | null;
 }
 
-/** Why research produced no notes (e.g. "no_claims", "unresolved"). */
-export type ResearchEmptyReason = LiteralUnion<
-  "unresolved" | "ambiguous" | "no_claims" | "no_topic_match"
->;
-
-/**
- * One insider note from the knowledge layer, scoped to an area rather than a
- * place — the research analogue of {@link PlaceNote} (no `from_shared`, plus
- * the retrieval `confidence`). `id` is the underlying claim's stable id.
- */
-export interface ResearchNote {
-  id: string;
-  text: string;
-  tags: string[];
-  source: "community" | "expert" | "kebi";
-  confidence: number;
-  agree_count: number;
-  disagree_count: number;
-}
-
-/**
- * The `research` tool's payload (kebi ADR-129): knowledge notes about the
- * resolved area (`entity_name`/`entity_key`), not place candidates — there is
- * no `recommendation_id` and nothing in it is save/signal-able. The turn's
- * user-facing answer is the `message` prose; clients don't render this payload
- * yet (runtime validation is deferred to the surface that first consumes it,
- * ADR-046/ADR-050). `empty_reason` + `clarification` are set when `notes` is
- * empty.
- */
-export interface ResearchResult {
-  entity_name: string;
-  entity_key: string;
-  notes: ResearchNote[];
-  empty_reason?: ResearchEmptyReason | null;
-  clarification?: string | null;
-}
-
-export interface ConsultToolResult {
-  tool: ConsultTool;
-  tool_call_id: string;
-  payload: ConsultResult;
-}
-
-export interface ResearchToolResult {
-  tool: ResearchTool;
-  tool_call_id: string;
-  payload: ResearchResult;
-}
-
-/** Discriminated by `tool` — never sniff the payload shape (ADR-050). */
-export type ToolResult = ConsultToolResult | ResearchToolResult;
+// Tool results are gone from the wire (kebi ADR-136): the place/knowledge
+// payloads stay server-side and reach the client through the detail screen a
+// `kebi://` link opens. There is no `tool_results` field and no `tool_result`
+// SSE frame — a new kebi tool changes what the agent says, never what the
+// client draws.
 
 export interface AgentResponseData {
   reasoning_steps: ReasoningStep[];
-  tool_results: ToolResult[];
+  /** One per `kebi://` link in `message`, in the order they appear (ADR-136). */
+  entities: ChatEntity[];
+  /**
+   * The turn's consult id, echoed back by `POST /v1/signal` and
+   * `POST /v1/user/places` so the accept/reject/save attributes to it. It moved
+   * here from the consult payload when tool results left the wire (ADR-136);
+   * `null` on a turn where no place tool ran.
+   */
+  recommendation_id: string | null;
 }
 
 export interface ErrorResponseData {
