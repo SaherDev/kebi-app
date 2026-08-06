@@ -1,5 +1,5 @@
 // Shared constants — populated as needed by feature sub-plans
-import type { PlanTier } from './types';
+import type { ChatEntityKind, PlanTier } from './types';
 
 /** Display metadata for a plan tier. All copy is lowercase per the design system. */
 export interface PlanTierMeta {
@@ -34,3 +34,15 @@ export const PLACE_CLAIMS_PREVIEW_COUNT = 3;
  * oversized value is rejected at the gateway instead of round-tripping to a 422.
  */
 export const CHAT_LOCAL_TIME_MAX_LENGTH = 40;
+
+/**
+ * Glyph drawn on a chat entity whose `icon` came back `null` — nullable by
+ * design on both kinds (api-contract.md → ChatEntity), so every surface that
+ * draws an entity needs the same fallback rather than an empty avatar. Keyed by
+ * `kind` because that is all the client knows when the server picked nothing:
+ * a venue is a place on a map, an area is a region.
+ */
+export const CHAT_ENTITY_FALLBACK_ICON: Record<ChatEntityKind, string> = {
+  venue: '📍',
+  area: '🗺️',
+};

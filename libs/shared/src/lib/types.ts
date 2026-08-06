@@ -548,15 +548,16 @@ export const FEEDBACK_CATEGORIES: readonly FeedbackCategory[] = [
 
 /**
  * One transcript turn attached to a `wrong_answer` report. Deliberately lean:
- * reasoning step titles and tool names only — never tool payloads (large,
- * PII-adjacent, and beyond what the in-app disclosure promises).
+ * turn text and reasoning step titles only — never tool payloads (large,
+ * PII-adjacent, and beyond what the in-app disclosure promises). Tool names
+ * left with them: the client no longer sees which tools ran (ADR-136), and the
+ * step titles say what happened in words a reader can act on.
  */
 export interface FeedbackTranscriptTurn {
   role: "you" | "kebi";
   text: string;
   at: string;
   step_titles?: string[];
-  tool_names?: string[];
 }
 
 /**
