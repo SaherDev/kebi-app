@@ -103,19 +103,23 @@ describe('ChatScreen', () => {
             key: 'c0ffee00',
             name: 'Contact Tokyo',
             uri: 'kebi://venue/c0ffee00',
+            icon: '🪩',
           },
         ],
       }),
       frame('done', { tool_calls_used: 1 }),
     ]);
 
-    const { submit, getByText, queryByText } = renderChat();
+    const { submit, getAllByText, getByText, queryByText } = renderChat();
     submit('drinks tonight');
 
     expect(getByText('drinks tonight')).toBeTruthy(); // user turn rendered immediately
-    // The prose IS the answer (ADR-136), and the entity link renders as its
-    // label — never the raw markdown.
-    await waitFor(() => expect(getByText('Contact Tokyo')).toBeTruthy());
+    // The prose IS the answer (ADR-136) and the entity link renders as its
+    // label — never the raw markdown. The name appears twice: once inline in
+    // the sentence, once as the rail chip indexing it.
+    await waitFor(() => expect(getAllByText('Contact Tokyo')).toHaveLength(2));
+    expect(getByText('mentioned')).toBeTruthy(); // the rail's eyebrow
+    expect(getByText('🪩')).toBeTruthy(); // kebi's icon, not our fallback
     expect(getByText('searched your saved spots')).toBeTruthy(); // reasoning step
     expect(queryByText(/kebi:\/\//)).toBeNull();
   });

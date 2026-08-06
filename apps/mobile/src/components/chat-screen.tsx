@@ -23,6 +23,10 @@ import { Icon } from './icon';
 import { Mascot } from './mascot';
 import { ActionSheet } from './action-sheet';
 import { ReasoningBlock } from './reasoning-block';
+import { ChatAnswer } from './chat-answer';
+import { ChatEntityRail } from './chat-entity-rail';
+import { useOpenChatVenue } from './use-open-chat-venue';
+import type { ChatEntity } from '@kebi-app/shared';
 import {
   useChatTranscript,
   type ChatTranscriptValue,
@@ -72,6 +76,9 @@ export function ChatScreen({ onClose, seed }: ChatScreenProps) {
   const { show: showToast, reserveTopAnchor } = useToast();
   const showUpgrade = useUpgradeToast();
   const transcript = useChatTranscript();
+  // Stable across renders — TurnRow is memoized, so a fresh handler per render
+  // would re-render every turn in the list.
+  const openVenue = useOpenChatVenue();
   const { turns, startTurn, upsertStep, setMessage, finishTurn, stopTurn, failTurn, toggleCollapse, clearTranscript, restoreTranscript } =
     transcript;
 
@@ -274,7 +281,12 @@ export function ChatScreen({ onClose, seed }: ChatScreenProps) {
           data={turns}
           keyExtractor={(turn) => turn.key}
           renderItem={({ item }) => (
-            <TurnRow turn={item} labels={turnLabels} onToggle={toggleCollapse} />
+            <TurnRow
+              turn={item}
+              labels={turnLabels}
+              onToggle={toggleCollapse}
+              onOpenVenue={openVenue}
+            />
           )}
           contentContainerClassName="gap-6 px-6 pb-6 pt-2"
           showsVerticalScrollIndicator={false}
@@ -363,6 +375,8 @@ interface TurnLabels {
   thought: string;
   stopped: string;
   interrupted: string;
+  /** Eyebrow over the entity rail — the venues this turn named. */
+  mentioned: string;
 }
 
 function labels(t: (k: string) => string): TurnLabels {
@@ -374,6 +388,7 @@ function labels(t: (k: string) => string): TurnLabels {
     thought: t('chat.thought'),
     stopped: t('chat.stopped'),
     interrupted: t('chat.interrupted'),
+    mentioned: t('chat.mentioned'),
   };
 }
 
@@ -409,15 +424,17 @@ const TurnRow = memo(function TurnRow({
   turn,
   labels: l,
   onToggle,
+  onOpenVenue,
 }: {
   turn: ChatTurn;
   labels: TurnLabels;
   onToggle: ChatTranscriptValue['toggleCollapse'];
+  onOpenVenue: (entity: ChatEntity) => void;
 }) {
   return turn.role === 'you' ? (
     <UserTurnRow turn={turn} label={l.you} />
   ) : (
-    <KebiTurnRow turn={turn} labels={l} onToggle={onToggle} />
+    <KebiTurnRow turn={turn} labels={l} onToggle={onToggle} onOpenVenue={onOpenVenue} />
   );
 });
 
@@ -438,10 +455,12 @@ function KebiTurnRow({
   turn,
   labels: l,
   onToggle,
+  onOpenVenue,
 }: {
   turn: KebiTurn;
   labels: TurnLabels;
   onToggle: ChatTranscriptValue['toggleCollapse'];
+  onOpenVenue: (entity: ChatEntity) => void;
 }) {
   // Show the thinking panel once steps arrive, or while still streaming with no
   // answer yet (a simple greeting that runs no tools collapses to just text).
@@ -471,11 +490,13 @@ function KebiTurnRow({
 
       {/* The prose IS the answer on every turn (ADR-136): kebi no longer sends
           place payloads to chat, it names the places in the text and links
-          them. */}
+          them. The rail below indexes those links place-by-place. */}
       {turn.message ? (
-        <Text className="text-[17px] leading-relaxed text-text-muted">
-          {renderInlineMarkdown(turn.message)}
-        </Text>
+        <ChatAnswer message={turn.message} entities={turn.entities} onOpen={onOpenVenue} />
+      ) : null}
+
+      {turn.status === 'done' ? (
+        <ChatEntityRail entities={turn.entities} label={l.mentioned} onOpen={onOpenVenue} />
       ) : null}
 
       {turn.status === 'error' ? (
@@ -498,40 +519,6 @@ function errorMessage(err: unknown, t: (key: string) => string): string {
       ? (err as { status?: number }).status
       : undefined;
   return status === 429 ? t('chat.rateLimited') : t('chat.error');
-}
-
-/**
- * Render kebi's light markdown in an assistant message: `**bold**` spans become
- * semibold (and a touch darker) and `[name](kebi://…)` entity links (ADR-136)
- * render as their label, emphasized. Everything else is plain — kebi only sends
- * these two forms, so this stays minimal, no full parser.
- *
- * The links are not yet tappable: opening one needs a place-detail fetch by id,
- * which the contract does not expose yet. Until then the label reads as normal
- * prose instead of leaking raw markdown.
- */
-const INLINE_MARKDOWN = /(\*\*[^*]+\*\*|\[[^\]]+\]\(kebi:\/\/[^)]+\))/g;
-
-function renderInlineMarkdown(text: string): ReactNode {
-  return text.split(INLINE_MARKDOWN).map((part, i) => {
-    const bold = /^\*\*([^*]+)\*\*$/.exec(part);
-    if (bold) {
-      return (
-        <Text key={i} className="font-semibold text-text">
-          {bold[1]}
-        </Text>
-      );
-    }
-    const link = /^\[([^\]]+)\]\(kebi:\/\/[^)]+\)$/.exec(part);
-    if (link) {
-      return (
-        <Text key={i} className="font-medium text-text">
-          {link[1]}
-        </Text>
-      );
-    }
-    return <Text key={i}>{part}</Text>;
-  });
 }
 
 /** "9:38 pm" from an epoch — delegates to the shared lowercase, Intl-free clock. */
