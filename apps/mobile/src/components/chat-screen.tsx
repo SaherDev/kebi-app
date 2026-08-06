@@ -77,8 +77,9 @@ export function ChatScreen({ onClose, seed }: ChatScreenProps) {
   const showUpgrade = useUpgradeToast();
   const transcript = useChatTranscript();
   // Stable across renders — TurnRow is memoized, so a fresh handler per render
-  // would re-render every turn in the list.
-  const openVenue = useOpenChatVenue();
+  // would re-render every turn in the list. Takes `onClose` because chat is an
+  // overlay: the card has to be pushed with the chat down, not under it.
+  const openVenue = useOpenChatVenue(onClose);
   const { turns, startTurn, upsertStep, setMessage, finishTurn, stopTurn, failTurn, toggleCollapse, clearTranscript, restoreTranscript } =
     transcript;
 

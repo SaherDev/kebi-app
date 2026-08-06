@@ -25,8 +25,13 @@ import { useTranslation } from '../i18n/context';
  * Rather than open a half-empty card off the entity's name, the unresolved case
  * says so in a toast. When kebi ships place-by-id, only the lookup below
  * changes — the rail, the links, and the navigation stay as they are.
+ *
+ * `closeChat` is required, not optional: chat is an **overlay above the route
+ * stack**, not a screen in it, so pushing `/place` under an open chat lands the
+ * card behind it and the tap looks like it did nothing. Closing first is the
+ * same order the `?` help button uses.
  */
-export function useOpenChatVenue(): (entity: ChatEntity) => void {
+export function useOpenChatVenue(closeChat: () => void): (entity: ChatEntity) => void {
   const router = useRouter();
   const client = useApiClient();
   const placeDetail = usePlaceDetail();
@@ -48,6 +53,7 @@ export function useOpenChatVenue(): (entity: ChatEntity) => void {
           );
           if (view) {
             placeDetail.set(view);
+            closeChat();
             router.push('/place');
           } else {
             show({ text: t('chat.venueUnavailable'), icon: 'alert' });
@@ -61,7 +67,7 @@ export function useOpenChatVenue(): (entity: ChatEntity) => void {
         }
       })();
     },
-    [client, placeDetail, router, show, t],
+    [client, closeChat, placeDetail, router, show, t],
   );
 }
 

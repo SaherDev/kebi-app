@@ -15,10 +15,10 @@ import type { ChatEntity } from '@kebi-app/shared';
  * - **inline** — `**bold**` spans and `[name](kebi://{kind}/{key})` entity
  *   links, resolved against the turn's `entities` by `uri`.
  *
- * A link is **underlined and tappable**; bold is not. That difference is the
- * whole affordance — rendering both as plain semibold (as an earlier pass did)
- * leaves the reader no way to tell an emphasized word from a place they can
- * open.
+ * A link is tappable but carries **no underline** — the answer names places
+ * constantly, and underlining every one of them turns a paragraph into a field
+ * of rules. The rail beneath the prose is where the affordance is spelled out;
+ * inline, a place reads as part of the sentence and opens if you touch it.
  */
 
 /** A blank line (with any trailing spaces) separates blocks. */
@@ -127,7 +127,7 @@ export function ChatAnswer({ message, entities, onOpen }: ChatAnswerProps) {
         return (
           <Text
             key={i}
-            className="font-semibold text-text underline"
+            className="font-semibold text-text"
             // An entity the turn didn't resolve isn't tappable — it still reads
             // as the answer's own wording rather than leaking the raw link.
             onPress={entity ? () => onOpen(entity) : undefined}

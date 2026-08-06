@@ -90,12 +90,14 @@ describe('ChatAnswer', () => {
     expect(queryByText(/\*\*/)).toBeNull();
   });
 
-  it('underlines links but not bold — the difference is the affordance', () => {
+  it('never underlines a link — the rail carries the affordance, not the prose', () => {
+    // An answer names places constantly; underlining each one turns the
+    // paragraph into a field of rules.
     const { getByText } = renderAnswer();
-    const flat = (node: { props: { className?: string } }) => node.props.className ?? '';
+    const className = (node: { props: { className?: string } }) => node.props.className ?? '';
 
-    expect(flat(getByText("Luigi's"))).toContain('underline');
-    expect(flat(getByText('literally'))).not.toContain('underline');
+    expect(className(getByText("Luigi's"))).not.toContain('underline');
+    expect(className(getByText('literally'))).not.toContain('underline');
   });
 
   it('opens the entity behind a tapped link', () => {
