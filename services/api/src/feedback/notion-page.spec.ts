@@ -74,7 +74,6 @@ describe('buildFeedbackPage', () => {
           role: 'kebi',
           text: 'Streamer Coffee',
           step_titles: ['reading your taste', 'checking saved'],
-          tool_names: ['suggest_places'],
         }),
       ],
     });
@@ -84,7 +83,7 @@ describe('buildFeedbackPage', () => {
     expect(texts).toContain('you: quiet cafe\nkebi: Streamer Coffee');
     expect(texts).toContain('transcript');
     expect(texts).toContain(
-      'kebi: Streamer Coffee (steps: reading your taste → checking saved · tools: suggest_places)',
+      'kebi: Streamer Coffee (steps: reading your taste → checking saved)',
     );
   });
 

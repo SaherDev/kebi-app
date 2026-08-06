@@ -3,7 +3,6 @@
 import type {
   ChipItem,
   ClientIntent,
-  ConsultResponseData,
   ExtractPlaceItem,
   ReasoningStep,
   RecallResponseData,
@@ -52,13 +51,6 @@ export type ThreadEntry =
   | {
       id: string;
       role: "assistant";
-      type: "consult";
-      message: string;
-      data: ConsultResponseData;
-    }
-  | {
-      id: string;
-      role: "assistant";
       type: "save";
       item: ExtractPlaceItem;
       sourceUrl: string | null;
@@ -103,7 +95,6 @@ interface HomeState {
   // Query state
   query: string | null;
   streamingMessage: string | null;
-  result: ConsultResponseData | null;
   reasoningSteps: ReasoningStep[];
   error: {
     message: string;
@@ -223,7 +214,6 @@ export const useHomeStore = create<HomeState>()(
       getToken: null,
       query: null,
       streamingMessage: null,
-      result: null,
       reasoningSteps: [],
       error: null,
       hydrated: false,
@@ -356,7 +346,6 @@ export const useHomeStore = create<HomeState>()(
           activeFlowId: initialFlowId,
           query: message,
           streamingMessage: message,
-          result: null,
           reasoningSteps: [],
           error: null,
           clarificationMessage: null,
@@ -471,7 +460,6 @@ export const useHomeStore = create<HomeState>()(
           activeFlowId: null,
           query: null,
           streamingMessage: null,
-          result: null,
           reasoningSteps: [],
           error: null,
           abortController: null,
@@ -502,7 +490,6 @@ export const useHomeStore = create<HomeState>()(
           phase: "idle",
           activeFlowId: null,
           query: null,
-          result: null,
           reasoningSteps: [],
           error: null,
           abortController: null,
@@ -537,7 +524,6 @@ export const useHomeStore = create<HomeState>()(
           phase,
           activeFlowId: null,
           query: null,
-          result: null,
           reasoningSteps: [],
           error: null,
           abortController: null,

@@ -18,7 +18,6 @@ import { RecallResultBubble } from '@/components/home/RecallResultBubble';
 import { PlaceCard } from '@/components/PlaceCard';
 import { ConsultError } from '@/components/home/ConsultError';
 import { SaveError } from '@/components/home/SaveError';
-import { ConsultResult } from '@/flows/consult/ConsultResult';
 import { TASTE_CHIP_BANK } from '@/constants/home-suggestions';
 import { Illustration } from '@/components/illustrations/Illustration';
 import { KebiCard } from '@kebi-app/ui';
@@ -97,15 +96,6 @@ function ThreadEntryView({ entry }: { entry: ThreadEntry }) {
   }
   if (entry.type === 'clarification' || entry.type === 'assistant') {
     return <AssistantBubble message={entry.message} type={entry.type} timestamp={timestampFromId(entry.id)} />;
-  }
-  if (entry.type === 'consult') {
-    const intro = extractIntro(entry.message);
-    return (
-      <div className="flex flex-col gap-4">
-        {intro && <AssistantBubble message={intro} type="assistant" timestamp={timestampFromId(entry.id)} />}
-        <ConsultResult result={entry.data} />
-      </div>
-    );
   }
   if (entry.type === 'save') {
     if (!entry.item.place) return null;

@@ -58,7 +58,6 @@ function turnLine(turn: FeedbackTranscriptTurnDto): string {
   const text = truncate(turn.text, TURN_CHAR_MAX);
   const meta: string[] = [];
   if (turn.step_titles?.length) meta.push(`steps: ${turn.step_titles.join(' → ')}`);
-  if (turn.tool_names?.length) meta.push(`tools: ${turn.tool_names.join(', ')}`);
   return meta.length ? `${turn.role}: ${text} (${meta.join(' · ')})` : `${turn.role}: ${text}`;
 }
 
