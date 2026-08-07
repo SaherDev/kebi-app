@@ -220,6 +220,26 @@ describe('PlaceScreen', () => {
       expect(queryByText('liked')).toBeNull();
     });
 
+    it('says the place is new rather than rendering an empty screen', () => {
+      // What a just-discovered place actually arrives as: a provider-built row
+      // with its category and nothing else — every section below would hide.
+      const fresh: PlaceView = {
+        place: { ...makeView().place, tags: [], categories: ['restaurant'] },
+        user_data: null,
+        claims: [],
+      };
+
+      const { getByText, getByLabelText } = renderPlace(fresh);
+
+      expect(getByText("kebi doesn't know much about this one yet")).toBeTruthy();
+      expect(getByLabelText('save')).toBeTruthy();
+    });
+
+    it('stays quiet once the place has anything to show', () => {
+      const { queryByText } = renderPlace({ ...makeView(), user_data: null });
+      expect(queryByText("kebi doesn't know much about this one yet")).toBeNull();
+    });
+
     it('saves with the place id alone and flips to the saved screen in place', async () => {
       const created = {
         user_place_id: 'u9',

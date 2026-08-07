@@ -68,6 +68,7 @@
     "addNote": "add a note",
     "save": "save",
     "saving": "saving…",
+    "bare": "kebi doesn't know much about this one yet",
     "actions": {
       "map": "show on map",
       "share": "share"

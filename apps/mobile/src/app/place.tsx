@@ -74,6 +74,22 @@ function ServiceButton({
 }
 
 /**
+ * Nothing below the action row would render: no insider notes, no tags of any
+ * kind, no accessibility line. True for a freshly discovered place, whose
+ * catalog row carries only its category until content flows through extraction.
+ */
+function isBare(view: PlaceView): boolean {
+  const { place } = view;
+  return (
+    view.claims.length === 0 &&
+    tagsOfType(place, 'atmosphere').length === 0 &&
+    tagsOfType(place, 'feature').length === 0 &&
+    otherTags(place).length === 0 &&
+    accessibilityLine(place) === null
+  );
+}
+
+/**
  * Raise the chat again when a place opened *from* chat goes away. Chat is an
  * overlay, not a route, so popping this screen otherwise lands on home and the
  * conversation the user was reading is off screen. Keyed to unmount rather than
@@ -201,6 +217,16 @@ function PlaceContent({
         </View>
 
         {saved ? <PlaceSourceRow view={saved} /> : null}
+
+        {/*
+          A place kebi discovered this turn arrives thin: its catalog row is
+          provider-built, so experiential tags and insider notes only accumulate
+          later. Every section below hides itself when empty, which left the
+          screen looking broken rather than new — say so instead.
+        */}
+        {isBare(view) ? (
+          <Text className="text-[15px] leading-relaxed text-text-soft">{t('place.bare')}</Text>
+        ) : null}
 
         <PlaceClaimsSection claims={view.claims} />
 
