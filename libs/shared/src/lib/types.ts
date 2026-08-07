@@ -246,13 +246,29 @@ export interface PlaceNote {
 }
 
 /**
- * A library entry: the catalog place, the caller's user-state, and the place's
- * insider notes (`claims`, ADR-127). `claims` is `[]` when a place has none.
+ * Any catalog place the caller can open, saved or not (ADR-151): the place, the
+ * caller's relationship to it, and the place's insider notes (`claims`,
+ * ADR-127). `claims` is `[]` when a place has none.
+ *
+ * `user_data` is `null` when the caller never saved this place — that null is
+ * the place screen's "offer save" signal, and it means there is no
+ * `user_place_id` to PATCH or DELETE, so every user-state affordance is absent.
+ * `GET /v1/places/{id}` returns this shape; `GET /v1/user/library` returns the
+ * saved narrowing below.
  */
-export interface SavedPlaceView {
+export interface PlaceView {
   place: PlaceCore;
-  user_data: UserPlace;
+  user_data: UserPlace | null;
   claims: PlaceNote[];
+}
+
+/**
+ * A library entry — a {@link PlaceView} the caller has saved. Carries
+ * `user_place_id`, so the mutating surfaces (Library pills, place menu, note
+ * sheet) take this type and keep their non-null guarantee.
+ */
+export interface SavedPlaceView extends PlaceView {
+  user_data: UserPlace;
 }
 
 /**
@@ -291,21 +307,17 @@ export interface UpdateUserPlaceRequest {
 }
 
 /**
- * POST /v1/user/places request body the gateway forwards to kebi — save a
- * place kebi recommended ("save it" on the consult card). Identity is the
- * X-Gateway-User-Id header, never the body; `source` is server-stamped (kebi).
+ * POST /v1/user/places request body the gateway forwards to kebi — the plain
+ * "save" on the place screen (ADR-151). Identity is the X-Gateway-User-Id
+ * header, never the body; `source` is server-stamped (kebi).
+ *
+ * The place id is the whole body. No attribution rides along: the only way a
+ * client holds a `places.id` is off a `kebi://venue/{id}` link kebi produced, so
+ * calling this endpoint at all is what marks the save as kebi-recommended. The
+ * retired card's `recommendation_id`/`reason` are now rejected as unknown keys.
  */
 export interface SaveUserPlaceRequest {
   place_core_id: string;
-  recommendation_id: string;
-  /**
-   * The pick's rationale the card is showing — the client supplies it since the
-   * reason isn't otherwise stored server-side. On create, kebi writes it to the
-   * knowledge layer as a user-scoped `kebi_message` claim on the place (ADR-127)
-   * — it is no longer stored on the save as `user_data.note`. Omit or `null` for
-   * no reason; a re-tap adds nothing (claim-text dedup).
-   */
-  reason?: string | null;
 }
 
 // ── Home screen (greeting + recall) ─────────────────────────────────────────
@@ -479,25 +491,9 @@ export interface UserProfile {
   plan: PlanTier;
 }
 
-// Signal types — recommendation accept/reject only (kebi ADR-076/078).
-export type SignalType =
-  | "recommendation_accepted"
-  | "recommendation_rejected";
-
-/**
- * Behavioral signal body the gateway sends to kebi (POST /v1/signal).
- * `place_core_id` is kebi's `places.id` (ADR-077). Identity travels in the
- * `X-Gateway-User-Id` header, never the body.
- */
-export interface SignalRequest {
-  signal_type: SignalType;
-  recommendation_id: string;
-  place_core_id: string;
-}
-
-export interface SignalResponse {
-  status: string;
-}
+// The accept/reject signal types retired with the recommendation card that fed
+// them (ADR-151): kebi deleted POST /v1/signal, so there is nothing to send.
+// Negative taste input now comes only from the Library pills.
 
 // Knowledge curation (POST /v1/knowledge/curate) — ADR-121. Expert prose is
 // structured by kebi into geo-scoped `curated_expert` claims.
