@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Kebi Area — screen options (kebi://area/{key})</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #FAFAF9;
+    --surface: #F1F1EF;
+    --surface-2: #E8E8E5;
+    --text: #1A1A1A;
+    --text-muted: #8A8A87;
+    --text-soft: #B5B5B1;
+    --success: #4A7C3A;
+    --like: #C2410C;
+    --pill-warm: #FBEDE4;
+  }
+
+  html, body {
+    background: #2A2A28;
+    font-family: 'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    padding: 40px 24px 64px;
+    color: #FAFAF9;
+  }
+
+  .page-head { max-width: 1360px; margin: 0 auto 32px; }
+  .page-head h1 { font-size: 22px; font-weight: 700; letter-spacing: -0.02em; }
+  .page-head p {
+    margin-top: 8px; font-size: 14px; line-height: 1.6; color: #B5B5B1;
+    max-width: 940px; letter-spacing: -0.005em;
+  }
+  .page-head code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 12.5px; background: #1A1A18; padding: 1px 5px; border-radius: 4px; color: #E8E8E5;
+  }
+
+  .row {
+    display: flex; gap: 32px; justify-content: center; align-items: flex-start;
+    flex-wrap: wrap; max-width: 1400px; margin: 0 auto;
+  }
+
+  .col { display: flex; flex-direction: column; gap: 14px; width: 390px; }
+
+  .cap { font-size: 13px; line-height: 1.55; color: #B5B5B1; letter-spacing: -0.005em; }
+  .cap b { color: #FAFAF9; font-weight: 600; }
+  .cap .verdict { color: #8FBF7A; font-weight: 600; }
+  .cap .against { color: #D98A6A; font-weight: 600; }
+
+  .phone {
+    width: 390px;
+    height: 844px;
+    background: var(--bg);
+    border-radius: 48px;
+    overflow: hidden;
+    position: relative;
+    box-shadow: 0 0 0 12px #111, 0 0 0 14px #2A2A28, 0 40px 80px rgba(0,0,0,0.5);
+    display: flex;
+    flex-direction: column;
+    color: var(--text);
+  }
+
+  .status-bar {
+    height: 50px; padding: 18px 32px 0; display: flex;
+    justify-content: space-between; align-items: center;
+    font-size: 15px; font-weight: 600; color: var(--text); flex-shrink: 0;
+  }
+  .status-right { display: flex; gap: 6px; align-items: center; }
+
+  .top-bar {
+    padding: 12px 16px; display: flex; justify-content: space-between;
+    align-items: center; flex-shrink: 0;
+  }
+
+  .icon-btn {
+    width: 40px; height: 40px; border-radius: 50%; background: var(--surface);
+    display: flex; align-items: center; justify-content: center; border: none; cursor: pointer;
+  }
+  .icon-btn svg { width: 18px; height: 18px; stroke: var(--text); stroke-width: 1.8; fill: none; }
+
+  .top-pill {
+    display: flex; align-items: center; background: var(--surface);
+    border-radius: 999px; padding: 0 4px;
+  }
+  .top-pill button {
+    width: 40px; height: 40px; border-radius: 50%; background: transparent; border: none;
+    display: flex; align-items: center; justify-content: center; cursor: pointer;
+  }
+  .top-pill svg { width: 18px; height: 18px; stroke: var(--text); stroke-width: 1.8; fill: none; }
+
+  .scroll {
+    flex: 1; overflow-y: auto; padding: 8px 24px 20px;
+    display: flex; flex-direction: column; gap: 16px;
+  }
+  .scroll::-webkit-scrollbar { display: none; }
+
+  /* ── hero ─────────────────────────────────────────────────────────────── */
+
+  .eyebrow { font-size: 13px; color: var(--text-muted); letter-spacing: -0.005em; }
+
+  /* the geo key read left to right, each ancestor its own openable area */
+  .breadcrumb { display: inline-flex; align-items: center; gap: 5px; flex-wrap: wrap; }
+  .breadcrumb a {
+    color: var(--text-muted); text-decoration: underline;
+    text-decoration-color: var(--surface-2); text-underline-offset: 3px;
+  }
+  .breadcrumb .sep { color: var(--text-soft); }
+
+  .title {
+    font-size: 30px; font-weight: 700; color: var(--text);
+    letter-spacing: -0.025em; line-height: 1.15; margin-top: -4px;
+  }
+  .title .glyph { margin-right: 8px; }
+
+  .meta-wrapper {
+    background: var(--surface); border-radius: 14px; padding: 10px;
+    display: flex; flex-wrap: wrap; gap: 6px; align-items: center;
+  }
+  .meta-chip {
+    display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px;
+    background: var(--bg); border-radius: 999px; font-size: 13px; font-weight: 500;
+    color: var(--text); letter-spacing: -0.005em; white-space: nowrap;
+  }
+  .meta-chip svg { width: 13px; height: 13px; stroke: var(--text-muted); stroke-width: 1.8; fill: none; }
+
+  /* the profile prose — the hero of the screen, never empty (ADR: profile-on-open) */
+  .description {
+    font-size: 17px; color: var(--text); line-height: 1.5; letter-spacing: -0.01em;
+  }
+  .description.clamped {
+    display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
+  }
+  .more {
+    align-self: flex-start; background: none; border: none; padding: 0; cursor: pointer;
+    font-family: inherit; font-size: 13px; font-weight: 600; color: var(--text-muted);
+    letter-spacing: -0.005em; margin-top: -8px;
+  }
+
+  /* ── sections ─────────────────────────────────────────────────────────── */
+
+  .tag-header {
+    font-size: 13px; font-weight: 600; color: var(--text-soft);
+    text-transform: uppercase; letter-spacing: 0.08em;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .tag-header .count { font-weight: 500; letter-spacing: 0.02em; text-transform: none; }
+  .tag-section { display: flex; flex-direction: column; gap: 10px; }
+  .tag-chips { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+  .tag-chip {
+    padding: 6px 12px; border-radius: 999px; background: var(--surface);
+    font-size: 13px; font-weight: 500; color: var(--text); letter-spacing: -0.005em;
+    display: inline-flex; align-items: center; gap: 5px;
+  }
+
+  .divider { height: 1px; background: var(--surface-2); border: none; margin: 2px 0; }
+
+  /* ── place rows (saved-first, then taste-ranked known places) ─────────── */
+
+  .place-list { display: flex; flex-direction: column; gap: 2px; }
+
+  .place-row {
+    display: flex; align-items: center; gap: 12px; padding: 10px 0; cursor: pointer;
+  }
+  .place-avatar {
+    width: 38px; height: 38px; border-radius: 12px; background: var(--surface);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; flex-shrink: 0;
+  }
+  .place-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+  .place-name {
+    font-size: 15px; font-weight: 600; color: var(--text); letter-spacing: -0.01em;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .place-sub {
+    font-size: 12.5px; color: var(--text-muted); letter-spacing: -0.005em;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .saved-dot {
+    width: 6px; height: 6px; border-radius: 50%; background: var(--success); flex-shrink: 0;
+  }
+  .chevron { width: 14px; height: 14px; stroke: var(--text-soft); stroke-width: 2; fill: none; flex-shrink: 0; }
+
+  /* horizontal card rail (option C) */
+  .rail {
+    display: flex; gap: 10px; overflow-x: auto; padding-bottom: 4px;
+    margin: 0 -24px; padding-left: 24px; padding-right: 24px;
+  }
+  .rail::-webkit-scrollbar { display: none; }
+  .rail-card {
+    flex-shrink: 0; width: 150px; background: var(--surface); border-radius: 16px;
+    padding: 12px; display: flex; flex-direction: column; gap: 6px; cursor: pointer;
+  }
+  .rail-card .g { font-size: 22px; }
+  .rail-card .n { font-size: 14px; font-weight: 600; letter-spacing: -0.01em; }
+  .rail-card .s { font-size: 12px; color: var(--text-muted); letter-spacing: -0.005em; }
+
+  /* ── the ask bar — drops into chat pre-anchored to this area ──────────── */
+
+  .ask-dock {
+    flex-shrink: 0; padding: 10px 20px 6px; background: var(--bg);
+    box-shadow: 0 -12px 24px -12px rgba(0,0,0,0.10);
+    display: flex; align-items: center; gap: 10px;
+  }
+  .ask-dock.inline { box-shadow: none; padding: 0; }
+  .ask-field {
+    flex: 1; display: flex; align-items: center; gap: 9px;
+    background: var(--surface); border-radius: 999px; padding: 13px 18px;
+    font-size: 14.5px; color: var(--text-muted); letter-spacing: -0.005em; cursor: pointer;
+  }
+  .ask-field svg { width: 15px; height: 15px; stroke: var(--text-soft); stroke-width: 1.8; fill: none; }
+  .kebi-ai-btn {
+    width: 52px; height: 52px; border-radius: 50%; background: white;
+    border: 1px solid var(--surface-2); display: flex; align-items: center;
+    justify-content: center; cursor: pointer; flex-shrink: 0;
+  }
+
+  /* suggested follow-ups — the area's own prompts */
+  .suggests { display: flex; gap: 6px; flex-wrap: wrap; }
+  .suggest {
+    padding: 8px 13px; border-radius: 999px; border: 1px solid var(--surface-2);
+    background: transparent; font-family: inherit; font-size: 13px; font-weight: 500;
+    color: var(--text); letter-spacing: -0.005em; cursor: pointer;
+  }
+
+  .tab-bar {
+    margin: 8px 16px 12px; padding: 0; display: flex;
+    align-items: center; justify-content: flex-end; flex-shrink: 0;
+  }
+
+  .home-indicator {
+    width: 134px; height: 5px; background: var(--text);
+    border-radius: 3px; margin: 4px auto 8px; flex-shrink: 0;
+  }
+
+  .foot {
+    max-width: 1360px; margin: 44px auto 0; font-size: 13px; line-height: 1.7;
+    color: #B5B5B1; letter-spacing: -0.005em;
+  }
+  .foot h2 { font-size: 15px; font-weight: 700; color: #FAFAF9; margin-bottom: 10px; }
+  .foot h2:not(:first-child) { margin-top: 28px; }
+  .foot code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 12.5px; background: #1A1A18; padding: 1px 5px; border-radius: 4px; color: #E8E8E5;
+  }
+  .foot table { border-collapse: collapse; margin-top: 12px; font-size: 12.5px; }
+  .foot th, .foot td { text-align: left; padding: 6px 18px 6px 0; border-bottom: 1px solid #3A3A38; vertical-align: top; }
+  .foot th { color: #FAFAF9; font-weight: 600; }
+  .foot .yes { color: #8FBF7A; }
+  .foot .no { color: #D98A6A; }
+  .foot ul { margin: 8px 0 0 18px; }
+  .foot li { margin-bottom: 5px; }
+</style>
+</head>
+<body>
+
+<div class="page-head">
+  <h1>Area screen — three layouts for <code>kebi://area/{key}</code></h1>
+  <p>
+    Today an area link renders underlined and tappable and does nothing —
+    <code>useOpenChatVenue</code> returns early on any kind that is not <code>venue</code>. Making it open
+    reverses ADR-136's "areas are context for a sentence, not somewhere to go", so the screen has to earn
+    the reversal. Backing shape mirrors the place screen (ADR-151): <code>GET /v1/areas/{key}</code> returns
+    <code>{ profile, places, user_data }</code>, where <b>profile</b> is global — generated once on first open,
+    shared by every user — and <b>places</b> / <b>user_data</b> are per-request and personal.
+    All three options render the same payload; they differ in what the screen is <i>for</i>.
+    Key is hierarchical (<code>id</code> → <code>id/bali</code> → <code>id/bali/canggu</code>), so every level opens
+    and content thins as scope widens.
+  </p>
+</div>
+
+<div class="row">
+
+  <!-- ══════════════════ OPTION A ══════════════════ -->
+  <div class="col">
+    <div class="cap">
+      <b>A · profile-first</b> — the place screen's twin. Same skeleton, same order: eyebrow, title,
+      meta chips, prose, chips, list. An area is a place-shaped thing you read.
+      <span class="verdict">zero new grammar; venue and area feel like one species.</span>
+      <span class="against">the ask bar is a dock at the bottom — easy to read past.</span>
+    </div>
+
+    <div class="phone">
+      <div class="status-bar">
+        <span>9:41</span>
+        <div class="status-right">
+          <svg width="17" height="11" viewBox="0 0 17 11" fill="currentColor"><path d="M1 7h2v3H1zM5 5h2v5H5zM9 3h2v7H9zM13 1h2v9h-2z"/></svg>
+          <svg width="15" height="11" viewBox="0 0 15 11" fill="currentColor"><path d="M7.5 2C9.7 2 11.7 2.8 13.3 4.2L14.5 3C12.6 1.2 10.1.2 7.5.2S2.4 1.2.5 3l1.2 1.2C3.3 2.8 5.3 2 7.5 2zM7.5 5.5c1.4 0 2.7.5 3.7 1.4l1.2-1.2c-1.4-1.3-3.2-2-5-2s-3.6.7-5 2l1.2 1.2c1-.9 2.3-1.4 3.7-1.4z"/></svg>
+          <svg width="24" height="11" viewBox="0 0 24 11" fill="none"><rect x="0.5" y="0.5" width="20" height="10" rx="2.5" stroke="currentColor"/><rect x="2" y="2" width="17" height="7" rx="1" fill="currentColor"/><rect x="21" y="3.5" width="1.5" height="4" rx="0.5" fill="currentColor"/></svg>
+        </div>
+      </div>
+
+      <!-- no TopPill: an area has no edit and no save (read + ask only) -->
+      <div class="top-bar">
+        <button class="icon-btn" aria-label="Back">
+          <svg viewBox="0 0 24 24"><polyline points="15 6 9 12 15 18"/></svg>
+        </button>
+      </div>
+
+      <div class="scroll">
+
+        <div class="eyebrow breadcrumb">
+          <a href="#">indonesia</a><span class="sep">›</span><a href="#">bali</a>
+        </div>
+        <h1 class="title"><span class="glyph">🏄</span>Canggu</h1>
+
+        <div class="meta-wrapper">
+          <div class="meta-chip">neighbourhood</div>
+          <div class="meta-chip">
+            <svg viewBox="0 0 24 24"><path d="M21 10c0 7-9 12-9 12s-9-5-9-12a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            12 min away
+          </div>
+          <div class="meta-chip">4 saved</div>
+        </div>
+
+        <div class="description">
+          the surf-and-laptop end of bali. mornings are flat whites and standing desks, evenings move
+          west to the cliff bars for sunset, and by ten it is one long strip of beach clubs. loud,
+          international, and unbothered about it.
+        </div>
+
+        <div class="tag-section">
+          <div class="tag-header">best for</div>
+          <div class="tag-chips">
+            <span class="tag-chip">🌅 sunset drinks</span>
+            <span class="tag-chip">💻 working from a café</span>
+            <span class="tag-chip">🏄 beginner surf</span>
+            <span class="tag-chip">🥗 health food</span>
+          </div>
+        </div>
+
+        <hr class="divider" />
+
+        <div class="tag-section">
+          <div class="tag-header">
+            <span>places here</span>
+            <span class="count">18</span>
+          </div>
+          <div class="place-list">
+
+            <div class="place-row">
+              <div class="place-avatar">🍸</div>
+              <div class="place-body">
+                <div class="place-name">Savaya Bali <span class="saved-dot"></span></div>
+                <div class="place-sub">beach club · sunset sets · $$$</div>
+              </div>
+              <svg class="chevron" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>
+            </div>
+
+            <div class="place-row">
+              <div class="place-avatar">☕</div>
+              <div class="place-body">
+                <div class="place-name">Crate Café <span class="saved-dot"></span></div>
+                <div class="place-sub">breakfast · fast wifi · $</div>
+              </div>
+              <svg class="chevron" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>
+            </div>
+
+            <div class="place-row">
+              <div class="place-avatar">🍝</div>
+              <div class="place-body">
+                <div class="place-name">Luigi's</div>
+                <div class="place-sub">italian · monday is their night · $$</div>
+              </div>
+              <svg class="chevron" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>
+            </div>
+
+            <div class="place-row">
+              <div class="place-avatar">🍷</div>
+              <div class="place-body">
+                <div class="place-name">The Vault</div>
+                <div class="place-sub">natural wine · wed–sat only · $$</div>
+              </div>
+              <svg class="chevron" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>
+            </div>
+
+            <div class="place-row">
+              <div class="place-avatar">🥗</div>
+              <div class="place-body">
+                <div class="place-name">Milk &amp; Madu</div>
+                <div class="place-sub">brunch · big tables · $$</div>
+              </div>
+              <svg class="chevron" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+
+      <div class="ask-dock">
+        <div class="ask-field">
+          <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+          ask about canggu…
+        </div>
+        <button class="kebi-ai-btn" aria-label="Ask Kebi">
+          <svg viewBox="0 0 64 64" width="34" height="34">
+            <ellipse cx="32" cy="38" rx="20" ry="20" fill="#D4B891"/>
+            <ellipse cx="32" cy="42" rx="13" ry="13" fill="#F5EBD3"/>
+            <ellipse cx="13" cy="34" rx="3.5" ry="6" fill="#A89070" transform="rotate(-25 13 34)"/>
+            <ellipse cx="51" cy="34" rx="3.5" ry="6" fill="#A89070" transform="rotate(25 51 34)"/>
+            <circle cx="25" cy="30" r="3.5" fill="white"/><circle cx="39" cy="30" r="3.5" fill="white"/>
+            <circle cx="25" cy="30" r="1.7" fill="#1A1A1A"/><circle cx="39" cy="30" r="1.7" fill="#1A1A1A"/>
+            <path d="M30 33 L34 33 L32 36 Z" fill="#C87A4A"/>
+          </svg>
+        </button>
+      </div>
+
+      <div class="home-indicator"></div>
+    </div>
+  </div>
+
+  <!-- ══════════════════ OPTION B ══════════════════ -->
+  <div class="col">
+    <div class="cap">
+      <b>B · places-first</b> — the profile is a three-line lede with <i>more</i>, and the list starts
+      above the fold. The area is a filtered view of the catalog, saved rows first.
+      <span class="verdict">answers "what's in canggu" in one screen, no scrolling.</span>
+      <span class="against">buries the one part only kebi could have written.</span>
+    </div>
+
+    <div class="phone">
+      <div class="status-bar">
+        <span>9:41</span>
+        <div class="status-right">
+          <svg width="17" height="11" viewBox="0 0 17 11" fill="currentColor"><path d="M1 7h2v3H1zM5 5h2v5H5zM9 3h2v7H9zM13 1h2v9h-2z"/></svg>
+          <svg width="15" height="11" viewBox="0 0 15 11" fill="currentColor"><path d="M7.5 2C9.7 2 11.7 2.8 13.3 4.2L14.5 3C12.6 1.2 10.1.2 7.5.2S2.4 1.2.5 3l1.2 1.2C3.3 2.8 5.3 2 7.5 2zM7.5 5.5c1.4 0 2.7.5 3.7 1.4l1.2-1.2c-1.4-1.3-3.2-2-5-2s-3.6.7-5 2l1.2 1.2c1-.9 2.3-1.4 3.7-1.4z"/></svg>
+          <svg width="24" height="11" viewBox="0 0 24 11" fill="none"><rect x="0.5" y="0.5" width="20" height="10" rx="2.5" stroke="currentColor"/><rect x="2" y="2" width="17" height="7" rx="1" fill="currentColor"/><rect x="21" y="3.5" width="1.5" height="4" rx="0.5" fill="currentColor"/></svg>
+        </div>
+      </div>
+
+      <div class="top-bar">
+        <button class="icon-btn" aria-label="Back">
+          <svg viewBox="0 0 24 24"><polyline points="15 6 9 12 15 18"/></svg>
+        </button>
+      </div>
+
+      <div class="scroll">
+
+        <div class="eyebrow breadcrumb">
+          <a href="#">indonesia</a><span class="sep">›</span><a href="#">bali</a>
+        </div>
+        <h1 class="title"><span class="glyph">🏄</span>Canggu</h1>
+
+        <!-- wrapper: a -webkit-box collapses to zero height as a direct flex child -->
+        <div>
+          <div class="description clamped">
+            the surf-and-laptop end of bali. mornings are flat whites and standing desks, evenings move
+            west to the cliff bars for sunset, and by ten it is one long strip of beach clubs. loud,
+            international, and unbothered about it.
+          </div>
+        </div>
+        <button class="more">more</button>
+
+        <div class="tag-chips">
+          <span class="tag-chip">🌅 sunset drinks</span>
+          <span class="tag-chip">💻 café work</span>
+          <span class="tag-chip">🏄 surf</span>
+        </div>
+
+        <hr class="divider" />
+
+        <div class="tag-section">
+          <div class="tag-header"><span>your places here</span><span class="count">4</span></div>
+          <div class="place-list">
+            <div class="place-row">
+              <div class="place-avatar">🍸</div>
+              <div class="place-body">
+                <div class="place-name">Savaya Bali <span class="saved-dot"></span></div>
+                <div class="place-sub">beach club · liked · went</div>
+              </div>
+              <svg class="chevron" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>
+            </div>
+            <div class="place-row">
+              <div class="place-avatar">☕</div>
+              <div class="place-body">
+                <div class="place-name">Crate Café <span class="saved-dot"></span></div>
+                <div class="place-sub">breakfast · saved in june</div>
+              </div>
+              <svg class="chevron" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>
+            </div>
+            <div class="place-row">
+              <div class="place-avatar">🍜</div>
+              <div class="place-body">
+                <div class="place-name">Warung Bu Mi <span class="saved-dot"></span></div>
+                <div class="place-sub">indonesian · cash only</div>
+              </div>
+              <svg class="chevron" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>
+            </div>
+          </div>
+        </div>
+
+        <div class="tag-section">
+          <div class="tag-header"><span>kebi thinks you'd like</span><span class="count">14</span></div>
+          <div class="place-list">
+            <div class="place-row">
+              <div class="place-avatar">🍷</div>
+              <div class="place-body">
+                <div class="place-name">The Vault</div>
+                <div class="place-sub">natural wine · matches your tokyo saves</div>
+              </div>
+              <svg class="chevron" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>
+            </div>
+            <div class="place-row">
+              <div class="place-avatar">🍝</div>
+              <div class="place-body">
+                <div class="place-name">Luigi's</div>
+                <div class="place-sub">italian · counter seats · $$</div>
+              </div>
+              <svg class="chevron" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>
+            </div>
+            <div class="place-row">
+              <div class="place-avatar">🥗</div>
+              <div class="place-body">
+                <div class="place-name">Milk &amp; Madu</div>
+                <div class="place-sub">brunch · big tables · $$</div>
+              </div>
+              <svg class="chevron" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>
+            </div>
+            <div class="place-row">
+              <div class="place-avatar">🍸</div>
+              <div class="place-body">
+                <div class="place-name">Bikini</div>
+                <div class="place-sub">cocktails · late · $$$</div>
+              </div>
+              <svg class="chevron" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="ask-dock">
+        <div class="ask-field">
+          <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+          ask about canggu…
+        </div>
+        <button class="kebi-ai-btn" aria-label="Ask Kebi">
+          <svg viewBox="0 0 64 64" width="34" height="34">
+            <ellipse cx="32" cy="38" rx="20" ry="20" fill="#D4B891"/>
+            <ellipse cx="32" cy="42" rx="13" ry="13" fill="#F5EBD3"/>
+            <ellipse cx="13" cy="34" rx="3.5" ry="6" fill="#A89070" transform="rotate(-25 13 34)"/>
+            <ellipse cx="51" cy="34" rx="3.5" ry="6" fill="#A89070" transform="rotate(25 51 34)"/>
+            <circle cx="25" cy="30" r="3.5" fill="white"/><circle cx="39" cy="30" r="3.5" fill="white"/>
+            <circle cx="25" cy="30" r="1.7" fill="#1A1A1A"/><circle cx="39" cy="30" r="1.7" fill="#1A1A1A"/>
+            <path d="M30 33 L34 33 L32 36 Z" fill="#C87A4A"/>
+          </svg>
+        </button>
+      </div>
+
+      <div class="home-indicator"></div>
+    </div>
+  </div>
+
+  <!-- ══════════════════ OPTION C ══════════════════ -->
+  <div class="col">
+    <div class="cap">
+      <b>C · ask-first</b> — prose hero, then the ask bar <i>inline</i> under it with the area's own
+      follow-ups, then places as a rail. The area is a conversation you can continue, not a directory.
+      <span class="verdict">the AI is the product; the screen is a prompt with context attached.</span>
+      <span class="against">two ask affordances if the FAB stays; the rail caps how many places show.</span>
+    </div>
+
+    <div class="phone">
+      <div class="status-bar">
+        <span>9:41</span>
+        <div class="status-right">
+          <svg width="17" height="11" viewBox="0 0 17 11" fill="currentColor"><path d="M1 7h2v3H1zM5 5h2v5H5zM9 3h2v7H9zM13 1h2v9h-2z"/></svg>
+          <svg width="15" height="11" viewBox="0 0 15 11" fill="currentColor"><path d="M7.5 2C9.7 2 11.7 2.8 13.3 4.2L14.5 3C12.6 1.2 10.1.2 7.5.2S2.4 1.2.5 3l1.2 1.2C3.3 2.8 5.3 2 7.5 2zM7.5 5.5c1.4 0 2.7.5 3.7 1.4l1.2-1.2c-1.4-1.3-3.2-2-5-2s-3.6.7-5 2l1.2 1.2c1-.9 2.3-1.4 3.7-1.4z"/></svg>
+          <svg width="24" height="11" viewBox="0 0 24 11" fill="none"><rect x="0.5" y="0.5" width="20" height="10" rx="2.5" stroke="currentColor"/><rect x="2" y="2" width="17" height="7" rx="1" fill="currentColor"/><rect x="21" y="3.5" width="1.5" height="4" rx="0.5" fill="currentColor"/></svg>
+        </div>
+      </div>
+
+      <div class="top-bar">
+        <button class="icon-btn" aria-label="Back">
+          <svg viewBox="0 0 24 24"><polyline points="15 6 9 12 15 18"/></svg>
+        </button>
+      </div>
+
+      <div class="scroll">
+
+        <div class="eyebrow breadcrumb">
+          <a href="#">indonesia</a><span class="sep">›</span><a href="#">bali</a>
+        </div>
+        <h1 class="title"><span class="glyph">🏄</span>Canggu</h1>
+
+        <div class="description">
+          the surf-and-laptop end of bali. mornings are flat whites and standing desks, evenings move
+          west to the cliff bars for sunset, and by ten it is one long strip of beach clubs.
+        </div>
+
+        <!-- the ask bar sits in the content, right where the prose ends -->
+        <div class="ask-dock inline">
+          <div class="ask-field">
+            <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+            ask about canggu…
+          </div>
+        </div>
+
+        <div class="suggests">
+          <button class="suggest">where do i eat tonight?</button>
+          <button class="suggest">quiet café to work</button>
+          <button class="suggest">is it worth staying here?</button>
+        </div>
+
+        <hr class="divider" />
+
+        <div class="tag-section">
+          <div class="tag-header"><span>best for</span></div>
+          <div class="tag-chips">
+            <span class="tag-chip">🌅 sunset drinks</span>
+            <span class="tag-chip">💻 café work</span>
+            <span class="tag-chip">🏄 beginner surf</span>
+          </div>
+        </div>
+
+        <div class="tag-section">
+          <div class="tag-header"><span>your places</span><span class="count">4</span></div>
+          <div class="rail">
+            <div class="rail-card">
+              <span class="g">🍸</span>
+              <span class="n">Savaya Bali</span>
+              <span class="s">beach club · liked</span>
+            </div>
+            <div class="rail-card">
+              <span class="g">☕</span>
+              <span class="n">Crate Café</span>
+              <span class="s">breakfast · fast wifi</span>
+            </div>
+            <div class="rail-card">
+              <span class="g">🍜</span>
+              <span class="n">Warung Bu Mi</span>
+              <span class="s">indonesian · cash</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="tag-section">
+          <div class="tag-header"><span>you'd probably like</span><span class="count">14</span></div>
+          <div class="rail">
+            <div class="rail-card">
+              <span class="g">🍷</span>
+              <span class="n">The Vault</span>
+              <span class="s">natural wine · wed–sat</span>
+            </div>
+            <div class="rail-card">
+              <span class="g">🍝</span>
+              <span class="n">Luigi's</span>
+              <span class="s">italian · counter</span>
+            </div>
+            <div class="rail-card">
+              <span class="g">🥗</span>
+              <span class="n">Milk &amp; Madu</span>
+              <span class="s">brunch · big tables</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="tab-bar">
+        <button class="kebi-ai-btn" aria-label="Ask Kebi">
+          <svg viewBox="0 0 64 64" width="34" height="34">
+            <ellipse cx="32" cy="38" rx="20" ry="20" fill="#D4B891"/>
+            <ellipse cx="32" cy="42" rx="13" ry="13" fill="#F5EBD3"/>
+            <ellipse cx="13" cy="34" rx="3.5" ry="6" fill="#A89070" transform="rotate(-25 13 34)"/>
+            <ellipse cx="51" cy="34" rx="3.5" ry="6" fill="#A89070" transform="rotate(25 51 34)"/>
+            <circle cx="25" cy="30" r="3.5" fill="white"/><circle cx="39" cy="30" r="3.5" fill="white"/>
+            <circle cx="25" cy="30" r="1.7" fill="#1A1A1A"/><circle cx="39" cy="30" r="1.7" fill="#1A1A1A"/>
+            <path d="M30 33 L34 33 L32 36 Z" fill="#C87A4A"/>
+          </svg>
+        </button>
+      </div>
+
+      <div class="home-indicator"></div>
+    </div>
+  </div>
+
+</div>
+
+<div class="foot">
+
+  <h2>Same payload, three readings</h2>
+  <table>
+    <tr>
+      <th>&nbsp;</th>
+      <th>A · profile-first</th>
+      <th>B · places-first</th>
+      <th>C · ask-first</th>
+    </tr>
+    <tr>
+      <td>above the fold</td>
+      <td>prose + best-for</td>
+      <td>3-line lede + your saves</td>
+      <td>prose + ask bar</td>
+    </tr>
+    <tr>
+      <td>places shown as</td>
+      <td>one ranked list, saved marked with a dot</td>
+      <td>two labelled sections (yours / kebi's)</td>
+      <td>two horizontal rails</td>
+    </tr>
+    <tr>
+      <td>ask bar</td>
+      <td>docked above the home indicator</td>
+      <td>docked above the home indicator</td>
+      <td>inline under the prose, plus suggested follow-ups</td>
+    </tr>
+    <tr>
+      <td>reuses place-screen parts</td>
+      <td class="yes">nearly all</td>
+      <td class="yes">most</td>
+      <td class="no">new rail + suggestion chips</td>
+    </tr>
+    <tr>
+      <td>thins to country scope</td>
+      <td class="yes">prose carries it</td>
+      <td class="no">list becomes meaningless at country scope</td>
+      <td class="yes">prose + ask carry it</td>
+    </tr>
+  </table>
+
+  <h2>Constant across all three</h2>
+  <ul>
+    <li><b>No save.</b> Areas are read + ask only — region interest keeps flowing through ADR-135 signals.
+      So the TopPill (edit / •••) is absent, exactly as it is on an unsaved place.</li>
+    <li><b>Never empty.</b> The profile is generated on first open and mixes durable claims with the model's
+      own geography knowledge, so a brand-new area still opens with a paragraph.</li>
+    <li><b>Global half / personal half.</b> Prose and best-for chips come from the shared area row; the place
+      sections are computed per request and are the only part that differs between two users.</li>
+    <li><b>Every ancestor opens.</b> The eyebrow is a breadcrumb of areas, not decoration —
+      <code>id/bali/canggu</code> → bali → indonesia, each its own screen.</li>
+    <li><b>Saved-first, then taste-ranked.</b> A dot (A) or a section split (B, C) — the ordering rule is the
+      same, only the labelling differs.</li>
+  </ul>
+
+  <h2>Open, and deliberately not answered here</h2>
+  <ul>
+    <li><b>Country scope.</b> B's place list at <code>id</code> is not a longer list, it is the wrong list —
+      a country's children are cities. If B wins, that section needs a second shape, not a cap.</li>
+    <li><b>Back stack.</b> chat → area → place → back is three hops; <code>PLACE_ORIGIN_CHAT</code> is a
+      one-hop marker. Areas make that path ordinary.</li>
+    <li><b>Self-reference.</b> An answer from the area's own ask bar can contain a link to the area you are
+      standing in. Push, no-op, or replace.</li>
+  </ul>
+
+</div>
+
+</body>
+</html>

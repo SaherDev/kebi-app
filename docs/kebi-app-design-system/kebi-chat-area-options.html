@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Kebi Chat — how an area link looks (kebi://area/{key})</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg:#FAFAF9; --surface:#F1F1EF; --surface-2:#E8E8E5;
+    --text:#1A1A1A; --text-muted:#8A8A87; --text-soft:#B5B5B1;
+    --success:#5B8A4E; --like:#C2632F; --pill-warm:#FEE4D4;
+  }
+  html,body{ background:#2A2A28; font-family:'Inter',system-ui,sans-serif;
+    -webkit-font-smoothing:antialiased; min-height:100vh; color:#EDEDEA; padding:40px 24px 64px; }
+  h1{ font-size:22px; font-weight:700; letter-spacing:-.01em; margin-bottom:6px; }
+  .lede{ font-size:14px; color:#B5B5B1; max-width:960px; line-height:1.55; margin-bottom:30px; }
+  .lede b{ color:#D9D9D5; font-weight:600; }
+  .lede code{ background:#3A3A37; padding:1px 5px; border-radius:5px; font-size:12.5px; }
+  .cols{ display:flex; gap:36px; align-items:flex-start; flex-wrap:wrap; }
+  .col{ width:360px; }
+  .cap{ font-size:13px; font-weight:600; color:#9A9A96; margin-bottom:4px; }
+  .cap b{ color:#D9D9D5; }
+  .subcap{ font-size:12px; color:#8A8A87; line-height:1.5; margin-bottom:12px; min-height:52px; }
+  .subcap .for{ color:#8FBF7F; font-weight:600; }
+  .subcap .against{ color:#D98A6A; font-weight:600; }
+
+  .stage{ background:var(--bg); border-radius:24px; padding:16px; }
+
+  /* ── turn chrome (matches chat-screen.tsx KebiTurnRow) ── */
+  .eyebrow{ display:flex; align-items:center; gap:8px; margin-bottom:6px; }
+  .eyebrow .who{ font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.08em; color:var(--text-soft); }
+  .eyebrow .time{ font-size:11px; color:var(--text-soft); }
+
+  .reasoning{ background:var(--surface); border-radius:12px; padding:9px 11px; display:flex;
+    align-items:center; gap:8px; margin-bottom:10px; }
+  .reasoning .dot{ width:6px; height:6px; border-radius:50%; background:var(--success); flex-shrink:0; }
+  .reasoning .lbl{ font-size:12.5px; font-weight:600; color:var(--text); }
+  .reasoning .meta{ font-size:12px; color:var(--text-soft); }
+  .reasoning .chev{ margin-left:auto; color:var(--text-soft); font-size:12px; }
+
+  /* ── shared prose block ── */
+  .prose{ font-size:16px; line-height:1.6; color:var(--text-muted); letter-spacing:-.005em; }
+  .prose p + p{ margin-top:12px; }
+  .bullets{ margin-top:10px; display:flex; flex-direction:column; gap:7px; }
+  .bul{ display:flex; gap:9px; }
+  .bul .mark{ color:var(--text-soft); flex-shrink:0; line-height:1.6; }
+
+  /* what ships today: bold and a venue link are the same pixels */
+  .b{ color:var(--text); font-weight:600; }
+  .lnk{ color:var(--text); font-weight:600; }
+
+  /* ── A: nothing — the area is the same semibold word a venue is ── */
+  .area-plain{ color:var(--text); font-weight:600; }
+
+  /* ── B: the area's own emoji, inline, no box ── */
+  .area-glyph .em{ font-size:13px; margin-right:3px; }
+
+  /* ── C: outlined inline pill — venues stay quiet text ── */
+  .area-pill{ display:inline-flex; align-items:baseline; gap:4px; border:1px solid var(--surface-2);
+    border-radius:7px; padding:1px 7px; color:var(--text); font-weight:600; font-size:15px;
+    line-height:1.35; white-space:nowrap; }
+  .area-pill .em{ font-size:12px; }
+
+  /* ── D: the rail takes areas too, drawn as a different shape ── */
+  .rail-lbl{ font-size:11px; font-weight:600; color:var(--text-soft); text-transform:uppercase;
+    letter-spacing:.08em; margin:14px 0 8px; }
+  .rail{ display:flex; gap:8px; overflow:hidden; }
+  .chip{ display:flex; align-items:center; gap:7px; background:var(--surface); border-radius:11px;
+    padding:8px 11px 8px 8px; flex-shrink:0; }
+  .chip .cav{ width:26px; height:26px; border-radius:7px; background:var(--bg);
+    display:flex; align-items:center; justify-content:center; font-size:14px; }
+  .chip .cn{ font-size:13.5px; font-weight:600; color:var(--text); }
+  /* an area chip is a pill with no tile — round, lighter, reads as a container */
+  .chip.area{ background:transparent; border:1px solid var(--surface-2); border-radius:999px;
+    padding:8px 13px; gap:6px; }
+  .chip.area .cn{ color:var(--text); }
+
+  /* ── E: the turn's setting, stated once above the answer ── */
+  .setting{ display:inline-flex; align-items:center; gap:6px; background:var(--surface);
+    border-radius:999px; padding:5px 12px 5px 9px; margin-bottom:10px; }
+  .setting .em{ font-size:13px; }
+  .setting .nm{ font-size:12.5px; font-weight:600; color:var(--text); letter-spacing:-.005em; }
+  .setting .chev{ color:var(--text-soft); font-size:11px; }
+
+  .note{ margin-top:12px; font-size:11.5px; color:var(--like); background:var(--pill-warm);
+    border-radius:8px; padding:7px 9px; line-height:1.45; }
+
+  .foot{ max-width:1160px; margin:44px auto 0; font-size:13px; line-height:1.7;
+    color:#B5B5B1; letter-spacing:-.005em; }
+  .foot h2{ font-size:15px; font-weight:700; color:#FAFAF9; margin-bottom:10px; }
+  .foot h2:not(:first-child){ margin-top:28px; }
+  .foot code{ background:#3A3A37; padding:1px 5px; border-radius:5px; font-size:12.5px; }
+  .foot table{ border-collapse:collapse; margin-top:12px; font-size:12.5px; }
+  .foot th,.foot td{ text-align:left; padding:6px 18px 6px 0; border-bottom:1px solid #3A3A38; vertical-align:top; }
+  .foot th{ color:#FAFAF9; font-weight:600; }
+  .foot ul{ margin:8px 0 0 18px; }
+  .foot li{ margin-bottom:5px; }
+</style>
+</head>
+<body>
+
+<h1>chat — five ways to draw an area link</h1>
+<div class="lede">
+  Venues in a turn get two affordances: a semibold name in the sentence and a chip in the rail beneath it.
+  Areas get neither — <code>toRailEntities</code> filters them out and, inline,
+  <code>chat-answer.tsx</code> renders a link with the exact classes it gives <code>**bold**</code>
+  (<code>font-semibold text-text</code>). So today <b>an area is invisible as a destination, and so is a
+  venue until you reach the rail</b>. Now that <code>kebi://area/{key}</code> opens a real screen, that has
+  to change. All five below render the same turn — the monday-in-canggu answer, one area and three venues —
+  and differ only in how the area is drawn.
+</div>
+
+<div class="cols">
+
+  <!-- ══════════════ A ══════════════ -->
+  <div class="col">
+    <div class="cap"><b>a · leave it</b></div>
+    <div class="subcap">
+      the area stays exactly what it is now — a semibold word, tappable, no rail slot.
+      <span class="for">zero work, the sentence stays a sentence.</span>
+      <span class="against">indistinguishable from bold; nobody discovers it.</span>
+    </div>
+    <div class="stage">
+      <div class="eyebrow"><span class="who">kebi</span><span class="time">9:41</span></div>
+      <div class="reasoning">
+        <span class="dot"></span><span class="lbl">thought for 4s</span>
+        <span class="meta">· 3 steps</span><span class="chev">›</span>
+      </div>
+      <div class="prose">
+        <p>monday is a great night to be in <span class="area-plain">canggu</span>.</p>
+        <p>start at <span class="lnk">Luigi's</span>. monday is <span class="b">literally</span> their night —
+          the room fills by nine and the counter is the seat you want.</p>
+        <p>skip for tonight:</p>
+        <div class="bullets">
+          <div class="bul"><span class="mark">·</span><span><span class="lnk">Vault</span> is wednesday to saturday only</span></div>
+          <div class="bul"><span class="mark">·</span><span>The Mesa is a friday spot</span></div>
+        </div>
+      </div>
+      <div class="rail-lbl">mentioned</div>
+      <div class="rail">
+        <div class="chip"><div class="cav">🍝</div><span class="cn">Luigi's</span></div>
+        <div class="chip"><div class="cav">🍷</div><span class="cn">Vault</span></div>
+      </div>
+      <div class="note">"canggu" and "literally" are the same pixels. the one that opens a screen is the one you can't tell apart.</div>
+    </div>
+  </div>
+
+  <!-- ══════════════ B ══════════════ -->
+  <div class="col">
+    <div class="cap"><b>b · emoji inline</b></div>
+    <div class="subcap">
+      the area's own icon leads the name, in the text, no box:
+      <span class="b">🏄 canggu</span>. the glyph is the affordance.
+      <span class="for">same identity the area screen and its chips use; costs no layout.</span>
+      <span class="against">a paragraph naming three areas grows three emoji.</span>
+    </div>
+    <div class="stage">
+      <div class="eyebrow"><span class="who">kebi</span><span class="time">9:41</span></div>
+      <div class="reasoning">
+        <span class="dot"></span><span class="lbl">thought for 4s</span>
+        <span class="meta">· 3 steps</span><span class="chev">›</span>
+      </div>
+      <div class="prose">
+        <p>monday is a great night to be in
+          <span class="area-plain area-glyph"><span class="em">🏄</span>canggu</span>.</p>
+        <p>start at <span class="lnk">Luigi's</span>. monday is <span class="b">literally</span> their night —
+          the room fills by nine and the counter is the seat you want.</p>
+        <p>skip for tonight:</p>
+        <div class="bullets">
+          <div class="bul"><span class="mark">·</span><span><span class="lnk">Vault</span> is wednesday to saturday only</span></div>
+          <div class="bul"><span class="mark">·</span><span>The Mesa is a friday spot</span></div>
+        </div>
+      </div>
+      <div class="rail-lbl">mentioned</div>
+      <div class="rail">
+        <div class="chip"><div class="cav">🍝</div><span class="cn">Luigi's</span></div>
+        <div class="chip"><div class="cav">🍷</div><span class="cn">Vault</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════ C ══════════════ -->
+  <div class="col">
+    <div class="cap"><b>c · outlined pill inline</b></div>
+    <div class="subcap">
+      the area becomes a bordered pill in the sentence; venues stay quiet text.
+      <span class="for">unmissable, and the two kinds can never be confused.</span>
+      <span class="against">a box mid-sentence breaks the line rhythm — and it makes the area louder than the venue you're being sent to.</span>
+    </div>
+    <div class="stage">
+      <div class="eyebrow"><span class="who">kebi</span><span class="time">9:41</span></div>
+      <div class="reasoning">
+        <span class="dot"></span><span class="lbl">thought for 4s</span>
+        <span class="meta">· 3 steps</span><span class="chev">›</span>
+      </div>
+      <div class="prose">
+        <p>monday is a great night to be in
+          <span class="area-pill"><span class="em">🏄</span>canggu</span>.</p>
+        <p>start at <span class="lnk">Luigi's</span>. monday is <span class="b">literally</span> their night —
+          the room fills by nine and the counter is the seat you want.</p>
+        <p>skip for tonight:</p>
+        <div class="bullets">
+          <div class="bul"><span class="mark">·</span><span><span class="lnk">Vault</span> is wednesday to saturday only</span></div>
+          <div class="bul"><span class="mark">·</span><span>The Mesa is a friday spot</span></div>
+        </div>
+      </div>
+      <div class="rail-lbl">mentioned</div>
+      <div class="rail">
+        <div class="chip"><div class="cav">🍝</div><span class="cn">Luigi's</span></div>
+        <div class="chip"><div class="cav">🍷</div><span class="cn">Vault</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════ D ══════════════ -->
+  <div class="col">
+    <div class="cap"><b>d · areas join the rail</b></div>
+    <div class="subcap">
+      one rail, two shapes: venues keep the square-tile chip, areas are round outlined pills, areas first.
+      <span class="for">every destination in the turn is in one row with a real tap target.</span>
+      <span class="against">reverses ADR-136's "areas never take a rail slot"; a wide turn pushes venues off-screen.</span>
+    </div>
+    <div class="stage">
+      <div class="eyebrow"><span class="who">kebi</span><span class="time">9:41</span></div>
+      <div class="reasoning">
+        <span class="dot"></span><span class="lbl">thought for 4s</span>
+        <span class="meta">· 3 steps</span><span class="chev">›</span>
+      </div>
+      <div class="prose">
+        <p>monday is a great night to be in <span class="area-plain">canggu</span>.</p>
+        <p>start at <span class="lnk">Luigi's</span>. monday is <span class="b">literally</span> their night —
+          the room fills by nine and the counter is the seat you want.</p>
+        <p>skip for tonight:</p>
+        <div class="bullets">
+          <div class="bul"><span class="mark">·</span><span><span class="lnk">Vault</span> is wednesday to saturday only</span></div>
+          <div class="bul"><span class="mark">·</span><span>The Mesa is a friday spot</span></div>
+        </div>
+      </div>
+      <div class="rail-lbl">mentioned</div>
+      <div class="rail">
+        <div class="chip area"><span>🏄</span><span class="cn">Canggu</span></div>
+        <div class="chip"><div class="cav">🍝</div><span class="cn">Luigi's</span></div>
+        <div class="chip"><div class="cav">🍷</div><span class="cn">Vault</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════ E ══════════════ -->
+  <div class="col">
+    <div class="cap"><b>e · the turn's setting</b></div>
+    <div class="subcap">
+      the area is stated once, above the answer, as where this turn is set; inline mentions stay plain text.
+      <span class="for">matches what an area actually is — the frame, not an item in the list.</span>
+      <span class="against">wrong for a turn that compares two areas, and it repeats on every turn in the same place.</span>
+    </div>
+    <div class="stage">
+      <div class="eyebrow"><span class="who">kebi</span><span class="time">9:41</span></div>
+      <div class="reasoning">
+        <span class="dot"></span><span class="lbl">thought for 4s</span>
+        <span class="meta">· 3 steps</span><span class="chev">›</span>
+      </div>
+      <div class="setting"><span class="em">🏄</span><span class="nm">Canggu</span><span class="chev">›</span></div>
+      <div class="prose">
+        <p>monday is a great night to be in canggu.</p>
+        <p>start at <span class="lnk">Luigi's</span>. monday is <span class="b">literally</span> their night —
+          the room fills by nine and the counter is the seat you want.</p>
+        <p>skip for tonight:</p>
+        <div class="bullets">
+          <div class="bul"><span class="mark">·</span><span><span class="lnk">Vault</span> is wednesday to saturday only</span></div>
+          <div class="bul"><span class="mark">·</span><span>The Mesa is a friday spot</span></div>
+        </div>
+      </div>
+      <div class="rail-lbl">mentioned</div>
+      <div class="rail">
+        <div class="chip"><div class="cav">🍝</div><span class="cn">Luigi's</span></div>
+        <div class="chip"><div class="cav">🍷</div><span class="cn">Vault</span></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="foot">
+
+  <h2>Trade-offs</h2>
+  <table>
+    <tr>
+      <th>&nbsp;</th><th>a · leave it</th><th>b · emoji inline</th><th>c · pill inline</th>
+      <th>d · in the rail</th><th>e · setting</th>
+    </tr>
+    <tr><td>discoverable</td><td>no</td><td>yes, quietly</td><td>yes, loudly</td><td>yes</td><td>yes</td></tr>
+    <tr><td>tap target</td><td>a word</td><td>a word + glyph</td><td>a pill</td><td>a chip</td><td>a chip</td></tr>
+    <tr><td>reading flow</td><td>untouched</td><td>untouched</td><td>interrupted</td><td>untouched</td><td>untouched</td></tr>
+    <tr><td>handles 3 areas in a turn</td><td>yes</td><td>gets busy</td><td>badly</td><td>yes</td><td>no</td></tr>
+    <tr><td>area louder than the venue</td><td>no</td><td>no</td><td>yes</td><td>no — venue tiles read heavier</td><td>yes</td></tr>
+    <tr><td>reverses ADR-136</td><td>no</td><td>no</td><td>no</td><td>yes</td><td>yes</td></tr>
+  </table>
+
+  <h2>The thing all five sit on top of</h2>
+  <ul>
+    <li>Inline, <code>chat-answer.tsx</code> gives a link and <code>**bold**</code> identical classes. Whatever
+      is chosen for areas, <b>a venue link inline is equally undiscoverable</b> — the rail is currently
+      carrying the entire affordance. Worth deciding at the same time.</li>
+    <li>The rail chip already has an area branch it never reaches: <code>CHAT_ENTITY_FALLBACK_ICON</code> is
+      keyed by kind, and <code>toRailEntities</code> drops every area before it can be used.</li>
+    <li><b>b and d compose.</b> They answer different questions — b makes the word in the sentence openable,
+      d gives the turn an index. Picking both is coherent; picking c and d is not.</li>
+  </ul>
+
+  <h2>Still open</h2>
+  <ul>
+    <li><b>Which area, when there are three.</b> e needs one, and a turn comparing Canggu with Seminyak has
+      no single setting.</li>
+    <li><b>Rail label.</b> "mentioned" survives a mixed rail; "places" does not.</li>
+    <li><b>Order in a mixed rail.</b> Areas first reads as scope-then-detail; mention order is what the
+      current code promises.</li>
+  </ul>
+
+</div>
+
+</body>
+</html>
