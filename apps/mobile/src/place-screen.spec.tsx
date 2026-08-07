@@ -125,10 +125,10 @@ describe('PlaceScreen', () => {
 
   it('renders the place from the selected view', () => {
     const { getByText, getByLabelText, queryByText } = renderPlace(makeView());
-    expect(getByText('Saint Jardim')).toBeTruthy(); // title (source_label)
-    // Eyebrow, led by the place emoji — no `icon` on this fixture, so the
+    // Title carries the place emoji — no `icon` on this fixture, so the
     // category map supplies it (restaurant → 🍽️).
-    expect(getByText('🍽️ Shimokitazawa · portuguese')).toBeTruthy();
+    expect(getByText('🍽️ Saint Jardim')).toBeTruthy(); // title (source_label)
+    expect(getByText('Shimokitazawa · portuguese')).toBeTruthy(); // eyebrow
     expect(getByText('vegetarian options')).toBeTruthy(); // dietary pill
     expect(getByText('liked')).toBeTruthy();
     expect(getByText('went')).toBeTruthy();
@@ -171,7 +171,7 @@ describe('PlaceScreen', () => {
         },
       }),
     );
-    expect(queryByText('Bare Place')).toBeTruthy(); // title still renders
+    expect(queryByText(/Bare Place/)).toBeTruthy(); // title still renders
     expect(queryByText('atmosphere')).toBeNull();
     expect(queryByText('features')).toBeNull();
     expect(queryByLabelText('show on map')).toBeNull(); // no provider id / coords
@@ -209,7 +209,7 @@ describe('PlaceScreen', () => {
 
       expect(getByLabelText('save')).toBeTruthy();
       // Place-driven content is untouched.
-      expect(getByText('Saint Jardim')).toBeTruthy();
+      expect(getByText(/Saint Jardim/)).toBeTruthy();
       expect(getByText('vegetarian options')).toBeTruthy();
       expect(getByText('intimate')).toBeTruthy();
       expect(getByLabelText('show on map')).toBeTruthy();
@@ -295,7 +295,7 @@ describe('PlaceScreen', () => {
 
       const { getByLabelText, findByText } = renderPlace(null);
 
-      expect(await findByText('Saint Jardim')).toBeTruthy();
+      expect(await findByText(/Saint Jardim/)).toBeTruthy();
       expect(mockedGetPlace).toHaveBeenCalledWith({}, 'p1');
       expect(getByLabelText('save')).toBeTruthy();
     });
@@ -308,7 +308,7 @@ describe('PlaceScreen', () => {
 
       await waitFor(() => expect(mockedGetPlace).toHaveBeenCalled());
       // Blanking a screen the user is already reading is worse than a stale one.
-      expect(getByText('Saint Jardim')).toBeTruthy();
+      expect(getByText(/Saint Jardim/)).toBeTruthy();
     });
 
     it('says so when there is no seed and the fetch fails', async () => {
