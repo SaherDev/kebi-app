@@ -126,7 +126,9 @@ describe('PlaceScreen', () => {
   it('renders the place from the selected view', () => {
     const { getByText, getByLabelText, queryByText } = renderPlace(makeView());
     expect(getByText('Saint Jardim')).toBeTruthy(); // title (source_label)
-    expect(getByText('Shimokitazawa · portuguese')).toBeTruthy(); // eyebrow
+    // Eyebrow, led by the place emoji — no `icon` on this fixture, so the
+    // category map supplies it (restaurant → 🍽️).
+    expect(getByText('🍽️ Shimokitazawa · portuguese')).toBeTruthy();
     expect(getByText('vegetarian options')).toBeTruthy(); // dietary pill
     expect(getByText('liked')).toBeTruthy();
     expect(getByText('went')).toBeTruthy();

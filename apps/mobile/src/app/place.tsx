@@ -177,7 +177,15 @@ function PlaceContent({
         showsVerticalScrollIndicator={false}
         contentContainerClassName="gap-4 px-6 pb-24 pt-2"
       >
-        {eyebrow ? <Text className="text-small text-text-muted">{eyebrow}</Text> : null}
+        {/*
+          The emoji leads the eyebrow rather than taking a block of its own:
+          identity without vertical space, which matters most on a sparse
+          just-discovered place. `placeEmoji` always resolves — the LLM icon,
+          else the category map, else 📍 — so the line never starts empty.
+        */}
+        <Text className="text-small text-text-muted">
+          {eyebrow ? `${emoji} ${eyebrow}` : emoji}
+        </Text>
         <Text className="text-title font-bold leading-tight text-text">{title}</Text>
 
         {saved ? (
