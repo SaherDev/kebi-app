@@ -9,6 +9,7 @@ import {
   placeDisplayName,
   placeEmoji,
   tagsOfType,
+  type PlaceView,
   type SavedPlaceView,
 } from '@kebi-app/shared';
 import { ScreenScaffold } from '../components/screen-scaffold';
@@ -16,6 +17,7 @@ import { TopBar } from '../components/top-bar';
 import { TopPill } from '../components/top-pill';
 import { IconButton } from '../components/icon-button';
 import { Icon, type IconName } from '../components/icon';
+import { Spinner } from '../components/spinner';
 import { StatusPill } from '../components/status-pill';
 import { PlaceMetaWrapper } from '../components/place-meta-wrapper';
 import { PlaceTagSection } from '../components/place-tag-section';
@@ -24,7 +26,7 @@ import { PlaceClaimsSection } from '../components/place-claims-section';
 import { ActionSheet } from '../components/action-sheet';
 import { MapsChooserSheet } from '../components/maps-chooser-sheet';
 import { usePlaceMenuItems } from '../components/use-place-menu-items';
-import { usePlaceDetail } from '../components/place-detail-context';
+import { usePlaceView } from '../components/use-place-view';
 import { useChat } from '../components/chat-context';
 import { PLACE_ORIGIN_CHAT } from '../components/use-open-chat-venue';
 import { usePlaceActions } from '../components/place-actions-context';
@@ -34,25 +36,39 @@ import { sharePlace } from '../lib/place-share';
 import { PRESS } from '../theme/motion';
 import { useTranslation } from '../i18n/context';
 
-/** Outlined pill service action (kebi-place-mockup.html `.service-btn`). */
+/**
+ * Outlined pill service action (kebi-place-mockup.html `.service-btn`). The
+ * `primary` variant is the filled one — the save action on an unsaved place
+ * (kebi-place-unsaved-options.html, option A).
+ */
 function ServiceButton({
   icon,
   label,
   onPress,
+  primary = false,
+  disabled = false,
 }: {
   icon: IconName;
   label: string;
   onPress: () => void;
+  primary?: boolean;
+  disabled?: boolean;
 }) {
+  const skin = primary ? 'border-text bg-text' : 'border-surface-2';
   return (
     <Pressable
       onPress={onPress}
+      disabled={disabled}
       accessibilityRole="button"
       accessibilityLabel={label}
-      className={`flex-row items-center gap-1.5 self-start rounded-full border border-surface-2 px-3.5 py-2.5 ${PRESS}`}
+      accessibilityState={{ disabled }}
+      // Inline opacity, not a toggled className — a conditional `opacity-*`
+      // gets retained by NativeWind and sticks (see mobile motion notes).
+      style={disabled ? { opacity: 0.5 } : undefined}
+      className={`flex-row items-center gap-1.5 self-start rounded-full border px-3.5 py-2.5 ${skin} ${PRESS}`}
     >
-      <Icon name={icon} size={13} className="text-text" />
-      <Text className="text-small font-medium text-text">{label}</Text>
+      <Icon name={icon} size={13} className={primary ? 'text-bg' : 'text-text'} />
+      <Text className={`text-small font-medium ${primary ? 'text-bg' : 'text-text'}`}>{label}</Text>
     </Pressable>
   );
 }
@@ -78,70 +94,66 @@ function useReturnToChat() {
 export default function PlaceScreen() {
   const { t } = useTranslation();
   const router = useRouter();
-  const { view } = usePlaceDetail();
+  const { id } = useLocalSearchParams<{ id?: string }>();
+  const { state, save, saving } = usePlaceView(id);
   useReturnToChat();
 
   const back = <IconButton icon="back" label={t('common.back')} onPress={() => router.back()} />;
 
-  // Path A: the place is set by the list surface before navigating. With no
-  // selection (e.g. a cold start onto /place) there's nothing to show — a
-  // GET-by-id fetch is path B, out of scope.
-  if (!view) {
+  if (state.status !== 'ready') {
     return (
       <ScreenScaffold topBar={<TopBar left={back} />}>
         <View className="flex-1 items-center justify-center px-6 pb-24">
-          <Text className="text-body text-text-muted">{t('place.empty')}</Text>
+          {state.status === 'loading' ? (
+            <Spinner />
+          ) : (
+            <Text className="text-body text-text-muted">
+              {id ? t('place.loadFailed') : t('place.empty')}
+            </Text>
+          )}
         </View>
       </ScreenScaffold>
     );
   }
 
-  return <PlaceContent view={view} back={back} />;
+  return <PlaceContent view={state.view} back={back} onSave={save} saving={saving} />;
 }
 
-function PlaceContent({ view, back }: { view: SavedPlaceView; back: React.ReactNode }) {
+function PlaceContent({
+  view,
+  back,
+  onSave,
+  saving,
+}: {
+  view: PlaceView;
+  back: React.ReactNode;
+  onSave: () => void;
+  saving: boolean;
+}) {
   const { t } = useTranslation();
-  const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
   const [mapsOpen, setMapsOpen] = useState(false);
-
-  // Effective user-state: the live server value plus any optimistic override from
-  // a menu action (like/visited/approve), and whether it's been forgotten.
-  const { resolve, update } = usePlaceActions();
-  const noteSheet = useNoteSheet();
-  const { userData, removed } = resolve(view);
-  const resolvedView: SavedPlaceView = { ...view, user_data: userData };
-  const items = usePlaceMenuItems(view);
-
-  // Forgotten here → leave the page; the library row is already hidden globally.
-  useEffect(() => {
-    if (removed) router.back();
-  }, [removed, router]);
 
   const { place } = view;
   const emoji = placeEmoji(place);
   const title = placeDisplayName(view);
   const eyebrow = buildPlaceEyebrow(place);
   const dietary = dietaryLine(place);
-  const note = userData.note;
   const access = accessibilityLine(place);
   const hasMapTargets = buildMapsTargets(place).length > 0;
+
+  // `user_data: null` (ADR-151) means the caller never saved this place: there
+  // is no `user_place_id` to PATCH or DELETE, so every user-state affordance —
+  // note, approve, the meta chips, the source row, the ••• menu — is absent and
+  // the save action stands in for all of it.
+  const saved = view.user_data ? (view as SavedPlaceView) : null;
 
   return (
     <ScreenScaffold
       topBar={
         <TopBar
           left={back}
-          right={
-            <TopPill>
-              <IconButton
-                icon="edit"
-                label={t('common.edit')}
-                onPress={() => noteSheet.open(resolvedView)}
-              />
-              <IconButton icon="ellipsis" label={t('common.more')} onPress={() => setMenuOpen(true)} />
-            </TopPill>
-          }
+          right={saved ? <SavedTopActions view={saved} onMore={() => setMenuOpen(true)} /> : null}
         />
       }
     >
@@ -151,44 +163,29 @@ function PlaceContent({ view, back }: { view: SavedPlaceView; back: React.ReactN
       >
         {eyebrow ? <Text className="text-small text-text-muted">{eyebrow}</Text> : null}
         <Text className="text-title font-bold leading-tight text-text">{title}</Text>
-        {dietary || !userData.approved ? (
-          <View className="flex-row flex-wrap items-center gap-1.5">
-            {dietary ? <StatusPill variant="green">{dietary}</StatusPill> : null}
-            {!userData.approved ? (
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={t('place.approve')}
-                onPress={() =>
-                  void update(view, { approved: true }, { emoji: '👍', text: t('placeMenu.toast.approved') })
-                }
-              >
-                <StatusPill variant="amber">{t('place.approve')}</StatusPill>
-              </Pressable>
-            ) : null}
-          </View>
-        ) : null}
 
-        <PlaceMetaWrapper view={resolvedView} />
-
-        {note ? (
-          <Pressable
-            onPress={() => noteSheet.open(resolvedView)}
-            accessibilityRole="button"
-            accessibilityLabel={t('placeMenu.editNote')}
-          >
-            <Text className="text-[17px] leading-[26px] tracking-[-0.01em] text-text">{note}</Text>
-          </Pressable>
+        {saved ? (
+          <SavedPlaceBody view={saved} />
         ) : (
-          <Pressable
-            onPress={() => noteSheet.open(resolvedView)}
-            accessibilityRole="button"
-            accessibilityLabel={t('placeMenu.addNote')}
-          >
-            <Text className="text-[15px] leading-relaxed text-text-soft">{t('place.addNote')}</Text>
-          </Pressable>
+          dietary ? (
+            <View className="flex-row flex-wrap items-center gap-1.5">
+              <StatusPill variant="green">{dietary}</StatusPill>
+            </View>
+          ) : null
         )}
 
+        {!saved ? <PlaceMetaWrapper view={view} /> : null}
+
         <View className="flex-row flex-wrap items-center gap-2">
+          {saved ? null : (
+            <ServiceButton
+              icon="bookmark"
+              label={saving ? t('place.saving') : t('place.save')}
+              onPress={onSave}
+              primary
+              disabled={saving}
+            />
+          )}
           {hasMapTargets ? (
             <ServiceButton
               icon="pin"
@@ -199,11 +196,11 @@ function PlaceContent({ view, back }: { view: SavedPlaceView; back: React.ReactN
           <ServiceButton
             icon="share"
             label={t('place.actions.share')}
-            onPress={() => void sharePlace(resolvedView)}
+            onPress={() => void sharePlace(view)}
           />
         </View>
 
-        <PlaceSourceRow view={resolvedView} />
+        {saved ? <PlaceSourceRow view={saved} /> : null}
 
         <PlaceClaimsSection claims={view.claims} />
 
@@ -220,15 +217,117 @@ function PlaceContent({ view, back }: { view: SavedPlaceView; back: React.ReactN
       </ScrollView>
 
       {/* The place page has no card to long-press, so ••• opens a bottom sheet. */}
-      <ActionSheet
-        open={menuOpen}
-        onClose={() => setMenuOpen(false)}
-        header={{ emoji, eyebrow: t('placeMenu.thisPlace'), title }}
-        items={items}
-        closeLabel={t('common.close')}
-      />
+      {saved ? (
+        <PlaceMenuSheet
+          view={saved}
+          open={menuOpen}
+          onClose={() => setMenuOpen(false)}
+          header={{ emoji, eyebrow: t('placeMenu.thisPlace'), title }}
+        />
+      ) : null}
 
       <MapsChooserSheet open={mapsOpen} onClose={() => setMapsOpen(false)} place={place} />
     </ScreenScaffold>
+  );
+}
+
+/** Edit + ••• — saved-only, since both act on a `user_place_id`. */
+function SavedTopActions({ view, onMore }: { view: SavedPlaceView; onMore: () => void }) {
+  const { t } = useTranslation();
+  const noteSheet = useNoteSheet();
+  const { resolve } = usePlaceActions();
+  const resolved: SavedPlaceView = { ...view, user_data: resolve(view).userData };
+
+  return (
+    <TopPill>
+      <IconButton icon="edit" label={t('common.edit')} onPress={() => noteSheet.open(resolved)} />
+      <IconButton icon="ellipsis" label={t('common.more')} onPress={onMore} />
+    </TopPill>
+  );
+}
+
+function PlaceMenuSheet({
+  view,
+  open,
+  onClose,
+  header,
+}: {
+  view: SavedPlaceView;
+  open: boolean;
+  onClose: () => void;
+  header: { emoji: string; eyebrow: string; title: string };
+}) {
+  const { t } = useTranslation();
+  const items = usePlaceMenuItems(view);
+  return (
+    <ActionSheet
+      open={open}
+      onClose={onClose}
+      header={header}
+      items={items}
+      closeLabel={t('common.close')}
+    />
+  );
+}
+
+/**
+ * Everything driven by the caller's save: the dietary/approve row, the meta
+ * chips and the note. Split out so the unsaved screen never mounts the hooks
+ * these need (`usePlaceActions`, `useNoteSheet`) for a save that doesn't exist.
+ */
+function SavedPlaceBody({ view }: { view: SavedPlaceView }) {
+  const { t } = useTranslation();
+  const router = useRouter();
+  const { resolve, update } = usePlaceActions();
+  const noteSheet = useNoteSheet();
+  const { userData, removed } = resolve(view);
+  const resolvedView: SavedPlaceView = { ...view, user_data: userData };
+  const dietary = dietaryLine(view.place);
+  const note = userData.note;
+
+  // Forgotten here → leave the page; the library row is already hidden globally.
+  useEffect(() => {
+    if (removed) router.back();
+  }, [removed, router]);
+
+  return (
+    <>
+      {dietary || !userData.approved ? (
+        <View className="flex-row flex-wrap items-center gap-1.5">
+          {dietary ? <StatusPill variant="green">{dietary}</StatusPill> : null}
+          {!userData.approved ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={t('place.approve')}
+              onPress={() =>
+                void update(view, { approved: true }, { emoji: '👍', text: t('placeMenu.toast.approved') })
+              }
+            >
+              <StatusPill variant="amber">{t('place.approve')}</StatusPill>
+            </Pressable>
+          ) : null}
+        </View>
+      ) : null}
+
+      <PlaceMetaWrapper view={resolvedView} />
+
+      {note ? (
+        <Pressable
+          onPress={() => noteSheet.open(resolvedView)}
+          accessibilityRole="button"
+          accessibilityLabel={t('placeMenu.editNote')}
+        >
+          <Text className="text-[17px] leading-[26px] tracking-[-0.01em] text-text">{note}</Text>
+        </Pressable>
+      ) : (
+        <Pressable
+          onPress={() => noteSheet.open(resolvedView)}
+          accessibilityRole="button"
+          accessibilityLabel={t('placeMenu.addNote')}
+        >
+          <Text className="text-[15px] leading-relaxed text-text-soft">{t('place.addNote')}</Text>
+        </Pressable>
+      )}
+    </>
   );
 }

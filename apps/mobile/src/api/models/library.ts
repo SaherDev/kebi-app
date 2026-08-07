@@ -4,6 +4,7 @@ import type {
   PlaceCore as PlaceCoreContract,
   PlaceNote as PlaceNoteContract,
   PlaceSource,
+  PlaceView as PlaceViewContract,
   SavedPlaceView as SavedPlaceViewContract,
   UserPlace as UserPlaceContract,
 } from '@kebi-app/shared';
@@ -97,6 +98,29 @@ export const PlaceNoteSchema = z
   })
   .transform((p) => new PlaceNote(p));
 
+/**
+ * Any catalog place the caller can open, saved or not (ADR-151). `user_data` is
+ * `null` when the caller never saved it — the place screen's "offer save"
+ * signal, and the reason every user-state affordance is absent there.
+ * {@link SavedPlaceView} is the saved narrowing the Library returns.
+ */
+export class PlaceView implements PlaceViewContract {
+  readonly place: PlaceCoreContract;
+  readonly user_data: UserPlaceContract | null;
+  readonly claims: PlaceNoteContract[];
+
+  constructor(p: PlaceViewContract) {
+    this.place = p.place;
+    this.user_data = p.user_data;
+    this.claims = p.claims;
+  }
+}
+
+/**
+ * The saved narrowing — the Library's entries. A sibling class rather than a
+ * subclass narrowing `user_data`: re-declaring an inherited field needs TS's
+ * `declare` modifier, which this app's Babel transform rejects.
+ */
 export class SavedPlaceView implements SavedPlaceViewContract {
   readonly place: PlaceCoreContract;
   readonly user_data: UserPlaceContract;
@@ -109,17 +133,27 @@ export class SavedPlaceView implements SavedPlaceViewContract {
   }
 }
 
+const placeViewShape = {
+  place: PlaceCoreSchema,
+  // Rollout-tolerant: a pre-ADR-127 kebi omits `claims` → treat as none.
+  claims: z
+    .array(PlaceNoteSchema)
+    .nullish()
+    .transform((v) => v ?? []),
+};
+
 export const SavedPlaceViewSchema = z
-  .object({
-    place: PlaceCoreSchema,
-    user_data: UserPlaceSchema,
-    // Rollout-tolerant: a pre-ADR-127 kebi omits `claims` → treat as none.
-    claims: z
-      .array(PlaceNoteSchema)
-      .nullish()
-      .transform((v) => v ?? []),
-  })
+  .object({ ...placeViewShape, user_data: UserPlaceSchema })
   .transform((p) => new SavedPlaceView(p));
+
+/** GET /v1/places/{id} — the same shape, with the save nullable. */
+export const PlaceViewSchema = z
+  .object({
+    ...placeViewShape,
+    // Absent and explicit-null both mean "not saved" — the offer-save signal.
+    user_data: UserPlaceSchema.nullish().transform((v) => v ?? null),
+  })
+  .transform((p) => new PlaceView(p));
 
 export class LibraryResponse implements LibraryResponseContract {
   readonly places: SavedPlaceViewContract[];

@@ -50,8 +50,9 @@ export function LibraryPlaceCard({ view, highlight }: LibraryPlaceCardProps) {
   const sourceText = 'handle' in source ? source.handle : t(`library.source.${source.labelKey}`);
 
   const openPlace = () => {
+    // Seed so the screen paints instantly; `id` is what it refreshes from.
     placeDetail.set(view);
-    router.push('/place');
+    router.push({ pathname: '/place', params: { id: place.id ?? '' } });
   };
 
   return (

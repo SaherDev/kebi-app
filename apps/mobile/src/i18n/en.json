@@ -63,8 +63,11 @@
   },
   "place": {
     "empty": "no place to show",
+    "loadFailed": "couldn't open that place",
     "approve": "approve?",
     "addNote": "add a note",
+    "save": "save",
+    "saving": "saving…",
     "actions": {
       "map": "show on map",
       "share": "share"
@@ -187,7 +190,6 @@
     "thought": "done",
     "interrupted": "interrupted",
     "mentioned": "mentioned",
-    "venueUnavailable": "can't open that one yet — save it first",
     "menu": {
       "thisChat": "this chat",
       "clear": "clear this chat",

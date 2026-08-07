@@ -16,7 +16,9 @@ export const API_ROUTES = {
   library: '/user/library',
   /** "what you wanted" recall: the caller's recent intent-bearing turns (api-contract.md §GET /v1/user/intents). */
   userIntents: '/user/intents',
-  /** Save a recommended place — the consult card's "save it" (api-contract.md §POST /v1/user/places). */
+  /** One place, saved by the caller or not — the place screen (api-contract.md §GET /v1/places/{id}). */
+  place: (id: string) => `/places/${encodeURIComponent(id)}`,
+  /** Save a place to the caller's library — the place screen's "save" (api-contract.md §POST /v1/user/places). */
   userPlaces: '/user/places',
   /** One saved place: PATCH user-state / DELETE the save (api-contract.md §/v1/user/places/{id}). */
   userPlace: (id: string) => `/user/places/${id}`,
@@ -26,8 +28,8 @@ export const API_ROUTES = {
   userPlan: '/user/plan',
   /** Wipe the caller's AI-owned data — "nuke my data" (api-contract.md §DELETE /v1/user/data). */
   userData: '/user/data',
-  /** Recommendation accept/reject signal (api-contract.md §POST /v1/signal). */
-  signal: '/signal',
+  // The accept/reject signal route retired with the recommendation card
+  // (ADR-151) — kebi deleted the endpoint, so there is nothing to call.
 
   /** In-app feedback report — gateway-only, forwarded to Notion (ADR-051). */
   feedback: '/feedback',
