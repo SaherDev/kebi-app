@@ -141,13 +141,8 @@ export class UserService {
     dto: SaveUserPlaceDto,
     plan?: PlanTier,
   ): Promise<LibraryUserData> {
-    const body: SaveUserPlaceRequest = {
-      place_core_id: dto.place_core_id,
-      recommendation_id: dto.recommendation_id,
-      // The consult reason the card is showing — kebi writes it as a kebi_message
-      // claim on the place (ADR-127), since it is not otherwise stored server-side.
-      ...(dto.reason != null ? { reason: dto.reason } : {}),
-    };
+    // The place id is the whole body (ADR-151) — kebi 422s on any other key.
+    const body: SaveUserPlaceRequest = { place_core_id: dto.place_core_id };
     // plan rides along so kebi can enforce the save_limit (ADR-112); a re-save
     // of an existing place is idempotent and never counts against the cap.
     return this.kebi.post<LibraryUserData>('/v1/user/places', userId, body, plan);

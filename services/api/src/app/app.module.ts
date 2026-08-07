@@ -21,8 +21,8 @@ import { ExtractModule } from '../extract/extract.module';
 import { FeedbackModule } from '../feedback/feedback.module';
 import { HomeModule } from '../home/home.module';
 import { KnowledgeModule } from '../knowledge/knowledge.module';
+import { PlacesModule } from '../places/places.module';
 import { RateLimitModule } from '../rate-limit/rate-limit.module';
-import { SignalModule } from '../signal/signal.module';
 import { UserModule } from '../user/user.module';
 
 function loadAppYaml(): Record<string, unknown> {
@@ -82,8 +82,8 @@ function resolveSynchronize(config: ConfigService): boolean {
     FeedbackModule,
     HomeModule,
     KnowledgeModule,
+    PlacesModule,
     RateLimitModule,
-    SignalModule,
     UserModule,
   ],
   controllers: [AppController],

@@ -205,10 +205,7 @@ describe('UserService', () => {
 
     it('POSTs /v1/user/places with the body and user id (header)', async () => {
       (kebi.post as jest.Mock).mockResolvedValueOnce(saved);
-      const dto: SaveUserPlaceDto = {
-        place_core_id: 'place_1',
-        recommendation_id: 'rec_1',
-      };
+      const dto: SaveUserPlaceDto = { place_core_id: 'place_1' };
 
       const result = await service.savePlace(USER_ID, dto, 'homebody');
 
@@ -216,26 +213,28 @@ describe('UserService', () => {
       expect(kebi.post).toHaveBeenCalledWith(
         '/v1/user/places',
         USER_ID,
-        { place_core_id: 'place_1', recommendation_id: 'rec_1' },
+        { place_core_id: 'place_1' },
         'homebody'
       );
       expect(result).toBe(saved);
     });
 
-    it('forwards the reason (consult rationale) when present', async () => {
+    it('sends the place id alone — the retired card fields are never forwarded', async () => {
       (kebi.post as jest.Mock).mockResolvedValueOnce(saved);
-      const dto: SaveUserPlaceDto = {
+      // A stale client could still hand these in; kebi 422s on unknown keys
+      // (ADR-151), so the gateway must not pass them through.
+      const stale = {
         place_core_id: 'place_1',
         recommendation_id: 'rec_1',
         reason: 'great deep house',
-      };
+      } as SaveUserPlaceDto;
 
-      await service.savePlace(USER_ID, dto, 'homebody');
+      await service.savePlace(USER_ID, stale, 'homebody');
 
       expect(kebi.post).toHaveBeenCalledWith(
         '/v1/user/places',
         USER_ID,
-        { place_core_id: 'place_1', recommendation_id: 'rec_1', reason: 'great deep house' },
+        { place_core_id: 'place_1' },
         'homebody'
       );
     });
@@ -245,10 +244,7 @@ describe('UserService', () => {
       (kebi.post as jest.Mock).mockRejectedValueOnce(err);
 
       await expect(
-        service.savePlace(USER_ID, {
-          place_core_id: 'missing',
-          recommendation_id: 'rec_1',
-        })
+        service.savePlace(USER_ID, { place_core_id: 'missing' })
       ).rejects.toBe(err);
     });
   });

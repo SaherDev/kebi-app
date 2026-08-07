@@ -10,10 +10,10 @@ import { AiEnabledGuard } from '../guards/ai-enabled.guard';
  * 2. User has AI enabled in their account
  *
  * @example
- * @Post('/signal')
+ * @Post('/places')
  * @RequiresAi()
- * async submit(@CurrentUser() userId: string, @Body() dto: SignalRequestDto) {
- *   return this.signalService.submit(userId, dto);
+ * async savePlace(@CurrentUser() user: AuthUser, @Body() dto: SaveUserPlaceDto) {
+ *   return this.userService.savePlace(user.id, dto, user.plan);
  * }
  */
 export const RequiresAi = () => applyDecorators(UseGuards(AiEnabledGuard));
