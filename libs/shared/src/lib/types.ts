@@ -120,7 +120,14 @@ export interface ChatEntity {
   kind: ChatEntityKind;
   key: string;
   name: string;
-  /** `kebi://{kind}/{key}`, pre-composed. */
+  /**
+   * The pre-composed link. **Opaque — never rebuild it from `key`.** A venue's
+   * last segment is the `places.id` `GET /v1/places/{id}` takes, but an area's
+   * is its geo key run through kebi's codec (ADR-153), because the raw key is a
+   * slash path and would read as URL structure. The segment a request needs is
+   * therefore the one on the `uri`, not the one in `key`; `key` is the raw form,
+   * kept for display and matching only.
+   */
   uri: string;
   /**
    * Single emoji drawn beside the name (ADR-146). A venue's comes off its
@@ -318,6 +325,101 @@ export interface UpdateUserPlaceRequest {
  */
 export interface SaveUserPlaceRequest {
   place_core_id: string;
+}
+
+// ── Area screen (GET /v1/areas/{id}) ────────────────────────────────────────
+// The surface behind every `kebi://area/{id}` link (kebi ADR-153). The response
+// splits in two: a **global half** (the profile — generated once on first open,
+// identical for every caller) and a **personal half** (`saved_count` and the
+// body `section` — composed per request, never stored), the same split ADR-151
+// made on the place screen with its nullable `user_data`.
+
+/** One "best for" chip on the area profile. */
+export interface AreaChip {
+  icon: string | null;
+  text: string;
+}
+
+/** One tappable ancestor — `indonesia › bali` above the Canggu header. */
+export interface AreaBreadcrumbItem {
+  /** Raw geo key (`id/bali`). */
+  key: string;
+  name: string;
+  /** `kebi://area/{encoded key}` — hand back to the link handler, never parse. */
+  uri: string;
+}
+
+/**
+ * A child-area row in the body section. `saved_count` is the caller's own saves
+ * under that key — the drill-down promise that makes the row worth tapping —
+ * and is 0 on a "worth knowing" row.
+ */
+export interface AreaSubArea {
+  key: string;
+  name: string;
+  uri: string;
+  icon: string | null;
+  /** One-line profiler hook, on "worth knowing" rows. */
+  hook: string | null;
+  saved_count: number;
+}
+
+/**
+ * A venue row in the body section — only ever the caller's own saves.
+ * `subtitle` is server-composed from catalog data; `liked`/`visited` are the
+ * caller's pill state, for the row's accents.
+ */
+export interface AreaVenueRow {
+  /** `places.id` — opens the place screen. */
+  id: string;
+  name: string;
+  uri: string;
+  icon: string | null;
+  subtitle: string | null;
+  liked: boolean | null;
+  visited: boolean;
+}
+
+/**
+ * The one body block below the profile.
+ *
+ * `saved` — the caller's footprint here: child-area rows at wide levels, venue
+ * rows at the leaf (both can appear when a save carries no geo deeper than the
+ * current level). `worth_knowing` — the profiler's notable children, shown only
+ * when the caller has no saves under the key. Never venue suggestions:
+ * discovery stays in chat.
+ */
+export interface AreaSection {
+  kind: "saved" | "worth_knowing";
+  areas: AreaSubArea[];
+  places: AreaVenueRow[];
+}
+
+/**
+ * One area as the client renders it (kebi ADR-153).
+ *
+ * `profiled: false` means the global half is still being generated — the open
+ * that returned this response is what triggered it — so `level`/`icon`/`summary`
+ * are null, `best_for` is empty, and `name`/`breadcrumb` are slug-derived
+ * fallbacks. The dressed screen is there within seconds on the next fetch, the
+ * same first-open contract as a thin place (ADR-152). The personal half is
+ * always live, thin or not. `section` is null when there is nothing to show
+ * below the profile.
+ */
+export interface AreaScreenView {
+  /** Raw geo key (`id/bali/canggu`) — also what the chat entity carries. */
+  key: string;
+  /** This area's own `kebi://area/{encoded key}`. */
+  uri: string;
+  name: string;
+  level: string | null;
+  icon: string | null;
+  summary: string | null;
+  best_for: AreaChip[];
+  breadcrumb: AreaBreadcrumbItem[];
+  saved_count: number;
+  profiled: boolean;
+  section: AreaSection | null;
 }
 
 // ── Home screen (greeting + recall) ─────────────────────────────────────────

@@ -13,6 +13,7 @@ import { AppService } from './app.service';
 import { AuthMiddleware } from '../common/middleware/auth.middleware';
 import { AuthModule } from '../auth/auth.module';
 import { AiEnabledGuard } from '../common/guards/ai-enabled.guard';
+import { AreasModule } from '../areas/areas.module';
 import { UserEntity } from '../database/entities/user.entity';
 import { UserSettingsEntity } from '../database/entities/user-settings.entity';
 import { DatabaseModule } from '../database/database.module';
@@ -76,6 +77,7 @@ function resolveSynchronize(config: ConfigService): boolean {
       }),
     }),
     DatabaseModule,
+    AreasModule,
     AuthModule,
     ChatModule,
     ExtractModule,
