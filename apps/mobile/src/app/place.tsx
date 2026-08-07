@@ -28,7 +28,7 @@ import { MapsChooserSheet } from '../components/maps-chooser-sheet';
 import { usePlaceMenuItems } from '../components/use-place-menu-items';
 import { usePlaceView } from '../components/use-place-view';
 import { useChat } from '../components/chat-context';
-import { PLACE_ORIGIN_CHAT } from '../components/use-open-chat-venue';
+import { PLACE_ORIGIN_CHAT } from '../components/use-open-chat-entity';
 import { usePlaceActions } from '../components/place-actions-context';
 import { useNoteSheet } from '../components/note-sheet-context';
 import { buildMapsTargets } from '../lib/maps-links';

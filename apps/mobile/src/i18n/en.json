@@ -100,6 +100,23 @@
       "waze": "waze"
     }
   },
+  "area": {
+    "empty": "no area to show",
+    "loadFailed": "couldn't open that area",
+    "saved": "{{count}} saved",
+    "bestFor": "best for",
+    "level": {
+      "country": "country",
+      "region": "region",
+      "city": "city",
+      "neighbourhood": "neighbourhood"
+    },
+    "sections": {
+      "saved": "where you've saved",
+      "savedPlaces": "your places here",
+      "worthKnowing": "worth knowing"
+    }
+  },
   "toast": {
     "undo": "undo",
     "removed": "{{name}} removed",

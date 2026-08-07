@@ -12,6 +12,9 @@ import { PlaceAvatar } from '../components/place-avatar';
 import { PlaceCard } from '../components/place-card';
 import { PlaceChip } from '../components/place-chip';
 import { PlaceClaimsSection } from '../components/place-claims-section';
+import { AreaChildRow, AreaPlaceRow } from '../components/area-row';
+import { ChatEntityRail } from '../components/chat-entity-rail';
+import { AreaSubArea, AreaVenueRow } from '../api/models/area';
 import { Mascot } from '../components/mascot';
 import { Splash } from '../components/splash';
 import { SocialButton } from '../components/auth/social-button';
@@ -28,7 +31,7 @@ import { usePlaceMenuItems } from '../components/use-place-menu-items';
 import { useToast } from '../components/toast-context';
 import { triggerHaptic } from '../lib/haptics';
 import { makeSamplePlace } from '../lib/sample-place';
-import type { PlaceNote, PlaceTag, ReasoningStepStatus } from '@kebi-app/shared';
+import type { ChatEntity, PlaceNote, PlaceTag, ReasoningStepStatus } from '@kebi-app/shared';
 
 /**
  * Component gallery — a dev-only route (`/gallery`) for eyeballing the
@@ -36,6 +39,47 @@ import type { PlaceNote, PlaceTag, ReasoningStepStatus } from '@kebi-app/shared'
  * here whenever a new shared component lands so we can check it in isolation.
  * Demo labels are dev-only strings, not product copy (so not routed via i18n).
  */
+
+/** Area screen rows + a mixed chat rail (ADR-153). Dev-only fixtures. */
+const DEMO_CHILD_AREA = new AreaSubArea({
+  key: 'id/bali/canggu',
+  name: 'Canggu',
+  uri: 'kebi://area/aWQvYmFsaS9jYW5nZ3U',
+  icon: '\u{1F3C4}',
+  hook: null,
+  saved_count: 4,
+});
+
+const DEMO_WORTH_KNOWING = new AreaSubArea({
+  key: 'id/bali/ubud',
+  name: 'Ubud',
+  uri: 'kebi://area/aWQvYmFsaS91YnVk',
+  icon: '\u{1F33F}',
+  hook: 'rice fields, vegetarian, quiet',
+  saved_count: 0,
+});
+
+const DEMO_AREA_VENUE = new AreaVenueRow({
+  id: 'c0ffee00',
+  name: 'Savaya Bali',
+  uri: 'kebi://venue/c0ffee00',
+  icon: '\u{1F378}',
+  subtitle: 'beach club \u00b7 lively',
+  liked: true,
+  visited: true,
+});
+
+const DEMO_RAIL_ENTITIES: ChatEntity[] = [
+  {
+    kind: 'area',
+    key: 'id/bali/canggu',
+    name: 'Canggu',
+    uri: 'kebi://area/aWQvYmFsaS9jYW5nZ3U',
+    icon: '\u{1F3C4}',
+  },
+  { kind: 'venue', key: 'c0ffee00', name: "Luigi's", uri: 'kebi://venue/c0ffee00', icon: '\u{1F35D}' },
+  { kind: 'venue', key: '7861b346', name: 'Vault', uri: 'kebi://venue/7861b346', icon: null },
+];
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -445,6 +489,19 @@ export default function GalleryScreen() {
 
         <Section title="Save sheet — empty / filled / saving">
           <SaveSheetDemo />
+        </Section>
+
+        <Section title="Area rows — child area (count) / venue (leaf)">
+          <View>
+            <AreaChildRow area={DEMO_CHILD_AREA} />
+            {/* worth-knowing rows carry a hook and no count */}
+            <AreaChildRow area={DEMO_WORTH_KNOWING} />
+            <AreaPlaceRow place={DEMO_AREA_VENUE} />
+          </View>
+        </Section>
+
+        <Section title="Chat rail — mixed kinds, one chip shape">
+          <ChatEntityRail entities={DEMO_RAIL_ENTITIES} label="mentioned" onOpen={() => undefined} />
         </Section>
 
         <Section title="Place avatar">

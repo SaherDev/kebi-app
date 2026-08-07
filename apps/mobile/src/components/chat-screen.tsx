@@ -25,7 +25,7 @@ import { ActionSheet } from './action-sheet';
 import { ReasoningBlock } from './reasoning-block';
 import { ChatAnswer } from './chat-answer';
 import { ChatEntityRail } from './chat-entity-rail';
-import { useOpenChatVenue } from './use-open-chat-venue';
+import { useOpenChatEntity } from './use-open-chat-entity';
 import type { ChatEntity } from '@kebi-app/shared';
 import {
   useChatTranscript,
@@ -79,7 +79,7 @@ export function ChatScreen({ onClose, seed }: ChatScreenProps) {
   // Stable across renders — TurnRow is memoized, so a fresh handler per render
   // would re-render every turn in the list. Takes `onClose` because chat is an
   // overlay: the card has to be pushed with the chat down, not under it.
-  const openVenue = useOpenChatVenue(onClose);
+  const openEntity = useOpenChatEntity(onClose);
   const { turns, startTurn, upsertStep, setMessage, finishTurn, stopTurn, failTurn, toggleCollapse, clearTranscript, restoreTranscript } =
     transcript;
 
@@ -286,7 +286,7 @@ export function ChatScreen({ onClose, seed }: ChatScreenProps) {
               turn={item}
               labels={turnLabels}
               onToggle={toggleCollapse}
-              onOpenVenue={openVenue}
+              onOpenEntity={openEntity}
             />
           )}
           contentContainerClassName="gap-6 px-6 pb-6 pt-2"
@@ -376,7 +376,7 @@ interface TurnLabels {
   thought: string;
   stopped: string;
   interrupted: string;
-  /** Eyebrow over the entity rail — the venues this turn named. */
+  /** Eyebrow over the entity rail — everywhere this turn named, area or venue. */
   mentioned: string;
 }
 
@@ -425,17 +425,17 @@ const TurnRow = memo(function TurnRow({
   turn,
   labels: l,
   onToggle,
-  onOpenVenue,
+  onOpenEntity,
 }: {
   turn: ChatTurn;
   labels: TurnLabels;
   onToggle: ChatTranscriptValue['toggleCollapse'];
-  onOpenVenue: (entity: ChatEntity) => void;
+  onOpenEntity: (entity: ChatEntity) => void;
 }) {
   return turn.role === 'you' ? (
     <UserTurnRow turn={turn} label={l.you} />
   ) : (
-    <KebiTurnRow turn={turn} labels={l} onToggle={onToggle} onOpenVenue={onOpenVenue} />
+    <KebiTurnRow turn={turn} labels={l} onToggle={onToggle} onOpenEntity={onOpenEntity} />
   );
 });
 
@@ -456,12 +456,12 @@ function KebiTurnRow({
   turn,
   labels: l,
   onToggle,
-  onOpenVenue,
+  onOpenEntity,
 }: {
   turn: KebiTurn;
   labels: TurnLabels;
   onToggle: ChatTranscriptValue['toggleCollapse'];
-  onOpenVenue: (entity: ChatEntity) => void;
+  onOpenEntity: (entity: ChatEntity) => void;
 }) {
   // Show the thinking panel once steps arrive, or while still streaming with no
   // answer yet (a simple greeting that runs no tools collapses to just text).
@@ -491,13 +491,13 @@ function KebiTurnRow({
 
       {/* The prose IS the answer on every turn (ADR-136): kebi no longer sends
           place payloads to chat, it names the places in the text and links
-          them. The rail below indexes those links place-by-place. */}
+          them. The rail below indexes those links one destination at a time. */}
       {turn.message ? (
-        <ChatAnswer message={turn.message} entities={turn.entities} onOpen={onOpenVenue} />
+        <ChatAnswer message={turn.message} entities={turn.entities} onOpen={onOpenEntity} />
       ) : null}
 
       {turn.status === 'done' ? (
-        <ChatEntityRail entities={turn.entities} label={l.mentioned} onOpen={onOpenVenue} />
+        <ChatEntityRail entities={turn.entities} label={l.mentioned} onOpen={onOpenEntity} />
       ) : null}
 
       {turn.status === 'error' ? (

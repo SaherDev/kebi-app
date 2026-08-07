@@ -14,7 +14,7 @@ const CANGGU: ChatEntity = {
   kind: 'area',
   key: 'id/bali/canggu',
   name: 'Canggu',
-  uri: 'kebi://area/id/bali/canggu',
+  uri: 'kebi://area/aWQvYmFsaS9jYW5nZ3U',
   icon: '🏄',
 };
 
@@ -26,32 +26,45 @@ const ENTITIES = [
 ];
 
 describe('toRailEntities', () => {
-  it('keeps venues in mention order and drops areas', () => {
+  it('keeps both kinds in mention order — an area is a destination too', () => {
     expect(toRailEntities(ENTITIES).map((e) => e.name)).toEqual([
+      'Canggu',
       "Luigi's Hot Pizza Canggu",
       "Old Man's",
       'Sand Bar',
     ]);
   });
 
-  it('dedupes a venue the answer named twice', () => {
+  it('leaves a late-mentioned area where the answer put it', () => {
+    // Hoisting the scope would contradict the sentence the rail indexes.
+    const lateArea = [venue('a', "Luigi's"), CANGGU];
+    expect(toRailEntities(lateArea).map((e) => e.name)).toEqual(["Luigi's", 'Canggu']);
+  });
+
+  it('dedupes an entity the answer named twice', () => {
     const twice = [venue('a', "Luigi's"), venue('b', "Old Man's"), venue('a', "Luigi's")];
     expect(toRailEntities(twice).map((e) => e.key)).toEqual(['a', 'b']);
+  });
+
+  it('keeps a venue and an area that share a key — different id spaces', () => {
+    const collide = [venue('x', 'Ubud Bar'), { ...CANGGU, key: 'x' }];
+    expect(toRailEntities(collide)).toHaveLength(2);
   });
 });
 
 describe('ChatEntityRail', () => {
   const noop = () => undefined;
 
-  it('renders a chip per venue with its icon', () => {
+  it('renders a chip per entity with its icon', () => {
     const { getByText } = render(
       <ChatEntityRail entities={ENTITIES} label="mentioned" onOpen={noop} />,
     );
 
     expect(getByText('mentioned')).toBeTruthy();
+    expect(getByText('Canggu')).toBeTruthy();
     expect(getByText("Luigi's Hot Pizza Canggu")).toBeTruthy();
+    expect(getByText('🏄')).toBeTruthy();
     expect(getByText('🍕')).toBeTruthy();
-    expect(getByText('🏖️')).toBeTruthy();
   });
 
   it('falls back to the kind glyph when kebi sent no icon', () => {
@@ -62,22 +75,27 @@ describe('ChatEntityRail', () => {
     expect(getByText('📍')).toBeTruthy();
   });
 
-  it('renders nothing when the turn named no venues', () => {
-    const { toJSON } = render(
-      <ChatEntityRail entities={[CANGGU]} label="mentioned" onOpen={noop} />,
+  it('gives an area the venue chip unchanged — the emoji is the difference', () => {
+    const { getByText } = render(
+      <ChatEntityRail entities={[{ ...CANGGU, icon: null }]} label="mentioned" onOpen={noop} />,
     );
+    expect(getByText('🗺️')).toBeTruthy();
+  });
+
+  it('renders nothing when the turn named nowhere', () => {
+    const { toJSON } = render(<ChatEntityRail entities={[]} label="mentioned" onOpen={noop} />);
     expect(toJSON()).toBeNull();
   });
 
-  it('opens the tapped venue', () => {
+  it('opens the tapped entity', () => {
     const onOpen = jest.fn();
     const { getByLabelText } = render(
       <ChatEntityRail entities={ENTITIES} label="mentioned" onOpen={onOpen} />,
     );
 
-    fireEvent.press(getByLabelText("Old Man's"));
+    fireEvent.press(getByLabelText('Canggu'));
 
     expect(onOpen).toHaveBeenCalledTimes(1);
-    expect(onOpen.mock.calls[0][0]).toMatchObject({ key: 'b', kind: 'venue' });
+    expect(onOpen.mock.calls[0][0]).toMatchObject({ key: 'id/bali/canggu', kind: 'area' });
   });
 });

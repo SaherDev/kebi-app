@@ -18,6 +18,12 @@ export const API_ROUTES = {
   userIntents: '/user/intents',
   /** One place, saved by the caller or not — the place screen (api-contract.md §GET /v1/places/{id}). */
   place: (id: string) => `/places/${encodeURIComponent(id)}`,
+  /**
+   * One area — the area screen behind every area link (api-contract.md
+   * §GET /v1/areas/{id}, kebi ADR-153). `id` is the opaque token off the link's
+   * `uri`, never the raw geo key on the entity's `key`.
+   */
+  area: (id: string) => `/areas/${encodeURIComponent(id)}`,
   /** Save a place to the caller's library — the place screen's "save" (api-contract.md §POST /v1/user/places). */
   userPlaces: '/user/places',
   /** One saved place: PATCH user-state / DELETE the save (api-contract.md §/v1/user/places/{id}). */
