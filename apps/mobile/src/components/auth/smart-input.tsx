@@ -89,9 +89,16 @@ export const SmartInput = forwardRef<SmartInputHandle, SmartInputProps>(function
         keyboardType="email-address"
         autoComplete="email"
         returnKeyType="go"
+        // Large accessibility text sizes outgrow any fixed line box and clip;
+        // capping keeps the single-line field readable at every OS setting.
+        maxFontSizeMultiplier={1.2}
         // 15px (body size) but WITHOUT the body token's lineHeight — a lineHeight
-        // on a single-line iOS TextInput clips the glyphs vertically.
-        className="p-0 text-[15px] text-text"
+        // on a single-line iOS TextInput clips the glyphs vertically. The
+        // explicit h-6 (24px) line box is the other half of that fix: without
+        // a height the field is measured from the bare font size, so glyphs
+        // rendered any taller (Dynamic Type, placeholder metrics) get their
+        // descenders cut at the frame's bottom edge.
+        className="h-6 p-0 text-[15px] text-text"
       />
       {showHint && (
         <View className="mt-2 flex-row items-center gap-1.5 border-t border-surface-2 pt-2">
