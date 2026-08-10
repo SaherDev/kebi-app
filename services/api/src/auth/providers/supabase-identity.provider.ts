@@ -6,7 +6,12 @@ import {
   type JWTPayload,
   type JWTVerifyGetKey,
 } from 'jose';
-import { MovementProfile, NormalizedIdentity, PlanTier } from '@kebi-app/shared';
+import {
+  MovementProfile,
+  NormalizedIdentity,
+  PlanTier,
+  UserAboutMe,
+} from '@kebi-app/shared';
 import { IdentityProvider } from '../identity-provider.interface';
 import { AppMetadataCipher } from '../app-metadata.cipher';
 import { TokenClaims } from '../token-claims';
@@ -23,6 +28,7 @@ interface SupabaseAppMetadata {
   ai_enabled?: boolean;
   plan?: PlanTier;
   movement_profile?: MovementProfile;
+  about_me?: UserAboutMe;
   can_curate?: boolean;
   internal_id?: string;
 }
@@ -98,6 +104,7 @@ export class SupabaseIdentityProvider implements IdentityProvider {
         ai_enabled: meta.ai_enabled,
         plan: meta.plan,
         movement_profile: meta.movement_profile,
+        about_me: meta.about_me,
         can_curate: meta.can_curate,
         internal_id: meta.internal_id,
       }),

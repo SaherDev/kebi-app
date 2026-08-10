@@ -1,10 +1,11 @@
 import { EventEmitter } from 'events';
 import type { IncomingMessage } from 'http';
 import type { Response } from 'express';
-import type { AuthUser } from '@kebi-app/shared';
+import type { AuthUser, NormalizedIdentity } from '@kebi-app/shared';
 import { KebiHttpClient } from '../kebi/kebi-http.client';
 import { RateLimitService } from '../rate-limit/rate-limit.service';
 import { ChatService } from './chat.service';
+import { ChatUserProfileFactory } from './chat-user-profile.factory';
 import type { ChatRequestBodyDto } from './dto/chat-request.dto';
 
 const USER: AuthUser = {
@@ -12,6 +13,21 @@ const USER: AuthUser = {
   ai_enabled: true,
   plan: 'explorer',
   movement_profile: { available_modes: ['walking'], reach: 'normal' },
+  about_me: { call_me: 'Saher', home_country: 'AE', about: 'I do not drink.' },
+};
+
+/** The verified identity behind USER — `name` is the contract's `call_me`. */
+const IDENTITY: NormalizedIdentity = {
+  externalId: 'ext_1',
+  claims: {},
+  email: 'saher@kebi.app',
+  name: 'Saher',
+};
+
+const USER_PROFILE = {
+  call_me: 'Saher',
+  home_country: 'AE',
+  about: 'I do not drink.',
 };
 
 /** A pipe-able upstream stub — `pipe` is a no-op, we only assert on the body. */
@@ -42,7 +58,7 @@ describe('ChatService', () => {
     kebi = {
       postStream: jest.fn().mockResolvedValue(upstreamStub()),
     } as unknown as jest.Mocked<KebiHttpClient>;
-    service = new ChatService(kebi, new RateLimitService());
+    service = new ChatService(kebi, new RateLimitService(), new ChatUserProfileFactory());
     req = new EventEmitter() as unknown as IncomingMessage;
     res = responseStub();
   });
@@ -58,19 +74,46 @@ describe('ChatService', () => {
       local_time: '2026-08-10T19:30:00+08:00',
     };
 
-    await service.pipeStream(USER, dto, req, res);
+    await service.pipeStream(IDENTITY, USER, dto, req, res);
 
     expect(sentBody()).toEqual({
       message: dto.message,
       location: dto.location,
       local_time: '2026-08-10T19:30:00+08:00',
       movement_profile: USER.movement_profile,
+      user_profile: USER_PROFILE,
     });
   });
 
   it('sends local_time as null when the client omits it', async () => {
-    await service.pipeStream(USER, { message: 'anything' }, req, res);
+    await service.pipeStream(IDENTITY, USER, { message: 'anything' }, req, res);
 
     expect(sentBody()).toMatchObject({ location: null, local_time: null });
+  });
+
+  it('sends user_profile as null when we know neither a name nor an about-me', async () => {
+    await service.pipeStream(
+      { externalId: 'ext_2', claims: {} },
+      { id: USER.id, ai_enabled: true },
+      { message: 'anything' },
+      req,
+      res,
+    );
+
+    expect(sentBody()).toMatchObject({ user_profile: null });
+  });
+
+  it('sends the name alone as call_me when there is no about-me', async () => {
+    await service.pipeStream(
+      IDENTITY,
+      { id: USER.id, ai_enabled: true },
+      { message: 'anything' },
+      req,
+      res,
+    );
+
+    expect(sentBody()).toMatchObject({
+      user_profile: { call_me: 'Saher', home_country: null, about: null },
+    });
   });
 });

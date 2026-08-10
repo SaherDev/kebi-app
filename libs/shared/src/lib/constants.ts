@@ -36,6 +36,15 @@ export const PLACE_CLAIMS_PREVIEW_COUNT = 3;
 export const CHAT_LOCAL_TIME_MAX_LENGTH = 40;
 
 /**
+ * Caps on the chat request's `user_profile` block (api-contract.md → POST
+ * /v1/chat, kebi ADR-154). Mirror kebi's own field limits so an oversized value
+ * is rejected — or clamped, in `call_me`'s case, since it is the account display
+ * name rather than something typed for kebi — instead of round-tripping to a 422.
+ */
+export const CALL_ME_MAX_LENGTH = 40;
+export const ABOUT_ME_MAX_LENGTH = 300;
+
+/**
  * Glyph drawn on a chat entity whose `icon` came back `null` — nullable by
  * design on both kinds (api-contract.md → ChatEntity), so every surface that
  * draws an entity needs the same fallback rather than an empty avatar. Keyed by

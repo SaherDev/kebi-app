@@ -17,6 +17,16 @@ Format:
 
 ---
 
+## ADR-054: The about-me is ours to hold, the movement seed is not ours to assert
+
+**Date:** 2026-08-10\
+**Status:** accepted\
+**Context:** kebi's contract grew two user-shaped fields. ADR-154 added an optional `user_profile` (`call_me`, `home_country`, `about`) that kebi reads as a low-trust cold-start prior and stores nowhere — so somebody has to hold it, and that somebody is this repo. ADR-155/156 added `movement_profile.source`, and with it a verdict on what we had been sending: our config seed of `[walking, transit]` went out on every request as if a human had picked it, so kebi capped drivers at walking range and they never learned what was dropped. kebi now ignores the modes on any block that isn't `source: "user"` and guesses wide instead.\
+**Decision:** Both fields ride the **token claim**, sealed into `app_metadata` beside `plan` and `movement_profile`, so the chat path stays a claim-first forward with no per-turn DB read — at the cost of an edit landing only after the next token refresh, which is what a plan switch already costs. The seeded movement profile carries `source: "default"` explicitly and only a setter endpoint may write `"user"`: the claim is earned by a human's write reaching the gateway, never asserted by config, and a row predating the field forwards no `source` at all, which reads as `default` upstream. The about-me is stored **whole, in one field, in one place** — `user_settings.about_me`, `call_me` included. A cleared field is `null`, never an empty string, so nothing the user erased can return as prose they appear to have written; an unset `call_me` falls back to the account display name at forward time rather than duplicating a name into a second store or spending an Admin-API write to keep two copies aligned. `home_country` is validated alpha-2 at our edge, so a country name fails here with an actionable 400 instead of round-tripping to a kebi 422 — which is why the client owes a picker, not a text input.\
+**Consequences:** Until the two settings surfaces ship, nothing changes for users and that is correct: every request already reads as `default`, and kebi's wider guess is strictly better than the cap it replaces. When they do ship, the movement screen must write through the setter — a client that "helpfully" sends `source: "user"` alongside seeded modes reinstates the walking-range bug exactly. The about-me write is whole-block, so a form that PATCHes one field erases the others; that is a deliberate cost of having no clear-this sentinel, and the form owes sending all three. Two names can now differ in principle — the account name and `call_me` — but only the second reaches kebi, and only if the user set it.
+
+---
+
 ## ADR-053: An area is a destination, not sentence context — one chip shape, one screen, no save
 
 **Date:** 2026-08-07\

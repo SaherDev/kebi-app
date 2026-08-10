@@ -22,6 +22,11 @@ import type { PlaceCategory, PlaceTag } from "./place-taxonomy.js";
  * `publicMetadata` token claim (like `plan`). The gateway reads it from the
  * verified token and injects it here — the client never sends it. `null`
  * when the user has no profile set; kebi then applies a neutral fallback.
+ *
+ * `user_profile` is the "about me" block (kebi ADR-154), carried the same way —
+ * read off the stamped settings claim, with `call_me` falling back to the
+ * verified token's display name when unset. `null` when we know nothing about
+ * the user. kebi consumes it as a cold-start prior and stores none of it.
  */
 export interface ChatRequestDto {
   message: string;
@@ -29,6 +34,7 @@ export interface ChatRequestDto {
   /** ISO-8601 wall-clock time with offset, e.g. `2026-08-10T19:30:00+08:00`. */
   local_time: string | null;
   movement_profile: MovementProfile | null;
+  user_profile: ChatUserProfile | null;
 }
 
 /**
@@ -503,30 +509,78 @@ export const REACH_VALUES: readonly Reach[] = [
 ] as const;
 
 /**
+ * Whether a human ever chose the movement profile's modes, or a config seed
+ * supplied them (kebi ADR-155). Only `user` counts as resolved: kebi ignores a
+ * seeded block's modes and substitutes its own deliberately wide fallback
+ * (ADR-156), because capping an unknown user at walking range hides places they
+ * never learn about. Absent reads as `default` upstream.
+ */
+export type MovementSource = "user" | "default";
+
+export const MOVEMENT_SOURCES: readonly MovementSource[] = [
+  "user",
+  "default",
+] as const;
+
+/**
  * User mobility setting. Owned by the product as a Clerk `publicMetadata`
  * claim (like `plan`); the gateway forwards it to kebi in the chat body.
  */
 export interface MovementProfile {
   available_modes: MovementMode[];
   reach: Reach;
+  /** Absent is read as `default` by kebi — only a setter writes `user`. */
+  source?: MovementSource;
 }
 
 /**
- * Default movement profile for a new user, used until they set their own
- * (ADR-066 setter owed). The runtime value is config-driven
- * (`movement.default_profile` in the gateway's app.yaml); this is the code-level
- * fallback when that key is absent.
+ * Default movement profile for a new user, used until they set their own. The
+ * runtime value is config-driven (`user_settings.defaults.movement_profile` in
+ * the gateway's app.yaml); this is the code-level fallback when that key is
+ * absent. `source` is `default` by construction — these modes are ours, not the
+ * user's, and marking them `user` would have kebi honour a cap nobody chose.
  */
 export const DEFAULT_MOVEMENT_PROFILE: MovementProfile = {
   available_modes: ["walking", "transit"],
   reach: "normal",
+  source: "default",
 };
+
+/**
+ * The user's stored "about me" (kebi ADR-154), owned by `user_settings` and
+ * stamped into the token claims like `movement_profile`. Both fields nullable —
+ * a cleared field is `null`, never an empty string, so nothing reaches kebi as
+ * prose the user did not write.
+ *
+ * `call_me` lives here and only here — one write, to our own row, rather than a
+ * round-trip to the auth provider's Admin API for a name kebi is the one asking
+ * for. The account display name stays what it is (login identity, avatar); an
+ * unset `call_me` falls back to it at forward time, so a user who never opens
+ * the form is still addressed by name.
+ */
+export interface UserAboutMe {
+  call_me: string | null;
+  /** ISO 3166-1 alpha-2, uppercase. Validated at the gateway edge. */
+  home_country: string | null;
+  about: string | null;
+}
+
+/**
+ * The `user_profile` block on the kebi chat body — the stored about-me as sent,
+ * with `call_me` falling back to the account display name when unset. kebi
+ * weighs `about` as a low-trust cold-start prior (except a stated restriction,
+ * read as a hard constraint) and answers entry/visa questions live when
+ * `home_country` is present. It stores none of it.
+ */
+export type ChatUserProfile = UserAboutMe;
 
 export interface AuthUser {
   id: string;
   ai_enabled: boolean;
   plan?: PlanTier;
   movement_profile?: MovementProfile;
+  /** Stamped about-me claim; absent until the user sets one. */
+  about_me?: UserAboutMe;
   // Admin-granted curator role (ADR-121), carried claim-first in the token.
   // Absent on a pre-grant/pre-migration token → treated as not a curator.
   can_curate?: boolean;
@@ -541,6 +595,11 @@ export interface UserSettingsData {
   plan: PlanTier;
   ai_enabled: boolean;
   movement_profile: MovementProfile | null;
+  /**
+   * The user's about-me (kebi ADR-154). `null` until they write one — a row
+   * predating the field reads as null and forwards nothing.
+   */
+  about_me: UserAboutMe | null;
   // Admin-granted curator role (ADR-121 knowledge curation) — independent of the
   // billing plan, never self-asserted. Defaults false (fail closed); the gateway
   // forwards it as the X-Gateway-Can-Curate capability header.
@@ -556,6 +615,8 @@ export interface IdentityClaims {
   ai_enabled?: boolean;
   plan?: PlanTier;
   movement_profile?: MovementProfile;
+  /** Stamped from user_settings; absent until the user sets an about-me. */
+  about_me?: UserAboutMe;
   // Admin-granted curator role (ADR-121), stamped from user_settings.
   can_curate?: boolean;
   // Our stable internal user id, stamped into the signed token claim so the

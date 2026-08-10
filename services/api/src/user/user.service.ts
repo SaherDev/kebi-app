@@ -7,16 +7,19 @@ import type {
   LibraryUserData,
   NormalizedIdentity,
   PlanTier,
+  MovementProfile,
   SaveUserPlaceRequest,
   UpdateUserPlaceRequest,
+  UserAboutMe,
   UserProfile,
 } from '@kebi-app/shared';
 import { KebiHttpClient } from '../kebi/kebi-http.client';
 import { PROFILE_WRITER } from '../auth/profile-writer.interface';
 import type { ProfileWriter } from '../auth/profile-writer.interface';
-import { IDENTITY_METADATA_WRITER } from '../auth/identity-metadata.writer';
-import type { IdentityMetadataWriter } from '../auth/identity-metadata.writer';
+import { ClaimStamper } from '../auth/claim-stamper';
 import { UserSettingsService } from '../auth/user-settings.service';
+import { UpdateAboutMeDto } from './dto/update-about-me.dto';
+import { UpdateMovementProfileDto } from './dto/update-movement-profile.dto';
 import { IntentsQueryDto } from './dto/intents-query.dto';
 import { LibraryQueryDto } from './dto/library-query.dto';
 import { SaveUserPlaceDto } from './dto/save-user-place.dto';
@@ -25,14 +28,16 @@ import { UpdateUserPlaceDto } from './dto/update-user-place.dto';
 /** Fallback tier if a (provisioned) token somehow lacks a plan claim. */
 const DEFAULT_PLAN = 'homebody' as const;
 
+/** What a fully-cleared about-me reads as — stored as null, echoed as fields. */
+const EMPTY_ABOUT_ME: UserAboutMe = { call_me: null, home_country: null, about: null };
+
 @Injectable()
 export class UserService {
   constructor(
     private readonly kebi: KebiHttpClient,
     @Inject(PROFILE_WRITER) private readonly profileWriter: ProfileWriter,
     private readonly userSettings: UserSettingsService,
-    @Inject(IDENTITY_METADATA_WRITER)
-    private readonly metadataWriter: IdentityMetadataWriter,
+    private readonly claimStamper: ClaimStamper,
   ) {}
 
   /**
@@ -80,20 +85,54 @@ export class UserService {
     plan: PlanTier,
   ): Promise<UserProfile> {
     const settings = await this.userSettings.updatePlan(user.id, plan);
-    await this.metadataWriter.stamp(identity.externalId, {
-      internal_id: user.id,
-      ai_enabled: settings.ai_enabled,
-      plan: settings.plan,
-      can_curate: settings.can_curate,
-      ...(settings.movement_profile !== null && {
-        movement_profile: settings.movement_profile,
-      }),
-    });
+    await this.claimStamper.stamp(identity.externalId, user.id, settings);
     return {
       name: identity.name ?? '',
       email: identity.email ?? '',
       plan: settings.plan,
     };
+  }
+
+  /**
+   * Write the about-me kebi reads as a cold-start prior (ADR-154). Stored whole:
+   * a field the client omits is cleared, so there is no sentinel for "erase this"
+   * and a cleared field is `null` rather than empty prose. Re-stamps the claims,
+   * so the change reaches kebi on the next token refresh — same as a plan switch.
+   *
+   * `call_me` is stored here and nowhere else — one write, to our own row, with
+   * no Admin-API round-trip to rename the account for a name only kebi asked
+   * for. Cleared, it falls back to the account display name at forward time, so
+   * the user is never left nameless.
+   */
+  async updateAboutMe(
+    identity: NormalizedIdentity,
+    user: AuthUser,
+    dto: UpdateAboutMeDto,
+  ): Promise<UserAboutMe> {
+    const aboutMe: UserAboutMe = {
+      call_me: dto.call_me ?? null,
+      home_country: dto.home_country ?? null,
+      about: dto.about ?? null,
+    };
+    const settings = await this.userSettings.updateAboutMe(user.id, aboutMe);
+    await this.claimStamper.stamp(identity.externalId, user.id, settings);
+    return settings.about_me ?? EMPTY_ABOUT_ME;
+  }
+
+  /**
+   * Write modes a human actually chose. The settings service stamps
+   * `source: 'user'` — reaching this method is the evidence for it (ADR-155) —
+   * and only then does kebi honour the modes instead of its wide fallback.
+   */
+  async updateMovementProfile(
+    identity: NormalizedIdentity,
+    user: AuthUser,
+    dto: UpdateMovementProfileDto,
+  ): Promise<MovementProfile> {
+    const settings = await this.userSettings.updateMovementProfile(user.id, dto);
+    await this.claimStamper.stamp(identity.externalId, user.id, settings);
+    // Non-null by construction — the setter always writes a profile.
+    return settings.movement_profile as MovementProfile;
   }
 
   async getLibrary(

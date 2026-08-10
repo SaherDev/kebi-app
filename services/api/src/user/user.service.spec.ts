@@ -8,6 +8,7 @@ import type {
 import { KebiHttpClient } from '../kebi/kebi-http.client';
 import type { ProfileWriter } from '../auth/profile-writer.interface';
 import type { IdentityMetadataWriter } from '../auth/identity-metadata.writer';
+import { ClaimStamper } from '../auth/claim-stamper';
 import type { UserSettingsService } from '../auth/user-settings.service';
 import type { IntentsQueryDto } from './dto/intents-query.dto';
 import type { LibraryQueryDto } from './dto/library-query.dto';
@@ -21,7 +22,11 @@ describe('UserService', () => {
   let service: UserService;
   let kebi: jest.Mocked<KebiHttpClient>;
   let profileWriter: { setName: jest.Mock };
-  let userSettings: { updatePlan: jest.Mock };
+  let userSettings: {
+    updatePlan: jest.Mock;
+    updateAboutMe: jest.Mock;
+    updateMovementProfile: jest.Mock;
+  };
   let metadataWriter: { stamp: jest.Mock };
 
   beforeEach(() => {
@@ -32,13 +37,17 @@ describe('UserService', () => {
       delete: jest.fn(),
     } as unknown as jest.Mocked<KebiHttpClient>;
     profileWriter = { setName: jest.fn().mockResolvedValue(undefined) };
-    userSettings = { updatePlan: jest.fn() };
+    userSettings = {
+      updatePlan: jest.fn(),
+      updateAboutMe: jest.fn(),
+      updateMovementProfile: jest.fn(),
+    };
     metadataWriter = { stamp: jest.fn().mockResolvedValue(undefined) };
     service = new UserService(
       kebi,
       profileWriter as unknown as ProfileWriter,
       userSettings as unknown as UserSettingsService,
-      metadataWriter as unknown as IdentityMetadataWriter,
+      new ClaimStamper(metadataWriter as unknown as IdentityMetadataWriter),
     );
   });
 
@@ -110,6 +119,7 @@ describe('UserService', () => {
         ai_enabled: true,
         can_curate: false,
         movement_profile: { available_modes: ['walking'], reach: 'normal' },
+        about_me: null,
       });
 
       const profile = await service.changePlan(identity, user, 'explorer');
@@ -132,6 +142,7 @@ describe('UserService', () => {
         ai_enabled: true,
         can_curate: false,
         movement_profile: null,
+        about_me: null,
       });
 
       await service.changePlan(identity, user, 'local_legend');
@@ -142,6 +153,86 @@ describe('UserService', () => {
         plan: 'local_legend',
         can_curate: false,
       });
+    });
+  });
+
+  describe('updateAboutMe', () => {
+    const identity: NormalizedIdentity = {
+      externalId: 'ext_1',
+      claims: {},
+      email: 'saher@kebi.app',
+      name: 'saher',
+    };
+    const user: AuthUser = { id: USER_ID, ai_enabled: true, plan: 'homebody' };
+
+    it('writes the block and re-stamps it into the claims (kebi ADR-154)', async () => {
+      const about_me = { call_me: 'Saher', home_country: 'AE', about: 'I do not drink.' };
+      userSettings.updateAboutMe.mockResolvedValueOnce({
+        plan: 'homebody',
+        ai_enabled: true,
+        can_curate: false,
+        movement_profile: null,
+        about_me,
+      });
+
+      const result = await service.updateAboutMe(identity, user, about_me);
+
+      expect(userSettings.updateAboutMe).toHaveBeenCalledWith(USER_ID, about_me);
+      expect(metadataWriter.stamp).toHaveBeenCalledWith(
+        'ext_1',
+        expect.objectContaining({ about_me }),
+      );
+      expect(result).toEqual(about_me);
+    });
+
+    it('echoes an empty block when the write cleared everything', async () => {
+      userSettings.updateAboutMe.mockResolvedValueOnce({
+        plan: 'homebody',
+        ai_enabled: true,
+        can_curate: false,
+        movement_profile: null,
+        about_me: null,
+      });
+
+      const result = await service.updateAboutMe(identity, user, {});
+
+      expect(result).toEqual({ call_me: null, home_country: null, about: null });
+      // Nothing to say about the user → the claim is omitted, not stamped null.
+      expect(metadataWriter.stamp).toHaveBeenCalledWith(
+        'ext_1',
+        expect.not.objectContaining({ about_me: expect.anything() }),
+      );
+    });
+  });
+
+  describe('updateMovementProfile', () => {
+    const identity: NormalizedIdentity = { externalId: 'ext_1', claims: {} };
+    const user: AuthUser = { id: USER_ID, ai_enabled: true, plan: 'homebody' };
+
+    it("writes the modes and re-stamps the source: 'user' profile", async () => {
+      const movement_profile = {
+        available_modes: ['driving' as const],
+        reach: 'far' as const,
+        source: 'user' as const,
+      };
+      userSettings.updateMovementProfile.mockResolvedValueOnce({
+        plan: 'homebody',
+        ai_enabled: true,
+        can_curate: false,
+        movement_profile,
+        about_me: null,
+      });
+
+      const result = await service.updateMovementProfile(identity, user, {
+        available_modes: ['driving'],
+        reach: 'far',
+      });
+
+      expect(result).toEqual(movement_profile);
+      expect(metadataWriter.stamp).toHaveBeenCalledWith(
+        'ext_1',
+        expect.objectContaining({ movement_profile }),
+      );
     });
   });
 

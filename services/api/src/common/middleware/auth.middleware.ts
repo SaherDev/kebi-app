@@ -143,6 +143,7 @@ export class AuthMiddleware implements NestMiddleware {
       ai_enabled: claims.ai_enabled,
       plan: claims.plan,
       movement_profile: claims.movement_profile,
+      about_me: claims.about_me,
       can_curate: claims.can_curate,
     });
   }

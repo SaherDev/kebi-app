@@ -1,4 +1,4 @@
-import { MovementProfile, PlanTier } from '@kebi-app/shared';
+import { MovementProfile, PlanTier, UserAboutMe } from '@kebi-app/shared';
 
 /**
  * Product claims to persist into the auth provider's token-embedded metadata so
@@ -9,6 +9,7 @@ export interface StampClaims {
   internal_id: string;
   plan?: PlanTier;
   movement_profile?: MovementProfile;
+  about_me?: UserAboutMe;
   ai_enabled?: boolean;
   can_curate?: boolean;
 }

@@ -2,8 +2,7 @@ import { Inject, Injectable, Logger } from '@nestjs/common';
 import { NormalizedIdentity } from '@kebi-app/shared';
 import { IDENTITY_PROVIDER } from './identity-provider.interface';
 import type { IdentityProvider } from './identity-provider.interface';
-import { IDENTITY_METADATA_WRITER } from './identity-metadata.writer';
-import type { IdentityMetadataWriter } from './identity-metadata.writer';
+import { ClaimStamper } from './claim-stamper';
 import { PROFILE_WRITER } from './profile-writer.interface';
 import type { ProfileWriter } from './profile-writer.interface';
 import { UserIdentityService } from './user-identity.service';
@@ -29,8 +28,7 @@ export class AuthService {
 
   constructor(
     @Inject(IDENTITY_PROVIDER) private readonly provider: IdentityProvider,
-    @Inject(IDENTITY_METADATA_WRITER)
-    private readonly metadataWriter: IdentityMetadataWriter,
+    private readonly claimStamper: ClaimStamper,
     @Inject(PROFILE_WRITER) private readonly profileWriter: ProfileWriter,
     private readonly userIdentity: UserIdentityService,
     private readonly userSettings: UserSettingsService,
@@ -43,7 +41,8 @@ export class AuthService {
     await this.seedName(identity);
 
     // Stamp the token from settings only when it's out of sync (different id, or
-    // plan/ai_enabled/movement_profile changed) — steady-state logins skip it.
+    // plan/ai_enabled/movement_profile/about_me changed) — steady-state logins
+    // skip it.
     const claims = identity.claims;
     const inSync =
       claims.internal_id === userId &&
@@ -51,18 +50,11 @@ export class AuthService {
       claims.ai_enabled === settings.ai_enabled &&
       claims.can_curate === settings.can_curate &&
       JSON.stringify(claims.movement_profile ?? null) ===
-        JSON.stringify(settings.movement_profile);
+        JSON.stringify(settings.movement_profile) &&
+      JSON.stringify(claims.about_me ?? null) === JSON.stringify(settings.about_me ?? null);
     if (inSync) return;
 
-    await this.metadataWriter.stamp(identity.externalId, {
-      internal_id: userId,
-      ai_enabled: settings.ai_enabled,
-      plan: settings.plan,
-      can_curate: settings.can_curate,
-      ...(settings.movement_profile !== null && {
-        movement_profile: settings.movement_profile,
-      }),
-    });
+    await this.claimStamper.stamp(identity.externalId, userId, settings);
   }
 
   /**

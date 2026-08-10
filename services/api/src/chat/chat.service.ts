@@ -1,10 +1,11 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { IncomingMessage } from 'http';
 import type { Response } from 'express';
-import type { AuthUser, ChatRequestDto } from '@kebi-app/shared';
+import type { AuthUser, ChatRequestDto, NormalizedIdentity } from '@kebi-app/shared';
 import { KebiHttpClient } from '../kebi/kebi-http.client';
 import { RateLimitService } from '../rate-limit/rate-limit.service';
 import { ChatRequestBodyDto } from './dto/chat-request.dto';
+import { ChatUserProfileFactory } from './chat-user-profile.factory';
 
 /**
  * Service for handling chat requests
@@ -20,9 +21,11 @@ export class ChatService {
   constructor(
     private readonly kebi: KebiHttpClient,
     private readonly rateLimitService: RateLimitService,
+    private readonly userProfileFactory: ChatUserProfileFactory,
   ) {}
 
   async pipeStream(
+    identity: NormalizedIdentity,
     user: AuthUser,
     dto: ChatRequestBodyDto,
     req: IncomingMessage,
@@ -37,6 +40,7 @@ export class ChatService {
       location: dto.location ?? null,
       local_time: dto.local_time ?? null,
       movement_profile: user.movement_profile ?? null,
+      user_profile: this.userProfileFactory.from(identity, user),
     };
     const stream = await this.kebi.postStream(
       '/v1/chat/stream',
