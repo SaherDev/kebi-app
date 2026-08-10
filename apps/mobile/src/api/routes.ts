@@ -30,6 +30,16 @@ export const API_ROUTES = {
   userPlace: (id: string) => `/user/places/${id}`,
   /** The caller's display profile: GET name/email/plan, PATCH the display name (gateway-local). */
   userProfile: '/user/profile',
+  /**
+   * The caller's own about-me + movement profile (gateway-local). GET reads
+   * them back for the screens that edit them — they ride the token as a sealed
+   * claim the client cannot decode (ADR-044).
+   */
+  userSettings: '/user/settings',
+  /** Write the about-me kebi reads as a cold-start prior (kebi ADR-154). Whole-block. */
+  userAboutMe: '/user/about-me',
+  /** Write the movement modes the user chose — the only path that sets source: "user" (kebi ADR-155). */
+  userMovement: '/user/movement',
   /** Switch the caller's plan tier — PATCH plan, re-stamps the token (gateway-local). */
   userPlan: '/user/plan',
   /** Wipe the caller's AI-owned data — "nuke my data" (api-contract.md §DELETE /v1/user/data). */

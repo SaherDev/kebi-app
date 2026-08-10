@@ -19,6 +19,7 @@ import type {
   NormalizedIdentity,
   UserAboutMe,
   UserProfile,
+  UserSettingsResponse,
 } from '@kebi-app/shared';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { CurrentIdentity } from '../common/decorators/current-identity.decorator';
@@ -61,6 +62,11 @@ export class UserController {
     @Body() dto: UpdatePlanDto
   ): Promise<UserProfile> {
     return this.userService.changePlan(identity, user, dto.plan);
+  }
+
+  @Get('settings')
+  async getSettings(@CurrentUser() user: AuthUser): Promise<UserSettingsResponse> {
+    return this.userService.getSettings(user.id);
   }
 
   @Patch('about-me')

@@ -23,6 +23,7 @@ describe('UserService', () => {
   let kebi: jest.Mocked<KebiHttpClient>;
   let profileWriter: { setName: jest.Mock };
   let userSettings: {
+    ensureForUser: jest.Mock;
     updatePlan: jest.Mock;
     updateAboutMe: jest.Mock;
     updateMovementProfile: jest.Mock;
@@ -38,6 +39,7 @@ describe('UserService', () => {
     } as unknown as jest.Mocked<KebiHttpClient>;
     profileWriter = { setName: jest.fn().mockResolvedValue(undefined) };
     userSettings = {
+      ensureForUser: jest.fn(),
       updatePlan: jest.fn(),
       updateAboutMe: jest.fn(),
       updateMovementProfile: jest.fn(),
@@ -152,6 +154,45 @@ describe('UserService', () => {
         ai_enabled: true,
         plan: 'local_legend',
         can_curate: false,
+      });
+    });
+  });
+
+  describe('getSettings', () => {
+    it('reads the settings row, not the token claims — a fresh write is visible at once', async () => {
+      const about_me = { call_me: 'Saher', home_country: 'AE', about: null };
+      const movement_profile = {
+        available_modes: ['driving' as const],
+        reach: 'far' as const,
+        source: 'user' as const,
+      };
+      userSettings.ensureForUser.mockResolvedValueOnce({
+        plan: 'homebody',
+        ai_enabled: true,
+        can_curate: false,
+        movement_profile,
+        about_me,
+      });
+
+      const result = await service.getSettings(USER_ID);
+
+      expect(userSettings.ensureForUser).toHaveBeenCalledWith(USER_ID);
+      expect(result).toEqual({ about_me, movement_profile });
+      expect(kebi.get).not.toHaveBeenCalled();
+    });
+
+    it('returns nulls for a user who has set neither', async () => {
+      userSettings.ensureForUser.mockResolvedValueOnce({
+        plan: 'homebody',
+        ai_enabled: true,
+        can_curate: false,
+        movement_profile: null,
+        about_me: null,
+      });
+
+      expect(await service.getSettings(USER_ID)).toEqual({
+        about_me: null,
+        movement_profile: null,
       });
     });
   });

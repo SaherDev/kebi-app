@@ -12,6 +12,7 @@ import type {
   UpdateUserPlaceRequest,
   UserAboutMe,
   UserProfile,
+  UserSettingsResponse,
 } from '@kebi-app/shared';
 import { KebiHttpClient } from '../kebi/kebi-http.client';
 import { PROFILE_WRITER } from '../auth/profile-writer.interface';
@@ -90,6 +91,22 @@ export class UserService {
       name: identity.name ?? '',
       email: identity.email ?? '',
       plan: settings.plan,
+    };
+  }
+
+  /**
+   * The caller's own settings, for the screens that edit them. Reads the
+   * settings row rather than the request's claims, so a value written seconds
+   * ago is visible immediately instead of waiting for the token to refresh.
+   */
+  async getSettings(userId: string): Promise<UserSettingsResponse> {
+    const settings = await this.userSettings.ensureForUser(userId);
+    // `?? null`, not a pass-through: a settings row written before these fields
+    // existed has them `undefined`, JSON drops undefined keys, and the client's
+    // schema requires the key to be present. Absent must serialize as null.
+    return {
+      about_me: settings.about_me ?? null,
+      movement_profile: settings.movement_profile ?? null,
     };
   }
 

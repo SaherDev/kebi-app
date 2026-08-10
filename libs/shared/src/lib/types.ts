@@ -574,6 +574,18 @@ export interface UserAboutMe {
  */
 export type ChatUserProfile = UserAboutMe;
 
+/**
+ * The caller's own settings, read back for the screens that edit them
+ * (gateway-local `GET /user/settings`). They ride the token as an opaque sealed
+ * claim (ADR-044/045), so a screen has nowhere else to read current values from
+ * — and the about-me writes whole, so opening blind would erase what was there.
+ * `null` on either field means unset.
+ */
+export interface UserSettingsResponse {
+  about_me: UserAboutMe | null;
+  movement_profile: MovementProfile | null;
+}
+
 export interface AuthUser {
   id: string;
   ai_enabled: boolean;

@@ -234,11 +234,6 @@
   "settings": {
     "eyebrow": "settings",
     "hero": "you, basically",
-    "addName": "add your name",
-    "namePlaceholder": "your name",
-    "editEyebrow": "you",
-    "editName": "edit name",
-    "saveName": "save",
     "subscription": "subscription",
     "yourPlan": "your plan",
     "planActive": "active",
@@ -265,14 +260,20 @@
     "footerVersion": "kebi v{{version}}",
     "error": "couldn't load your profile",
     "toast": {
-      "nameSaved": "name saved",
-      "nameFailed": "couldn't save that — try again",
       "nuked": "your data's gone",
       "nukeFailed": "couldn't nuke that — try again"
     },
     "help": "help",
     "rowHelp": "help",
-    "rowHelpSub": "weird answers, bugs, talk to us"
+    "rowHelpSub": "weird answers, bugs, talk to us",
+    "whatKebiKnows": "what kebi knows",
+    "aboutYou": "about you",
+    "aboutYouSub": "name, home country, the gist",
+    "gettingAround": "getting around",
+    "gettingAroundSub": "how far kebi looks for you",
+    "notSet": "not set",
+    "isSet": "set",
+    "addName": "add your name"
   },
   "plans": {
     "eyebrow": "plans",
@@ -413,5 +414,55 @@
     "sheetMessageNote": "goes straight to the team. replies go to your account email",
     "toastSent": "sent. this is how kebi gets better",
     "toastError": "couldn't send — try again"
+  },
+  "aboutYou": {
+    "eyebrow": "about you",
+    "hero": "so kebi gets you",
+    "lede": "kebi keeps none of this — it reads it at the start of every conversation and lets what you actually do outweigh it. except a hard rule, which stays a hard rule.",
+    "callMe": "call me",
+    "callMePlaceholder": "what should kebi call you?",
+    "callMeHint": "leave it empty and kebi uses your account name",
+    "homeCountry": "home country",
+    "countryPlaceholder": "pick your country",
+    "countryHint": "used for visa and entry answers, checked live every time",
+    "countryTitle": "where are you from?",
+    "countrySearch": "search countries",
+    "countryEmpty": "no country by that name",
+    "gist": "the gist",
+    "gistPlaceholder": "how you like to eat, drink, move",
+    "gistHint": "a hard rule here is treated as a hard rule",
+    "wholeBlock": "heads up — saving writes all three at once. clear a field and it's gone, not kept.",
+    "save": "save",
+    "saved": "kebi knows",
+    "saveFailed": "couldn't save that — try again",
+    "loadFailed": "couldn't load what kebi knows — try again"
+  },
+  "gettingAround": {
+    "eyebrow": "getting around",
+    "hero": "how you move",
+    "lede": "kebi pairs this with wherever you are to decide how far to look. tell it wrong and it either walks you too far or hides half the city.",
+    "modes": "what you can use",
+    "modesHint": "what you can use anywhere — not what's around today",
+    "mode": {
+      "walking": "walking",
+      "cycling": "cycling",
+      "motorbike": "scooter",
+      "driving": "driving",
+      "transit": "transit",
+      "rideshare": "rideshare"
+    },
+    "reach": "how far is too far",
+    "reachValue": {
+      "compact": "keep it close",
+      "normal": "normal",
+      "far": "i'll travel"
+    },
+    "reachHint": "nudges kebi wider or tighter than it would go on its own",
+    "guessing": "until you save this, kebi guesses wide on purpose — better a place you can reach than a short list you never see.",
+    "pickOne": "pick at least one way to get around",
+    "save": "save",
+    "saved": "kebi will search like that",
+    "saveFailed": "couldn't save that — try again",
+    "loadFailed": "couldn't load how you get around — try again"
   }
 }
