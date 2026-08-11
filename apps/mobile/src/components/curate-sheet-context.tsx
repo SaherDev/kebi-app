@@ -12,6 +12,7 @@ import { useTranslation } from '../i18n/context';
 import { useApiClient } from '../api/hooks';
 import { curate } from '../api/knowledge';
 import { CurateSheet, type CurateAnchorView } from './curate-sheet';
+import type { EntityHit } from '../api/models/knowledge';
 import { useToast } from './toast-context';
 
 /**
@@ -81,6 +82,34 @@ export function CurateSheetProvider({ children }: { children: ReactNode }) {
     [key],
   );
 
+  /**
+   * Re-anchor mid-write. Drafts are keyed by anchor, so the prose has to be
+   * **carried across** the key change — otherwise picking a different subject
+   * would silently blank the paragraph you just wrote, which is the one thing
+   * this composer promises never to do.
+   */
+  const changeAnchor = useCallback(
+    (hit: EntityHit) => {
+      const anchor = hit.anchor ?? undefined;
+      const from = draftKey(target?.anchor);
+      const to = draftKey(anchor);
+      if (from !== to) {
+        setDrafts((prev) => {
+          const carried = prev[from] ?? '';
+          const next = { ...prev };
+          delete next[from];
+          if (carried) next[to] = carried;
+          return next;
+        });
+      }
+      setTarget({
+        anchor,
+        view: { emoji: hit.emoji, name: hit.name, context: hit.context || undefined },
+      });
+    },
+    [target],
+  );
+
   const send = useCallback(
     async (text: string, anchor: CurateAnchor | undefined, forKey: string) => {
       try {
@@ -130,6 +159,7 @@ export function CurateSheetProvider({ children }: { children: ReactNode }) {
         value={value}
         onChangeText={setValue}
         anchor={target?.view ?? null}
+        onChangeAnchor={changeAnchor}
       />
     </CurateSheetContext.Provider>
   );

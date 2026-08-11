@@ -1,8 +1,10 @@
 import { z } from 'zod';
 import type {
+  CurateAnchor,
   CurateClaim as CurateClaimContract,
   CurateKnowledgeResponse as CurateKnowledgeResponseContract,
   CurateScope,
+  EntitySearchResult as EntitySearchResultContract,
 } from '@kebi-app/shared';
 
 /**
@@ -72,3 +74,65 @@ export const CurateResultSchema = z
     claims: z.array(CurateClaimSchema).default([]),
   })
   .transform((r) => new CurateResult(r));
+
+/**
+ * One hit in the anchor typeahead. The populated id field **is** the anchor
+ * payload — it goes into a curate `anchor` verbatim, and the two kinds are not
+ * interchangeable: a venue carries the catalog `place_id`, an area the encoded
+ * token (its raw geo key is not a valid anchor).
+ */
+export class EntityHit implements EntitySearchResultContract {
+  readonly type: 'place' | 'area';
+  readonly place_id: string | null;
+  readonly area_id: string | null;
+  readonly name: string;
+  readonly level: string | null;
+  readonly icon: string | null;
+  readonly context: string;
+
+  constructor(e: EntitySearchResultContract) {
+    this.type = e.type;
+    this.place_id = e.place_id;
+    this.area_id = e.area_id;
+    this.name = e.name;
+    this.level = e.level;
+    this.icon = e.icon;
+    this.context = e.context;
+  }
+
+  /** The anchor this hit resolves to, or `null` if the id it needs is missing. */
+  get anchor(): CurateAnchor | null {
+    if (this.type === 'place') return this.place_id ? { place_id: this.place_id } : null;
+    return this.area_id ? { area_id: this.area_id } : null;
+  }
+
+  /**
+   * Glyph for the row. `icon` is nullable by design (kebi ADR-146 — LLM-less
+   * paths leave it unset), so areas fall back to a map and places to a pin
+   * rather than rendering an empty slot.
+   */
+  get emoji(): string {
+    return this.icon ?? (this.type === 'area' ? '🗺️' : '📍');
+  }
+
+  /** Secondary line: an area names its level, a place its surroundings. */
+  get subtitle(): string {
+    return this.level ? `${this.level} · ${this.context}` : this.context;
+  }
+}
+
+const EntityHitSchema = z
+  .object({
+    type: z.enum(['place', 'area']),
+    place_id: z.string().nullable().default(null),
+    area_id: z.string().nullable().default(null),
+    name: z.string(),
+    level: z.string().nullable().default(null),
+    icon: z.string().nullable().default(null),
+    context: z.string().default(''),
+  })
+  .transform((e) => new EntityHit(e));
+
+export const EntitySearchSchema = z
+  .object({ results: z.array(EntityHitSchema).default([]) })
+  .transform((r) => r.results);

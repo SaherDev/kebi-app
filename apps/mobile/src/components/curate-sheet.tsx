@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useUnstableNativeVariable } from 'nativewind';
@@ -15,6 +15,8 @@ import { DURATION, PRESS, SPRING_CONFIG } from '../theme/motion';
 import { triggerHaptic } from '../lib/haptics';
 import { useTranslation } from '../i18n/context';
 import { useToast } from './toast-context';
+import { CurateAnchorChip } from './curate-anchor-chip';
+import type { EntityHit } from '../api/models/knowledge';
 
 /**
  * Curate sheet — where an insider writes what they know
@@ -51,6 +53,8 @@ interface CurateSheetProps {
   onChangeText: (text: string) => void;
   /** What the prose is pinned to; `null` renders the unanchored state. */
   anchor: CurateAnchorView | null;
+  /** Re-anchor to a typeahead hit. The host carries the draft across. */
+  onChangeAnchor: (hit: EntityHit) => void;
 }
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
@@ -68,6 +72,7 @@ export function CurateSheet({
   value,
   onChangeText,
   anchor,
+  onChangeAnchor,
 }: CurateSheetProps) {
   const { t } = useTranslation();
   const { reserveTopAnchor } = useToast();
@@ -76,6 +81,37 @@ export function CurateSheet({
   const softColor = useUnstableNativeVariable('--text-soft') ?? undefined;
 
   const [mounted, setMounted] = useState(open);
+  const [searching, setSearching] = useState(false);
+  const [query, setQuery] = useState('');
+
+  const startSearch = useCallback(() => {
+    setQuery('');
+    setSearching(true);
+  }, []);
+
+  // Abandoning leaves the previous anchor exactly as it was — the search is a
+  // detour, not a commitment.
+  const cancelSearch = useCallback(() => {
+    setSearching(false);
+    setQuery('');
+  }, []);
+
+  const handlePick = useCallback(
+    (hit: EntityHit) => {
+      onChangeAnchor(hit);
+      setSearching(false);
+      setQuery('');
+    },
+    [onChangeAnchor],
+  );
+
+  // A reopened sheet always starts collapsed, never mid-search.
+  useEffect(() => {
+    if (!open) {
+      setSearching(false);
+      setQuery('');
+    }
+  }, [open]);
   const scrim = useSharedValue(0);
   const translateY = useSharedValue(height);
   const keyboard = useAnimatedKeyboard();
@@ -156,31 +192,25 @@ export function CurateSheet({
         >
           <View className="mx-auto mb-0.5 h-1 w-9 rounded-full bg-surface-2" />
 
-          {/* Anchor first: what this is about, before what to write. */}
-          <View className="flex-row items-center gap-2.5 rounded-card bg-surface px-2.5 py-2">
-            <View className="size-7 items-center justify-center rounded-small bg-surface-2">
-              <Text style={{ fontSize: 14, lineHeight: 18 }}>{anchor?.emoji ?? '📍'}</Text>
-            </View>
-            <View className="flex-1">
-              <Text className="text-eyebrow font-semibold uppercase text-text-soft">
-                {t('curate.about')}
-              </Text>
-              <Text
-                numberOfLines={1}
-                className={`text-small font-semibold ${anchor ? 'text-text' : 'text-text-soft'}`}
-              >
-                {anchor
-                  ? anchor.context
-                    ? `${anchor.name} · ${anchor.context}`
-                    : anchor.name
-                  : t('curate.unanchored')}
-              </Text>
-            </View>
-          </View>
+          {/* Anchor first: what this is about, before what to write. Expands
+              in place into the search (§3, picker 1). */}
+          <CurateAnchorChip
+            anchor={anchor}
+            searching={searching}
+            query={query}
+            onQueryChange={setQuery}
+            onStartSearch={startSearch}
+            onCancelSearch={cancelSearch}
+            onPick={handlePick}
+          />
 
-          <Text className="px-1 text-subtitle font-bold text-text">{t('curate.hero')}</Text>
+          {!searching ? (
+            <Text className="px-1 text-subtitle font-bold text-text">{t('curate.hero')}</Text>
+          ) : null}
 
-          {/* The field takes all the slack — this is a paragraph, not a field. */}
+          {/* The field takes all the slack — this is a paragraph, not a field.
+              While searching it dims but stays mounted, so nothing typed is lost
+              to looking something up. */}
           <TextInput
             value={value}
             onChangeText={onChangeText}
@@ -188,7 +218,9 @@ export function CurateSheet({
             placeholderTextColor={softColor}
             multiline
             textAlignVertical="top"
-            autoFocus
+            autoFocus={!searching}
+            editable={!searching}
+            style={searching ? { opacity: 0.45 } : undefined}
             className="flex-1 px-1 py-0 text-[16px] leading-6 text-text"
           />
 
