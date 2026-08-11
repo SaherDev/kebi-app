@@ -4,7 +4,10 @@ import type {
   CurateClaim as CurateClaimContract,
   CurateKnowledgeResponse as CurateKnowledgeResponseContract,
   CurateScope,
+  ClaimAnchor as ClaimAnchorContract,
   EntitySearchResult as EntitySearchResultContract,
+  KnowledgeClaim as KnowledgeClaimContract,
+  KnowledgeClaimsResponse as KnowledgeClaimsResponseContract,
 } from '@kebi-app/shared';
 
 /**
@@ -136,3 +139,122 @@ const EntityHitSchema = z
 export const EntitySearchSchema = z
   .object({ results: z.array(EntityHitSchema).default([]) })
   .transform((r) => r.results);
+
+/**
+ * A listed claim's anchor — renderable *and* openable. `type` says which id is
+ * populated; the other is null.
+ */
+export class ClaimAnchor implements ClaimAnchorContract {
+  readonly type: 'place' | 'area';
+  readonly place_id: string | null;
+  readonly area_id: string | null;
+  readonly name: string;
+
+  constructor(a: ClaimAnchorContract) {
+    this.type = a.type;
+    this.place_id = a.place_id;
+    this.area_id = a.area_id;
+    this.name = a.name;
+  }
+
+  /**
+   * Stable identity for grouping. Kinds are separate id spaces, so the pair is
+   * the key — never the id alone. Falls back to the name so an anchor missing
+   * its id still groups with itself rather than collapsing every such claim
+   * into one bucket.
+   */
+  get groupKey(): string {
+    return `${this.type}:${this.place_id ?? this.area_id ?? this.name}`;
+  }
+
+  get emoji(): string {
+    return this.type === 'area' ? '🗺️' : '📍';
+  }
+}
+
+const ClaimAnchorSchema = z
+  .object({
+    type: z.enum(['place', 'area']),
+    place_id: z.string().nullable().default(null),
+    area_id: z.string().nullable().default(null),
+    name: z.string(),
+  })
+  .transform((a) => new ClaimAnchor(a));
+
+/** One of the caller's own curated claims — what backs "what you've added". */
+export class KnowledgeClaim implements KnowledgeClaimContract {
+  readonly id: string;
+  readonly scope: CurateScope;
+  readonly claim: string;
+  readonly tags: string[];
+  readonly created_at: string;
+  readonly anchor: ClaimAnchor;
+
+  constructor(c: KnowledgeClaimContract & { anchor: ClaimAnchor }) {
+    this.id = c.id;
+    this.scope = c.scope;
+    this.claim = c.claim;
+    this.tags = c.tags;
+    this.created_at = c.created_at;
+    this.anchor = c.anchor;
+  }
+}
+
+const KnowledgeClaimSchema = z
+  .object({
+    id: z.string(),
+    scope: z.enum(CURATE_SCOPES),
+    claim: z.string(),
+    tags: z.array(z.string()).default([]),
+    created_at: z.string(),
+    anchor: ClaimAnchorSchema,
+  })
+  .transform((c) => new KnowledgeClaim(c));
+
+export class KnowledgeClaimsPage implements KnowledgeClaimsResponseContract {
+  readonly claims: KnowledgeClaim[];
+  readonly next_cursor: string | null;
+
+  constructor(p: { claims: KnowledgeClaim[]; next_cursor: string | null }) {
+    this.claims = p.claims;
+    this.next_cursor = p.next_cursor;
+  }
+}
+
+export const KnowledgeClaimsSchema = z
+  .object({
+    claims: z.array(KnowledgeClaimSchema).default([]),
+    next_cursor: z.string().nullable().default(null),
+  })
+  .transform((p) => new KnowledgeClaimsPage(p));
+
+/** One anchor and everything the caller wrote about it. */
+export interface ClaimGroup {
+  key: string;
+  anchor: ClaimAnchor;
+  claims: KnowledgeClaim[];
+}
+
+/**
+ * Group a page of claims by what they are about, in first-appearance order.
+ *
+ * Grouped rather than chronological because **one paragraph becomes several
+ * claims**: a flat newest-first list scatters a single sitting down the page and
+ * you never recognise your own writing. The server already orders newest-first,
+ * so first-appearance order keeps recent subjects on top.
+ */
+export function groupClaimsByAnchor(claims: KnowledgeClaim[]): ClaimGroup[] {
+  const groups: ClaimGroup[] = [];
+  const seen = new Map<string, number>();
+  for (const claim of claims) {
+    const key = claim.anchor.groupKey;
+    let at = seen.get(key);
+    if (at === undefined) {
+      at = groups.length;
+      seen.set(key, at);
+      groups.push({ key, anchor: claim.anchor, claims: [] });
+    }
+    groups[at].claims.push(claim);
+  }
+  return groups;
+}

@@ -6,7 +6,9 @@ import {
   CurateResult,
   CurateResultSchema,
   EntitySearchSchema,
+  KnowledgeClaimsSchema,
   type EntityHit,
+  type KnowledgeClaimsPage,
 } from './models/knowledge';
 
 /**
@@ -50,4 +52,29 @@ export const ENTITY_SEARCH_MIN_LENGTH = 2;
 export async function searchEntities(client: HttpClient, q: string): Promise<EntityHit[]> {
   const raw = await client.get(`${API_ROUTES.knowledgeEntities}?q=${encodeURIComponent(q)}`);
   return validate(EntitySearchSchema, raw, 'EntitySearch');
+}
+
+/**
+ * One newest-first page of the caller's own claims — what backs "what you've
+ * added". Ownership is resolved upstream from the verified user id; there is no
+ * author filter to pass, and none to forget.
+ */
+export async function listClaims(
+  client: HttpClient,
+  cursor?: string,
+): Promise<KnowledgeClaimsPage> {
+  const path = cursor
+    ? `${API_ROUTES.knowledgeClaims}?cursor=${encodeURIComponent(cursor)}`
+    : API_ROUTES.knowledgeClaims;
+  const raw = await client.get(path);
+  return validate(KnowledgeClaimsSchema, raw, 'KnowledgeClaims');
+}
+
+/**
+ * Retract one of the caller's own claims. Author-only upstream: a claim that is
+ * not yours 404s exactly like one that does not exist, so ids cannot be probed.
+ * Resolves to nothing — a 204 carries no body.
+ */
+export async function retractClaim(client: HttpClient, id: string): Promise<void> {
+  await client.delete(API_ROUTES.knowledgeClaim(id));
 }
