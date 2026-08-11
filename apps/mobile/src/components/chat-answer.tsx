@@ -99,7 +99,19 @@ export function toBlocks(text: string): Block[] {
   return blocks;
 }
 
-const LINE = 'text-[17px] leading-relaxed text-text-muted';
+/**
+ * The two text tiers of a turn (ADR-055). `answer` is the answer itself, at full
+ * message size and contrast; `commentary` is the agent working — muted and a
+ * step smaller, so a turn doesn't read as one long ramble. The `promote` flag is
+ * the exact boundary: everything before it is commentary, everything from it on
+ * is the answer.
+ */
+export type AnswerTier = 'answer' | 'commentary';
+
+const LINE: Record<AnswerTier, string> = {
+  answer: 'text-[17px] leading-relaxed text-text-muted',
+  commentary: 'text-[15px] leading-relaxed text-text-soft',
+};
 
 interface ChatAnswerProps {
   message: string;
@@ -107,9 +119,11 @@ interface ChatAnswerProps {
   entities: ChatEntity[];
   /** Open the entity behind a tapped link. */
   onOpen: (entity: ChatEntity) => void;
+  /** Text tier — defaults to the answer (full contrast). */
+  tier?: AnswerTier;
 }
 
-export function ChatAnswer({ message, entities, onOpen }: ChatAnswerProps) {
+export function ChatAnswer({ message, entities, onOpen, tier = 'answer' }: ChatAnswerProps) {
   // `message` grows one `message_delta` at a time while the answer streams, so
   // this component re-renders per token — memoized so a growing answer costs one
   // parse per frame instead of re-splitting every earlier block along with it.
@@ -150,7 +164,7 @@ export function ChatAnswer({ message, entities, onOpen }: ChatAnswerProps) {
     <View className="gap-3">
       {blocks.map((block, i) =>
         block.kind === 'paragraph' ? (
-          <Text key={i} className={LINE}>
+          <Text key={i} className={LINE[tier]}>
             {renderLine(block.lines[0])}
           </Text>
         ) : (
@@ -159,8 +173,8 @@ export function ChatAnswer({ message, entities, onOpen }: ChatAnswerProps) {
               // Hanging indent: the marker is its own column so a wrapped item
               // aligns under its text, not back under the marker.
               <View key={j} className="flex-row gap-2">
-                <Text className={`${LINE} text-text-soft`}>·</Text>
-                <Text className={`${LINE} flex-1`}>{renderLine(parts)}</Text>
+                <Text className={`${LINE[tier]} text-text-soft`}>·</Text>
+                <Text className={`${LINE[tier]} flex-1`}>{renderLine(parts)}</Text>
               </View>
             ))}
           </View>

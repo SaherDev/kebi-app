@@ -24,6 +24,7 @@ import { Mascot } from './mascot';
 import { ActionSheet } from './action-sheet';
 import { ReasoningBlock } from './reasoning-block';
 import { ChatAnswer } from './chat-answer';
+import { TurnProcess } from './turn-process';
 import { ChatEntityRail } from './chat-entity-rail';
 import { useOpenChatEntity } from './use-open-chat-entity';
 import type { ChatEntity } from '@kebi-app/shared';
@@ -494,37 +495,19 @@ function KebiTurnRow({
         {turn.message ? <CopyButton text={turn.message} /> : null}
       </View>
 
-      {/* The turn's body in stream order: what the agent SAID renders as message
-          prose, what it DID collapses into a chip between the sentences — the
-          same shape as the reference layout (ADR-055). A promoted segment is
-          empty here because its words are now the answer below, in place. */}
-      {turn.segments.map((segment) =>
-        segment.kind === 'work' ? (
-          <ReasoningBlock
-            key={segment.key}
-            steps={segment.steps}
-            done={settled || segment.steps.every((s) => s.status === 'done')}
-            durationMs={
-              segment.endedAt != null ? segment.endedAt - segment.startedAt : undefined
-            }
-            runningLabel={l.thinking}
-            doneLabel={turn.stopped ? l.stopped : l.thought}
-            interruptedLabel={l.interrupted}
-            collapsed={turn.collapsed}
-            onToggle={(next) => onToggle(turn.key, next)}
-          />
-        ) : segment.text ? (
-          // Plain prose — never linkified client-side; only the final `message`
-          // frame carries links. ChatAnswer gives it the answer's typography so
-          // the promote hand-off is invisible.
-          <ChatAnswer
-            key={segment.key}
-            message={segment.text}
-            entities={EMPTY_ENTITIES}
-            onOpen={onOpenEntity}
-          />
-        ) : null,
-      )}
+      {/* The process: what the agent SAID as commentary prose, what it DID as
+          chips between the sentences, live while it streams — then folded into
+          one "thought for 12s" header once it settles (ADR-055). */}
+      <TurnProcess
+        segments={turn.segments}
+        settled={settled}
+        stopped={turn.stopped}
+        durationMs={turn.stepDurationMs ?? turn.durationMs}
+        collapsed={turn.collapsed}
+        onToggle={(next) => onToggle(turn.key, next)}
+        labels={l}
+        onOpenEntity={onOpenEntity}
+      />
 
       {showPlaceholderChip ? (
         <ReasoningBlock steps={[]} runningLabel={l.thinking} collapsed />

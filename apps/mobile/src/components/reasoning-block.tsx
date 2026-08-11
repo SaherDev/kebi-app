@@ -177,7 +177,7 @@ export function ReasoningBlock({
 }
 
 /** 6px header dot: pulses while running (text tone), solid success when done. */
-function LiveDot({ done }: { done: boolean }) {
+export function LiveDot({ done }: { done: boolean }) {
   const s = useSharedValue(1);
   useEffect(() => {
     if (done) {
@@ -202,7 +202,7 @@ function LiveDot({ done }: { done: boolean }) {
 }
 
 /** Toggle chevron: points down when expanded, right when collapsed. */
-function Chevron({ expanded }: { expanded: boolean }) {
+export function Chevron({ expanded }: { expanded: boolean }) {
   const r = useSharedValue(expanded ? 1 : 0);
   useEffect(() => {
     r.value = withTiming(expanded ? 1 : 0, { duration: DURATION.stateChangeFast, easing: ENTER_EASE });
@@ -364,7 +364,7 @@ function Shimmer({ width }: { width: `${number}%` }) {
  * shrinking height during a collapse, trapping `measuredH` at a tiny value so a
  * re-expand never grows back (the collapse→reopen-empty bug).
  */
-function Collapsible({ collapsed, children }: { collapsed: boolean; children: React.ReactNode }) {
+export function Collapsible({ collapsed, children }: { collapsed: boolean; children: React.ReactNode }) {
   const progress = useSharedValue(collapsed ? 0 : 1);
   const measuredH = useSharedValue(0);
 

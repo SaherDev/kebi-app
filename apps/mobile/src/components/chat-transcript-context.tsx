@@ -95,6 +95,12 @@ export interface KebiTurn {
   startedAt: number;
   /** Set on finish — summed step `duration_ms` when all present, else wall-clock. */
   durationMs?: number;
+  /**
+   * Sum of the `duration_ms` on this turn's `done` step frames — what the
+   * settled "thought for 2s" header reports. Undefined when kebi sent none, in
+   * which case the header falls back to the turn's wall-clock.
+   */
+  stepDurationMs?: number;
   toolCallsUsed?: number;
   /** Reasoning-block collapse (controlled) — auto-set true when a new turn starts. */
   collapsed: boolean;
@@ -243,11 +249,15 @@ function reducer(state: TranscriptState, action: Action): TranscriptState {
       // Debug steps ride the stream but never render (ADR-102) — the store owns
       // this policy, not the parser.
       if (action.step.visibility === 'debug') return state;
-      return mapKebi(state, action.kebiKey, (turn) =>
-        isAgentTalkStep(action.step)
+      return mapKebi(state, action.kebiKey, (turn) => {
+        const folded = isAgentTalkStep(action.step)
           ? foldTalkStep(turn, action.step)
-          : foldWorkStep(turn, action.step, action.now),
-      );
+          : foldWorkStep(turn, action.step, action.now);
+        // Tally the turn's real work time for the settled "thought for 2s".
+        const spent = action.step.status === 'done' ? (action.step.duration_ms ?? null) : null;
+        if (spent === null) return folded;
+        return { ...folded, stepDurationMs: (folded.stepDurationMs ?? 0) + spent };
+      });
     }
 
     case 'APPEND_STEP_TEXT':
@@ -296,7 +306,15 @@ function reducer(state: TranscriptState, action: Action): TranscriptState {
         // mockup's "· 1.8s" tally shows. (ReasoningBlockStep drops per-step
         // duration_ms, so there's nothing to sum here.)
         const durationMs = action.now - turn.startedAt;
-        return { ...turn, status: 'done', durationMs, toolCallsUsed: action.toolCallsUsed };
+        // Settling folds the process away: the finished turn is one "thought
+        // for 12s" line plus the clean answer, expandable on tap (ADR-055).
+        return {
+          ...turn,
+          status: 'done',
+          durationMs,
+          collapsed: true,
+          toolCallsUsed: action.toolCallsUsed,
+        };
       });
 
     case 'STOP':
@@ -304,14 +322,20 @@ function reducer(state: TranscriptState, action: Action): TranscriptState {
       // so the reasoning header reads "stopped" instead of "done".
       return mapKebi(state, action.kebiKey, (turn) =>
         turn.status === 'streaming'
-          ? { ...turn, status: 'done', stopped: true, durationMs: action.now - turn.startedAt }
+          ? {
+              ...turn,
+              status: 'done',
+              stopped: true,
+              collapsed: true,
+              durationMs: action.now - turn.startedAt,
+            }
           : turn,
       );
 
     case 'FAIL':
       return mapKebi(state, action.kebiKey, (turn) =>
         turn.status === 'streaming'
-          ? { ...turn, status: 'error', errorDetail: action.detail }
+          ? { ...turn, status: 'error', collapsed: true, errorDetail: action.detail }
           : turn,
       );
 

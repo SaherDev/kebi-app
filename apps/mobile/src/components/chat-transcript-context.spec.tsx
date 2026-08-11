@@ -67,6 +67,8 @@ function Probe() {
       {act('step-done', () => tr.upsertStep(key.current, step({ status: 'done', summary: '2 spots' })))}
       {act('step-other', () => tr.upsertStep(key.current, step({ id: 'rank#1', title: 'ranked' })))}
       {act('step-debug', () => tr.upsertStep(key.current, step({ id: 'dbg#9', visibility: 'debug' })))}
+      {act('step-timed', () => tr.upsertStep(key.current, step({ id: 't#1', status: 'done', summary: 'a', duration_ms: 1200 })))}
+      {act('step-timed2', () => tr.upsertStep(key.current, step({ id: 't#2', status: 'done', summary: 'b', duration_ms: 800 })))}
       {act('talk-active', () => tr.upsertStep(key.current, talk()))}
       {act('talk-done', () => tr.upsertStep(key.current, talk({ status: 'done', summary: 'checked your saves' })))}
       {act('talk2-active', () => tr.upsertStep(key.current, talk({ id: 'agent.tool_decision#1' })))}
@@ -101,7 +103,7 @@ function line(t: KebiTurn): string {
   const shape = t.segments
     .map((s) => (s.kind === 'prose' ? `prose(${s.text})` : `work[${s.steps.map((r) => r.id).join(' ')}]`))
     .join(' ');
-  return `${t.key}|kebi|status:${t.status}|steps:${rows.length}|st:${statuses}|shape:${shape}|msg:${t.message}|entities:${entities}|collapsed:${t.collapsed}|stopped:${t.stopped ?? false}`;
+  return `${t.key}|kebi|status:${t.status}|steps:${rows.length}|st:${statuses}|shape:${shape}|msg:${t.message}|entities:${entities}|collapsed:${t.collapsed}|stopped:${t.stopped ?? false}|spent:${t.stepDurationMs ?? ''}`;
 }
 
 function setup() {
@@ -263,6 +265,25 @@ describe('ChatTranscriptProvider', () => {
     // What was rendered stays — the partial answer and the partial prose.
     expect(kebi()).toContain('msg:tonight, ');
     expect(kebi()).toContain('prose(checking )');
+  });
+
+  it('folds the process away when the turn settles', () => {
+    const { press, kebi } = setup();
+    press('start');
+    press('talk-active');
+    press('delta-step');
+    expect(kebi()).toContain('collapsed:false'); // plays live while it streams
+    press('finish');
+    // Settled: one "thought for" header over a clean answer, expandable on tap.
+    expect(kebi()).toContain('collapsed:true');
+  });
+
+  it('sums the step durations for the settled header', () => {
+    const { press, kebi } = setup();
+    press('start');
+    press('step-timed'); // 1200ms of work
+    press('step-timed2'); // + 800ms
+    expect(kebi()).toContain('spent:2000');
   });
 
   it('stores the message frame entities alongside the text', () => {
