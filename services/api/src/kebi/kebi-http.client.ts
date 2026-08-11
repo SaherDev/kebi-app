@@ -69,9 +69,9 @@ export class KebiHttpClient {
     this.logger.debug(`Initialized with base URL: ${this.baseUrl}`);
   }
 
-  async get<T>(path: string, userId: string): Promise<T> {
+  async get<T>(path: string, userId: string, capabilities?: GatewayCapabilities): Promise<T> {
     const response = await firstValueFrom(
-      this.httpService.get<T>(this.url(path), this.config(userId)),
+      this.httpService.get<T>(this.url(path), this.config(userId, undefined, capabilities)),
     );
     return response.data;
   }
@@ -96,9 +96,13 @@ export class KebiHttpClient {
     return response.data;
   }
 
-  async delete<T = void>(path: string, userId: string): Promise<T> {
+  async delete<T = void>(
+    path: string,
+    userId: string,
+    capabilities?: GatewayCapabilities,
+  ): Promise<T> {
     const response = await firstValueFrom(
-      this.httpService.delete<T>(this.url(path), this.config(userId)),
+      this.httpService.delete<T>(this.url(path), this.config(userId, undefined, capabilities)),
     );
     return response.data;
   }

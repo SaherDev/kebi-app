@@ -43,14 +43,20 @@ export class UserService {
 
   /**
    * The user's display profile, read gateway-local (never forwarded to kebi).
-   * `name`/`email` come from the verified JWT (Supabase PII); `plan` from the
-   * product claim. The internal id is never exposed (scoped ADR-044 relaxation).
+   * `name`/`email` come from the verified JWT (Supabase PII); `plan` and
+   * `can_curate` from the product claims. The internal id is never exposed
+   * (scoped ADR-044 relaxation).
+   *
+   * `can_curate` falls back to `false` like the guard does: an absent claim
+   * (pre-grant or pre-migration token) is not a curator, so the client renders
+   * the non-insider surface rather than offering writes that would 403.
    */
   getProfile(identity: NormalizedIdentity, user: AuthUser): UserProfile {
     return {
       name: identity.name ?? '',
       email: identity.email ?? '',
       plan: user.plan ?? DEFAULT_PLAN,
+      can_curate: user.can_curate ?? false,
     };
   }
 

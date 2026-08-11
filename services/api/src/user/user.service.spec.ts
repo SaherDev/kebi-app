@@ -65,17 +65,30 @@ describe('UserService', () => {
     it('returns name/email from the identity and plan from the user claim (no kebi call)', () => {
       const profile = service.getProfile(identity, user);
 
-      expect(profile).toEqual({ name: 'saher', email: 'saher@kebi.app', plan: 'explorer' });
+      expect(profile).toEqual({
+        name: 'saher',
+        email: 'saher@kebi.app',
+        plan: 'explorer',
+        can_curate: false,
+      });
       expect(kebi.get).not.toHaveBeenCalled();
     });
 
-    it('falls back to empty strings / homebody when identity/plan are bare', () => {
+    it('surfaces the curator role so the client can render the insider surfaces', () => {
+      const profile = service.getProfile(identity, { ...user, can_curate: true });
+
+      expect(profile.can_curate).toBe(true);
+    });
+
+    it('falls back to empty strings / homebody / not-a-curator when the claims are bare', () => {
       const profile = service.getProfile(
         { externalId: 'ext_2', claims: {} },
         { id: USER_ID, ai_enabled: true },
       );
 
-      expect(profile).toEqual({ name: '', email: '', plan: 'homebody' });
+      // Absent can_curate reads as false, matching CuratorGuard's fail-closed
+      // read — a pre-grant token renders the non-insider surface.
+      expect(profile).toEqual({ name: '', email: '', plan: 'homebody', can_curate: false });
     });
   });
 
