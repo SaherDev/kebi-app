@@ -1,0 +1,1699 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Kebi — Curate (insider write) Options</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #FAFAF9;
+    --surface: #F1F1EF;
+    --surface-2: #E8E8E5;
+    --text: #1A1A1A;
+    --text-muted: #8A8A87;
+    --text-soft: #B5B5B1;
+    --success: #4A7C3A;
+    --like: #C2632F;
+    --danger: #D14343;
+    --pill-green: #E8F2E1;
+    --pill-warm: #FEE4D4;
+    --pill-danger-bg: #FCEEEE;
+    --scrim: rgba(15,13,10,0.45);
+    --toast-bg: #1A1A1A;
+    --toast-text: #FAFAF9;
+    --tag-rec: #A7C7A0;
+    --tag: #D4B891;
+    --tag-no: #D9A3A3;
+  }
+
+  body.dark {
+    --bg: #13110F;
+    --surface: #1C1A17;
+    --surface-2: #26231F;
+    --text: #F5F1EA;
+    --text-muted: #9A938A;
+    --text-soft: #6E6862;
+    --success: #A8C293;
+    --like: #E0A176;
+    --danger: #E89090;
+    --pill-green: #1F2A18;
+    --pill-warm: #3A2418;
+    --pill-danger-bg: #3A1818;
+    --scrim: rgba(0,0,0,0.55);
+    --toast-bg: #F5F1EA;
+    --toast-text: #13110F;
+  }
+
+  html, body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+    transition: background 200ms;
+  }
+  body.dark { background: #0A0908; }
+
+  .page { max-width: 1400px; margin: 0 auto; padding: 56px 32px 96px; }
+
+  .header {
+    display: flex; align-items: flex-start; justify-content: space-between;
+    padding-bottom: 32px; border-bottom: 1px solid var(--surface-2); margin-bottom: 40px;
+  }
+  .header h1 { font-size: 24px; font-weight: 700; letter-spacing: -0.025em; }
+  .header-meta { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+  .lede { font-size: 14px; color: var(--text-muted); line-height: 1.6; max-width: 780px; margin-top: 14px; }
+  .lede b { color: var(--text); font-weight: 600; }
+  .lede code { font-size: 12px; background: var(--surface-2); border-radius: 5px; padding: 1px 6px; }
+
+  .theme-toggle { display: flex; background: var(--surface); border-radius: 999px; padding: 3px; flex-shrink: 0; }
+  .theme-toggle button {
+    padding: 6px 14px; background: transparent; border: none; border-radius: 999px;
+    font-family: inherit; font-size: 12px; font-weight: 500; color: var(--text-muted);
+    cursor: pointer; letter-spacing: -0.005em;
+  }
+  .theme-toggle button.active { background: var(--text); color: var(--bg); }
+
+  .section { margin-bottom: 72px; }
+  .section-head {
+    display: flex; align-items: baseline; justify-content: space-between;
+    margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid var(--surface-2);
+  }
+  .section-title { font-size: 11px; font-weight: 600; color: var(--text-soft); text-transform: uppercase; letter-spacing: 0.08em; }
+  .section-count { font-size: 12px; color: var(--text-soft); }
+  .section-h2 { font-size: 26px; font-weight: 700; letter-spacing: -0.025em; margin-bottom: 8px; }
+  .section-desc { font-size: 14px; color: var(--text-muted); line-height: 1.6; max-width: 760px; margin-bottom: 28px; }
+  .section-desc b { color: var(--text); font-weight: 600; }
+
+  .phones { display: flex; flex-wrap: wrap; gap: 40px; align-items: flex-start; }
+  .phone-wrap { display: flex; flex-direction: column; align-items: center; gap: 10px; width: 300px; }
+  .phone-label { font-size: 13px; font-weight: 600; letter-spacing: -0.01em; }
+  .phone-sub { font-size: 11px; color: var(--text-muted); max-width: 290px; text-align: center; line-height: 1.55; }
+  .phone-sub b { color: var(--text); font-weight: 600; }
+  .opt-tag {
+    display: inline-block; font-size: 10px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
+    color: #1A1A1A; background: var(--tag); border-radius: 999px; padding: 3px 10px;
+  }
+  .opt-tag.rec { background: var(--tag-rec); }
+  .opt-tag.no  { background: var(--tag-no); }
+
+  /* ---- phone frame ---- */
+  .phone {
+    position: relative;
+    width: 300px; height: 600px;
+    background: var(--bg);
+    border-radius: 40px;
+    border: 10px solid #000;
+    overflow: hidden;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.18);
+    display: flex; flex-direction: column;
+  }
+  body.dark .phone { border-color: #2a2a2a; }
+
+  .status-bar {
+    height: 40px; display: flex; align-items: center; justify-content: space-between;
+    padding: 0 20px; font-size: 12px; font-weight: 600; color: var(--text); flex-shrink: 0;
+  }
+  .status-bar .right { display: flex; gap: 5px; align-items: center; font-size: 10px; }
+
+  .top-bar { padding: 4px 12px 8px; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
+  .bar-side { display: flex; align-items: center; gap: 8px; }
+  .icon-btn {
+    width: 32px; height: 32px; border-radius: 50%; background: var(--surface);
+    display: flex; align-items: center; justify-content: center; border: none; cursor: pointer; flex-shrink: 0;
+  }
+  .icon-btn svg { width: 14px; height: 14px; stroke: var(--text); stroke-width: 1.8; fill: none; }
+  .top-pill { background: var(--surface); border-radius: 999px; padding: 5px 6px; display: flex; align-items: center; gap: 2px; }
+  .pill-btn { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+  .pill-btn svg { width: 14px; height: 14px; stroke: var(--text); stroke-width: 1.8; fill: none; }
+  .pill-btn.dots { gap: 2.5px; }
+  .pill-btn.dots span { width: 3px; height: 3px; border-radius: 999px; background: var(--text); }
+
+  .screen { flex: 1; padding: 4px 18px 14px; display: flex; flex-direction: column; gap: 14px; overflow: hidden; position: relative; }
+
+  .eyebrow { font-size: 10px; font-weight: 600; color: var(--text-soft); text-transform: uppercase; letter-spacing: 0.08em; }
+  .hero { font-size: 24px; font-weight: 700; letter-spacing: -0.03em; line-height: 1.15; }
+  .hero-sub { font-size: 12px; color: var(--text-muted); line-height: 1.5; letter-spacing: -0.005em; }
+
+  /* ---- pills / chips ---- */
+  .pill {
+    display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px; border-radius: 999px;
+    font-size: 10px; font-weight: 600; letter-spacing: 0.005em;
+  }
+  .pill::before { content: ''; width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+  .pill.warm { background: var(--pill-warm); color: var(--like); }
+  .pill.green { background: var(--pill-green); color: var(--success); }
+  .pill.plain { background: var(--surface-2); color: var(--text-muted); }
+  .pill.nodot::before { display: none; }
+
+  /* ---- anchor chip: the thing we're writing about ---- */
+  .anchor {
+    display: flex; align-items: center; gap: 8px; background: var(--surface);
+    border-radius: 12px; padding: 8px 10px;
+  }
+  .anchor-avatar {
+    width: 26px; height: 26px; border-radius: 7px; background: var(--surface-2);
+    display: flex; align-items: center; justify-content: center; font-size: 13px; flex-shrink: 0;
+  }
+  .anchor-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+  .anchor-kind { font-size: 9px; font-weight: 600; color: var(--text-soft); text-transform: uppercase; letter-spacing: 0.08em; }
+  .anchor-name { font-size: 13px; font-weight: 600; letter-spacing: -0.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .anchor-act { font-size: 11px; font-weight: 500; color: var(--text-muted); flex-shrink: 0; }
+  .anchor.dashed { background: transparent; border: 1px dashed var(--surface-2); }
+  .anchor.dashed .anchor-avatar { background: var(--surface); }
+
+  /* ---- prose field ---- */
+  .field { flex: 1; display: flex; flex-direction: column; gap: 8px; min-height: 0; }
+  .field-box {
+    flex: 1; background: transparent; border-radius: 12px; padding: 2px 0;
+    font-size: 14px; line-height: 1.6; letter-spacing: -0.005em; color: var(--text); overflow: hidden;
+  }
+  .field-box.placeholder { color: var(--text-soft); }
+  .field-box.boxed { background: var(--surface); padding: 12px; }
+  .caret { display: inline-block; width: 1.5px; height: 15px; background: var(--text); vertical-align: -2px; }
+  .count { font-size: 10px; color: var(--text-soft); text-align: right; letter-spacing: -0.005em; }
+  .hint { font-size: 11px; color: var(--text-soft); line-height: 1.5; letter-spacing: -0.005em; }
+
+  /* ---- buttons ---- */
+  .btn {
+    border: none; border-radius: 12px; font-family: inherit; font-size: 13px; font-weight: 600;
+    padding: 11px 16px; cursor: pointer; letter-spacing: -0.01em; text-align: center;
+  }
+  .btn.primary { background: var(--text); color: var(--bg); }
+  .btn.primary.off { opacity: .35; }
+  .btn.outlined { background: transparent; border: 1px solid var(--surface-2); color: var(--text); }
+  .btn.full { width: 100%; display: block; }
+  .btn-row { display: flex; gap: 8px; }
+
+  /* ---- group rows (settings / action sheet) ---- */
+  .group { background: var(--surface); border-radius: 12px; overflow: hidden; }
+  .row {
+    display: flex; align-items: center; gap: 10px; padding: 12px 12px;
+    font-size: 13px; font-weight: 500; letter-spacing: -0.01em; color: var(--text);
+  }
+  .row + .row { border-top: 1px solid var(--surface-2); }
+  .row .emoji { font-size: 15px; width: 20px; text-align: center; flex-shrink: 0; }
+  /* settings rows put the glyph in a square, per SettingsRow */
+  .gsq {
+    width: 30px; height: 30px; border-radius: 8px; background: var(--bg); flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .gsq svg { width: 15px; height: 15px; stroke: var(--text); stroke-width: 1.8; fill: none; }
+  .row .grow { flex: 1; }
+  .row .chev { color: var(--text-soft); font-size: 14px; }
+  .row.danger { color: var(--danger); }
+  .row .sub { font-size: 11px; color: var(--text-muted); font-weight: 400; }
+  .row-stack { display: flex; flex-direction: column; gap: 2px; flex: 1; }
+
+  /* ---- bottom sheet ---- */
+  .scrim { position: absolute; inset: 0; background: var(--scrim); }
+  .sheet {
+    position: absolute; left: 0; right: 0; bottom: 0; background: var(--bg);
+    border-radius: 22px 22px 0 0; padding: 8px 16px 14px; display: flex; flex-direction: column; gap: 12px;
+  }
+  .grabber { width: 34px; height: 4px; border-radius: 999px; background: var(--surface-2); margin: 0 auto 2px; }
+  .home-ind { width: 100px; height: 4px; border-radius: 999px; background: var(--text); opacity: .18; margin: 4px auto 0; }
+  .sheet-title { font-size: 15px; font-weight: 700; letter-spacing: -0.02em; }
+  .sheet[style*="top"] { display: flex; flex-direction: column; }
+
+  /* ---- stand-in keyboard, so sheets are drawn at their real height ---- */
+  .keyboard {
+    margin: 8px -16px -14px; background: var(--surface-2); padding: 8px 4px 4px;
+    display: flex; flex-direction: column; gap: 6px;
+  }
+  .kb-row { display: flex; justify-content: center; gap: 4px; }
+  .kb-row span {
+    flex: 1; max-width: 24px; height: 28px; border-radius: 5px; background: var(--bg);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; color: var(--text); font-weight: 500;
+  }
+  .keyboard .home-ind { margin-top: 6px; }
+
+  /* ---- toast ---- */
+  .toast {
+    position: absolute; left: 50%; transform: translateX(-50%); bottom: 22px;
+    background: var(--toast-bg); color: var(--toast-text); border-radius: 999px;
+    padding: 9px 16px; font-size: 12px; font-weight: 500; letter-spacing: -0.01em;
+    display: flex; align-items: center; gap: 8px; max-width: 250px;
+  }
+  .toast .act { font-weight: 700; opacity: .75; }
+
+  /* ---- claims preview (matches place-claims v2 vocabulary) ---- */
+  .quote-list { display: flex; flex-direction: column; gap: 12px; }
+  .quote { display: flex; gap: 8px; align-items: flex-start; padding-left: 12px; position: relative; }
+  .quote::before { content: ''; position: absolute; left: 0; top: 2px; bottom: 2px; width: 2px; border-radius: 2px; background: var(--surface-2); }
+  .quote-text { font-size: 13px; line-height: 1.5; color: var(--text); letter-spacing: -0.005em; flex: 1; }
+  .quote-x { font-size: 14px; color: var(--text-soft); flex-shrink: 0; line-height: 1.3; }
+  .quote.dropped .quote-text { color: var(--text-soft); text-decoration: line-through; }
+
+  /* ---- chat turn (option C) ---- */
+  .turn { display: flex; flex-direction: column; gap: 4px; }
+  .turn.you { align-items: flex-end; text-align: right; }
+  .turn-meta { font-size: 9px; font-weight: 600; color: var(--text-soft); text-transform: uppercase; letter-spacing: 0.08em; }
+  .turn-text { font-size: 13px; line-height: 1.55; letter-spacing: -0.01em; max-width: 88%; }
+  .composer-card {
+    background: var(--surface); border-radius: 16px; padding: 10px 12px; display: flex; flex-direction: column; gap: 8px;
+  }
+  .composer-foot { display: flex; align-items: center; justify-content: space-between; }
+  .orb { width: 30px; height: 30px; border-radius: 50%; background: var(--text); display: flex; align-items: center; justify-content: center; }
+  .orb svg { width: 14px; height: 14px; stroke: var(--bg); stroke-width: 2; fill: none; }
+
+  /* ---- verdict table ---- */
+  .verdict { margin-top: 8px; border: 1px solid var(--surface-2); border-radius: 14px; overflow: hidden; max-width: 980px; }
+  .verdict-row { display: grid; grid-template-columns: 130px 1fr; gap: 0; }
+  .verdict-row + .verdict-row { border-top: 1px solid var(--surface-2); }
+  .verdict-k { padding: 12px 14px; font-size: 12px; font-weight: 600; color: var(--text-muted); background: var(--surface); }
+  .verdict-v { padding: 12px 14px; font-size: 13px; line-height: 1.6; letter-spacing: -0.005em; }
+  .verdict-v b { font-weight: 600; }
+
+  .note { font-size: 12px; color: var(--text-soft); line-height: 1.6; max-width: 760px; margin-top: 14px; }
+
+  /* ---- chat: mentioned rail + entity links (ADR-136) ---- */
+  .rail-lbl { font-size: 9px; font-weight: 600; color: var(--text-soft); text-transform: uppercase; letter-spacing: .08em; }
+  .rail { display: flex; gap: 6px; flex-wrap: wrap; }
+  .chip {
+    display: inline-flex; align-items: center; gap: 6px; background: var(--surface);
+    border-radius: 10px; padding: 5px 10px 5px 5px; font-size: 12px; font-weight: 600;
+    letter-spacing: -0.01em; color: var(--text);
+  }
+  .chip .cav {
+    width: 20px; height: 20px; border-radius: 6px; background: var(--bg);
+    display: flex; align-items: center; justify-content: center; font-size: 11px; flex-shrink: 0;
+  }
+  .elink { color: var(--text); font-weight: 600; border-bottom: 1.5px solid var(--surface-2); }
+  .elink.hot { border-bottom-color: var(--like); }
+
+  /* ---- long-press lift + menu — same visual as kebi-context-menu-mockup ---- */
+  .scrim.frosted { backdrop-filter: blur(14px) saturate(115%); -webkit-backdrop-filter: blur(14px) saturate(115%); }
+  .lifted-chip {
+    position: absolute; z-index: 3; transform: scale(1.03);
+    box-shadow: 0 18px 50px rgba(0,0,0,0.22), 0 4px 12px rgba(0,0,0,0.10);
+    border-radius: 10px;
+  }
+  body.dark .lifted-chip { box-shadow: 0 18px 50px rgba(0,0,0,0.55), 0 4px 12px rgba(0,0,0,0.35); }
+  .menu {
+    position: absolute; z-index: 3; background: var(--bg); border-radius: 14px;
+    padding: 4px; width: 196px; overflow: hidden;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.16), 0 2px 8px rgba(0,0,0,0.08);
+  }
+  body.dark .menu { box-shadow: 0 12px 40px rgba(0,0,0,0.5), 0 2px 8px rgba(0,0,0,0.3); }
+  .menu-item {
+    display: flex; align-items: center; gap: 10px; padding: 9px 10px;
+    font-size: 13px; font-weight: 500; letter-spacing: -0.01em; color: var(--text);
+  }
+  .menu-item .glyph { width: 16px; text-align: center; font-size: 14px; line-height: 1; }
+  .menu-item .sub { font-size: 10.5px; color: var(--text-muted); font-weight: 400; }
+  .menu-item.destructive { color: var(--danger); }
+  .menu-divider { height: 1px; background: var(--surface-2); margin: 4px 8px; }
+
+  /* teaching mode composer */
+  .composer-card.teach { background: var(--pill-warm); }
+  .teach-head { display: flex; align-items: center; gap: 6px; }
+  .teach-head .x { margin-left: auto; font-size: 13px; color: var(--like); }
+  .orb.teach { background: var(--like); }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="header">
+    <div>
+      <h1>curate — how an insider writes</h1>
+      <div class="header-meta">options for the curator write surface · ADR-112 (can_curate) + ADR-121 (knowledge) · design only, nothing built</div>
+      <p class="lede">
+        the backend already takes the write: <code>POST /api/v1/knowledge/curate</code>, gated by the
+        <code>can_curate</code> token claim, body is <b>free prose</b> plus an optional location hint. kebi
+        does the structuring — your paragraph comes back later as <b>claims</b>, the same insider notes
+        that render on the place page. so the whole design problem is: <b>what does writing feel like</b>,
+        and <b>what is the prose attached to</b>. the entity anchor below assumes the contract gains a real
+        <code>place_id</code> / <code>area_id</code> — you said that change is fine.
+      </p>
+    </div>
+    <div class="theme-toggle">
+      <button class="active" onclick="setTheme(false, this)">light</button>
+      <button onclick="setTheme(true, this)">dark</button>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════ 1 · DOORS ══════════════════════════ -->
+  <div class="section">
+    <div class="section-head">
+      <span class="section-title">1 · doors</span>
+      <span class="section-count">4 doors · locked</span>
+    </div>
+    <h2 class="section-h2">where writing starts</h2>
+    <p class="section-desc">
+      these are <b>not alternatives</b> — they're four doors into one composer. the composer is the
+      component you pick in §2; each door just pre-fills the anchor. every door is <b>invisible to
+      non-curators</b>: the row simply isn't rendered when the <code>can_curate</code> claim is false. no
+      locked state, no upsell, no "apply here" teaser in v1.
+      <br><br>
+      <b>settled:</b> a as drawn · b uses the <b>same ••• sheet</b> as a place, not a section-header
+      affordance · c is a <b>knowledge</b> group placed <b>below "what kebi knows"</b>, one row, no
+      contribution ledger · <b>d is the entity</b> — long-press the chat rail chip, place-card style,
+      detailed in §4. every door says <b>"add what you know"</b>.
+    </p>
+
+    <div class="phones">
+
+      <!-- door A: place action sheet -->
+      <div class="phone-wrap">
+        <span class="opt-tag rec">door a · highest value</span>
+        <div class="phone-label">from a place</div>
+        <div class="phone">
+          <div class="status-bar"><span>9:41</span><span class="right">▮▮▮ ⌁</span></div>
+          <div class="top-bar">
+            <div class="bar-side"><button class="icon-btn"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button></div>
+            <div class="top-pill">
+              <div class="pill-btn"><svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></svg></div>
+              <div class="pill-btn dots"><span></span><span></span><span></span></div>
+            </div>
+          </div>
+          <div class="screen" style="gap:10px;">
+            <div class="eyebrow">izakaya · ¥¥</div>
+            <div class="hero">Kamachiku</div>
+            <div class="hero-sub">nezu, tokyo · 8 min</div>
+            <div class="eyebrow" style="margin-top:4px;">insider notes</div>
+            <div class="quote-list">
+              <div class="quote"><div class="quote-text">the udon is the only thing to order, everything else is filler</div></div>
+              <div class="quote"><div class="quote-text">tadao ando renovated the building, sit in the brick room</div></div>
+            </div>
+            <div class="scrim"></div>
+            <div class="sheet">
+              <div class="grabber"></div>
+              <div class="anchor" style="background:transparent;padding:2px 0 6px;">
+                <div class="anchor-avatar">🍜</div>
+                <div class="anchor-body">
+                  <div class="anchor-kind">this place</div>
+                  <div class="anchor-name">Kamachiku</div>
+                </div>
+              </div>
+              <div class="group">
+                <div class="row"><span class="emoji">👍</span><span class="grow">looks right</span></div>
+                <div class="row"><span class="emoji">❤️</span><span class="grow">i like this one</span></div>
+                <div class="row"><span class="emoji">✅</span><span class="grow">been there</span></div>
+              </div>
+              <div class="group">
+                <div class="row">
+                  <span class="emoji">✍️</span>
+                  <div class="row-stack">
+                    <span>add what you know</span>
+                    <span class="sub">everyone will see it</span>
+                  </div>
+                </div>
+              </div>
+              <div class="group">
+                <div class="row danger"><span class="emoji">🗑️</span><span class="grow">forget this place</span></div>
+              </div>
+              <div class="home-ind"></div>
+            </div>
+          </div>
+        </div>
+        <p class="phone-sub">
+          the <b>•••</b> sheet grows a fourth group. sits <b>between</b> the personal actions and the
+          destructive one, because it's neither: it's a <b>public</b> write. the sublabel <b>"everyone
+          will see it"</b> carries the whole warning — no pill on the row, since the system reserves
+          pills for states, not labels, and settings already names you an insider.
+        </p>
+      </div>
+
+      <!-- door B: area screen -->
+      <div class="phone-wrap">
+        <span class="opt-tag rec">door b · locked</span>
+        <div class="phone-label">from an area — same ••• sheet</div>
+        <div class="phone">
+          <div class="status-bar"><span>9:41</span><span class="right">▮▮▮ ⌁</span></div>
+          <div class="top-bar">
+            <div class="bar-side"><button class="icon-btn"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button></div>
+            <div class="top-pill">
+              <div class="pill-btn dots"><span></span><span></span><span></span></div>
+            </div>
+          </div>
+          <div class="screen" style="gap:12px;">
+            <div class="eyebrow">neighborhood · tokyo</div>
+            <div class="hero">Shimokitazawa</div>
+            <div class="hero-sub">14 places saved here</div>
+            <div class="eyebrow" style="margin-top:4px;">insider notes</div>
+            <div class="quote-list">
+              <div class="quote"><div class="quote-text">the good stuff is south of the tracks, north is chain territory now</div></div>
+              <div class="quote"><div class="quote-text">most vintage shops open at 1pm</div></div>
+            </div>
+
+            <div class="scrim"></div>
+            <div class="sheet">
+              <div class="grabber"></div>
+              <div class="anchor" style="background:transparent;padding:2px 0 6px;">
+                <div class="anchor-avatar">🗺️</div>
+                <div class="anchor-body">
+                  <div class="anchor-kind">this area</div>
+                  <div class="anchor-name">Shimokitazawa</div>
+                </div>
+              </div>
+              <div class="group">
+                <div class="row">
+                  <span class="emoji">✍️</span>
+                  <div class="row-stack">
+                    <span>add what you know</span>
+                    <span class="sub">everyone will see it</span>
+                  </div>
+                </div>
+              </div>
+              <div class="home-ind"></div>
+            </div>
+          </div>
+        </div>
+        <p class="phone-sub">
+          <b>locked: same ••• sheet as a place.</b> one vocabulary, one component — the sheet already takes
+          an avatar, an eyebrow and a name, so an area just fills them differently.
+          <br><br><b>and the ••• only renders for insiders.</b> an area has none of the place actions
+          (looks right / i like / been there / forget), so for everyone else the sheet would open empty.
+          the button appears with the permission and disappears without it — no dead end, nothing to
+          explain. it grows into a normal sheet the day areas get actions of their own.
+        </p>
+      </div>
+
+      <!-- door C: standalone -->
+      <div class="phone-wrap">
+        <span class="opt-tag rec">door c · locked</span>
+        <div class="phone-label">from settings</div>
+        <div class="phone">
+          <div class="status-bar"><span>9:41</span><span class="right">▮▮▮ ⌁</span></div>
+          <div class="top-bar">
+            <div class="bar-side"><button class="icon-btn"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button></div>
+            <div class="top-pill"><div class="pill-btn"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 00.3 1.9l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.7 1.7 0 00-1.9-.3 1.7 1.7 0 00-1 1.5V21a2 2 0 11-4 0v-.1A1.7 1.7 0 007 19.4a1.7 1.7 0 00-1.9.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.7 1.7 0 00.3-1.9 1.7 1.7 0 00-1.5-1H1a2 2 0 110-4h.1A1.7 1.7 0 002.6 7a1.7 1.7 0 00-.3-1.9l-.1-.1a2 2 0 112.8-2.8l.1.1a1.7 1.7 0 001.9.3H7a1.7 1.7 0 001-1.5V1a2 2 0 114 0v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.9-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.7 1.7 0 00-.3 1.9V7a1.7 1.7 0 001.5 1H21a2 2 0 110 4h-.1a1.7 1.7 0 00-1.5 1z"/></svg></div></div>
+          </div>
+          <div class="screen" style="gap:12px;">
+            <div class="eyebrow">settings</div>
+            <div class="hero">you, basically</div>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span class="hero-sub">saher</span>
+              <span class="pill green">insider</span>
+            </div>
+
+            <div class="eyebrow" style="margin-top:6px;">what kebi knows</div>
+            <div class="group">
+              <div class="row">
+                <span class="gsq"><svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg></span>
+                <div class="row-stack">
+                  <span>about you</span>
+                  <span class="sub">what kebi should keep in mind</span>
+                </div>
+                <span class="chev">›</span>
+              </div>
+              <div class="row">
+                <span class="gsq"><svg viewBox="0 0 24 24"><polyline points="3 11 22 2 13 21 11 13 3 11"/></svg></span>
+                <div class="row-stack">
+                  <span>getting around</span>
+                  <span class="sub">how far you'll go</span>
+                </div>
+                <span class="chev">›</span>
+              </div>
+            </div>
+
+            <div class="eyebrow" style="margin-top:6px;">knowledge</div>
+            <div class="group">
+              <div class="row">
+                <span class="gsq"><svg viewBox="0 0 24 24"><path d="M12 20h9M16.5 3.5a2.12 2.12 0 113 3L7 19l-4 1 1-4z"/></svg></span>
+                <div class="row-stack">
+                  <span>add what you know</span>
+                  <span class="sub">a place, an area, anything</span>
+                </div>
+                <span class="chev">›</span>
+              </div>
+              <div class="row">
+                <span class="gsq"><svg viewBox="0 0 24 24"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/></svg></span>
+                <div class="row-stack">
+                  <span>what you've added</span>
+                  <span class="sub">38 notes · 12 places</span>
+                </div>
+                <span class="chev">›</span>
+              </div>
+            </div>
+
+            <div class="eyebrow" style="margin-top:6px;">subscription</div>
+            <div class="group">
+              <div class="row">
+                <span class="gsq"><svg viewBox="0 0 24 24"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/></svg></span>
+                <div class="row-stack">
+                  <span>your plan</span>
+                  <span class="sub">explorer · ¥900</span>
+                </div>
+                <span class="chev">›</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <p class="phone-sub">
+          <b>locked:</b> an insider-only group called <b>knowledge</b>, sitting <b>below "what kebi
+          knows"</b> — the personal rows stay on top, so an insider's settings screen opens exactly like
+          everyone else's and the group is an addition rather than a reordering.
+          <br><br><b>two rows.</b> the blank composer (nothing anchored — the door for dumping a trip's
+          worth at once), and <b>what you've added</b>. that second row was cut once and came back the
+          moment the post-submit receipt was cut: with no review step anywhere in the flow, that page is
+          the <b>only</b> place an insider can ever see what their prose became — so it gets its own
+          section, <b>§5</b>.
+          <br><br><b>the green pill under your name</b> is the whole "you're an insider" surface. no
+          explainer line: every door already says <b>"everyone will see it"</b> at the moment you're
+          about to write, which is where that warning does work. identity here, consequence there.
+        </p>
+      </div>
+
+      <!-- door D: the entity in chat -->
+      <div class="phone-wrap">
+        <span class="opt-tag rec">door d · locked</span>
+        <div class="phone-label">from the entity in chat</div>
+        <div class="phone">
+          <div class="status-bar"><span>9:41</span><span class="right">▮▮▮ ⌁</span></div>
+          <div class="top-bar">
+            <div class="bar-side"><button class="icon-btn"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
+            <div class="bar-side"><span class="pill plain nodot">insider</span></div>
+          </div>
+          <div class="screen" style="gap:14px;">
+            <div class="turn you">
+              <div class="turn-meta">you</div>
+              <div class="turn-text">udon in nezu?</div>
+            </div>
+            <div class="turn">
+              <div class="turn-meta">kebi</div>
+              <div class="turn-text">
+                <span class="elink">Kamachiku</span> is the one. the udon room is a converted
+                warehouse and the queue is the whole story.
+              </div>
+            </div>
+            <div class="rail-lbl">mentioned</div>
+            <div class="rail">
+              <div class="chip" style="visibility:hidden;"><div class="cav">🍜</div><span class="cn">Kamachiku</span></div>
+              <div class="chip"><div class="cav">🗺️</div><span class="cn">Nezu</span></div>
+            </div>
+            <div style="flex:1;"></div>
+            <div class="composer-card">
+              <div class="field-box placeholder" style="font-size:13px;">ask kebi</div>
+            </div>
+            <div class="home-ind"></div>
+
+            <div class="scrim frosted"></div>
+            <div class="lifted-chip" style="top:186px;left:18px;">
+              <div class="chip"><div class="cav">🍜</div><span class="cn">Kamachiku</span></div>
+            </div>
+            <div class="menu" style="top:228px;left:18px;">
+              <div class="menu-item"><span class="glyph">📄</span>open</div>
+              <div class="menu-item"><span class="glyph">🔖</span>save it</div>
+              <div class="menu-divider"></div>
+              <div class="menu-item"><span class="glyph">✍️</span>add what you know</div>
+            </div>
+          </div>
+        </div>
+        <p class="phone-sub">
+          <b>locked: the door is the entity itself</b>, opened with the <b>same long-press we already use
+          on place cards</b> — 500ms hold, chip lifts (scale 1.03 + lift shadow) over the frosted-blur
+          backdrop, menu opens directly below it with a 10px gap. no new gesture, no new component.
+          <br><br>the entity arrives <b>fully resolved</b> from the turn's <code>entities</code> list, so
+          this is the only door where the anchor needs <b>no lookup at all</b>. gesture detail in <b>§4</b>.
+        </p>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ══════════════════════════ 2 · COMPOSER ══════════════════════════ -->
+  <div class="section">
+    <div class="section-head">
+      <span class="section-title">2 · the composer</span>
+      <span class="section-count">settled · option b, the sheet</span>
+    </div>
+    <h2 class="section-h2">what writing feels like</h2>
+    <p class="section-desc">
+      all three take the same payload and all three are anchored the same way — they differ in
+      <b>how much ceremony</b> the write has, and in <b>who does the thinking</b>. remember the unit is a
+      paragraph, not a field: kebi splits it. so anything that makes the user feel like they're filling
+      a form is <b>working against the contract</b>.
+      <br><br>
+      <b>settled: option b, the sheet.</b> it keeps every door identical — the sheet rises over whatever
+      you were looking at, so a place, an area and a chat chip all behave the same way and nothing
+      navigates. the notebook page is kept below as the road not taken, and option c stays a v2 idea.
+    </p>
+
+    <div class="phones">
+
+      <!-- option A: full page -->
+      <div class="phone-wrap">
+        <span class="opt-tag">option a · not chosen</span>
+        <div class="phone-label">the notebook page</div>
+        <div class="phone">
+          <div class="status-bar"><span>9:41</span><span class="right">▮▮▮ ⌁</span></div>
+          <div class="top-bar">
+            <div class="bar-side"><button class="icon-btn"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
+            <div class="bar-side"><span class="pill plain nodot">insider</span></div>
+          </div>
+          <div class="screen">
+            <div class="eyebrow">insider note</div>
+            <div class="hero">what do you know?</div>
+
+            <div class="anchor">
+              <div class="anchor-avatar">🍜</div>
+              <div class="anchor-body">
+                <div class="anchor-kind">about</div>
+                <div class="anchor-name">Kamachiku · nezu, tokyo</div>
+              </div>
+              <span class="anchor-act">change</span>
+            </div>
+
+            <div class="field">
+              <div class="field-box">
+                go at 11:30 or you queue 40 minutes. the brick room is the tadao ando part and nobody
+                asks for it, so ask for it. only the udon matters, skip the sides.<span class="caret"></span>
+              </div>
+              <div class="count">228 / 8000</div>
+            </div>
+
+            <div class="hint">write it how you'd say it. kebi splits it into notes.</div>
+            <button class="btn primary full">add to kebi</button>
+            <div class="home-ind"></div>
+          </div>
+        </div>
+        <p class="phone-sub">
+          <b>full screen, one job.</b> no card around the text — the page <i>is</i> the paper, same move
+          as the chat editor. anchor chip sits above so context is never ambiguous, and it's the only
+          chrome. one primary button, per the system.
+          <br><br><b>why this wins:</b> curation deserves a room, not a drawer. the tall field says
+          "keep going" — a sheet says "one line and get out", which produces thin claims.
+        </p>
+      </div>
+
+      <!-- option B: bottom sheet -->
+      <div class="phone-wrap">
+        <span class="opt-tag rec">option b · locked</span>
+        <div class="phone-label">the sheet (save-sheet language)</div>
+        <div class="phone">
+          <div class="status-bar"><span>9:41</span><span class="right">▮▮▮ ⌁</span></div>
+          <div class="top-bar">
+            <div class="bar-side"><button class="icon-btn"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button></div>
+            <div class="top-pill">
+              <div class="pill-btn"><svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></svg></div>
+              <div class="pill-btn dots"><span></span><span></span><span></span></div>
+            </div>
+          </div>
+          <div class="screen" style="gap:10px;">
+            <div class="eyebrow">izakaya · ¥¥</div>
+            <div class="hero">Kamachiku</div>
+            <div class="scrim"></div>
+            <div class="sheet" style="top:52px;">
+              <div class="grabber"></div>
+              <div class="anchor">
+                <div class="anchor-avatar">🍜</div>
+                <div class="anchor-body">
+                  <div class="anchor-kind">about</div>
+                  <div class="anchor-name">Kamachiku</div>
+                </div>
+                <span class="anchor-act">change</span>
+              </div>
+              <div class="sheet-title" style="margin-top:2px;">what do you know?</div>
+              <div class="field" style="min-height:0;">
+                <div class="field-box">
+                  go at 11:30 or you queue 40 minutes. the brick room is the tadao ando part and
+                  nobody asks for it, so ask for it.<span class="caret"></span>
+                </div>
+              </div>
+              <div class="hint">write it how you'd say it. kebi splits it into notes. <b style="color:var(--like);">everyone sees them.</b></div>
+              <button class="btn primary full">add to kebi</button>
+              <div class="keyboard">
+                <div class="kb-row"><span>q</span><span>w</span><span>e</span><span>r</span><span>t</span><span>y</span><span>u</span><span>i</span><span>o</span><span>p</span></div>
+                <div class="kb-row"><span>a</span><span>s</span><span>d</span><span>f</span><span>g</span><span>h</span><span>j</span><span>k</span><span>l</span></div>
+                <div class="kb-row"><span>z</span><span>x</span><span>c</span><span>v</span><span>b</span><span>n</span><span>m</span></div>
+                <div class="home-ind"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <p class="phone-sub">
+          <b>locked.</b> reuses the <b>save sheet</b> exactly — 22px corners, grabber, scrim, 320ms spring.
+          cheapest to build, most familiar gesture in the app.
+          <br><br><b>drawn in the state it actually lives in: keyboard up.</b> that's the one thing to
+          design around — so the sheet opens <b>tall</b> (near full height), not at save-sheet height,
+          and the field takes all the slack. anchor moved <b>above</b> the title so the first thing you
+          read is what you're writing about.
+        </p>
+      </div>
+
+      <!-- the two states + the confirmation -->
+      <div class="phone-wrap">
+        <span class="opt-tag rec">b · empty state</span>
+        <div class="phone-label">nothing written yet</div>
+        <div class="phone">
+          <div class="status-bar"><span>9:41</span><span class="right">▮▮▮ ⌁</span></div>
+          <div class="top-bar">
+            <div class="bar-side"><button class="icon-btn"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button></div>
+            <div class="top-pill">
+              <div class="pill-btn"><svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></svg></div>
+              <div class="pill-btn dots"><span></span><span></span><span></span></div>
+            </div>
+          </div>
+          <div class="screen" style="gap:10px;">
+            <div class="eyebrow">izakaya · ¥¥</div>
+            <div class="hero">Kamachiku</div>
+            <div class="scrim"></div>
+            <div class="sheet" style="top:52px;">
+              <div class="grabber"></div>
+              <div class="anchor">
+                <div class="anchor-avatar">🍜</div>
+                <div class="anchor-body">
+                  <div class="anchor-kind">about</div>
+                  <div class="anchor-name">Kamachiku</div>
+                </div>
+                <span class="anchor-act">change</span>
+              </div>
+              <div class="sheet-title" style="margin-top:2px;">what do you know?</div>
+              <div class="field" style="min-height:0;">
+                <div class="field-box placeholder">
+                  what's not obvious — when to go, where to sit, what to skip<span class="caret"></span>
+                </div>
+              </div>
+              <div class="hint">write it how you'd say it. kebi splits it into notes. <b style="color:var(--like);">everyone sees them.</b></div>
+              <button class="btn primary full off">add to kebi</button>
+              <div class="keyboard">
+                <div class="kb-row"><span>q</span><span>w</span><span>e</span><span>r</span><span>t</span><span>y</span><span>u</span><span>i</span><span>o</span><span>p</span></div>
+                <div class="kb-row"><span>a</span><span>s</span><span>d</span><span>f</span><span>g</span><span>h</span><span>j</span><span>k</span><span>l</span></div>
+                <div class="kb-row"><span>z</span><span>x</span><span>c</span><span>v</span><span>b</span><span>n</span><span>m</span></div>
+                <div class="home-ind"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <p class="phone-sub">
+          button at <b>35%</b>, placeholder doing the work option c would have done as an interview —
+          <b>"what's not obvious — when to go, where to sit, what to skip"</b>. that one line is the
+          cheapest depth we can buy.
+        </p>
+      </div>
+
+      <!-- sent -->
+      <div class="phone-wrap">
+        <span class="opt-tag rec">b · submitted</span>
+        <div class="phone-label">closes on tap · sent</div>
+        <div class="phone">
+          <div class="status-bar"><span>9:41</span><span class="right">▮▮▮ ⌁</span></div>
+          <div class="top-bar">
+            <div class="bar-side"><button class="icon-btn"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button></div>
+            <div class="top-pill">
+              <div class="pill-btn"><svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></svg></div>
+              <div class="pill-btn dots"><span></span><span></span><span></span></div>
+            </div>
+          </div>
+          <div class="screen" style="gap:10px;">
+            <div class="eyebrow">izakaya · ¥¥</div>
+            <div class="hero">Kamachiku</div>
+            <div class="hero-sub">nezu, tokyo · 8 min</div>
+            <div class="eyebrow" style="margin-top:6px;">insider notes</div>
+            <div class="quote-list">
+              <div class="quote"><div class="quote-text">the udon is the only thing to order</div></div>
+              <div class="quote"><div class="quote-text">tadao ando renovated the building</div></div>
+            </div>
+            <div class="toast">
+              sent to kebi
+            </div>
+            <div class="home-ind"></div>
+          </div>
+        </div>
+        <p class="phone-sub">
+          no spinner, no waiting — the sheet is gone and you're back where you were, on the place you
+          just wrote about. a <b>plain confirmation</b> — 3s, no action button, per the system's
+          confirmation timing.
+          <br><br>and that's the end of the flow. <b>open, write, send.</b> no undo, no receipt, no
+          review of what the claims became — they just land, like anyone else's.
+        </p>
+      </div>
+
+      <!-- option C: guided chat -->
+      <div class="phone-wrap">
+        <span class="opt-tag no">option c · not recommended</span>
+        <div class="phone-label">tell kebi about it</div>
+        <div class="phone">
+          <div class="status-bar"><span>9:41</span><span class="right">▮▮▮ ⌁</span></div>
+          <div class="top-bar">
+            <div class="bar-side"><button class="icon-btn"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
+            <div class="bar-side"><span class="pill warm nodot">teaching kebi</span></div>
+          </div>
+          <div class="screen" style="gap:14px;">
+            <div class="anchor">
+              <div class="anchor-avatar">🍜</div>
+              <div class="anchor-body">
+                <div class="anchor-kind">about</div>
+                <div class="anchor-name">Kamachiku</div>
+              </div>
+            </div>
+
+            <div class="turn">
+              <div class="turn-meta">kebi</div>
+              <div class="turn-text">what should people know about Kamachiku that isn't obvious?</div>
+            </div>
+            <div class="turn you">
+              <div class="turn-meta">you</div>
+              <div class="turn-text">go at 11:30, the queue gets stupid after noon</div>
+            </div>
+            <div class="turn">
+              <div class="turn-meta">kebi</div>
+              <div class="turn-text">got it. anything about where to sit, or what to order?</div>
+            </div>
+
+            <div style="flex:1;"></div>
+            <div class="composer-card">
+              <div class="field-box placeholder" style="font-size:13px;">the brick room, ask for it<span class="caret"></span></div>
+              <div class="composer-foot">
+                <span class="hint">3 notes so far</span>
+                <div class="orb"><svg viewBox="0 0 24 24"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg></div>
+              </div>
+            </div>
+            <div class="home-ind"></div>
+          </div>
+        </div>
+        <p class="phone-sub">
+          kebi interviews you. genuinely produces <b>richer</b> claims — it asks the questions you'd
+          forget to answer.
+          <br><br><b>why it loses (for now):</b> it's a <b>separate AI surface</b> with its own prompt,
+          state and streaming — a big build. worse, it makes an authoritative global write feel casual,
+          and it's ambiguous: mid-interview, is "where's good nearby?" a question or a claim?
+          <b>keep this as v2</b> once the plain composer proves people write at all.
+        </p>
+      </div>
+
+    </div>
+
+    <div class="verdict">
+      <div class="verdict-row"><div class="verdict-k">locked</div><div class="verdict-v"><b>option b — the sheet.</b> it rises over whatever you were looking at, so all four doors behave identically and none of them navigate away. same component the app already opens for saving.</div></div>
+      <div class="verdict-row"><div class="verdict-k">design around</div><div class="verdict-v">the <b>keyboard</b>. this sheet lives its whole life with the keyboard up, so it opens <b>tall</b> — near full height, not save-sheet height — and the prose field takes all the slack. drawn that way above.</div></div>
+      <div class="verdict-row"><div class="verdict-k">say it here</div><div class="verdict-v">the composer is the last moment before a <b>global</b> write, so the hint carries <b>"everyone sees them"</b> in warm. the doors say it too — this is the one repetition worth keeping.</div></div>
+      <div class="verdict-row"><div class="verdict-k">carry from a</div><div class="verdict-v">the anchor chip sits <b>above</b> the title, not below it — the first thing you read is what you're writing about, then the question.</div></div>
+      <div class="verdict-row"><div class="verdict-k">two states</div><div class="verdict-v"><b>empty</b> (button at 35%) and <b>filled</b>. there is <b>no "adding" state</b> — see submit below. the save sheet's third slot, where it reads your input back to you ("looks like a tiktok link"), stays <b>empty here</b> — the composer never comments on what you're writing.</div></div>
+      <div class="verdict-row"><div class="verdict-k">submit</div><div class="verdict-v"><b>closes immediately, optimistic.</b> deliberately breaks parity with the save sheet. note the contract returns <code>claims_written</code> + the claims <b>synchronously</b>, so the count is known at submit — the toast can say <b>"3 notes added"</b> rather than a bare acknowledgement.</div></div>
+      <div class="verdict-row"><div class="verdict-k">toast</div><div class="verdict-v">a <b>plain confirmation</b> — 3s, no action button. <b>no undo:</b> an undo that fires after the prose has already reached kebi is a retract call, not a client-side cancel, and the flow is deliberately <b>open, write, send</b>. nothing to review afterwards either — there is no receipt screen and no way to see what the claims became.</div></div>
+      <div class="verdict-row"><div class="verdict-k">dismissal</div><div class="verdict-v">swipe down freely — the text is <b>kept as a draft</b>, restored when you reopen the composer for that same anchor, cleared once submitted. nothing is lost, so nothing needs confirming. it also makes dismissing <b>useful</b>: swipe away to go re-read the place page before asserting something, then come back. one draft <b>per anchor</b>; in-memory for the session is enough for v1.</div></div>
+      <div class="verdict-row"><div class="verdict-k">carry from c</div><div class="verdict-v">the interview's real value is the <b>prompt questions</b>. put one as the field's placeholder — "what's not obvious? when to go, where to sit, what to skip" — and you get 80% of the depth for zero build.</div></div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════ 3 · ANCHOR ══════════════════════════ -->
+  <div class="section">
+    <div class="section-head">
+      <span class="section-title">3 · the anchor</span>
+      <span class="section-count">3 states + searching · picker 1 locked</span>
+    </div>
+    <h2 class="section-h2">what the prose is attached to</h2>
+    <p class="section-desc">
+      this is the part that needs the contract change. today kebi resolves the entity <b>from the text</b>
+      — which means a note written while staring at a place page can still land on the wrong place. with
+      a real <code>place_id</code> / <code>area_id</code> the anchor becomes a <b>guarantee</b>, and the chip
+      below is its honest UI. the chip is one component, four states.
+    </p>
+
+    <div class="phones">
+
+      <div class="phone-wrap" style="width:340px;">
+        <div class="phone-label">the four states</div>
+        <div class="phone" style="height:520px;width:340px;">
+          <div class="status-bar"><span>9:41</span><span class="right">▮▮▮ ⌁</span></div>
+          <div class="screen" style="gap:18px;padding-top:10px;">
+
+            <div>
+              <div class="eyebrow" style="margin-bottom:6px;">1 · place-anchored — from door a</div>
+              <div class="anchor">
+                <div class="anchor-avatar">🍜</div>
+                <div class="anchor-body">
+                  <div class="anchor-kind">about</div>
+                  <div class="anchor-name">Kamachiku · nezu, tokyo</div>
+                </div>
+                <span class="anchor-act">change</span>
+              </div>
+            </div>
+
+            <div>
+              <div class="eyebrow" style="margin-bottom:6px;">2 · area-anchored — from door b</div>
+              <div class="anchor">
+                <div class="anchor-avatar">🗺️</div>
+                <div class="anchor-body">
+                  <div class="anchor-kind">about</div>
+                  <div class="anchor-name">Shimokitazawa · tokyo</div>
+                </div>
+                <span class="anchor-act">change</span>
+              </div>
+            </div>
+
+            <div>
+              <div class="eyebrow" style="margin-bottom:6px;">3 · unanchored — from door c</div>
+              <div class="anchor dashed">
+                <div class="anchor-avatar">📍</div>
+                <div class="anchor-body">
+                  <div class="anchor-kind">about</div>
+                  <div class="anchor-name" style="color:var(--text-soft);font-weight:500;">a place or area</div>
+                </div>
+                <span class="anchor-act">pick</span>
+              </div>
+              <div class="hint" style="margin-top:6px;">optional. leave it blank and kebi works out what you meant.</div>
+              <div class="hint" style="margin-top:4px;color:var(--success);"><b>submit is live with an empty anchor</b> — never a required field</div>
+            </div>
+
+            <div>
+              <div class="eyebrow" style="margin-bottom:6px;">4 · searching — the chip expands in place</div>
+              <div class="anchor" style="background:var(--surface-2);">
+                <div class="anchor-avatar" style="background:var(--bg);">🔎</div>
+                <div class="anchor-body">
+                  <div class="anchor-name" style="font-weight:500;">nezu<span class="caret"></span></div>
+                </div>
+                <span class="anchor-act">×</span>
+              </div>
+              <div class="hint" style="margin-top:6px;">results drop in below · <b>×</b> puts the old anchor back</div>
+            </div>
+
+            <div class="home-ind"></div>
+          </div>
+        </div>
+        <p class="phone-sub">
+          three resting states plus the <b>searching</b> state, which is the chip mid-expand (picker 1).
+          <br><br>a fourth idea — a <b>drift nudge</b> that noticed when your prose wandered off its
+          anchor ("you mentioned nezu a lot, want this on the area?") — was <b>cut</b>. it was the only
+          part of this design needing new intelligence to detect drift, and the anchor is already one tap
+          from being changed.
+        </p>
+      </div>
+
+    </div>
+
+    <!-- ---- the picker: 3 options ---- -->
+    <h2 class="section-h2" style="margin-top:56px;">changing the anchor — 3 options</h2>
+    <p class="section-desc">
+      the composer is a <b>sheet</b> (§2), so "change" can't just open another screen. these are the three
+      places the place/area search can live. <b>the prose is already written</b> in all three — that's the
+      real constraint: whatever happens must not throw away what you typed or drop the keyboard.
+      <br><br>
+      <b>settled: picker 1 — in place.</b> the chip expands into the search and collapses back, one layer,
+      keyboard up throughout. the anchor is <b>never required</b>: submit stays live with an empty chip,
+      and kebi resolves the subject from the prose the way it does today.
+      <br><br>
+      <b>deferred:</b> what the search actually queries — places and areas kebi knows, but there may be no
+      search endpoint for it yet. picked up with the rest of the contract asks.
+    </p>
+
+    <div class="phones">
+
+      <!-- picker 1: in place -->
+      <div class="phone-wrap">
+        <span class="opt-tag rec">picker 1 · locked</span>
+        <div class="phone-label">in place — the chip becomes the search</div>
+        <div class="phone">
+          <div class="status-bar"><span>9:41</span><span class="right">▮▮▮ ⌁</span></div>
+          <div class="top-bar">
+            <div class="bar-side"><button class="icon-btn"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button></div>
+            <div class="top-pill"><div class="pill-btn dots"><span></span><span></span><span></span></div></div>
+          </div>
+          <div class="screen" style="gap:10px;">
+            <div class="eyebrow">izakaya · ¥¥</div>
+            <div class="hero">Kamachiku</div>
+            <div class="scrim"></div>
+            <div class="sheet" style="top:52px;">
+              <div class="grabber"></div>
+              <div class="anchor" style="background:var(--surface-2);">
+                <div class="anchor-avatar" style="background:var(--bg);">🔎</div>
+                <div class="anchor-body">
+                  <div class="anchor-name" style="font-weight:500;">nezu<span class="caret"></span></div>
+                </div>
+                <span class="anchor-act">×</span>
+              </div>
+              <div class="group">
+                <div class="row"><span class="emoji">🗺️</span><div class="row-stack"><span>Nezu</span><span class="sub">neighborhood · tokyo</span></div></div>
+                <div class="row"><span class="emoji">🍜</span><div class="row-stack"><span>Kamachiku</span><span class="sub">izakaya · nezu</span></div></div>
+                <div class="row"><span class="emoji">⛩️</span><div class="row-stack"><span>Nezu Shrine</span><span class="sub">landmark · nezu</span></div></div>
+              </div>
+              <div class="field" style="min-height:0;">
+                <div class="field-box" style="opacity:.45;">
+                  go at 11:30 or you queue 40 minutes. the brick room is the tadao ando part…
+                </div>
+              </div>
+              <div class="keyboard">
+                <div class="kb-row"><span>q</span><span>w</span><span>e</span><span>r</span><span>t</span><span>y</span><span>u</span><span>i</span><span>o</span><span>p</span></div>
+                <div class="kb-row"><span>a</span><span>s</span><span>d</span><span>f</span><span>g</span><span>h</span><span>j</span><span>k</span><span>l</span></div>
+                <div class="home-ind"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <p class="phone-sub">
+          <b>locked.</b> the chip <b>turns into</b> a search field, results drop directly beneath it, and
+          your prose stays on screen underneath — dimmed, not gone. picking a result collapses it back to
+          a chip. <b>×</b> abandons the search and restores the previous anchor.
+          <br><br>one layer, no new component, the keyboard never leaves, and you can see the sentence
+          you're anchoring while you choose. it's the <b>same expand-in-place move the library top-pill
+          makes</b> when its search opens — so the gesture is already in the app's vocabulary.
+        </p>
+      </div>
+
+      <!-- picker 2: stacked sheet -->
+      <div class="phone-wrap">
+        <span class="opt-tag">picker 2 · not chosen</span>
+        <div class="phone-label">a second sheet on top</div>
+        <div class="phone">
+          <div class="status-bar"><span>9:41</span><span class="right">▮▮▮ ⌁</span></div>
+          <div class="top-bar">
+            <div class="bar-side"><button class="icon-btn"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button></div>
+            <div class="top-pill"><div class="pill-btn dots"><span></span><span></span><span></span></div></div>
+          </div>
+          <div class="screen" style="gap:10px;">
+            <div class="eyebrow">izakaya · ¥¥</div>
+            <div class="hero">Kamachiku</div>
+            <div class="scrim"></div>
+            <div class="sheet" style="top:52px;background:var(--surface);opacity:.6;">
+              <div class="grabber"></div>
+              <div class="anchor">
+                <div class="anchor-avatar">🍜</div>
+                <div class="anchor-body">
+                  <div class="anchor-kind">about</div>
+                  <div class="anchor-name">Kamachiku</div>
+                </div>
+              </div>
+              <div class="sheet-title" style="margin-top:2px;">what do you know?</div>
+              <div class="field-box" style="flex:0;">go at 11:30 or you queue 40 minutes…</div>
+            </div>
+            <div class="scrim" style="top:52px;"></div>
+            <div class="sheet" style="top:210px;">
+              <div class="grabber"></div>
+              <div class="sheet-title">what's this about?</div>
+              <div class="anchor dashed">
+                <div class="anchor-avatar">🔎</div>
+                <div class="anchor-body">
+                  <div class="anchor-name" style="font-weight:500;">nezu<span class="caret"></span></div>
+                </div>
+              </div>
+              <div class="group">
+                <div class="row"><span class="emoji">🗺️</span><div class="row-stack"><span>Nezu</span><span class="sub">neighborhood · tokyo</span></div></div>
+                <div class="row"><span class="emoji">🍜</span><div class="row-stack"><span>Kamachiku</span><span class="sub">izakaya · nezu</span></div></div>
+              </div>
+              <div class="home-ind"></div>
+            </div>
+          </div>
+        </div>
+        <p class="phone-sub">
+          "change" springs a picker sheet <b>above</b> the composer, over its own scrim.
+          <br><br><b>for:</b> picking is visibly its own task, and the list gets full height.
+          <b>against:</b> two stacked sheets with a keyboard is a pattern the app has <b>nowhere else</b>,
+          the scrim dims the prose you were anchoring, and swipe-down now means two different things
+          depending on which sheet you grab.
+        </p>
+      </div>
+
+      <!-- picker 3: none -->
+      <div class="phone-wrap">
+        <span class="opt-tag">picker 3 · not chosen</span>
+        <div class="phone-label">no picker — the door decides</div>
+        <div class="phone">
+          <div class="status-bar"><span>9:41</span><span class="right">▮▮▮ ⌁</span></div>
+          <div class="top-bar">
+            <div class="bar-side"><button class="icon-btn"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button></div>
+            <div class="top-pill"><div class="pill-btn dots"><span></span><span></span><span></span></div></div>
+          </div>
+          <div class="screen" style="gap:10px;">
+            <div class="eyebrow">izakaya · ¥¥</div>
+            <div class="hero">Kamachiku</div>
+            <div class="scrim"></div>
+            <div class="sheet" style="top:52px;">
+              <div class="grabber"></div>
+              <div class="anchor">
+                <div class="anchor-avatar">🍜</div>
+                <div class="anchor-body">
+                  <div class="anchor-kind">about</div>
+                  <div class="anchor-name">Kamachiku</div>
+                </div>
+              </div>
+              <div class="sheet-title" style="margin-top:2px;">what do you know?</div>
+              <div class="field" style="min-height:0;">
+                <div class="field-box">
+                  go at 11:30 or you queue 40 minutes. the brick room is the tadao ando part and
+                  nobody asks for it.<span class="caret"></span>
+                </div>
+              </div>
+              <div class="hint">write it how you'd say it. kebi splits it into notes. <b style="color:var(--like);">everyone sees them.</b></div>
+              <button class="btn primary full">add to kebi</button>
+              <div class="keyboard">
+                <div class="kb-row"><span>q</span><span>w</span><span>e</span><span>r</span><span>t</span><span>y</span><span>u</span><span>i</span><span>o</span><span>p</span></div>
+                <div class="kb-row"><span>a</span><span>s</span><span>d</span><span>f</span><span>g</span><span>h</span><span>j</span><span>k</span><span>l</span></div>
+                <div class="home-ind"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <p class="phone-sub">
+          <b>no "change" at all.</b> the anchor is whatever door you came through, full stop. wrong
+          anchor means swipe down and reopen from the right place — and your draft survives (§2), so
+          that costs nothing but a gesture.
+          <br><br><b>for:</b> zero build, zero new state, and the chip becomes pure <b>context</b> rather
+          than a control. door c (settings) simply opens unanchored and lets kebi resolve from the prose,
+          which the contract already supports.
+        </p>
+      </div>
+
+    </div>
+  </div>
+
+
+  <!-- ══════════════════════════ 5 · CHAT DOOR ══════════════════════════ -->
+  <div class="section">
+    <div class="section-head">
+      <span class="section-title">4 · the chat door</span>
+      <span class="section-count">settled · chat a (long-press, place-card style)</span>
+    </div>
+    <h2 class="section-h2">writing about what kebi just mentioned</h2>
+    <p class="section-desc">
+      chat is the <b>only surface where the entity is already resolved</b>. ADR-136 puts entity names in the
+      answer as <code>kebi://{kind}/{key}</code> links with a flat <code>entities</code> list behind them —
+      name, kind, key, icon. so a chat door needs <b>no search, no picker, no disambiguation</b>: the anchor
+      from §3 arrives fully populated, for free. that makes it arguably the <b>cheapest</b> door we have,
+      and the one with the best timing — you're already thinking about the place.
+      <br><br>
+      the thing to protect is the line between <b>asking</b> and <b>asserting</b>. these three options
+      differ in how hard they draw it.
+    </p>
+
+    <div class="phones">
+
+      <!-- D1: chip long-press -->
+      <div class="phone-wrap">
+        <span class="opt-tag rec">chat a · recommended</span>
+        <div class="phone-label">long-press the chip</div>
+        <div class="phone">
+          <div class="status-bar"><span>9:41</span><span class="right">▮▮▮ ⌁</span></div>
+          <div class="top-bar">
+            <div class="bar-side"><button class="icon-btn"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
+            <div class="bar-side"><span class="pill plain nodot">insider</span></div>
+          </div>
+          <div class="screen" style="gap:14px;">
+            <div class="turn you">
+              <div class="turn-meta">you</div>
+              <div class="turn-text">udon in nezu?</div>
+            </div>
+            <div class="turn">
+              <div class="turn-meta">kebi</div>
+              <div class="turn-text">
+                <span class="elink">Kamachiku</span> is the one. the udon room is a converted
+                warehouse and the queue is the whole story.
+              </div>
+            </div>
+
+            <div class="rail-lbl">mentioned</div>
+            <div class="rail">
+              <div class="chip" style="visibility:hidden;"><div class="cav">🍜</div><span class="cn">Kamachiku</span></div>
+              <div class="chip"><div class="cav">🗺️</div><span class="cn">Nezu</span></div>
+            </div>
+
+            <div style="flex:1;"></div>
+            <div class="composer-card">
+              <div class="field-box placeholder" style="font-size:13px;">ask kebi</div>
+            </div>
+            <div class="home-ind"></div>
+
+            <div class="scrim frosted"></div>
+            <div class="lifted-chip" style="top:186px;left:18px;">
+              <div class="chip"><div class="cav">🍜</div><span class="cn">Kamachiku</span></div>
+            </div>
+            <div class="menu" style="top:228px;left:18px;">
+              <div class="menu-item"><span class="glyph">📄</span>open</div>
+              <div class="menu-item"><span class="glyph">🔖</span>save it</div>
+              <div class="menu-divider"></div>
+              <div class="menu-item"><span class="glyph">✍️</span>add what you know</div>
+            </div>
+          </div>
+        </div>
+        <p class="phone-sub">
+          the rail chip gets the <b>exact long-press it already has on place cards</b> — 500ms hold,
+          scale 1.03 + lift shadow, frosted-blur dim behind, menu directly below with a 10px gap,
+          <code>Impact.Medium</code> as it appears. tap still opens the entity; long-press offers to write.
+          <br><br>the composer that opens is <b>§2 option a</b>, anchored and prefilled. writing stays
+          <b>outside</b> the message stream, so the ask/assert line never moves.
+        </p>
+      </div>
+
+      <!-- D2: attach to composer, teaching mode -->
+      <div class="phone-wrap">
+        <span class="opt-tag">chat b · the attachment</span>
+        <div class="phone-label">attach it, switch mode</div>
+        <div class="phone">
+          <div class="status-bar"><span>9:41</span><span class="right">▮▮▮ ⌁</span></div>
+          <div class="top-bar">
+            <div class="bar-side"><button class="icon-btn"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
+            <div class="bar-side"><span class="pill warm nodot">teaching kebi</span></div>
+          </div>
+          <div class="screen" style="gap:14px;">
+            <div class="turn">
+              <div class="turn-meta">kebi</div>
+              <div class="turn-text">
+                <span class="elink hot">Kamachiku</span> is the one. the udon room is a converted
+                warehouse and the queue is the whole story.
+              </div>
+            </div>
+
+            <div class="rail-lbl">mentioned</div>
+            <div class="rail">
+              <div class="chip"><div class="cav">🍜</div><span class="cn">Kamachiku</span></div>
+              <div class="chip"><div class="cav">🗺️</div><span class="cn">Nezu</span></div>
+            </div>
+
+            <div style="flex:1;"></div>
+            <div class="composer-card teach">
+              <div class="teach-head">
+                <div class="chip" style="background:var(--bg);"><div class="cav" style="background:var(--pill-warm);">🍜</div><span class="cn">Kamachiku</span></div>
+                <span class="x">×</span>
+              </div>
+              <div class="field-box" style="font-size:13px;color:var(--text);">
+                go at 11:30, the queue gets stupid after noon<span class="caret"></span>
+              </div>
+              <div class="composer-foot">
+                <span class="hint" style="color:var(--like);">this becomes a public note</span>
+                <div class="orb teach"><svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></svg></div>
+              </div>
+            </div>
+            <div class="home-ind"></div>
+          </div>
+        </div>
+        <p class="phone-sub">
+          the entity rides <b>into the composer</b> like an attachment, and the composer visibly changes
+          state: warm fill, pen instead of arrow, a standing "this becomes a public note" line, top-bar
+          badge. <b>×</b> detaches and you're back to asking.
+          <br><br><b>for:</b> fastest possible write, zero navigation, and the mode is <b>structural</b> —
+          not inferred from what you typed. <b>against:</b> it's a second state for the composer we just
+          shipped, and a curator who misses the color writes a claim thinking they asked a question. the
+          send button changing shape is doing a lot of load-bearing work.
+        </p>
+      </div>
+
+      <!-- D3: no new UI -->
+      <div class="phone-wrap">
+        <span class="opt-tag">chat c · free</span>
+        <div class="phone-label">no chat door at all</div>
+        <div class="phone">
+          <div class="status-bar"><span>9:41</span><span class="right">▮▮▮ ⌁</span></div>
+          <div class="top-bar">
+            <div class="bar-side"><button class="icon-btn"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button></div>
+            <div class="top-pill">
+              <div class="pill-btn"><svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></svg></div>
+              <div class="pill-btn dots"><span></span><span></span><span></span></div>
+            </div>
+          </div>
+          <div class="screen" style="gap:10px;">
+            <div class="hint" style="text-align:center;padding:6px 0;">↑ tapped the chip in chat</div>
+            <div class="eyebrow">izakaya · ¥¥</div>
+            <div class="hero">Kamachiku</div>
+            <div class="hero-sub">nezu, tokyo · 8 min</div>
+            <div class="eyebrow" style="margin-top:6px;">insider notes</div>
+            <div class="quote-list">
+              <div class="quote"><div class="quote-text">the udon is the only thing to order</div></div>
+              <div class="quote"><div class="quote-text">tadao ando renovated the building</div></div>
+            </div>
+            <div style="flex:1;"></div>
+            <div class="hint" style="text-align:center;">the ••• sheet is already the door →</div>
+            <div class="home-ind"></div>
+          </div>
+        </div>
+        <p class="phone-sub">
+          the chip already opens the place page, and the place page already has <b>door a</b>. so the chat
+          door costs <b>nothing</b> and exists today — it's just two taps instead of one.
+          <br><br><b>for:</b> no build, no new gesture, no new state, nothing to explain. <b>against:</b>
+          the moment you're most likely to have something to say is <b>while reading the answer</b>, and
+          two taps plus a screen transition is enough friction to lose it.
+        </p>
+      </div>
+
+    </div>
+
+    <div class="verdict">
+      <div class="verdict-row"><div class="verdict-k">locked</div><div class="verdict-v"><b>chat a — the same press-and-lift style the place cards use.</b> the rail chip is the door. it's a door, not a new authoring surface, which is the distinction that matters. the entity arrives resolved from <code>entities</code>, and nothing about the ask/assert line moves.</div></div>
+      <div class="verdict-row"><div class="verdict-k">rail chip only</div><div class="verdict-v">the inline <code>kebi://</code> link keeps <b>tap-to-open and nothing else</b>. a chip is a self-contained object that lifts cleanly; a link is a fragment mid-sentence, so lifting it tears a phrase out of a paragraph — on top of fighting the iOS selection loupe for the same gesture. the rail sits under every answer, so no reach is lost.</div></div>
+      <div class="verdict-row"><div class="verdict-k">deferred</div><div class="verdict-v"><b>what the menu contains</b> — three rows vs mirroring the full place-card menu, and how it resolves across saved venue / unsaved venue / area. its own conversation. the drawings show three rows as a placeholder, not a decision.</div></div>
+      <div class="verdict-row"><div class="verdict-k">nothing blocks it</div><div class="verdict-v">chip and link taps are <b>live today</b> — venue → <code>/place</code>, area → <code>/area</code> (ADR-151/153). so <b>chat c is already shipped</b>: the two-tap path works right now. that makes chat a a pure <i>shortening</i> of an existing route, which is the cheapest kind of feature to justify and the easiest to drop if nobody uses it.</div></div>
+      <div class="verdict-row"><div class="verdict-k">contract catch</div><div class="verdict-v">the two kinds <b>identify differently</b>, and the curate anchor has to respect it. a venue's <code>key</code> <i>is</i> <code>places.id</code>, so it forwards straight. an <b>area's <code>key</code> is a raw geo key no endpoint accepts</b> — the usable id is the opaque token on its <code>uri</code>. so the new anchor field can't be "whatever <code>key</code> holds": it's <code>place_id</code> from <code>key</code>, <code>area_id</code> from the uri token. get this wrong and every area note silently 404s or lands unanchored.</div></div>
+      <div class="verdict-row"><div class="verdict-k">revisit b when</div><div class="verdict-v">insiders tell us the two-step is slowing them down. <b>chat b</b> is the right answer to a speed complaint we haven't heard yet — and it's the natural home for the §2 option c interview later, since "teaching mode" is already a distinct composer state by then.</div></div>
+    </div>
+
+  </div>
+
+  <!-- ══════════════════════════ 5 · WHAT YOU'VE ADDED ══════════════════════════ -->
+  <div class="section">
+    <div class="section-head">
+      <span class="section-title">5 · what you've added</span>
+      <span class="section-count">settled · page a</span>
+    </div>
+    <h2 class="section-h2">the page behind door c, row 2</h2>
+    <p class="section-desc">
+      cutting the post-submit receipt made this page <b>load-bearing</b>: it is now the only surface in
+      the whole feature where an insider can see what their prose became. so the question isn't
+      decoration, it's <b>what job the page does</b> — confirm, teach, or navigate. the three options
+      answer differently.
+      <br><br>
+      one constraint sets them apart: <b>you wrote paragraphs, kebi stores claims</b>. only option b
+      needs kebi to keep your original prose linked to the claims it produced; a and c work off the
+      claims alone.
+    </p>
+
+    <div class="phones">
+
+      <!-- page A: by anchor -->
+      <div class="phone-wrap">
+        <span class="opt-tag rec">page a · locked</span>
+        <div class="phone-label">by place — as strangers see it</div>
+        <div class="phone">
+          <div class="status-bar"><span>9:41</span><span class="right">▮▮▮ ⌁</span></div>
+          <div class="top-bar">
+            <div class="bar-side"><button class="icon-btn"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button></div>
+            <div class="top-pill"><div class="pill-btn"><svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></svg></div></div>
+          </div>
+          <div class="screen" style="gap:12px;">
+            <div class="eyebrow">knowledge</div>
+            <div class="hero">what you've added</div>
+            <div class="hero-sub">38 notes across 12 places</div>
+
+            <div class="eyebrow" style="margin-top:4px;">🍜 Kamachiku</div>
+            <div class="quote-list">
+              <div class="quote"><div class="quote-text">go at 11:30 — the queue passes 40 minutes after noon</div></div>
+              <div class="quote"><div class="quote-text">ask for the brick room, the tadao ando part</div></div>
+              <div class="quote"><div class="quote-text">only the udon is worth ordering</div></div>
+            </div>
+
+            <div class="eyebrow" style="margin-top:4px;">🗺️ Shimokitazawa</div>
+            <div class="quote-list">
+              <div class="quote"><div class="quote-text">the good stuff is south of the tracks</div></div>
+              <div class="quote"><div class="quote-text">most vintage shops open at 1pm</div></div>
+            </div>
+
+            <div class="eyebrow" style="margin-top:4px;">☕ Bear Pond Espresso</div>
+            <div class="quote-list">
+              <div class="quote"><div class="quote-text">no photos, no laptops, and they mean it</div></div>
+            </div>
+            <div class="home-ind"></div>
+          </div>
+        </div>
+        <p class="phone-sub">
+          <b>locked. the job: confirm.</b> grouped by what it's about — not by when you wrote it, since
+          one paragraph becomes several claims and a chronological list would scatter a single sitting
+          down the page. the group header is the anchor: place emoji + name, area emoji + name.
+          <br><br>same <b>quote-rail vocabulary</b> the place page uses, so your notes look here
+          <b>exactly as strangers see them there</b>. that's the honest version of a receipt. no counts,
+          no status, no metadata on the rows — <b>this is a reading surface</b>.
+          <br><br>the <b>✎</b> in the top pill opens the composer unanchored, so the page you visit to
+          see your work is also somewhere you can write from.
+          <br><br><b>the known ceiling:</b> at 38 notes this is a long scroll and at 300 it stops
+          working. <b>page c is where it grows</b> — same data, so that's a migration, not a rewrite.
+        </p>
+      </div>
+
+      <!-- page B: by what you wrote -->
+      <div class="phone-wrap">
+        <span class="opt-tag">page b · not chosen</span>
+        <div class="phone-label">by what you wrote — prose → claims</div>
+        <div class="phone">
+          <div class="status-bar"><span>9:41</span><span class="right">▮▮▮ ⌁</span></div>
+          <div class="top-bar">
+            <div class="bar-side"><button class="icon-btn"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button></div>
+            <div class="top-pill"><div class="pill-btn"><svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></svg></div></div>
+          </div>
+          <div class="screen" style="gap:12px;">
+            <div class="eyebrow">knowledge</div>
+            <div class="hero">what you've added</div>
+
+            <div class="anchor" style="margin-top:4px;">
+              <div class="anchor-avatar">🍜</div>
+              <div class="anchor-body">
+                <div class="anchor-kind">tuesday · Kamachiku</div>
+                <div class="anchor-name" style="font-weight:500;font-size:12px;">you wrote</div>
+              </div>
+            </div>
+            <div class="field-box" style="font-size:12.5px;line-height:1.5;">
+              go at 11:30 or you queue 40 minutes. the brick room is the tadao ando part and nobody
+              asks for it, so ask for it. only the udon matters.
+            </div>
+            <div class="hint">became 3 notes</div>
+            <div class="quote-list">
+              <div class="quote"><div class="quote-text">go at 11:30 — the queue passes 40 minutes after noon</div></div>
+              <div class="quote"><div class="quote-text">ask for the brick room, the tadao ando part</div></div>
+              <div class="quote"><div class="quote-text">only the udon is worth ordering</div></div>
+            </div>
+
+            <div class="anchor" style="opacity:.45;">
+              <div class="anchor-avatar">🗺️</div>
+              <div class="anchor-body">
+                <div class="anchor-kind">monday · Shimokitazawa</div>
+                <div class="anchor-name" style="font-weight:500;font-size:12px;">you wrote</div>
+              </div>
+            </div>
+            <div class="home-ind"></div>
+          </div>
+        </div>
+        <p class="phone-sub">
+          <b>the job: teach.</b> each entry is <b>your original paragraph</b> with the claims it produced
+          underneath. the only view that shows your own words back to you.
+          <br><br><b>for:</b> you learn how kebi splits prose, so your next paragraph is better — the
+          one thing that compounds. <b>against:</b> needs kebi to <b>keep the source prose linked to its
+          claims</b>, which is a real storage ask, and it answers "what did i write" rather than "what
+          does this place say".
+        </p>
+      </div>
+
+      <!-- page C: list -->
+      <div class="phone-wrap">
+        <span class="opt-tag">page c · not chosen</span>
+        <div class="phone-label">a list — drill in per place</div>
+        <div class="phone">
+          <div class="status-bar"><span>9:41</span><span class="right">▮▮▮ ⌁</span></div>
+          <div class="top-bar">
+            <div class="bar-side"><button class="icon-btn"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button></div>
+            <div class="top-pill"><div class="pill-btn"><svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></svg></div></div>
+          </div>
+          <div class="screen" style="gap:12px;">
+            <div class="eyebrow">knowledge</div>
+            <div class="hero">what you've added</div>
+            <div class="hero-sub">38 notes across 12 places</div>
+
+            <div class="group" style="margin-top:4px;">
+              <div class="row"><span class="emoji">🍜</span><div class="row-stack"><span>Kamachiku</span><span class="sub">3 notes · nezu</span></div><span class="chev">›</span></div>
+              <div class="row"><span class="emoji">🗺️</span><div class="row-stack"><span>Shimokitazawa</span><span class="sub">5 notes · neighborhood</span></div><span class="chev">›</span></div>
+              <div class="row"><span class="emoji">☕</span><div class="row-stack"><span>Bear Pond Espresso</span><span class="sub">1 note · shimokitazawa</span></div><span class="chev">›</span></div>
+              <div class="row"><span class="emoji">🍷</span><div class="row-stack"><span>Vault</span><span class="sub">4 notes · canggu</span></div><span class="chev">›</span></div>
+              <div class="row"><span class="emoji">🏄</span><div class="row-stack"><span>Canggu</span><span class="sub">7 notes · area</span></div><span class="chev">›</span></div>
+              <div class="row"><span class="emoji">🍝</span><div class="row-stack"><span>Luigi's</span><span class="sub">2 notes · canggu</span></div><span class="chev">›</span></div>
+            </div>
+            <div class="home-ind"></div>
+          </div>
+        </div>
+        <p class="phone-sub">
+          <b>the job: navigate.</b> one row per place or area with a count; tap to read that one's notes
+          — or tap straight through to the <b>place page itself</b>, where the notes already render.
+          <br><br><b>for:</b> scales to hundreds, and the drill-in target may already exist, so it could
+          be the cheapest of the three. <b>against:</b> you can't see your writing without tapping, so
+          the "did that come out right?" question takes 12 taps to answer instead of one scroll.
+        </p>
+      </div>
+
+    </div>
+
+    <div class="verdict">
+      <div class="verdict-row"><div class="verdict-k">the trade</div><div class="verdict-v"><b>a</b> answers "did it come out right" in one scroll and dies at scale · <b>b</b> is the only one that makes you a better writer, and costs kebi the most · <b>c</b> scales forever and answers nothing without tapping.</div></div>
+      <div class="verdict-row"><div class="verdict-k">locked</div><div class="verdict-v"><b>page a.</b> 38 notes is a realistic year-one number for a vouched insider, not 300, and the page's whole reason to exist is the confirmation the flow no longer gives you — which only a shows without tapping. <b>c</b> is where it grows once the counts justify it; same data, so a migration rather than a rewrite.</div></div>
+      <div class="verdict-row"><div class="verdict-k">delete</div><div class="verdict-v"><b>yes — per note</b>, long-press a line. settled below; it is the only place in the feature where a mistake can be fixed.</div></div>
+    </div>
+
+    <!-- ---- delete: 3 options ---- -->
+    <h2 class="section-h2" style="margin-top:56px;">can you delete a note? — 3 options</h2>
+    <p class="section-desc">
+      the flow has no undo and no review, so a claim that came out wrong lives forever — and <b>this page
+      is where you'd discover it</b>. that makes delete the last open safety question in the feature.
+      <br><br>
+      two things are fixed before we start. the <b>gesture already exists</b>: these rows are quote rails,
+      long-press is the app's per-item action gesture, and <code>ContextMenu</code> is generic. and the
+      <b>system dictates the aftermath</b> — destructive actions are optimistic, always toast with
+      <b>undo</b> for 5s, and restore the row on failure. so delete brings a toast back, but for the
+      <b>delete</b>, not the write: you're undoing something you just did on purpose, not chasing an
+      extraction you never saw.
+    </p>
+
+    <div class="phones">
+
+      <!-- delete 1: per note -->
+      <div class="phone-wrap">
+        <span class="opt-tag rec">delete 1 · locked</span>
+        <div class="phone-label">per note — long-press a line</div>
+        <div class="phone">
+          <div class="status-bar"><span>9:41</span><span class="right">▮▮▮ ⌁</span></div>
+          <div class="top-bar">
+            <div class="bar-side"><button class="icon-btn"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button></div>
+            <div class="top-pill"><div class="pill-btn"><svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></svg></div></div>
+          </div>
+          <div class="screen" style="gap:12px;">
+            <div class="eyebrow">knowledge</div>
+            <div class="hero">what you've added</div>
+            <div class="hero-sub">38 notes across 12 places</div>
+            <div class="eyebrow" style="margin-top:4px;">🍜 Kamachiku</div>
+            <div class="quote-list">
+              <div class="quote" style="visibility:hidden;"><div class="quote-text">go at 11:30 — the queue passes 40 minutes after noon</div></div>
+              <div class="quote"><div class="quote-text">ask for the brick room, the tadao ando part</div></div>
+              <div class="quote"><div class="quote-text">only the udon is worth ordering</div></div>
+            </div>
+            <div class="home-ind"></div>
+
+            <div class="scrim frosted"></div>
+            <div class="lifted-chip" style="top:170px;left:18px;right:18px;border-radius:8px;background:var(--bg);padding:8px 10px;">
+              <div class="quote-text" style="font-size:13px;">go at 11:30 — the queue passes 40 minutes after noon</div>
+            </div>
+            <div class="menu" style="top:236px;left:18px;">
+              <div class="menu-item destructive"><span class="glyph">🗑️</span>remove this note</div>
+            </div>
+          </div>
+        </div>
+        <p class="phone-sub">
+          long-press one line, one destructive item, gone. <b>the exact gesture and component the library
+          cards use</b> — lift, frosted blur, menu below, <code>Impact.Medium</code>, then
+          <code>Notification.Warning</code> on the tap.
+          <br><br><b>for:</b> matches the failure mode precisely — kebi split your paragraph and got
+          <i>one</i> sentence wrong. costs one retract endpoint and nothing else.
+          <b>against:</b> you're retracting a sentence you never wrote in those words.
+        </p>
+      </div>
+
+      <!-- delete 2: per contribution -->
+      <div class="phone-wrap">
+        <span class="opt-tag">delete 2 · not chosen</span>
+        <div class="phone-label">per contribution — the whole paragraph</div>
+        <div class="phone">
+          <div class="status-bar"><span>9:41</span><span class="right">▮▮▮ ⌁</span></div>
+          <div class="top-bar">
+            <div class="bar-side"><button class="icon-btn"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button></div>
+            <div class="top-pill"><div class="pill-btn"><svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></svg></div></div>
+          </div>
+          <div class="screen" style="gap:12px;">
+            <div class="eyebrow">knowledge</div>
+            <div class="hero">what you've added</div>
+            <div class="hero-sub">38 notes across 12 places</div>
+            <div class="eyebrow" style="margin-top:4px;">🍜 Kamachiku</div>
+            <div class="quote-list" style="visibility:hidden;">
+              <div class="quote"><div class="quote-text">go at 11:30 — the queue passes 40 minutes</div></div>
+              <div class="quote"><div class="quote-text">ask for the brick room</div></div>
+              <div class="quote"><div class="quote-text">only the udon is worth ordering</div></div>
+            </div>
+            <div class="home-ind"></div>
+
+            <div class="scrim frosted"></div>
+            <div class="lifted-chip" style="top:158px;left:18px;right:18px;border-radius:10px;background:var(--bg);padding:10px;">
+              <div class="quote-list">
+                <div class="quote"><div class="quote-text" style="font-size:12.5px;">go at 11:30 — the queue passes 40 minutes</div></div>
+                <div class="quote"><div class="quote-text" style="font-size:12.5px;">ask for the brick room</div></div>
+                <div class="quote"><div class="quote-text" style="font-size:12.5px;">only the udon is worth ordering</div></div>
+              </div>
+            </div>
+            <div class="menu" style="top:268px;left:18px;">
+              <div class="menu-item destructive"><span class="glyph">🗑️</span>remove all 3</div>
+            </div>
+          </div>
+        </div>
+        <p class="phone-sub">
+          long-press anywhere in the group and the <b>whole contribution</b> lifts — every claim that one
+          paragraph produced, removed together.
+          <br><br><b>for:</b> the honest unit. you can't really disown a sentence you didn't write, only
+          the paragraph behind it. <b>against:</b> needs kebi to keep <b>prose linked to its claims</b>
+          (page b's expensive requirement), and it's blunt — one bad split costs you two good notes.
+        </p>
+      </div>
+
+      <!-- delete 3: none -->
+      <div class="phone-wrap">
+        <span class="opt-tag">delete 3 · not chosen</span>
+        <div class="phone-label">no delete — read-only</div>
+        <div class="phone">
+          <div class="status-bar"><span>9:41</span><span class="right">▮▮▮ ⌁</span></div>
+          <div class="top-bar">
+            <div class="bar-side"><button class="icon-btn"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button></div>
+            <div class="top-pill"><div class="pill-btn"><svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></svg></div></div>
+          </div>
+          <div class="screen" style="gap:12px;">
+            <div class="eyebrow">knowledge</div>
+            <div class="hero">what you've added</div>
+            <div class="hero-sub">38 notes across 12 places</div>
+            <div class="eyebrow" style="margin-top:4px;">🍜 Kamachiku</div>
+            <div class="quote-list">
+              <div class="quote"><div class="quote-text">go at 11:30 — the queue passes 40 minutes after noon</div></div>
+              <div class="quote"><div class="quote-text">ask for the brick room, the tadao ando part</div></div>
+              <div class="quote"><div class="quote-text">only the udon is worth ordering</div></div>
+            </div>
+            <div class="eyebrow" style="margin-top:4px;">🗺️ Shimokitazawa</div>
+            <div class="quote-list">
+              <div class="quote"><div class="quote-text">the good stuff is south of the tracks</div></div>
+              <div class="quote"><div class="quote-text">most vintage shops open at 1pm</div></div>
+            </div>
+            <div class="home-ind"></div>
+          </div>
+        </div>
+        <p class="phone-sub">
+          the page as locked above — <b>nothing here does anything</b>. long-press does nothing, there is
+          no menu, no toast, no endpoint.
+          <br><br><b>for:</b> zero build, and it keeps the feature's logic pure — the guard is
+          <i>who can write</i>, not what happens after. <b>against:</b> you can see the mistake and you
+          cannot touch it, which is a worse feeling than never having seen it.
+        </p>
+      </div>
+
+    </div>
+
+    <div class="verdict">
+      <div class="verdict-row"><div class="verdict-k">the trade</div><div class="verdict-v">delete costs exactly <b>one endpoint</b> — the retract path struck off the asks list when undo was cut. everything else (gesture, menu, lift, toast, undo, optimistic removal) is already built and already specified by the design system.</div></div>
+      <div class="verdict-row"><div class="verdict-k">locked</div><div class="verdict-v"><b>delete 1, per note.</b> it matches how the thing actually fails — one sentence in a good paragraph — and it's the only option that doesn't drag page b's prose-storage requirement in behind it. the philosophical objection (you didn't write that sentence) cuts the other way too: <b>a claim published under your name is yours whether you phrased it or not</b>, which is the argument for being able to take it back.</div></div>
+      <div class="verdict-row"><div class="verdict-k">the aftermath</div><div class="verdict-v">toast reads <b>"note removed"</b> with <b>undo</b>, 5s, per the destructive-action rule. row disappears immediately; on failure it comes back with <b>"couldn't remove that one"</b>. no confirm dialog — the undo <b>is</b> the confirmation, same as forgetting a place.</div></div>
+    </div>
+
+    <p class="note">
+      <b>the whole flow, end to end:</b> tap a door → the sheet rises with the anchor filled → write a
+      paragraph → <b>add to kebi</b> → sheet closes, toast confirms, done. <b>three taps and some
+      typing.</b> no waiting, no undo, no review, no second visit. everything that was drawn as a
+      safety net got cut on purpose — the guard on this feature is <b>who can do it at all</b>
+      (ADR-112: insiders are vouched for by us, never self-served), not a gate in the flow.
+      <br><br>
+      <b>still open:</b> what the chat rail's long-press menu contains (§4) · what the anchor search
+      queries (§3) · whether area notes need a different reading surface than place notes · the in-app
+      "apply to be an insider" flow, which ADR-112 explicitly punts.
+      <br><br>
+      <b>what kebi needs — the gap list.</b> measured against the contract as it stands today
+      (<code>POST /v1/knowledge/curate</code> takes <code>{text, location_hint?}</code> and returns
+      <code>{claims_written, claims[]}</code>, where a claim is
+      <code>{scope, entity_name, claim, tags[]}</code> and <code>scope</code> is
+      <b>country | city | neighborhood</b>):
+      <br><br>
+      <b>1 · a venue scope.</b> the biggest one. <code>CurateScope</code> has <b>no place value</b> —
+      curation today can only be geo-scoped, so doors <b>a</b> and <b>d</b>, which anchor to a specific
+      venue, have nothing to write to. everything else here is small next to this.
+      <br>
+      <b>2 · an entity anchor on the request.</b> <code>place_id</code> from a venue's <code>key</code>,
+      <code>area_id</code> from an area's <b>uri token</b> — the two kinds identify differently and the
+      raw <code>key</code> is unusable for areas.
+      <br>
+      <b>3 · an <code>id</code> on <code>CurateClaim</code>.</b> the write response returns claims with
+      no id, while the read side (<code>PlaceNote</code>) has one. without it a returned claim can't be
+      mapped to anything — which blocks delete entirely.
+      <br>
+      <b>4 · a retract path.</b> <code>DELETE</code> one claim by id, for the long-press delete (§5).
+      <br>
+      <b>5 · list my claims.</b> the caller's own claims grouped by anchor, to back "what you've added".
+      <br>
+      <b>6 · an entity search.</b> places and areas in one result set, for the anchor chip (§3).
+      <br><br>
+      <b>not a gap:</b> curation is <b>synchronous</b> — <code>claims_written</code> and the claims come
+      back with the response, so the toast can name the count and no polling is needed anywhere.
+    </p>
+  </div>
+
+</div>
+
+<script>
+  function setTheme(dark, btn) {
+    document.body.classList.toggle('dark', dark);
+    document.querySelectorAll('.theme-toggle button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  }
+</script>
+</body>
+</html>
