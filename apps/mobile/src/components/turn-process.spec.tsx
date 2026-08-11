@@ -64,6 +64,17 @@ describe('TurnProcess', () => {
     expect(onToggle).toHaveBeenCalledWith(false);
   });
 
+  it('drops per-chip headers once settled — one disclosure, then bare rows', () => {
+    const { getByText, queryByText } = setup({ settled: true, collapsed: false, durationMs: 12_000 });
+    // The turn header is the only "thought for" line; the chip's own 0.5s
+    // micro-header would be a second disclosure inside the one just opened.
+    expect(getByText('thought for 12.0s')).toBeTruthy();
+    expect(queryByText('thought for 0.5s')).toBeNull();
+    // Its rows are still there, just without the header wrapping them.
+    expect(getByText('searched your saved spots')).toBeTruthy();
+    expect(getByText('nothing matched')).toBeTruthy();
+  });
+
   it('renders nothing for a turn that did no work and said nothing', () => {
     const { toJSON } = setup({ segments: [] });
     expect(toJSON()).toBeNull();

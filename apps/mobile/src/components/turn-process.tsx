@@ -73,9 +73,11 @@ export function TurnProcess({
             runningLabel={labels.thinking}
             doneLabel={labels.thought}
             interruptedLabel={labels.interrupted}
-            // Micro-headers live inside the process, so their rows stay open —
-            // the one collapse that matters is the turn-level header above.
             collapsed={false}
+            // Once settled, the turn's own header owns the disclosure, so the
+            // chips drop theirs and the expanded process is just prose and work
+            // rows in order. While it runs, the header IS the live affordance.
+            bare={settled}
           />
         ) : segment.text ? (
           // Commentary tier: the agent working, not the answer. Plain prose —

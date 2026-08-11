@@ -69,6 +69,13 @@ export interface ReasoningBlockProps {
   onToggle?: (next: boolean) => void;
   /** Max lines per step narration before truncating. Defaults to {@link SUMMARY_LINES}. */
   summaryLines?: number;
+  /**
+   * Rows only — no header, no collapse. Used inside an expanded turn process,
+   * where the turn's own "thought for 19.7s" header already owns the disclosure:
+   * a header per chip there stacks four dots and four chevrons inside something
+   * the user just opened, and times single tool calls at "0.1s".
+   */
+  bare?: boolean;
 }
 
 const ENTER_EASE = Easing.out(Easing.ease);
@@ -101,6 +108,7 @@ export function ReasoningBlock({
   defaultCollapsed = false,
   onToggle,
   summaryLines = SUMMARY_LINES,
+  bare = false,
 }: ReasoningBlockProps) {
   const isControlled = collapsed !== undefined;
   const [internal, setInternal] = useState(defaultCollapsed);
@@ -129,6 +137,26 @@ export function ReasoningBlock({
   // the agent's talk to prose, so this is user-visible work and nothing else.
   const metaText = meta ?? (done ? '' : `step ${Math.max(doneCount, 1)} · streaming…`);
 
+  const rows =
+    total > 0 ? (
+      <View className="relative ms-[7px] gap-3.5">
+        {/* Hairline rail behind the nodes (inset 8px top/bottom). */}
+        <View className="absolute bottom-2 left-0 top-2 w-px bg-surface-2" />
+        {steps.map((step, i) => (
+          <StepRow
+            key={step.id}
+            step={step}
+            settled={done}
+            interruptedLabel={interruptedLabel}
+            enterDelay={i < initialCount ? i * STAGGER_MS : 0}
+            summaryLines={summaryLines}
+          />
+        ))}
+      </View>
+    ) : null;
+
+  if (bare) return rows;
+
   return (
     <View className="mb-3 gap-2">
       <Pressable
@@ -154,24 +182,7 @@ export function ReasoningBlock({
         <Chevron expanded={!isCollapsed} />
       </Pressable>
 
-      <Collapsible collapsed={isCollapsed}>
-        {total > 0 ? (
-          <View className="relative ms-[7px] gap-3.5">
-            {/* Hairline rail behind the nodes (inset 8px top/bottom). */}
-            <View className="absolute bottom-2 left-0 top-2 w-px bg-surface-2" />
-            {steps.map((step, i) => (
-              <StepRow
-                key={step.id}
-                step={step}
-                settled={done}
-                interruptedLabel={interruptedLabel}
-                enterDelay={i < initialCount ? i * STAGGER_MS : 0}
-                summaryLines={summaryLines}
-              />
-            ))}
-          </View>
-        ) : null}
-      </Collapsible>
+      <Collapsible collapsed={isCollapsed}>{rows}</Collapsible>
     </View>
   );
 }

@@ -40,11 +40,15 @@ import { streamChat } from '../api/chat';
 import { deleteUserData } from '../api/user-data';
 import { TOAST_DISMISS_MS } from '../theme/motion';
 import { getDeviceLocation } from '../lib/location';
+import { shouldFollow } from '../lib/stream-follow';
 import { formatClockTime } from '../lib/format-relative-time';
 import { triggerHaptic } from '../lib/haptics';
 import { useToast } from './toast-context';
 import { useUpgradeToast } from './use-upgrade-toast';
 import { useTranslation } from '../i18n/context';
+
+/** Scroll sampling while a turn streams — tight enough to track the tail. */
+const SCROLL_THROTTLE_MS = 16;
 
 interface ChatScreenProps {
   /** Close the chat — runs the collapse-back-into-the-button animation. */
@@ -93,6 +97,8 @@ export function ChatScreen({ onClose, seed }: ChatScreenProps) {
   // Only auto-scroll when the user is already at the bottom — don't yank the
   // list down while they've scrolled up to read an earlier turn.
   const atBottomRef = useRef(true);
+  // Whether the user's finger is what is moving the list (see `onScroll`).
+  const draggingRef = useRef(false);
 
   // Abort an in-flight stream when the chat closes (the overlay unmounts us).
   // The transcript persists above, so a partial turn stays visible on reopen.
@@ -123,10 +129,18 @@ export function ChatScreen({ onClose, seed }: ChatScreenProps) {
 
   const onScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
     const { layoutMeasurement, contentOffset, contentSize } = e.nativeEvent;
-    atBottomRef.current = layoutMeasurement.height + contentOffset.y >= contentSize.height - 40;
+    atBottomRef.current = shouldFollow({
+      fromBottom: contentSize.height - (layoutMeasurement.height + contentOffset.y),
+      dragging: draggingRef.current,
+      following: atBottomRef.current,
+    });
   };
   const onContentSizeChange = () => {
-    if (atBottomRef.current) listRef.current?.scrollToEnd({ animated: !reducedMotion });
+    // Not animated while a turn streams: a 300ms scroll animation restarting on
+    // every token never arrives, so the tail stays just off screen.
+    if (atBottomRef.current) {
+      listRef.current?.scrollToEnd({ animated: !reducedMotion && !isStreaming });
+    }
   };
 
   // The composer button is "send" normally and "stop" while a turn streams —
@@ -304,7 +318,10 @@ export function ChatScreen({ onClose, seed }: ChatScreenProps) {
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
           onScroll={onScroll}
-          scrollEventThrottle={64}
+          onScrollBeginDrag={() => (draggingRef.current = true)}
+          onScrollEndDrag={() => (draggingRef.current = false)}
+          onMomentumScrollEnd={() => (draggingRef.current = false)}
+          scrollEventThrottle={SCROLL_THROTTLE_MS}
           onContentSizeChange={onContentSizeChange}
         />
 
