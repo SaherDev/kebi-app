@@ -1,4 +1,5 @@
 import { render, fireEvent, waitFor } from '@testing-library/react-native';
+import { FlatList } from 'react-native';
 import type { SseEvent } from '@kebi-app/shared';
 import { ChatScreen } from './chat-screen';
 import { ChatTranscriptProvider } from './chat-transcript-context';
@@ -307,6 +308,36 @@ describe('ChatScreen', () => {
     submit('hey');
 
     await waitFor(() => expect(getByText('no deltas here')).toBeTruthy());
+  });
+
+  it('scrolls to the new turn on send, even after reading further up', async () => {
+    // Sending is an explicit "show me the new turn": if following stayed off
+    // because the user had scrolled up, their message lands below the fold and
+    // the reply streams in off screen.
+    const scrollToEnd = jest.spyOn(FlatList.prototype, 'scrollToEnd').mockImplementation(() => undefined);
+    scriptStream([
+      frame('message', { content: 'here you go', entities: [] }),
+      frame('done', { tool_calls_used: 0 }),
+    ]);
+
+    const { submit, UNSAFE_getByType } = renderChat();
+    const list = UNSAFE_getByType(FlatList);
+    // The user scrolled up to re-read an earlier answer.
+    list.props.onScrollBeginDrag();
+    list.props.onScroll({
+      nativeEvent: {
+        layoutMeasurement: { height: 600 },
+        contentOffset: { y: 0 },
+        contentSize: { height: 2000 },
+      },
+    });
+    list.props.onScrollEndDrag();
+    scrollToEnd.mockClear();
+
+    submit('and what about lombok?');
+
+    expect(scrollToEnd).toHaveBeenCalled();
+    scrollToEnd.mockRestore();
   });
 
   it('shows an inline error when the stream emits an error frame', async () => {

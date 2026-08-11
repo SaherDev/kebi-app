@@ -1,4 +1,4 @@
-import { Fragment, useMemo } from 'react';
+import { Fragment, memo, useMemo } from 'react';
 import { Text, View } from 'react-native';
 import type { ChatEntity } from '@kebi-app/shared';
 
@@ -123,7 +123,17 @@ interface ChatAnswerProps {
   tier?: AnswerTier;
 }
 
-export function ChatAnswer({ message, entities, onOpen, tier = 'answer' }: ChatAnswerProps) {
+/**
+ * Memoized: the streaming turn re-renders on every answer token, and the
+ * commentary segments above the answer have not changed — re-rendering them
+ * re-runs NativeWind's class resolution for every paragraph on the screen.
+ */
+export const ChatAnswer = memo(function ChatAnswer({
+  message,
+  entities,
+  onOpen,
+  tier = 'answer',
+}: ChatAnswerProps) {
   // `message` grows one `message_delta` at a time while the answer streams, so
   // this component re-renders per token — memoized so a growing answer costs one
   // parse per frame instead of re-splitting every earlier block along with it.
@@ -182,4 +192,4 @@ export function ChatAnswer({ message, entities, onOpen, tier = 'answer' }: ChatA
       )}
     </View>
   );
-}
+});

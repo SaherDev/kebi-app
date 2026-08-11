@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { View, Text, Pressable } from 'react-native';
 import type { ChatEntity } from '@kebi-app/shared';
 import { ChatAnswer } from './chat-answer';
@@ -48,7 +49,7 @@ export interface TurnProcessProps {
 /** Prose segments carry no entities — links only ride the final `message` frame. */
 const NO_ENTITIES: ChatEntity[] = [];
 
-export function TurnProcess({
+export const TurnProcess = memo(function TurnProcess({
   segments,
   settled,
   stopped = false,
@@ -124,4 +125,4 @@ export function TurnProcess({
       <Collapsible collapsed={collapsed}>{body}</Collapsible>
     </View>
   );
-}
+});

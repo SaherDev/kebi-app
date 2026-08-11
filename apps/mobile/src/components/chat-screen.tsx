@@ -1,4 +1,4 @@
-import { memo, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import {
   FlatList,
   Pressable,
@@ -208,7 +208,12 @@ export function ChatScreen({ onClose, seed }: ChatScreenProps) {
     const controller = new AbortController();
     abortRef.current = controller;
 
+    // Sending is an explicit "show me the new turn": resume following even if
+    // they had scrolled up to read an earlier answer, or the turn they just
+    // sent lands below the fold and the reply streams in off screen.
+    atBottomRef.current = true;
     const kebiKey = startTurn(text);
+    listRef.current?.scrollToEnd({ animated: !reducedMotion });
     const location = await getDeviceLocation();
     let finished = false;
 
@@ -499,6 +504,13 @@ function KebiTurnRow({
   onOpenEntity: (entity: ChatEntity) => void;
 }) {
   const settled = turn.status !== 'streaming';
+  // Stable so <TurnProcess> stays memoized: this row re-renders on every answer
+  // token, and a fresh lambda here would re-render the work chips with it —
+  // restarting their pulse/shimmer/collapse animations 30+ times a second.
+  const toggleThis = useCallback(
+    (next: boolean) => onToggle(turn.key, next),
+    [onToggle, turn.key],
+  );
   // An empty chip is a turn still waiting on its first frame — show one so the
   // turn isn't a blank row while kebi thinks.
   const showPlaceholderChip =
@@ -521,7 +533,7 @@ function KebiTurnRow({
         stopped={turn.stopped}
         durationMs={turn.stepDurationMs ?? turn.durationMs}
         collapsed={turn.collapsed}
-        onToggle={(next) => onToggle(turn.key, next)}
+        onToggle={toggleThis}
         labels={l}
         onOpenEntity={onOpenEntity}
       />
