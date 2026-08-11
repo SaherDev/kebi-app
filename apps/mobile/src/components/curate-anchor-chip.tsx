@@ -100,7 +100,11 @@ export function CurateAnchorChip({
           placeholderTextColor={softColor}
           autoFocus
           autoCorrect={false}
-          className="flex-1 p-0 text-small font-semibold text-text"
+          // 16px + an explicit line-height, like every other TextInput in the
+          // app: `text-small` (13px) carries no line-height, so iOS laid the
+          // field out shorter than the glyphs needed and clipped descenders.
+          // 16px also avoids iOS zooming the view on focus.
+          className="flex-1 p-0 text-[16px] leading-6 text-text"
         />
         {loading ? <Spinner size={14} /> : null}
         <Pressable
