@@ -36,6 +36,7 @@ import { ContextMenuProvider } from "../components/context-menu/context-menu-con
 import { ShareIntentReceiver } from "../components/share-intent-receiver";
 import { Splash } from "../components/splash";
 import { AuthProvider, useAuth } from "../auth/auth-context";
+import { CapabilitiesProvider } from "../capabilities";
 import { getStoredTheme } from "../lib/theme-preference";
 
 // Keep the splash visible until the Inter weights are loaded.
@@ -115,6 +116,12 @@ export default function RootLayout() {
       <I18nProvider>
         <SafeAreaProvider>
           <AuthProvider>
+            {/* CapabilitiesProvider sits directly under AuthProvider: it reads
+                auth status to know when to ask and when to clear, and it must
+                wrap everything below so any surface can gate on a permission
+                without its own fetch. Nothing renders differently by being
+                inside it — it only answers useCan(). */}
+            <CapabilitiesProvider>
             {/* ContextMenuProvider wraps Toast so a long-press overlay (and its
                 frosted blur) renders above the app but below toasts. */}
             <ContextMenuProvider>
@@ -164,6 +171,7 @@ export default function RootLayout() {
                 </PlaceActionsProvider>
               </ToastProvider>
             </ContextMenuProvider>
+          </CapabilitiesProvider>
           </AuthProvider>
         </SafeAreaProvider>
       </I18nProvider>
