@@ -353,3 +353,99 @@ describe('ChatTranscriptProvider', () => {
     expect(kebiLines[1]).toContain('kebi-2|');
   });
 });
+
+/**
+ * A real turn captured off the local kebi backend on 2026-08-11 ("what should i
+ * do tonight in canggu?"), replayed through the reducer. The three things this
+ * pins are the ones the spec alone would let you get wrong:
+ *
+ * 1. `step` mutates on the done frame (`find_known` → `find_known.summary`)
+ *    while `id` stays put, so talk/work must be classified by `id`.
+ * 2. The location steps ride as `debug` and never reach the transcript.
+ * 3. The second talk step's `done` lands AFTER `promote`, carrying "putting the
+ *    answer together" — a stray line of commentary between the work and the
+ *    answer if it were rendered.
+ */
+describe('a real captured turn', () => {
+  function ReplayProbe() {
+    const tr = useChatTranscript();
+    const key = useRef('');
+    return (
+      <>
+        <Pressable
+          accessibilityLabel="replay"
+          onPress={() => {
+            key.current = tr.startTurn('what should i do tonight in canggu?');
+            const k = key.current;
+            const talkStep = (id: string, status: 'active' | 'done', summary: string | null, ms?: number) =>
+              tr.upsertStep(k, {
+                id,
+                step: 'agent.tool_decision',
+                title: 'thinking',
+                summary,
+                status,
+                visibility: 'user',
+                ...(ms !== undefined ? { duration_ms: ms } : {}),
+              });
+
+            // location — debug, dropped
+            tr.upsertStep(k, { id: 'agent.location#0', step: 'agent.location', title: 'checking your location', summary: null, status: 'active', visibility: 'debug' });
+            tr.upsertStep(k, { id: 'agent.location#0', step: 'agent.location_resolved', title: 'found your location', summary: 'around Canggu, Bali, Indonesia', status: 'done', visibility: 'debug', duration_ms: 2915.97 });
+            // talk #0
+            talkStep('agent.tool_decision#0', 'active', null);
+            tr.appendStepText(k, { id: 'agent.tool_decision#0', text: "let me see what's good" });
+            tr.appendStepText(k, { id: 'agent.tool_decision#0', text: ' for a tuesday night in canggu' });
+            talkStep('agent.tool_decision#0', 'done', "let me see what's good for a tuesday night in canggu", 1567.79);
+            // work — note the step rename on done
+            tr.upsertStep(k, { id: 'find_known#0', step: 'find_known', title: 'checked what I know around here', summary: null, status: 'active', visibility: 'user' });
+            tr.upsertStep(k, { id: 'find_known#0', step: 'find_known.summary', title: 'checked what I know around here', summary: '5 spots — Motel Mexicola | Canggu, +3 more', status: 'done', visibility: 'user', duration_ms: 30.64 });
+            // talk #1 → promoted into the answer
+            talkStep('agent.tool_decision#1', 'active', null);
+            tr.appendStepText(k, { id: 'agent.tool_decision#1', text: 'tuesday night in canggu is solid.' });
+            tr.appendMessage(k, { text: 'tuesday night in canggu is solid.', promote: true });
+            tr.appendMessage(k, { text: ' get there before it fills up.' });
+            talkStep('agent.tool_decision#1', 'done', 'putting the answer together', 2951.47);
+            tr.setMessage(k, 'tuesday night in [canggu](kebi://area/aWQ) is solid. get there before it fills up.', [
+              { kind: 'area', key: 'id/bali/canggu', name: 'canggu', uri: 'kebi://area/aWQ', icon: '🏄' },
+            ]);
+            tr.finishTurn(k, 1);
+          }}
+        />
+        {tr.turns.map((t) =>
+          t.role === 'kebi' ? <Text key={t.key}>{line(t)}</Text> : null,
+        )}
+      </>
+    );
+  }
+
+  function replay() {
+    const utils = render(
+      <ChatTranscriptProvider>
+        <ReplayProbe />
+      </ChatTranscriptProvider>,
+    );
+    fireEvent.press(utils.getByLabelText('replay'));
+    return utils.getByText(/kebi\|/).props.children as string;
+  }
+
+  it('folds into commentary, one work chip, and the linked answer', () => {
+    const l = replay();
+    expect(l).toContain(
+      "shape:prose(let me see what's good for a tuesday night in canggu) work[find_known#0] prose()",
+    );
+    expect(l).toContain('entities:area:id/bali/canggu');
+  });
+
+  it('drops the talk summary that lands after promote', () => {
+    expect(replay()).not.toContain('putting the answer together');
+  });
+
+  it('sums only user-visible step time — the debug location is not counted', () => {
+    // 1567.79 + 30.64 + 2951.47, without the location step's 2915.97.
+    expect(replay()).toContain('spent:4549.9');
+  });
+
+  it('settles collapsed, so the turn reads as one line plus the answer', () => {
+    expect(replay()).toContain('collapsed:true');
+  });
+});

@@ -1,5 +1,6 @@
 import type { SseEvent, SseReasoningStep } from '@kebi-app/shared';
 import { foldChatStream } from './fold-chat-stream';
+import { CAPTURED_CANGGU_TURN } from './captured-turn.fixture';
 
 /** A work step — a tool the agent ran; a row inside a chip. */
 function work(over: Partial<SseReasoningStep> = {}): SseEvent {
@@ -169,6 +170,37 @@ describe('foldChatStream', () => {
     expect(folded.message).toBe('half an ans');
     expect(shape(events)).toBe('prose(looking at )');
     expect(folded.hasMessage).toBe(false);
+  });
+
+  describe('a real turn captured off the backend', () => {
+    it('folds into commentary, one work chip, and the linked answer', () => {
+      const folded = foldChatStream(CAPTURED_CANGGU_TURN);
+
+      // Location never reaches the transcript — it rides as `debug`.
+      expect(shape(CAPTURED_CANGGU_TURN)).toBe(
+        "prose(let me see what's good for a tuesday night in canggu) work[find_known#0] prose()",
+      );
+      // The final frame's words, now carrying links.
+      expect(folded.message).toContain('kebi://area/aWQvYmFsaS9jYW5nZ3U');
+      expect(folded.entities).toHaveLength(2);
+    });
+
+    it('drops the talk summary that lands after promote', () => {
+      // The real stream sends `agent.tool_decision#1` done — "putting the answer
+      // together" — AFTER the promote delta. Rendering it would drop a stray
+      // line of commentary between the work and the answer it introduced.
+      const folded = foldChatStream(CAPTURED_CANGGU_TURN);
+      const prose = folded.segments.filter((s) => s.kind === 'prose').map((s) => s.text);
+      expect(prose).not.toContain('putting the answer together');
+      expect(folded.message.startsWith('tuesday night in')).toBe(true);
+    });
+
+    it('classifies by id, so a step renaming itself on done stays one row', () => {
+      // `find_known` → `find_known.summary` between the active and done frames.
+      const chip = foldChatStream(CAPTURED_CANGGU_TURN).segments.find((s) => s.kind === 'work');
+      expect(chip?.kind === 'work' && chip.steps).toHaveLength(1);
+      expect(chip?.kind === 'work' && chip.steps[0].status).toBe('done');
+    });
   });
 
   it('drops a delta for a segment that was never opened', () => {
