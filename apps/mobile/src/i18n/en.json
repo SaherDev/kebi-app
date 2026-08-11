@@ -475,6 +475,10 @@
     "cta": "add to kebi",
     "menuLabel": "add what you know",
     "menuSub": "everyone will see it",
+    "change": "change",
+    "pick": "pick",
+    "searchPlaceholder": "a place or an area",
+    "searchEmpty": "nothing by that name",
     "toast": {
       "added": "added {{count}} notes",
       "addedOne": "added 1 note",

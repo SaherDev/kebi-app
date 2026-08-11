@@ -2,7 +2,12 @@ import type { CurateAnchor } from '@kebi-app/shared';
 import type { HttpClient } from './types';
 import { API_ROUTES } from './routes';
 import { validate } from './validate';
-import { CurateResult, CurateResultSchema } from './models/knowledge';
+import {
+  CurateResult,
+  CurateResultSchema,
+  EntitySearchSchema,
+  type EntityHit,
+} from './models/knowledge';
 
 /**
  * Insider curation calls (gateway `/knowledge/*`, ADR-121). Thin functions over
@@ -32,4 +37,17 @@ export async function curate(
 ): Promise<CurateResult> {
   const raw = await client.post(API_ROUTES.knowledgeCurate, anchor ? { text, anchor } : { text });
   return validate(CurateResultSchema, raw, 'CurateResult');
+}
+
+/** Contract bound: the typeahead rejects a term shorter than this. */
+export const ENTITY_SEARCH_MIN_LENGTH = 2;
+
+/**
+ * Typeahead behind the anchor chip — places and areas in one list, areas first.
+ * Deterministic upstream (no LLM), so it is cheap enough to call per keystroke
+ * once debounced. No matches is an empty list, never an error.
+ */
+export async function searchEntities(client: HttpClient, q: string): Promise<EntityHit[]> {
+  const raw = await client.get(`${API_ROUTES.knowledgeEntities}?q=${encodeURIComponent(q)}`);
+  return validate(EntitySearchSchema, raw, 'EntitySearch');
 }

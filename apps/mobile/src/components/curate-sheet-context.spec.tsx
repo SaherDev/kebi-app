@@ -166,6 +166,58 @@ describe('CurateSheetProvider', () => {
     });
   });
 
+  describe('re-anchoring', () => {
+    const hit = {
+      anchor: { area_id: 'area_token' },
+      emoji: '🗺️',
+      name: 'Canggu',
+      context: 'Bali, ID',
+    };
+    const changeAnchor = (h: unknown) =>
+      act(() => (sheetProps.onChangeAnchor as (h: unknown) => void)(h));
+
+    it('re-points the chip at the picked entity', () => {
+      renderWith();
+      fireEvent.press(screen.getByText('open'));
+      changeAnchor(hit);
+
+      expect(sheetProps.anchor).toEqual({ emoji: '🗺️', name: 'Canggu', context: 'Bali, ID' });
+    });
+
+    it('carries the prose across the anchor change', () => {
+      // Drafts are keyed by anchor, so a naive swap would blank the paragraph —
+      // the one thing this composer promises never to do.
+      renderWith();
+      fireEvent.press(screen.getByText('open'));
+      type('half a paragraph already written');
+      changeAnchor(hit);
+
+      expect(sheetProps.value).toBe('half a paragraph already written');
+    });
+
+    it('sends against the new anchor, not the one the door opened with', async () => {
+      renderWith();
+      fireEvent.press(screen.getByText('open'));
+      type('prose');
+      changeAnchor(hit);
+      submit('prose');
+
+      await waitFor(() => expect(mockCurate).toHaveBeenCalled());
+      expect(mockCurate).toHaveBeenCalledWith({}, 'prose', { area_id: 'area_token' });
+    });
+
+    it('leaves the old anchor draft empty rather than duplicated', () => {
+      renderWith();
+      fireEvent.press(screen.getByText('open'));
+      type('carried text');
+      changeAnchor(hit);
+      // Re-point back at the original place: its draft moved away with the text.
+      changeAnchor({ anchor: { place_id: 'place_1' }, emoji: '🍜', name: 'Kamachiku', context: '' });
+
+      expect(sheetProps.value).toBe('carried text');
+    });
+  });
+
   it('sends without an anchor when the door supplies none', async () => {
     renderWith({ anchor: undefined, view: null });
     fireEvent.press(screen.getByText('open'));
