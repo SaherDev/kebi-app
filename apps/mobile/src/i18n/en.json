@@ -279,7 +279,9 @@
     "addName": "add your name",
     "knowledge": "knowledge",
     "addWhatYouKnowSub": "a place, an area, anything",
-    "insider": "insider"
+    "insider": "insider",
+    "whatYouveAdded": "what you've added",
+    "whatYouveAddedSub": "every note you wrote"
   },
   "plans": {
     "eyebrow": "plans",
@@ -492,5 +494,16 @@
       "failed": "couldn't send that — your text is still there"
     },
     "thisArea": "this area"
+  },
+  "myClaims": {
+    "hero": "what you've added",
+    "subtitle": "{{notes}} notes across {{places}} places",
+    "empty": "nothing yet — write something and it shows up here",
+    "loadFailed": "couldn't load your notes",
+    "remove": "remove this note",
+    "toast": {
+      "removed": "note removed",
+      "removeFailed": "couldn't remove that one"
+    }
   }
 }

@@ -204,6 +204,18 @@ export default function SettingsScreen() {
               onPress={() => curateSheet.open({ view: null })}
               trailing={<Icon name="chevron-right" size={14} className="text-text-soft" />}
             />
+            {/*
+              The ledger. Load-bearing rather than decorative: the write flow has
+              no receipt, so this is the only place an insider can see what their
+              prose became — or take a note back.
+            */}
+            <SettingsRow
+              emoji="📓"
+              label={t('settings.whatYouveAdded')}
+              sublabel={t('settings.whatYouveAddedSub')}
+              onPress={() => router.push('/my-notes')}
+              trailing={<Icon name="chevron-right" size={14} className="text-text-soft" />}
+            />
           </Group>
         </Can>
 
