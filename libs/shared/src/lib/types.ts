@@ -657,24 +657,55 @@ export interface NormalizedIdentity {
 /**
  * The user's display profile, returned by the gateway-local `/user/profile`
  * endpoint to the client. `name`/`email` are Supabase-owned PII (read from the
- * JWT, written via the Admin API); `plan` mirrors the product claim. The
- * internal id is never exposed.
+ * JWT, written via the Admin API); `plan` and `can_curate` mirror product
+ * claims. The internal id is never exposed.
  */
 export interface UserProfile {
   name: string;
   email: string;
   plan: PlanTier;
+  /**
+   * Whether this account may curate (ADR-121). Lives here beside `plan` rather
+   * than on `UserSettingsResponse` because it is an account **capability**, not
+   * a preference the user edits — and it is granted by us, never self-served.
+   *
+   * The client needs it to decide what to render: the insider pill, the
+   * knowledge group, the area `•••`, the write row in the chat entity menu. It
+   * is a **display** signal only — every curation route is independently gated
+   * by `CuratorGuard` from the token claim and again by kebi, so a client that
+   * lies to itself gets a 403, not a write. Always present, defaulting `false`.
+   */
+  can_curate: boolean;
 }
 
 // The accept/reject signal types retired with the recommendation card that fed
 // them (ADR-151): kebi deleted POST /v1/signal, so there is nothing to send.
 // Negative taste input now comes only from the Library pills.
 
-// Knowledge curation (POST /v1/knowledge/curate) — ADR-121. Expert prose is
-// structured by kebi into geo-scoped `curated_expert` claims.
-export type CurateScope = "country" | "city" | "neighborhood";
+// Knowledge curation (/v1/knowledge/*) — ADR-121, entity anchors ADR-160.
+// Expert prose is structured by kebi into `curated_expert` claims. `place` is
+// only expressible on an **anchored** request: unanchored prose stays geo-scoped
+// (kebi ADR-160), so a venue note without an anchor silently becomes a city one.
+export type CurateScope = "place" | "country" | "city" | "neighborhood";
 
+/**
+ * What a curated note is about. **Exactly one** of `place_id` / `area_id` — both
+ * or neither is a 422, so this is a union in spirit even though the wire shape is
+ * one object.
+ *
+ * The two kinds identify differently and are not interchangeable: `place_id` is
+ * the catalog id `kebi://venue/{id}` links carry, while `area_id` is the
+ * **encoded token** off a `kebi://area/{id}` link — an area's raw geo key is not
+ * a valid anchor. An unknown id of either kind is a 404 before any LLM runs.
+ */
+export interface CurateAnchor {
+  place_id?: string;
+  area_id?: string;
+}
+
+/** A claim as returned by the curate write. `id` is what DELETE takes. */
 export interface CurateClaim {
+  id: string;
   scope: CurateScope;
   entity_name: string;
   claim: string;
@@ -685,11 +716,66 @@ export interface CurateClaim {
  * kebi's response after structuring curated prose. `claims_written` counts only
  * NEW rows — dedup collapses re-submissions, and unkeyable/accessibility claims
  * are dropped, so it may be less than the prose implied. `claims` is empty when
- * nothing was stored.
+ * nothing was stored, and a deduped re-submission does not reappear in it:
+ * `GET /v1/knowledge/claims` is the source of truth for "what you've added".
  */
 export interface CurateKnowledgeResponse {
   claims_written: number;
   claims: CurateClaim[];
+}
+
+/**
+ * The anchor a listed claim carries back — renderable *and* openable. `type`
+ * says which id is populated; the other is `null`. `name` is the display label,
+ * so the client groups by anchor without a second lookup.
+ */
+export interface ClaimAnchor {
+  type: "place" | "area";
+  place_id: string | null;
+  area_id: string | null;
+  name: string;
+}
+
+/**
+ * One of the caller's own curated claims (`GET /v1/knowledge/claims`). Note the
+ * shape differs from {@link CurateClaim}: there is no `entity_name` (the anchor
+ * carries the name) and it adds `created_at` + `anchor`. Provenance, confidence
+ * and review internals never cross the wire.
+ */
+export interface KnowledgeClaim {
+  id: string;
+  scope: CurateScope;
+  claim: string;
+  tags: string[];
+  created_at: string;
+  anchor: ClaimAnchor;
+}
+
+/** Newest-first page of the caller's own claims. `next_cursor` is null on the last page. */
+export interface KnowledgeClaimsResponse {
+  claims: KnowledgeClaim[];
+  next_cursor: string | null;
+}
+
+/**
+ * One typeahead hit behind the anchor chip (`GET /v1/knowledge/entities`). The
+ * populated id field **is** the anchor payload — it goes into a curate `anchor`
+ * verbatim. `level` is set for areas only, `icon` is nullable (the client keeps
+ * its category fallback, ADR-146).
+ */
+export interface EntitySearchResult {
+  type: "place" | "area";
+  place_id: string | null;
+  area_id: string | null;
+  name: string;
+  level: string | null;
+  icon: string | null;
+  context: string;
+}
+
+/** Areas lead, then places in relevance order. No matches is `[]`, never an error. */
+export interface EntitySearchResponse {
+  results: EntitySearchResult[];
 }
 
 // User data deletion scope (DELETE /v1/user/data?scope=...)
