@@ -244,6 +244,58 @@ describe('ChatScreen', () => {
     expect(queryByText(/kebi:\/\//)).toBeNull();
   });
 
+  it('interleaves typed prose with work chips, and never doubles the talk', async () => {
+    const talk = (id: string, status: 'active' | 'done', summary: string | null) =>
+      frame('reasoning_step', {
+        id,
+        step: 'agent.tool_decision',
+        title: 'thinking',
+        summary,
+        status,
+        visibility: 'user',
+      });
+
+    const { release } = scriptGatedStream(
+      [
+        talk('agent.tool_decision#0', 'active', null),
+        frame('reasoning_delta', { id: 'agent.tool_decision#0', text: 'canggu on a tuesday — ' }),
+        frame('reasoning_delta', { id: 'agent.tool_decision#0', text: 'let me look' }),
+        // The talk settles; its summary must NOT also appear as a chip row.
+        talk('agent.tool_decision#0', 'done', 'canggu on a tuesday — let me look'),
+        frame('reasoning_step', {
+          id: 'find_saved#0',
+          step: 'find_saved',
+          title: 'searched your saved spots',
+          summary: 'nothing matched',
+          status: 'done',
+          visibility: 'user',
+        }),
+      ],
+      [
+        frame('message_delta', { text: 'nothing saved yet, so here is the plan', promote: false }),
+        frame('message', { content: 'nothing saved yet, so here is the plan', entities: [] }),
+        frame('done', { tool_calls_used: 1 }),
+      ],
+    );
+
+    const { submit, getByText, getAllByText, queryByText } = renderChat();
+    submit('what should i do tonight in canggu?');
+
+    // The talk is prose in the body — not a checklist row, and only once even
+    // though its `done` summary repeats the same words.
+    await waitFor(() =>
+      expect(getAllByText('canggu on a tuesday — let me look')).toHaveLength(1),
+    );
+    // Work lands as a chip row alongside it.
+    expect(getByText('searched your saved spots')).toBeTruthy();
+    expect(queryByText('thinking')).toBeNull(); // the talk step's title is never a row
+
+    release();
+    await waitFor(() => expect(getByText('nothing saved yet, so here is the plan')).toBeTruthy());
+    // The prose that came before it is still there, above the answer.
+    expect(getAllByText('canggu on a tuesday — let me look')).toHaveLength(1);
+  });
+
   it('renders a turn that carries no deltas at all, exactly as before', async () => {
     // Old backend / fast path: `message` alone must still render the answer.
     scriptStream([

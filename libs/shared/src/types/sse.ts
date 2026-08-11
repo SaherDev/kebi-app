@@ -46,6 +46,26 @@ export interface SseReasoningStep {
 }
 
 /**
+ * The step kebi uses for the agent's own talk — the sentences it says while it
+ * works, as opposed to a tool it ran. These are the ONLY steps that carry
+ * {@link SseReasoningDelta} text, and they are rendered as message prose, not as
+ * rows in the work chip: their `summary` repeats what already streamed as prose,
+ * so drawing both would print the same sentence twice.
+ */
+export const AGENT_TALK_STEP = 'agent.tool_decision';
+
+/**
+ * Is this step the agent talking (prose) rather than work it did (a chip row)?
+ *
+ * Matches on `id` as well as `step` because `id` is the one field guaranteed
+ * stable across a step's `active` and `done` frames, while `step` picks up
+ * suffixes on the done frame (`find_saved` → `find_saved.summary`).
+ */
+export function isAgentTalkStep(step: { id?: string; step: string }): boolean {
+  return step.step === AGENT_TALK_STEP || (step.id?.startsWith(`${AGENT_TALK_STEP}#`) ?? false);
+}
+
+/**
  * A `reasoning_delta` frame — the agent's thinking typing out live into a step
  * that is already on screen (kebi ADR-157). `id` always matches a
  * `reasoning_step` frame already received with `status:"active"`; the client

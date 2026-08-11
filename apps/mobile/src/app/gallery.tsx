@@ -31,7 +31,7 @@ import { usePlaceMenuItems } from '../components/use-place-menu-items';
 import { useToast } from '../components/toast-context';
 import { triggerHaptic } from '../lib/haptics';
 import { makeSamplePlace } from '../lib/sample-place';
-import type { ChatEntity, PlaceNote, PlaceTag, ReasoningStepStatus } from '@kebi-app/shared';
+import { isAgentTalkStep, type ChatEntity, type PlaceNote, type PlaceTag, type ReasoningStepStatus } from '@kebi-app/shared';
 
 /**
  * Component gallery — a dev-only route (`/gallery`) for eyeballing the
@@ -230,9 +230,7 @@ const DONE_STEPS: ReasoningBlockStep[] = [
 
 const RUNNING_STEPS: ReasoningBlockStep[] = [
   { id: 'r1', status: 'done', title: 'picked up the context', summary: "post-club food, late night, near where you'll be coming from shibuya" },
-  // Live thinking text mid-type (a `reasoning_delta` row) — no shimmer.
-  { id: 'r2', status: 'active', title: 'thinking', summary: null, narration: "nothing in your saves is open this late, so let me look at what's" },
-  // Active with nothing typed yet — the shimmer's remaining job.
+  // Active with nothing to show yet — the shimmer skeleton.
   { id: 'r3', status: 'active', title: 'scanning late-night spots', summary: null },
 ];
 
@@ -273,17 +271,26 @@ const REAL_STREAM: ReplayFrame[] = [
   { at: 11800, done: true },
 ];
 
-// Replays REAL_STREAM at real wall-clock timing through the same reducer the chat
-// screen will use; "replay" restarts. durationMs uses wall-clock (~11.8s) — what
-// the user actually waited — not the sum of the visible steps' latencies.
+/** What the transcript builds out of the stream: prose the agent said, work chips. */
+type DemoSegment =
+  | { kind: 'prose'; key: string; stepId: string; text: string }
+  | { kind: 'work'; key: string; steps: ReasoningBlockStep[] };
+
+/**
+ * Replays REAL_STREAM at real wall-clock timing through the same shape the chat
+ * reducer builds; "replay" restarts. This is the target layout end to end: the
+ * agent's talk lands as message prose, its tools collapse into chips between the
+ * sentences, and no `agent.tool_decision` row is ever drawn (its summary is the
+ * prose, so a row would print it twice).
+ */
 function RealStreamDemo() {
   const [runId, setRunId] = useState(0);
-  const [steps, setSteps] = useState<ReasoningBlockStep[]>([]);
+  const [segments, setSegments] = useState<DemoSegment[]>([]);
   const [done, setDone] = useState(false);
   const [durationMs, setDurationMs] = useState<number | undefined>(undefined);
 
   useEffect(() => {
-    setSteps([]);
+    setSegments([]);
     setDone(false);
     setDurationMs(undefined);
     const timers = REAL_STREAM.map((f) =>
@@ -294,30 +301,48 @@ function RealStreamDemo() {
           return;
         }
         if ('delta' in f) {
-          // Live thinking text onto the row already on screen.
-          setSteps((prev) =>
+          // The agent talking — appended to its prose segment, not to a row.
+          setSegments((prev) =>
             prev.map((s) =>
-              s.id === f.id ? { ...s, narration: (s.narration ?? '') + f.delta } : s,
+              s.kind === 'prose' && s.stepId === f.id ? { ...s, text: s.text + f.delta } : s,
             ),
           );
           return;
         }
-        if (f.vis === 'debug') return; // reducer drops debug frames
-        setSteps((prev) => {
-          const i = prev.findIndex((s) => s.id === f.id);
-          const step: ReasoningBlockStep = {
+        if (f.vis === 'debug') return; // the store drops debug frames
+        setSegments((prev) => {
+          if (isAgentTalkStep({ id: f.id, step: f.id.split('#')[0] })) {
+            const i = prev.findIndex((s) => s.kind === 'prose' && s.stepId === f.id);
+            if (i === -1) {
+              return [...prev, { kind: 'prose', key: `p${prev.length}`, stepId: f.id, text: '' }];
+            }
+            // The done frame supersedes what typed out.
+            if (f.status !== 'done' || f.summary === null) return prev;
+            const next = prev.slice();
+            next[i] = { ...(prev[i] as DemoSegment & { kind: 'prose' }), text: f.summary };
+            return next;
+          }
+          const row: ReasoningBlockStep = {
             id: f.id,
             status: f.status,
             title: f.title || undefined,
             summary: f.summary,
           };
-          // A `done` frame supersedes whatever typed out; an active re-upsert keeps it.
-          const narration = i === -1 ? undefined : prev[i].narration;
-          if (f.status === 'active' && narration) step.narration = narration;
-          if (i === -1) return [...prev, step];
+          const last = prev[prev.length - 1];
+          const owner = prev.findIndex(
+            (s) => s.kind === 'work' && s.steps.some((r) => r.id === row.id),
+          );
           const next = prev.slice();
-          next[i] = step;
-          return next;
+          if (owner !== -1) {
+            const chip = prev[owner] as DemoSegment & { kind: 'work' };
+            next[owner] = { ...chip, steps: chip.steps.map((r) => (r.id === row.id ? row : r)) };
+            return next;
+          }
+          if (last?.kind === 'work') {
+            next[next.length - 1] = { ...last, steps: [...last.steps, row] };
+            return next;
+          }
+          return [...prev, { kind: 'work', key: `w${prev.length}`, steps: [row] }];
         });
       }, f.at),
     );
@@ -326,7 +351,20 @@ function RealStreamDemo() {
 
   return (
     <View className="gap-3">
-      <ReasoningBlock steps={steps} done={done} durationMs={durationMs} />
+      {segments.map((segment) =>
+        segment.kind === 'work' ? (
+          <ReasoningBlock
+            key={segment.key}
+            steps={segment.steps}
+            done={done || segment.steps.every((s) => s.status === 'done')}
+            durationMs={done ? durationMs : undefined}
+          />
+        ) : segment.text ? (
+          <Text key={segment.key} className="text-[17px] leading-relaxed text-text-muted">
+            {segment.text}
+          </Text>
+        ) : null,
+      )}
       <Button variant="outlined" label="replay" onPress={() => setRunId((r) => r + 1)} />
     </View>
   );
@@ -335,16 +373,6 @@ function RealStreamDemo() {
 // Real long/raw summaries from a live stream (the halal-dinner turn) — verifies
 // the narration clamp holds: a model-list line and a multi-paragraph draft.
 const LONG_STEPS: ReasoningBlockStep[] = [
-  // Raw model monologue still typing — the clamp has to hold on narration too,
-  // not just on settled summaries.
-  {
-    id: 'l1',
-    status: 'active',
-    title: 'thinking',
-    summary: null,
-    narration:
-      "right, halal and it's already late — the Shinjuku places will be winding down, so I should weight the ones that run past midnight and are walkable from where they'll be coming from, rather than the higher-rated ones further out",
-  },
   {
     id: 'l2',
     status: 'done',

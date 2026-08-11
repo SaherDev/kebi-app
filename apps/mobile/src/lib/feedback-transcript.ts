@@ -15,7 +15,10 @@ function toTurn(turn: ChatTurn): FeedbackTranscriptTurn | null {
   if (turn.role === 'you') {
     return { role: 'you', text: clip(turn.text), at };
   }
-  const stepTitles = turn.steps
+  // Work titles only — the agent's talk is prose in `message`/segments, not a
+  // step, so it would read as a duplicate line in the report.
+  const stepTitles = turn.segments
+    .flatMap((segment) => (segment.kind === 'work' ? segment.steps : []))
     .map((s) => s.title)
     .filter((title): title is string => Boolean(title));
   if (!turn.message && stepTitles.length === 0) return null;

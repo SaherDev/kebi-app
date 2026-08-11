@@ -14,16 +14,20 @@ import { Icon } from './icon';
 import { DURATION, STAGGER_MS } from '../theme/motion';
 
 /**
- * The reasoning block (kebi-chat-mockup.html `.reasoning`) — the thinking panel
- * above each agent answer in chat. Inline editor content, NOT a card: a header
- * (pulsing dot + label + meta + chevron) over a step list with a hairline rail.
+ * The work chip — "● thought for 2s ▸" — holding the tools the agent ran. Inline
+ * editor content, NOT a card: a header (pulsing dot + label + chevron) over a
+ * step list with a hairline rail, collapsed to one line once it settles.
  *
- * Driven entirely by the ADR-102 stream lifecycle the chat screen upserts by
- * `id`: a `done` step shows a filled check node + its narration; an `active`
- * step shows a ring + pulsing dot over its live thinking text as
- * `reasoning_delta` frames type it out — falling back to a shimmer skeleton
- * until the first delta lands (or for a stream that sends none at all), and an
- * interrupted step keeps whatever had typed out when the stream died.
+ * It holds WORK ONLY. The agent's own talk is not a row here: it renders as
+ * message prose in the transcript body (ADR-055), because the same sentences
+ * arrive as `reasoning_delta` text and drawing them in both places would print
+ * each one twice. A turn interleaves several of these chips with the prose
+ * between them.
+ *
+ * Driven by the ADR-102 stream lifecycle the chat screen upserts by `id`: a
+ * `done` step shows a filled check node + its summary; an `active` step shows a
+ * ring + pulsing dot + shimmer skeleton (its `summary` is still `null`) — and an
+ * interrupted step left `active` simply stays a skeleton.
  * There are no pending rows and no "step N of M": the agent is dynamic, so the
  * contract carries no total (see api-contract.md). The run-level `done` flag
  * flips the header dot to success and is the cue to collapse on the next turn.
@@ -39,13 +43,6 @@ export interface ReasoningBlockStep {
   title?: string;
   /** Result detail — the muted line (contract `summary`); `null` while active → skeleton. */
   summary: string | null;
-  /**
-   * Live thinking text accumulated from `reasoning_delta` frames while the step
-   * is active — the agent talking as it works. Rendered in place of the shimmer
-   * (which stays as the empty state, before the first delta lands), and dropped
-   * when the step's `done` frame supersedes it with an authoritative `summary`.
-   */
-  narration?: string;
 }
 
 export interface ReasoningBlockProps {
@@ -86,8 +83,8 @@ const SUMMARY_LINES = 2;
 
 /** Header label while the run is in flight. */
 const RUNNING_LABEL = 'working on it';
-/** Header label once the run has finished. */
-const DONE_LABEL = 'got it';
+/** Header label once the run has finished — suffixed with "2s" when timed. */
+const DONE_LABEL = 'thought for';
 /** Detail on a step that never completed (the run was stopped/interrupted). */
 const INTERRUPTED_LABEL = 'interrupted';
 
@@ -120,18 +117,17 @@ export function ReasoningBlock({
   // later fade in immediately as they arrive, not after a growing delay.
   const initialCount = useRef(steps.length).current;
 
-  // Header shows the state, not the per-step title: "working on it" while the run
-  // is in flight, "got it" once it's done. The step titles live in the body rows.
-  const headerLabel = label ?? (done ? doneLabel : runningLabel);
-
+  // Settled, the chip is one line — "thought for 2s" — and the work it did is
+  // behind the chevron. In flight it shows what the agent is doing right now
+  // (the caller passes the live step's title) plus a streaming tally.
   const doneCount = steps.filter((s) => s.status === 'done').length;
   const total = steps.length;
-  const tally = durationMs != null ? ` · ${(durationMs / 1000).toFixed(1)}s` : '';
-  const metaText =
-    meta ??
-    (done
-      ? `${total} ${total === 1 ? 'step' : 'steps'}${tally}`
-      : `step ${Math.max(doneCount, 1)} · streaming…`);
+  const seconds = durationMs != null ? `${Math.max(durationMs / 1000, 0.1).toFixed(1)}s` : '';
+  const headerLabel =
+    label ?? (done ? [doneLabel, seconds].filter(Boolean).join(' ') : runningLabel);
+  // Counts only what it was handed — the store drops `debug` steps and routes
+  // the agent's talk to prose, so this is user-visible work and nothing else.
+  const metaText = meta ?? (done ? '' : `step ${Math.max(doneCount, 1)} · streaming…`);
 
   return (
     <View className="mb-3 gap-2">
@@ -139,7 +135,7 @@ export function ReasoningBlock({
         onPress={toggle}
         accessibilityRole="button"
         accessibilityState={{ expanded: !isCollapsed }}
-        accessibilityLabel={`${headerLabel}, ${metaText}`}
+        accessibilityLabel={[headerLabel, metaText].filter(Boolean).join(', ')}
         className="flex-row items-center justify-between gap-2.5"
       >
         <View className="min-w-0 flex-row items-center gap-2.5">
@@ -149,9 +145,11 @@ export function ReasoningBlock({
               {headerLabel}
             </Text>
           </View>
-          <Text numberOfLines={1} className="shrink text-[12px] text-text-soft">
-            {metaText}
-          </Text>
+          {metaText ? (
+            <Text numberOfLines={1} className="shrink text-[12px] text-text-soft">
+              {metaText}
+            </Text>
+          ) : null}
         </View>
         <Chevron expanded={!isCollapsed} />
       </Pressable>
@@ -219,9 +217,7 @@ function Chevron({ expanded }: { expanded: boolean }) {
 }
 
 /**
- * One step: node on the rail + narration (the settled `summary`, or the live
- * text streaming into it), falling back to a shimmer skeleton while active with
- * nothing to show yet.
+ * One step: node on the rail + narration, or a shimmer skeleton while active.
  *
  * Memoized: the stream upserts by id, keeping referential identity for unchanged
  * steps (see the chat reducer), so a new frame only re-renders the row that
@@ -274,18 +270,14 @@ const StepRow = memo(function StepRow({
             {step.title}
           </Text>
         ) : null}
-        {step.summary ?? step.narration ? (
+        {step.summary ? (
           // Result detail — muted under a title, primary when there's no title.
-          // While the step is active this is the live `reasoning_delta` text
-          // typing out; the `done` frame swaps it for the authoritative summary.
-          // Clamped either way: the trace narrates, the answer carries the
-          // content, so a long monologue must not push the answer off-screen.
           <Text
             numberOfLines={summaryLines}
             className={step.title ? 'text-[12px] text-text-muted' : 'text-[13px] text-text'}
             style={{ lineHeight: step.title ? 18 : 20 }}
           >
-            {step.summary ?? step.narration}
+            {step.summary}
           </Text>
         ) : interrupted ? (
           // The run was stopped before this step finished — mark it failed. With

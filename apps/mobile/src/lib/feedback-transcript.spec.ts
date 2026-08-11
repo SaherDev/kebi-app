@@ -11,7 +11,7 @@ function kebi(message: string, over: Partial<KebiTurn> = {}, key = 'k1'): KebiTu
   return {
     key,
     role: 'kebi',
-    steps: [],
+    segments: [],
     message,
     entities: [],
     status: 'done',
@@ -27,9 +27,19 @@ describe('toFeedbackTranscript', () => {
     const turns: ChatTurn[] = [
       you('quiet cafe'),
       kebi('Streamer Coffee', {
-        steps: [
-          { id: 's1', status: 'done', title: 'reading your taste' },
-          { id: 's2', status: 'done' }, // untitled step — dropped
+        segments: [
+          // The agent's talk is prose, not a work row — it must not show up as
+          // a step title (the answer text already carries those words).
+          { kind: 'prose', key: 'p0', stepId: 'agent.tool_decision#0', text: 'let me look' },
+          {
+            kind: 'work',
+            key: 'w1',
+            startedAt: AT,
+            steps: [
+              { id: 's1', status: 'done', title: 'reading your taste' },
+              { id: 's2', status: 'done' }, // untitled step — dropped
+            ],
+          },
         ],
       } as Partial<KebiTurn>),
     ];

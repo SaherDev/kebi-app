@@ -404,6 +404,13 @@ function labels(t: (k: string) => string): TurnLabels {
 }
 
 /**
+ * Prose segments carry no entities — links only ever arrive on the final
+ * `message` frame. A shared constant keeps ChatAnswer's memo from re-running on
+ * a fresh `[]` every render.
+ */
+const EMPTY_ENTITIES: ChatEntity[] = [];
+
+/**
  * Copy a turn's text to the clipboard (mockup `.turn-copy`). Always visible and
  * muted on mobile (no hover); a "copied" toast confirms (design-system §Toast).
  */
@@ -473,10 +480,11 @@ function KebiTurnRow({
   onToggle: ChatTranscriptValue['toggleCollapse'];
   onOpenEntity: (entity: ChatEntity) => void;
 }) {
-  // Show the thinking panel once steps arrive, or while still streaming with no
-  // answer yet (a simple greeting that runs no tools collapses to just text).
-  const showReasoning =
-    turn.steps.length > 0 || (turn.status === 'streaming' && turn.message === '');
+  const settled = turn.status !== 'streaming';
+  // An empty chip is a turn still waiting on its first frame — show one so the
+  // turn isn't a blank row while kebi thinks.
+  const showPlaceholderChip =
+    turn.segments.length === 0 && turn.message === '' && turn.status === 'streaming';
 
   return (
     <View className="gap-1.5">
@@ -486,17 +494,40 @@ function KebiTurnRow({
         {turn.message ? <CopyButton text={turn.message} /> : null}
       </View>
 
-      {showReasoning ? (
-        <ReasoningBlock
-          steps={turn.steps}
-          done={turn.status !== 'streaming'}
-          durationMs={turn.durationMs}
-          runningLabel={l.thinking}
-          doneLabel={turn.stopped ? l.stopped : l.thought}
-          interruptedLabel={l.interrupted}
-          collapsed={turn.collapsed}
-          onToggle={(next) => onToggle(turn.key, next)}
-        />
+      {/* The turn's body in stream order: what the agent SAID renders as message
+          prose, what it DID collapses into a chip between the sentences — the
+          same shape as the reference layout (ADR-055). A promoted segment is
+          empty here because its words are now the answer below, in place. */}
+      {turn.segments.map((segment) =>
+        segment.kind === 'work' ? (
+          <ReasoningBlock
+            key={segment.key}
+            steps={segment.steps}
+            done={settled || segment.steps.every((s) => s.status === 'done')}
+            durationMs={
+              segment.endedAt != null ? segment.endedAt - segment.startedAt : undefined
+            }
+            runningLabel={l.thinking}
+            doneLabel={turn.stopped ? l.stopped : l.thought}
+            interruptedLabel={l.interrupted}
+            collapsed={turn.collapsed}
+            onToggle={(next) => onToggle(turn.key, next)}
+          />
+        ) : segment.text ? (
+          // Plain prose — never linkified client-side; only the final `message`
+          // frame carries links. ChatAnswer gives it the answer's typography so
+          // the promote hand-off is invisible.
+          <ChatAnswer
+            key={segment.key}
+            message={segment.text}
+            entities={EMPTY_ENTITIES}
+            onOpen={onOpenEntity}
+          />
+        ) : null,
+      )}
+
+      {showPlaceholderChip ? (
+        <ReasoningBlock steps={[]} runningLabel={l.thinking} collapsed />
       ) : null}
 
       {/* The prose IS the answer on every turn (ADR-136): kebi no longer sends

@@ -7,11 +7,12 @@ import {
   useRef,
   type ReactNode,
 } from 'react';
-import type {
-  ChatEntity,
-  SseMessageDelta,
-  SseReasoningDelta,
-  SseReasoningStep,
+import {
+  isAgentTalkStep,
+  type ChatEntity,
+  type SseMessageDelta,
+  type SseReasoningDelta,
+  type SseReasoningStep,
 } from '@kebi-app/shared';
 import type { ReasoningBlockStep } from './reasoning-block';
 
@@ -38,11 +39,47 @@ export interface UserTurn {
   at: number;
 }
 
+/**
+ * One piece of a kebi turn's body, in stream order. A turn reads as an
+ * interleaving of the agent's own sentences and the work it did between them:
+ *
+ * ```
+ * ● thought for 2s ▸        ← a `work` segment (collapsed chip of tool rows)
+ * gili t for the weekend…   ← a `prose` segment (the agent talking)
+ * ● thought for 1s ▸        ← more work
+ * okay, nothing saved…      ← more talk, which flows into the answer
+ * ```
+ *
+ * The answer itself is not a segment: it lives on `message` and always renders
+ * last, directly after the final prose segment — which is what makes `promote`
+ * a no-op visually (the words are in the same place, they just stop being
+ * "thinking" and start being the answer).
+ */
+export type TurnSegment =
+  | {
+      kind: 'prose';
+      key: string;
+      /** The `agent.tool_decision` step whose deltas (or summary) wrote this. */
+      stepId: string;
+      text: string;
+      /** This segment's text became the answer — its `done` summary is dropped. */
+      promoted?: boolean;
+    }
+  | {
+      kind: 'work';
+      key: string;
+      /** Tool rows, upserted by id — fed straight into <ReasoningBlock>. */
+      steps: ReasoningBlockStep[];
+      /** Wall-clock bounds of this chip's work, for its "thought for 2s". */
+      startedAt: number;
+      endedAt?: number;
+    };
+
 export interface KebiTurn {
   key: string;
   role: 'kebi';
-  /** Reasoning steps, upserted by id — fed straight into <ReasoningBlock>. */
-  steps: ReasoningBlockStep[];
+  /** Prose the agent said + the work it did, interleaved in arrival order. */
+  segments: TurnSegment[];
   /** Assistant text. While the answer streams this is the accumulated
    *  `message_delta` prose (plain, link-free); the final `message` frame
    *  replaces it wholesale with content whose entity names are markdown links
@@ -72,7 +109,7 @@ interface TranscriptState {
 
 type Action =
   | { type: 'START_TURN'; text: string; userKey: string; kebiKey: string; at: number }
-  | { type: 'UPSERT_STEP'; kebiKey: string; step: SseReasoningStep }
+  | { type: 'UPSERT_STEP'; kebiKey: string; step: SseReasoningStep; now: number }
   | { type: 'APPEND_STEP_TEXT'; kebiKey: string; delta: SseReasoningDelta }
   | { type: 'APPEND_MESSAGE'; kebiKey: string; delta: SseMessageDelta }
   | { type: 'SET_MESSAGE'; kebiKey: string; content: string; entities: ChatEntity[] }
@@ -83,22 +120,87 @@ type Action =
   | { type: 'CLEAR' }
   | { type: 'RESTORE'; turns: ChatTurn[] };
 
+/** Map an SSE reasoning step onto the presentational shape ReasoningBlock wants. */
+function toBlockStep(step: SseReasoningStep): ReasoningBlockStep {
+  return { id: step.id, status: step.status, title: step.title, summary: step.summary };
+}
+
+type ProseSegment = Extract<TurnSegment, { kind: 'prose' }>;
+type WorkSegment = Extract<TurnSegment, { kind: 'work' }>;
+
+/** Index of the last match, or -1 (`Array.findLastIndex` needs a newer lib target). */
+function lastIndex(segments: TurnSegment[], match: (s: TurnSegment) => boolean): number {
+  for (let i = segments.length - 1; i >= 0; i -= 1) if (match(segments[i])) return i;
+  return -1;
+}
+
+/** Replace segment `idx`, leaving every other segment's reference untouched. */
+function withSegment(turn: KebiTurn, idx: number, segment: TurnSegment): KebiTurn {
+  const segments = turn.segments.slice();
+  segments[idx] = segment;
+  return { ...turn, segments };
+}
+
 /**
- * Map an SSE reasoning step onto the presentational shape ReasoningBlock wants.
+ * Fold an `agent.tool_decision` frame into the turn's prose.
  *
- * `narration` (live `reasoning_delta` text) is carried over only while the step
- * is still `active`: the `done` frame supersedes whatever typed out, so dropping
- * it there is what makes the row settle onto its authoritative `summary`.
+ * The `active` frame opens an empty segment for the deltas to fill; the `done`
+ * frame supersedes whatever typed out with its authoritative `summary` — unless
+ * the segment was promoted, in which case those words are already the answer
+ * and writing them back here would print the sentence twice.
  */
-function toBlockStep(step: SseReasoningStep, prev?: ReasoningBlockStep): ReasoningBlockStep {
-  const next: ReasoningBlockStep = {
-    id: step.id,
-    status: step.status,
-    title: step.title,
-    summary: step.summary,
+function foldTalkStep(turn: KebiTurn, step: SseReasoningStep): KebiTurn {
+  const idx = turn.segments.findIndex((s) => s.kind === 'prose' && s.stepId === step.id);
+  if (idx === -1) {
+    const segment: ProseSegment = {
+      kind: 'prose',
+      key: `${turn.key}-seg${turn.segments.length}`,
+      stepId: step.id,
+      text: '',
+    };
+    return { ...turn, segments: [...turn.segments, segment] };
+  }
+  const prev = turn.segments[idx] as ProseSegment;
+  if (step.status !== 'done' || step.summary === null || prev.promoted) return turn;
+  return withSegment(turn, idx, { ...prev, text: step.summary });
+}
+
+/**
+ * Fold a work (non-talk) frame into the turn's chips.
+ *
+ * Rows group into the trailing chip so consecutive work reads as one "thought
+ * for 2s"; prose arriving between them closes the chip and the next row opens a
+ * new one. A late `done` frame still finds the row in whichever chip already
+ * holds it, rather than opening a duplicate chip for the same step.
+ */
+function foldWorkStep(turn: KebiTurn, step: SseReasoningStep, now: number): KebiTurn {
+  const next = toBlockStep(step);
+
+  const owner = turn.segments.findIndex(
+    (s) => s.kind === 'work' && s.steps.some((row) => row.id === next.id),
+  );
+  if (owner !== -1) {
+    const chip = turn.segments[owner] as WorkSegment;
+    // Replace only the matched row (new object); keep every other row's
+    // reference so the memoized StepRow doesn't re-run its animations.
+    const steps = chip.steps.map((row) => (row.id === next.id ? next : row));
+    return withSegment(turn, owner, { ...chip, steps, endedAt: now });
+  }
+
+  const lastIdx = turn.segments.length - 1;
+  const last = turn.segments[lastIdx];
+  if (last?.kind === 'work') {
+    return withSegment(turn, lastIdx, { ...last, steps: [...last.steps, next], endedAt: now });
+  }
+
+  const chip: WorkSegment = {
+    kind: 'work',
+    key: `${turn.key}-seg${turn.segments.length}`,
+    steps: [next],
+    startedAt: now,
+    endedAt: now,
   };
-  if (step.status === 'active' && prev?.narration) next.narration = prev.narration;
-  return next;
+  return { ...turn, segments: [...turn.segments, chip] };
 }
 
 /** Apply `fn` to the kebi turn with `key`, leaving every other turn untouched. */
@@ -126,7 +228,7 @@ function reducer(state: TranscriptState, action: Action): TranscriptState {
       const kebi: KebiTurn = {
         key: action.kebiKey,
         role: 'kebi',
-        steps: [],
+        segments: [],
         message: '',
         entities: [],
         status: 'streaming',
@@ -141,30 +243,24 @@ function reducer(state: TranscriptState, action: Action): TranscriptState {
       // Debug steps ride the stream but never render (ADR-102) — the store owns
       // this policy, not the parser.
       if (action.step.visibility === 'debug') return state;
-      return mapKebi(state, action.kebiKey, (turn) => {
-        const idx = turn.steps.findIndex((s) => s.id === action.step.id);
-        const next = toBlockStep(action.step, idx === -1 ? undefined : turn.steps[idx]);
-        // Replace only the matched step (new object); keep every other step's
-        // reference so the memoized StepRow doesn't re-run its animations.
-        const steps =
-          idx === -1
-            ? [...turn.steps, next]
-            : turn.steps.map((s, i) => (i === idx ? next : s));
-        return { ...turn, steps };
-      });
+      return mapKebi(state, action.kebiKey, (turn) =>
+        isAgentTalkStep(action.step)
+          ? foldTalkStep(turn, action.step)
+          : foldWorkStep(turn, action.step, action.now),
+      );
     }
 
     case 'APPEND_STEP_TEXT':
-      // Live thinking text for a row already on screen. An id with no matching
-      // row is a delta for a step the store dropped (debug) or never saw — skip
-      // it rather than inventing a row the contract never announced.
+      // The agent talking, live. An id with no open segment is a delta for a
+      // step the store dropped (debug) or never saw — skip it rather than
+      // inventing prose the contract never announced.
       return mapKebi(state, action.kebiKey, (turn) => {
-        const idx = turn.steps.findIndex((s) => s.id === action.delta.id);
-        if (idx === -1) return turn;
-        const steps = turn.steps.map((s, i) =>
-          i === idx ? { ...s, narration: (s.narration ?? '') + action.delta.text } : s,
+        const idx = turn.segments.findIndex(
+          (s) => s.kind === 'prose' && s.stepId === action.delta.id,
         );
-        return { ...turn, steps };
+        if (idx === -1) return turn;
+        const prev = turn.segments[idx] as ProseSegment;
+        return withSegment(turn, idx, { ...prev, text: prev.text + action.delta.text });
       });
 
     case 'APPEND_MESSAGE':
@@ -172,15 +268,16 @@ function reducer(state: TranscriptState, action: Action): TranscriptState {
         if (!action.delta.promote) {
           return { ...turn, message: turn.message + action.delta.text };
         }
-        // Promote: the text that had been typing into a thinking row IS the
-        // start of the answer. This delta carries the full prefix, so the
-        // bubble is SEEDED (not appended to) and the row's typed narration is
-        // cleared — nothing the user read is lost, it moves. The row stays; its
-        // `done` frame fills the summary.
-        const steps = turn.steps.map((s) =>
-          s.status === 'active' && s.narration ? { ...s, narration: undefined } : s,
-        );
-        return { ...turn, steps, message: action.delta.text };
+        // Promote: the sentence that had been typing as prose IS the start of
+        // the answer. This delta carries the full prefix, so the answer is
+        // SEEDED with it and the segment it came from is emptied — the same
+        // words, in the same place on screen, now the answer. Nothing moves.
+        // The segment stays (flagged) so its `done` frame can't re-add them.
+        const idx = lastIndex(turn.segments, (s) => s.kind === 'prose' && s.text !== '');
+        const seeded = { ...turn, message: action.delta.text };
+        if (idx === -1) return seeded;
+        const prev = turn.segments[idx] as ProseSegment;
+        return withSegment(seeded, idx, { ...prev, text: '', promoted: true });
       });
 
     case 'SET_MESSAGE':
@@ -239,7 +336,7 @@ export interface ChatTranscriptValue {
   /** Append a user turn + an empty streaming kebi turn; returns the kebi key. */
   startTurn: (text: string) => string;
   upsertStep: (kebiKey: string, step: SseReasoningStep) => void;
-  /** Append live thinking text to the `active` step the delta's `id` names. */
+  /** Append the agent's live talk to the prose segment the delta's `id` names. */
   appendStepText: (kebiKey: string, delta: SseReasoningDelta) => void;
   /** Append (or, on `promote`, seed) the streaming answer text. */
   appendMessage: (kebiKey: string, delta: SseMessageDelta) => void;
@@ -287,7 +384,7 @@ export function ChatTranscriptProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const upsertStep = useCallback((kebiKey: string, step: SseReasoningStep) => {
-    dispatch({ type: 'UPSERT_STEP', kebiKey, step });
+    dispatch({ type: 'UPSERT_STEP', kebiKey, step, now: Date.now() });
   }, []);
 
   const appendStepText = useCallback((kebiKey: string, delta: SseReasoningDelta) => {

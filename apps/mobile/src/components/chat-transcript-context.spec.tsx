@@ -8,6 +8,7 @@ import {
   type KebiTurn,
 } from './chat-transcript-context';
 
+/** A work step — a tool the agent ran; renders as a row inside a chip. */
 function step(over: Partial<SseReasoningStep>): SseReasoningStep {
   return {
     id: 'find_saved#0',
@@ -19,6 +20,21 @@ function step(over: Partial<SseReasoningStep>): SseReasoningStep {
     ...over,
   };
 }
+
+/** A talk step — the agent speaking; renders as message prose, never a row. */
+function talk(over: Partial<SseReasoningStep> = {}): SseReasoningStep {
+  return {
+    id: 'agent.tool_decision#0',
+    step: 'agent.tool_decision',
+    title: 'thinking',
+    summary: null,
+    status: 'active',
+    visibility: 'user',
+    ...over,
+  };
+}
+
+const TALK_ID = 'agent.tool_decision#0';
 
 const LUIGIS: ChatEntity = {
   kind: 'venue',
@@ -51,8 +67,11 @@ function Probe() {
       {act('step-done', () => tr.upsertStep(key.current, step({ status: 'done', summary: '2 spots' })))}
       {act('step-other', () => tr.upsertStep(key.current, step({ id: 'rank#1', title: 'ranked' })))}
       {act('step-debug', () => tr.upsertStep(key.current, step({ id: 'dbg#9', visibility: 'debug' })))}
-      {act('delta-step', () => tr.appendStepText(key.current, { id: 'find_saved#0', text: 'checking ' }))}
-      {act('delta-step2', () => tr.appendStepText(key.current, { id: 'find_saved#0', text: 'your saves' }))}
+      {act('talk-active', () => tr.upsertStep(key.current, talk()))}
+      {act('talk-done', () => tr.upsertStep(key.current, talk({ status: 'done', summary: 'checked your saves' })))}
+      {act('talk2-active', () => tr.upsertStep(key.current, talk({ id: 'agent.tool_decision#1' })))}
+      {act('delta-step', () => tr.appendStepText(key.current, { id: TALK_ID, text: 'checking ' }))}
+      {act('delta-step2', () => tr.appendStepText(key.current, { id: TALK_ID, text: 'your saves' }))}
       {act('delta-step-unknown', () => tr.appendStepText(key.current, { id: 'ghost#9', text: 'nope' }))}
       {act('delta-msg', () => tr.appendMessage(key.current, { text: 'tonight, ' }))}
       {act('delta-msg2', () => tr.appendMessage(key.current, { text: 'go to Luigis' }))}
@@ -74,10 +93,15 @@ function Probe() {
 }
 
 function line(t: KebiTurn): string {
-  const statuses = t.steps.map((s) => s.status).join(',');
+  const rows = t.segments.flatMap((s) => (s.kind === 'work' ? s.steps : []));
+  const statuses = rows.map((s) => s.status).join(',');
   const entities = t.entities.map((e) => `${e.kind}:${e.key}`).join(',');
-  const narration = t.steps.map((s) => s.narration ?? '').join(',');
-  return `${t.key}|kebi|status:${t.status}|steps:${t.steps.length}|st:${statuses}|narr:${narration}|msg:${t.message}|entities:${entities}|collapsed:${t.collapsed}|stopped:${t.stopped ?? false}`;
+  // The turn's body as the screen draws it: `prose(…)` for a sentence the agent
+  // said, `work[…]` for a chip of tool rows — in stream order.
+  const shape = t.segments
+    .map((s) => (s.kind === 'prose' ? `prose(${s.text})` : `work[${s.steps.map((r) => r.id).join(' ')}]`))
+    .join(' ');
+  return `${t.key}|kebi|status:${t.status}|steps:${rows.length}|st:${statuses}|shape:${shape}|msg:${t.message}|entities:${entities}|collapsed:${t.collapsed}|stopped:${t.stopped ?? false}`;
 }
 
 function setup() {
@@ -120,45 +144,66 @@ describe('ChatTranscriptProvider', () => {
     expect(kebi()).toContain('st:done');
   });
 
-  it('appends a distinct step id and skips debug steps', () => {
+  it('renders the agent talk as prose, never as a work row', () => {
+    const { press, kebi } = setup();
+    press('start');
+    press('talk-active');
+    press('delta-step');
+    press('delta-step2');
+    // Prose accumulates in arrival order, and adds no row to the chip.
+    expect(kebi()).toContain('shape:prose(checking your saves)');
+    expect(kebi()).toContain('steps:0');
+  });
+
+  it("ignores a reasoning delta for a segment that isn't open", () => {
+    const { press, kebi } = setup();
+    press('start');
+    press('talk-active');
+    press('delta-step-unknown');
+    expect(kebi()).toContain('shape:prose()');
+    expect(kebi()).not.toContain('nope');
+  });
+
+  it("the talk step's done summary supersedes the text that typed out", () => {
+    const { press, kebi } = setup();
+    press('start');
+    press('talk-active');
+    press('delta-step');
+    press('talk-done');
+    // Replaced wholesale by the authoritative summary — and still prose, not a
+    // row: drawing the summary as a row too would print the sentence twice.
+    expect(kebi()).toContain('shape:prose(checked your saves)');
+    expect(kebi()).toContain('steps:0');
+  });
+
+  it('interleaves prose and work chips in stream order', () => {
+    const { press, kebi } = setup();
+    press('start');
+    press('talk-active');
+    press('delta-step'); // agent says something
+    press('step-active'); // then runs a tool
+    press('talk2-active'); // then says something else
+    expect(kebi()).toContain('shape:prose(checking ) work[find_saved#0] prose()');
+  });
+
+  it('groups consecutive work steps into one chip', () => {
     const { press, kebi } = setup();
     press('start');
     press('step-active');
     press('step-other');
-    expect(kebi()).toContain('steps:2');
+    expect(kebi()).toContain('shape:work[find_saved#0 rank#1]');
     press('step-debug');
-    expect(kebi()).toContain('steps:2'); // debug not rendered
+    expect(kebi()).toContain('shape:work[find_saved#0 rank#1]'); // debug never lands
   });
 
-  it('appends reasoning deltas onto the active row they name', () => {
+  it("a late done frame updates its own chip's row, not a new chip", () => {
     const { press, kebi } = setup();
     press('start');
     press('step-active');
-    press('delta-step');
-    press('delta-step2');
-    // One row, text accumulated in arrival order — not one row per delta.
-    expect(kebi()).toContain('steps:1');
-    expect(kebi()).toContain('narr:checking your saves');
-  });
-
-  it("ignores a reasoning delta for a row that isn't on screen", () => {
-    const { press, kebi } = setup();
-    press('start');
-    press('step-active');
-    press('delta-step-unknown');
-    expect(kebi()).toContain('steps:1');
-    expect(kebi()).toContain('narr:');
-    expect(kebi()).not.toContain('nope');
-  });
-
-  it("the step's done frame supersedes the text that typed out", () => {
-    const { press, kebi } = setup();
-    press('start');
-    press('step-active');
-    press('delta-step');
-    press('step-done');
-    expect(kebi()).toContain('narr:'); // cleared
-    expect(kebi()).not.toContain('checking ');
+    press('talk2-active'); // prose closes the chip
+    press('step-done'); // the tool finishes afterwards
+    expect(kebi()).toContain('shape:work[find_saved#0] prose()');
+    expect(kebi()).toContain('st:done');
   });
 
   it('appends message deltas into the answer', () => {
@@ -169,18 +214,29 @@ describe('ChatTranscriptProvider', () => {
     expect(kebi()).toContain('msg:tonight, go to Luigis');
   });
 
-  it('promote seeds the answer and clears the row that was typing', () => {
+  it('promote empties the prose it came from so the words are not doubled', () => {
     const { press, kebi } = setup();
     press('start');
-    press('step-active');
-    press('delta-step'); // text typing into the thinking row
+    press('talk-active');
+    press('delta-step'); // "checking " typing as prose
     press('delta-msg-promote'); // …turns out to be the answer's start
-    expect(kebi()).toContain('narr:'); // row kept, its typed text cleared
-    expect(kebi()).toContain('steps:1');
-    // Seeded with the full prefix, NOT appended to what was already there.
+    // The segment stays (so its done frame can't re-add the words) but is empty:
+    // the same text now renders as the answer, in the same place. Nothing moves.
+    expect(kebi()).toContain('shape:prose()');
     expect(kebi()).toContain('msg:tonight, ');
     press('delta-msg2');
     expect(kebi()).toContain('msg:tonight, go to Luigis');
+  });
+
+  it("a promoted segment ignores its own done summary", () => {
+    const { press, kebi } = setup();
+    press('start');
+    press('talk-active');
+    press('delta-step');
+    press('delta-msg-promote');
+    press('talk-done'); // summary would duplicate what is now the answer
+    expect(kebi()).toContain('shape:prose()');
+    expect(kebi()).toContain('msg:tonight, ');
   });
 
   it('the final message frame replaces the streamed text wholesale', () => {
@@ -194,18 +250,19 @@ describe('ChatTranscriptProvider', () => {
     expect(kebi()).toContain('entities:venue:c0ffee00');
   });
 
-  it('keeps the streamed answer when the user stops mid-stream', () => {
+  it('keeps the streamed prose and answer when the user stops mid-stream', () => {
     const { press, kebi } = setup();
     press('start');
-    press('step-active');
+    press('talk-active');
     press('delta-step');
+    press('step-active');
     press('delta-msg'); // half an answer on screen
     press('stop');
     expect(kebi()).toContain('status:done');
     expect(kebi()).toContain('stopped:true');
-    // What was rendered stays — the partial answer and the partial thinking.
+    // What was rendered stays — the partial answer and the partial prose.
     expect(kebi()).toContain('msg:tonight, ');
-    expect(kebi()).toContain('narr:checking ');
+    expect(kebi()).toContain('prose(checking )');
   });
 
   it('stores the message frame entities alongside the text', () => {
