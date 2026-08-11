@@ -16,6 +16,16 @@ export interface ContextMenuItem {
   label: string;
   /** Muted second line under the label — rendered by the ••• action sheet only. */
   sub?: string;
+  /**
+   * Optional grouping key for the ••• action sheet: items sharing a key render
+   * in one surface card, in first-appearance order, above the destructive group.
+   * Omitted items share the default group, so existing menus are unchanged.
+   *
+   * Exists because a public write is neither a personal action nor a destructive
+   * one — it earns its own card rather than sitting in the same list as "been
+   * there".
+   */
+  group?: string;
   destructive?: boolean;
   onPress: () => void;
 }

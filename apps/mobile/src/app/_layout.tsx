@@ -30,6 +30,7 @@ import { SavedPlacesProvider } from "../components/saved-places-context";
 import { PlaceDetailProvider } from "../components/place-detail-context";
 import { PlaceActionsProvider } from "../components/place-actions-context";
 import { NoteSheetProvider } from "../components/note-sheet-context";
+import { CurateSheetProvider } from "../components/curate-sheet-context";
 import { ChatProvider } from "../components/chat-context";
 import { ChatTranscriptProvider } from "../components/chat-transcript-context";
 import { ContextMenuProvider } from "../components/context-menu/context-menu-context";
@@ -139,6 +140,9 @@ export default function RootLayout() {
                 <PlaceDetailProvider>
                 {/* NoteSheetProvider mounts the global note editor; any surface
                     raises it via useNoteSheet().open(view) — saves via place actions. */}
+                {/* CurateSheetProvider mounts the insider composer once; every
+                    door raises it via useCurateSheet().open(target). */}
+                <CurateSheetProvider>
                 <NoteSheetProvider>
                 {/* SaveSheetProvider sits under ToastProvider so a save toast
                     renders above the sheet; it mounts the save sheet once and
@@ -166,6 +170,7 @@ export default function RootLayout() {
                   {!splashDone && <Splash onDone={() => setSplashDone(true)} />}
                 </SaveSheetProvider>
                 </NoteSheetProvider>
+                </CurateSheetProvider>
                 </PlaceDetailProvider>
                 </SavedPlacesProvider>
                 </PlaceActionsProvider>
