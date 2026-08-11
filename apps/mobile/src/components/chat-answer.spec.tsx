@@ -61,6 +61,30 @@ describe('toBlocks', () => {
   it('accepts a • bullet as well as a -', () => {
     expect(toBlocks('• first\n• second').map((b) => b.kind)).toEqual(['bullets']);
   });
+
+  it('turns a `---` line into a divider block, not literal dashes', () => {
+    // The 3-week-plan shape: "…here's the plan:" / --- / "week 1, bali".
+    expect(toBlocks("here's the plan:\n\n---\n\nweek 1, bali").map((b) => b.kind)).toEqual([
+      'paragraph',
+      'divider',
+      'paragraph',
+    ]);
+  });
+
+  it('recognises every thematic-break flavour, even without blank lines around it', () => {
+    for (const rule of ['---', '----', '***', '___']) {
+      expect(toBlocks(`before\n${rule}\nafter`).map((b) => b.kind)).toEqual([
+        'paragraph',
+        'divider',
+        'paragraph',
+      ]);
+    }
+  });
+
+  it('keeps a dash run inside a sentence as prose', () => {
+    // Only a line that is nothing but the rule is a divider.
+    expect(toBlocks('wait --- really?').map((b) => b.kind)).toEqual(['paragraph']);
+  });
 });
 
 describe('toInlineParts', () => {

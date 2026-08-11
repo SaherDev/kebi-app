@@ -38,7 +38,7 @@ import {
 import { useApiClient } from '../api/hooks';
 import { streamChat } from '../api/chat';
 import { deleteUserData } from '../api/user-data';
-import { TOAST_DISMISS_MS } from '../theme/motion';
+import { PRESS, TOAST_DISMISS_MS } from '../theme/motion';
 import { getDeviceLocation } from '../lib/location';
 import { shouldFollow } from '../lib/stream-follow';
 import { formatClockTime } from '../lib/format-relative-time';
@@ -69,7 +69,8 @@ interface ChatScreenProps {
  * survives close→reopen), opens the SSE stream, and dispatches each frame into
  * the transcript store — reasoning steps drive `ReasoningBlock`, the message
  * frame fills the answer, tool results stash a place-card skeleton (Task 2 will
- * render the real card). Bottom is a photo/mic toolbar pill (no AI button).
+ * render the real card). Bottom is the composer card — field + mic + send⇄stop
+ * orb in one surface container (kebi-chat-input-options a, no AI button).
  */
 export function ChatScreen({ onClose, seed }: ChatScreenProps) {
   const { t } = useTranslation();
@@ -187,6 +188,18 @@ export function ChatScreen({ onClose, seed }: ChatScreenProps) {
         },
       },
     });
+  }
+
+  /**
+   * Send the draft from the composer (orb tap or keyboard return). Guarded the
+   * same way the button disables, so a hardware return on an empty draft (or
+   * mid-stream) is a no-op. Haptic fires only here — a seed auto-send is not
+   * something the user did, so `submit` itself stays silent.
+   */
+  function sendDraft() {
+    if (!canSend || abortRef.current) return;
+    triggerHaptic('send-message');
+    void submit(draft);
   }
 
   /** Cancel the in-flight stream: flag the turn stopped, then abort it. */
@@ -330,14 +343,17 @@ export function ChatScreen({ onClose, seed }: ChatScreenProps) {
           onContentSizeChange={onContentSizeChange}
         />
 
-        {/* Editor line — multiline so long text wraps and the field grows (up to
-            ~5 lines, then scrolls). `submitBehavior="submit"` keeps return as the
+        {/* Composer card (kebi-chat-input-options, option a): ONE surface card
+            holds the field and the actions, so "where do i type" has a visible
+            answer — the bare line + detached pill read as more transcript. The
+            input is multiline so long text wraps and the card grows (up to ~5
+            lines, then scrolls); `submitBehavior="submit"` keeps return as the
             send key (and keeps the keyboard up) rather than inserting a newline. */}
-        <View className="px-6 pb-2 pt-2">
+        <View className="mx-4 mb-3 rounded-[20px] bg-surface pb-2 pe-2 ps-4 pt-3.5">
           <TextInput
             value={draft}
             onChangeText={setDraft}
-            onSubmitEditing={() => submit(draft)}
+            onSubmitEditing={sendDraft}
             placeholder={t('chat.placeholder')}
             placeholderTextColor={softColor}
             returnKeyType="send"
@@ -349,30 +365,42 @@ export function ChatScreen({ onClose, seed }: ChatScreenProps) {
             accessibilityLabel={t('chat.placeholder')}
             className="max-h-[120px] p-0 text-[17px] leading-relaxed text-text"
           />
-        </View>
 
-        {/* Composer pill (bottom-right): mic (voice, placeholder) + send/stop. One
-            outline toggle — paper-plane send when idle, a larger square stop while
-            a turn streams (tapping stop aborts the response). Muted when empty. */}
-        <View className="mx-4 mb-3 flex-row items-center gap-6 self-end rounded-full bg-surface px-5 py-3">
-          <Pressable accessibilityRole="button" accessibilityLabel={t('chat.voice')} hitSlop={8}>
-            <Icon name="mic" size={18} className="text-text" strokeWidth={1.6} />
-          </Pressable>
-          <Pressable
-            onPress={isStreaming ? stop : () => submit(draft)}
-            disabled={!isStreaming && !canSend}
-            accessibilityRole="button"
-            accessibilityLabel={isStreaming ? t('chat.stop') : t('chat.send')}
-            accessibilityState={{ disabled: !isStreaming && !canSend }}
-            hitSlop={8}
-          >
-            <Icon
-              name={isStreaming ? 'stop' : 'send'}
-              size={isStreaming ? 22 : 18}
-              className={isStreaming || canSend ? 'text-text' : 'text-text-soft'}
-              strokeWidth={1.8}
-            />
-          </Pressable>
+          {/* Actions row: mic (voice, placeholder) + the send⇄stop orb
+              (kebi-chat-polish-options 3a/2a). The orb "arms" as you type —
+              soft bare plane when the draft is empty, a solid ink disc once
+              there's text — and becomes the stop square while a turn streams
+              (tapping stop aborts the response). PRESS gives the tactile
+              scale/opacity dip on the armed orb. */}
+          <View className="mt-2 flex-row items-center justify-end gap-4">
+            <Pressable accessibilityRole="button" accessibilityLabel={t('chat.voice')} hitSlop={8}>
+              <Icon name="mic" size={18} className="text-text" strokeWidth={1.6} />
+            </Pressable>
+            <Pressable
+              onPress={isStreaming ? stop : sendDraft}
+              disabled={!isStreaming && !canSend}
+              accessibilityRole="button"
+              accessibilityLabel={isStreaming ? t('chat.stop') : t('chat.send')}
+              accessibilityState={{ disabled: !isStreaming && !canSend }}
+              hitSlop={8}
+              // PRESS stays in every state — NativeWind's transition classes
+              // must not mount/unmount between renders; only the fill toggles.
+              className={`h-9 w-9 items-center justify-center rounded-full ${
+                isStreaming || canSend ? 'bg-text' : ''
+              } ${PRESS}`}
+            >
+              {isStreaming ? (
+                <View className="h-3 w-3 rounded-[3px] bg-bg" />
+              ) : (
+                <Icon
+                  name="send"
+                  size={canSend ? 16 : 18}
+                  className={canSend ? 'text-bg' : 'text-text-soft'}
+                  strokeWidth={1.8}
+                />
+              )}
+            </Pressable>
+          </View>
         </View>
       </Animated.View>
 

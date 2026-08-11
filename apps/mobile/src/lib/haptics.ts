@@ -34,6 +34,7 @@ export type HapticEvent =
   | 'filter-chip' // Filter chip selected
   | 'theme-toggle' // Theme toggle (light ↔ dark)
   | 'stop-stream' // Stop a streaming chat response
+  | 'send-message' // Send a chat message (composer orb)
   | 'swap-select'; // Promote a "swap to" alternative to the recommendation
 
 /**
@@ -54,6 +55,7 @@ const HAPTIC_MAP: Record<HapticEvent, () => Promise<void>> = {
   'filter-chip': () => Haptics.selectionAsync(),
   'theme-toggle': () => Haptics.impactAsync(ImpactFeedbackStyle.Soft),
   'stop-stream': () => Haptics.impactAsync(ImpactFeedbackStyle.Light),
+  'send-message': () => Haptics.impactAsync(ImpactFeedbackStyle.Light),
   'swap-select': () => Haptics.selectionAsync(),
 };
 
