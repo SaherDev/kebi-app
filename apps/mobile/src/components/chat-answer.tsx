@@ -8,10 +8,12 @@ import type { ChatEntity } from '@kebi-app/shared';
  * kebi writes light markdown in two dimensions and this renders exactly those,
  * no more; it is deliberately not a general markdown parser:
  *
- * - **block level** — blank-line-separated paragraphs, and `- ` lines that form
- *   a bullet list. A real answer stacks five paragraphs and a five-item "skip
- *   for tonight" list, so both need real spacing and a hanging indent; a single
- *   `<Text>` renders them as an unreadable wall with literal `- ` markers.
+ * - **block level** — blank-line-separated paragraphs, `- ` lines that form
+ *   a bullet list, and `---` thematic breaks rendered as hairline dividers
+ *   (kebi-chat-divider-options, option a). A real answer stacks five paragraphs
+ *   and a five-item "skip for tonight" list, so both need real spacing and a
+ *   hanging indent; a single `<Text>` renders them as an unreadable wall with
+ *   literal `- ` markers — and a raw `---` line as literal dashes.
  * - **inline** — `**bold**` spans and `[name](kebi://{kind}/{key})` entity
  *   links, resolved against the turn's `entities` by `uri`.
  *
@@ -25,6 +27,8 @@ import type { ChatEntity } from '@kebi-app/shared';
 const BLOCK_SPLIT = /\n\s*\n/;
 /** A bullet item: `- ` or `• ` at the start of a line. */
 const BULLET_LINE = /^\s*[-•]\s+/;
+/** A thematic break: a line of nothing but 3+ of one of `-` `*` `_`. */
+const DIVIDER_LINE = /^\s*([-*_])\1{2,}\s*$/;
 /** Inline spans this renderer styles — everything else is plain text. */
 const INLINE_MARKDOWN = /(\*\*[^*]+\*\*|\[[^\]]+\]\(kebi:\/\/[^)]+\))/g;
 const BOLD = /^\*\*([^*]+)\*\*$/;
@@ -37,8 +41,8 @@ export type InlinePart =
   | { kind: 'link'; text: string; uri: string };
 
 export interface Block {
-  kind: 'paragraph' | 'bullets';
-  /** One entry for a paragraph; one per item for a bullet list. */
+  kind: 'paragraph' | 'bullets' | 'divider';
+  /** One entry for a paragraph; one per item for a bullet list; empty for a divider. */
   lines: InlinePart[][];
 }
 
@@ -75,6 +79,13 @@ export function toBlocks(text: string): Block[] {
     const raws: { kind: Block['kind']; raw: string[] }[] = [];
 
     for (const line of trimmed.split('\n')) {
+      // A rule line is its own block: close whatever was open so the divider
+      // separates its neighbours instead of soft-wrapping into a paragraph.
+      if (DIVIDER_LINE.test(line)) {
+        open = null;
+        raws.push({ kind: 'divider', raw: [] });
+        continue;
+      }
       const isBullet = BULLET_LINE.test(line);
       const content = isBullet ? line.replace(BULLET_LINE, '') : line;
       if (!content.trim()) continue;
@@ -109,7 +120,7 @@ export function toBlocks(text: string): Block[] {
 export type AnswerTier = 'answer' | 'commentary';
 
 const LINE: Record<AnswerTier, string> = {
-  answer: 'text-[17px] leading-relaxed text-text-muted',
+  answer: 'text-[17px] leading-relaxed text-text',
   commentary: 'text-[15px] leading-relaxed text-text-soft',
 };
 
@@ -173,7 +184,11 @@ export const ChatAnswer = memo(function ChatAnswer({
   return (
     <View className="gap-3">
       {blocks.map((block, i) =>
-        block.kind === 'paragraph' ? (
+        block.kind === 'divider' ? (
+          // A `---` from kebi is structure, not prose — a hairline section
+          // break (my-1 + the container's gap-3 ≈ the mockup's 16px margins).
+          <View key={i} className="my-1 h-px bg-surface-2" />
+        ) : block.kind === 'paragraph' ? (
           <Text key={i} className={LINE[tier]}>
             {renderLine(block.lines[0])}
           </Text>
