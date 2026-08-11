@@ -2,7 +2,12 @@ import type { ReactNode } from 'react';
 import { renderHook } from '@testing-library/react-native';
 import { NO_CAPABILITIES } from '../capabilities/capability';
 import { CapabilitiesProvider } from '../capabilities/capabilities-context';
-import { placeCurateTarget, useCurateMenuItem, withCurateItem } from './use-curate-menu-item';
+import {
+  areaCurateTarget,
+  placeCurateTarget,
+  useCurateMenuItem,
+  withCurateItem,
+} from './use-curate-menu-item';
 import type { CurateTarget } from './curate-sheet-context';
 import type { ContextMenuItem } from './context-menu/context-menu-types';
 
@@ -99,6 +104,31 @@ describe('useCurateMenuItem', () => {
       const menu = [item('looks right'), item('forget', true)];
 
       expect(withCurateItem(menu, null)).toBe(menu);
+    });
+  });
+
+  describe('areaCurateTarget', () => {
+    it('anchors by the token off the uri, never the raw geo key', () => {
+      expect(
+        areaCurateTarget({
+          uri: 'kebi://area/aWQvYmFsaS9jYW5nZ3U',
+          name: 'Canggu',
+          icon: '🏄',
+          context: 'Bali',
+        }),
+      ).toMatchObject({
+        anchor: { area_id: 'aWQvYmFsaS9jYW5nZ3U' },
+        view: { emoji: '🏄', name: 'Canggu', context: 'Bali' },
+      });
+    });
+
+    it('falls back to the area glyph when kebi sent no icon', () => {
+      const target = areaCurateTarget({ uri: 'kebi://area/tok', name: 'Nezu', icon: null });
+      expect(target.view?.emoji).toBeTruthy();
+    });
+
+    it('sends no anchor when the uri carries no decodable token', () => {
+      expect(areaCurateTarget({ uri: 'not-a-kebi-uri', name: 'X', icon: null }).anchor).toBeUndefined();
     });
   });
 

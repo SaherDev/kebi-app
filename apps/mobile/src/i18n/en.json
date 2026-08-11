@@ -215,7 +215,10 @@
       "cleared": "chat cleared",
       "undo": "undo"
     },
-    "help": "help"
+    "help": "help",
+    "entityMenu": {
+      "open": "open"
+    }
   },
   "save": {
     "eyebrow": "save",
@@ -273,7 +276,10 @@
     "gettingAroundSub": "how far kebi looks for you",
     "notSet": "not set",
     "isSet": "set",
-    "addName": "add your name"
+    "addName": "add your name",
+    "knowledge": "knowledge",
+    "addWhatYouKnowSub": "a place, an area, anything",
+    "insider": "insider"
   },
   "plans": {
     "eyebrow": "plans",
@@ -484,6 +490,7 @@
       "addedOne": "added 1 note",
       "nothingNew": "kebi already knew that",
       "failed": "couldn't send that — your text is still there"
-    }
+    },
+    "thisArea": "this area"
   }
 }

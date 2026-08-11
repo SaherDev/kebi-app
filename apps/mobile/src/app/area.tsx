@@ -1,4 +1,4 @@
-import { Fragment, useEffect } from 'react';
+import { Fragment, useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { CHAT_ENTITY_FALLBACK_ICON, type AreaSection as AreaSectionContract } from '@kebi-app/shared';
@@ -7,6 +7,9 @@ import { isSectionEmpty } from '../api/models/area';
 import { ScreenScaffold } from '../components/screen-scaffold';
 import { TopBar } from '../components/top-bar';
 import { IconButton } from '../components/icon-button';
+import { TopPill } from '../components/top-pill';
+import { ActionSheet } from '../components/action-sheet';
+import { areaCurateTarget, useCurateMenuItem } from '../components/use-curate-menu-item';
 import { Chip } from '../components/chip';
 import { Spinner } from '../components/spinner';
 import { AreaChildRow, AreaPlaceRow } from '../components/area-row';
@@ -98,12 +101,60 @@ export default function AreaScreen() {
   return <AreaContent view={state.view} back={back} />;
 }
 
+/**
+ * The area's ••• sheet — door b (kebi-curate-options.html §1). Same component
+ * and vocabulary as the place page's, filled differently.
+ *
+ * It renders **only for insiders**, unlike the place page's, and that is
+ * deliberate: an area has none of the place actions (looks right / i like / been
+ * there / forget), so for everyone else the sheet would open empty. The button
+ * appears with the permission and disappears without it — no dead end to
+ * explain. It grows into a normal sheet the day areas get actions of their own.
+ */
+function AreaTopActions({ view }: { view: AreaScreenView }) {
+  const { t } = useTranslation();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const curateItem = useCurateMenuItem(
+    useMemo(
+      () =>
+        areaCurateTarget({
+          uri: view.uri,
+          name: view.name,
+          icon: view.icon,
+          context: view.breadcrumb.at(-1)?.name,
+        }),
+      [view],
+    ),
+  );
+
+  if (!curateItem) return null;
+
+  return (
+    <>
+      <TopPill>
+        <IconButton icon="ellipsis" label={t('common.more')} onPress={() => setMenuOpen(true)} />
+      </TopPill>
+      <ActionSheet
+        open={menuOpen}
+        onClose={() => setMenuOpen(false)}
+        header={{
+          emoji: view.icon ?? CHAT_ENTITY_FALLBACK_ICON.area,
+          eyebrow: t('curate.thisArea'),
+          title: view.name,
+        }}
+        items={[curateItem]}
+        closeLabel={t('common.close')}
+      />
+    </>
+  );
+}
+
 function AreaContent({ view, back }: { view: AreaScreenView; back: React.ReactNode }) {
   const { t } = useTranslation();
   const level = useLevelLabel(view.level);
 
   return (
-    <ScreenScaffold topBar={<TopBar left={back} />}>
+    <ScreenScaffold topBar={<TopBar left={back} right={<AreaTopActions view={view} />} />}>
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerClassName="gap-4 px-6 pb-24 pt-2"
