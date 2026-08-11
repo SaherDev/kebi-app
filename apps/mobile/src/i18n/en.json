@@ -464,5 +464,22 @@
     "saved": "kebi will search like that",
     "saveFailed": "couldn't save that — try again",
     "loadFailed": "couldn't load how you get around — try again"
+  },
+  "curate": {
+    "about": "about",
+    "unanchored": "a place or area",
+    "hero": "what do you know?",
+    "placeholder": "what's not obvious — when to go, where to sit, what to skip",
+    "hint": "write it how you'd say it. kebi splits it into notes.",
+    "hintPublic": "everyone sees them.",
+    "cta": "add to kebi",
+    "menuLabel": "add what you know",
+    "menuSub": "everyone will see it",
+    "toast": {
+      "added": "added {{count}} notes",
+      "addedOne": "added 1 note",
+      "nothingNew": "kebi already knew that",
+      "failed": "couldn't send that — your text is still there"
+    }
   }
 }

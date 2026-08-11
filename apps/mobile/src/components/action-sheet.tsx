@@ -103,7 +103,10 @@ export function ActionSheet({ open, onClose, header, items, closeLabel }: Action
 
   if (!mounted) return null;
 
-  const positives = items.filter((i) => !i.destructive);
+  // Non-destructive items split into cards by their `group` key, in
+  // first-appearance order; destructives always land in the last card, set apart
+  // (design-system: "don't merge forget into the positives group").
+  const positiveGroups = groupItems(items.filter((i) => !i.destructive));
   const destructives = items.filter((i) => i.destructive);
 
   return (
@@ -139,13 +142,32 @@ export function ActionSheet({ open, onClose, header, items, closeLabel }: Action
             </View>
           </View>
 
-            {positives.length > 0 ? <SheetGroup items={positives} onClose={onClose} /> : null}
+            {positiveGroups.map((group) => (
+              <SheetGroup key={group.key} items={group.items} onClose={onClose} />
+            ))}
             {destructives.length > 0 ? <SheetGroup items={destructives} onClose={onClose} /> : null}
           </Animated.View>
         </GestureDetector>
       </GestureHandlerRootView>
     </Modal>
   );
+}
+
+/** Bucket items by their `group` key, preserving first-appearance order. */
+function groupItems(items: ContextMenuItem[]): { key: string; items: ContextMenuItem[] }[] {
+  const groups: { key: string; items: ContextMenuItem[] }[] = [];
+  const seen = new Map<string, number>();
+  for (const item of items) {
+    const key = item.group ?? '';
+    let at = seen.get(key);
+    if (at === undefined) {
+      at = groups.length;
+      seen.set(key, at);
+      groups.push({ key, items: [] });
+    }
+    groups[at].items.push(item);
+  }
+  return groups;
 }
 
 function SheetGroup({ items, onClose }: { items: ContextMenuItem[]; onClose: () => void }) {

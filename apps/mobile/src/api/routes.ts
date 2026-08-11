@@ -49,4 +49,17 @@ export const API_ROUTES = {
 
   /** In-app feedback report — gateway-only, forwarded to Notion (ADR-051). */
   feedback: '/feedback',
+
+  /**
+   * Insider curation (ADR-121, anchors kebi ADR-160). Every route here is gated
+   * on the curator role — a non-insider gets a 403, which is why the client
+   * gates the affordances behind `useCan('curate')` rather than calling blind.
+   */
+  knowledgeCurate: '/knowledge/curate',
+  /** The caller's own claims — what backs "what you've added". */
+  knowledgeClaims: '/knowledge/claims',
+  /** Retract one of the caller's own claims by id. */
+  knowledgeClaim: (id: string) => `/knowledge/claims/${encodeURIComponent(id)}`,
+  /** Typeahead behind the anchor chip — places and areas in one list. */
+  knowledgeEntities: '/knowledge/entities',
 } as const;
