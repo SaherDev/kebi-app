@@ -13,7 +13,9 @@ const mockChain = (): unknown => new Proxy({}, { get: () => () => mockChain() })
 jest.mock('react-native-gesture-handler', () => ({
   GestureHandlerRootView: (p: { children: unknown }) => p.children,
   GestureDetector: (p: { children: unknown }) => p.children,
-  Gesture: { Pan: () => mockChain() },
+  // LongPress too: the entity rail's chips are long-pressable now (the curate
+  // door), so ContextMenuTrigger builds one on every render.
+  Gesture: { Pan: () => mockChain(), LongPress: () => mockChain() },
 }));
 
 // streamChat is replaced per test with a scripted frame sequence. The factory

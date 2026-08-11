@@ -14,6 +14,8 @@ import { ProfileAvatar } from '../components/profile-avatar';
 import { SegmentedControl } from '../components/segmented-control';
 import { ConfirmSheet } from '../components/confirm-sheet';
 import { useProfile } from '../components/use-profile';
+import { useCurateSheet } from '../components/curate-sheet-context';
+import { Can } from '../capabilities';
 import { useThemePreference } from '../components/use-theme-preference';
 import { useToast } from '../components/toast-context';
 import { useApiClient } from '../api/hooks';
@@ -46,6 +48,7 @@ export default function SettingsScreen() {
   const router = useRouter();
   const { signOut } = useAuth();
   const { profile, refetch } = useProfile();
+  const curateSheet = useCurateSheet();
   const [settings, setSettings] = useState<UserSettings | null>(null);
   // Re-read the profile when settings regains focus (e.g. returning from the
   // plans screen after a switch) so the plan row reflects the new tier.
@@ -134,10 +137,21 @@ export default function SettingsScreen() {
         {/* Profile block */}
         <View className="flex-row items-center gap-3.5">
           <ProfileAvatar name={name} email={email} />
-          <View className="flex-1">
-            <Text className="text-subtitle font-bold text-text">
-              {name || t('settings.addName')}
-            </Text>
+          <View className="flex-1 gap-1">
+            <View className="flex-row flex-wrap items-center gap-2">
+              <Text className="text-subtitle font-bold text-text">
+                {name || t('settings.addName')}
+              </Text>
+              {/*
+                The whole "you're an insider" surface, said once. No explainer
+                line: every door already says "everyone will see it" at the
+                moment you're about to write, which is where that warning does
+                work. Identity here, consequence there.
+              */}
+              <Can do="curate">
+                <StatusPill variant="green">{t('settings.insider')}</StatusPill>
+              </Can>
+            </View>
             {email ? <Text className="text-small text-text-muted">{email}</Text> : null}
           </View>
         </View>
@@ -173,6 +187,25 @@ export default function SettingsScreen() {
             }
           />
         </Group>
+
+        {/*
+          Knowledge — insider-only (kebi-curate-options.html §1, door c). Sits
+          *below* "what kebi knows" so an insider's settings screen opens exactly
+          like everyone else's: the group is an addition, never a reordering.
+          The row opens the composer unanchored — the door for dumping a trip's
+          worth at once, where the subject is picked in the sheet.
+        */}
+        <Can do="curate">
+          <Group eyebrow={t('settings.knowledge')}>
+            <SettingsRow
+              emoji="✍️"
+              label={t('curate.menuLabel')}
+              sublabel={t('settings.addWhatYouKnowSub')}
+              onPress={() => curateSheet.open({ view: null })}
+              trailing={<Icon name="chevron-right" size={14} className="text-text-soft" />}
+            />
+          </Group>
+        </Can>
 
         {/* Subscription */}
         <Group eyebrow={t('settings.subscription')}>

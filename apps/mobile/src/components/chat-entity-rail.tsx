@@ -1,6 +1,8 @@
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { CHAT_ENTITY_FALLBACK_ICON, type ChatEntity } from '@kebi-app/shared';
 import { PRESS } from '../theme/motion';
+import { ContextMenuTrigger } from './context-menu/context-menu-trigger';
+import { useChatEntityMenuItems } from './use-chat-entity-menu-items';
 
 /**
  * Everywhere a kebi turn named, as a horizontal rail under its answer
@@ -60,22 +62,52 @@ export function ChatEntityRail({ entities, label, onOpen }: ChatEntityRailProps)
         contentContainerClassName="gap-2 pe-4"
       >
         {chips.map((entity) => (
-          <Pressable
-            key={`${entity.kind}:${entity.key}`}
-            onPress={() => onOpen(entity)}
-            accessibilityRole="button"
-            accessibilityLabel={entity.name}
-            className={`flex-row items-center gap-2 rounded-large bg-surface py-2 pe-3 ps-2 ${PRESS}`}
-          >
-            <View className="size-7 items-center justify-center rounded-small bg-bg">
-              <Text className="text-small">
-                {entity.icon ?? CHAT_ENTITY_FALLBACK_ICON[entity.kind]}
-              </Text>
-            </View>
-            <Text className="text-small font-semibold text-text">{entity.name}</Text>
-          </Pressable>
+          <RailChip key={`${entity.kind}:${entity.key}`} entity={entity} onOpen={onOpen} />
         ))}
       </ScrollView>
     </View>
+  );
+}
+
+/**
+ * One chip. Tap opens the entity; **long-press lifts it** into the same menu the
+ * library cards use — door d (kebi-curate-options.html §4), which is how an
+ * insider writes about something kebi just mentioned.
+ *
+ * Only the chip carries the gesture, never the inline `kebi://` link in the
+ * prose: a chip is a self-contained object that lifts cleanly, while a link is a
+ * fragment mid-sentence, so lifting it would tear a phrase out of a paragraph —
+ * on top of fighting the iOS selection loupe for the same gesture. The rail sits
+ * under every answer, so no reach is lost.
+ */
+function RailChip({
+  entity,
+  onOpen,
+}: {
+  entity: ChatEntity;
+  onOpen: (entity: ChatEntity) => void;
+}) {
+  const items = useChatEntityMenuItems(entity, onOpen);
+
+  return (
+    <ContextMenuTrigger
+      items={items}
+      accessibilityLabel={entity.name}
+      renderCard={() => (
+        <Pressable
+          onPress={() => onOpen(entity)}
+          accessibilityRole="button"
+          accessibilityLabel={entity.name}
+          className={`flex-row items-center gap-2 rounded-large bg-surface py-2 pe-3 ps-2 ${PRESS}`}
+        >
+          <View className="size-7 items-center justify-center rounded-small bg-bg">
+            <Text className="text-small">
+              {entity.icon ?? CHAT_ENTITY_FALLBACK_ICON[entity.kind]}
+            </Text>
+          </View>
+          <Text className="text-small font-semibold text-text">{entity.name}</Text>
+        </Pressable>
+      )}
+    />
   );
 }

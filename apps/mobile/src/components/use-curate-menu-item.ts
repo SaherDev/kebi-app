@@ -1,7 +1,13 @@
 import { useMemo } from 'react';
-import { placeEmoji, type PlaceCore } from '@kebi-app/shared';
+import {
+  CHAT_ENTITY_FALLBACK_ICON,
+  placeEmoji,
+  type ChatEntity,
+  type PlaceCore,
+} from '@kebi-app/shared';
 import { useTranslation } from '../i18n/context';
 import { useCan } from '../capabilities';
+import { areaIdFromUri } from '../lib/area-link';
 import { useCurateSheet, type CurateTarget } from './curate-sheet-context';
 import type { ContextMenuItem } from './context-menu/context-menu-types';
 
@@ -22,6 +28,54 @@ export function placeCurateTarget(place: PlaceCore): CurateTarget {
       context: place.location?.city ?? undefined,
     },
   };
+}
+
+/**
+ * The curate target for an area.
+ *
+ * `uri` is the source, never the area's `key`: the key is a raw geo path
+ * (`id/bali/canggu`) that no endpoint accepts, while the anchor wants the opaque
+ * token the link carries. Reading the wrong one lands every area note unanchored
+ * — the exact trap kebi ADR-153/160 call out — so the extraction lives here once
+ * rather than at each door.
+ */
+export function areaCurateTarget(area: {
+  uri: string;
+  name: string;
+  icon: string | null;
+  context?: string;
+}): CurateTarget {
+  const areaId = areaIdFromUri(area.uri);
+  return {
+    anchor: areaId ? { area_id: areaId } : undefined,
+    view: {
+      emoji: area.icon ?? CHAT_ENTITY_FALLBACK_ICON.area,
+      name: area.name,
+      context: area.context,
+    },
+  };
+}
+
+/**
+ * The curate target for an entity kebi named in a chat answer — the only door
+ * where the anchor needs **no lookup at all**, because the turn already resolved
+ * it (ADR-136).
+ *
+ * The two kinds identify differently and that is the whole subtlety: a venue's
+ * `key` **is** `places.id`, so it anchors directly, while an area's `key` is the
+ * raw geo path and the usable id is the token on its `uri`. Same asymmetry
+ * `useOpenChatEntity` already navigates by.
+ */
+export function chatEntityCurateTarget(entity: ChatEntity): CurateTarget {
+  const view = {
+    emoji: entity.icon ?? CHAT_ENTITY_FALLBACK_ICON[entity.kind],
+    name: entity.name,
+  };
+  if (entity.kind === 'venue') {
+    return { anchor: entity.key ? { place_id: entity.key } : undefined, view };
+  }
+  const areaId = areaIdFromUri(entity.uri);
+  return { anchor: areaId ? { area_id: areaId } : undefined, view };
 }
 
 /**

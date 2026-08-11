@@ -117,7 +117,12 @@ Three cheap doors once Task 1 exists. Each is a different `open(anchor)`.
 - **Chat:** long-press the **rail chip** (not the inline link — it fights the iOS
   selection loupe), same lift + blur + menu as the library cards. The entity
   arrives resolved from the turn's `entities`, so no lookup is needed.
-  ⚠️ **Menu contents are still undecided** — settle before building
+  **Menu settled as the minimal shape:** `open` · `add what you know`. The place
+  actions all need a *saved* place (which a chat entity usually isn't) and none
+  of them mean anything for an area, so they'd be conditional rows on a chip a
+  third the width of a library card. "add what you know" is the only item correct
+  in every state — saved venue, unsaved venue, area — since curating needs no
+  save and no ownership. Growing it later is additive.
 - **Settings:** a `knowledge` group **below "what kebi knows"** with the
   "add what you know" row, plus the green **insider** pill under the name
 
