@@ -45,8 +45,16 @@ function responseStub(): Response {
     end: jest.fn(),
     status: jest.fn().mockReturnThis(),
     headersSent: false,
+    socket: { setNoDelay: jest.fn() },
   } as unknown as Response;
 }
+
+/** The dto used wherever the test cares about delivery, not about the body. */
+const ANY_DTO: ChatRequestBodyDto = {
+  message: 'drinks tonight',
+  location: null,
+  local_time: null,
+};
 
 describe('ChatService', () => {
   let service: ChatService;
@@ -66,6 +74,38 @@ describe('ChatService', () => {
   function sentBody(): Record<string, unknown> {
     return (kebi.postStream as jest.Mock).mock.calls[0][2];
   }
+
+  // Token-sized frames (`reasoning_delta`/`message_delta`) only feel live if
+  // nothing between kebi and the device holds them back.
+  it('opts out of proxy buffering and Nagle so frames ship as they arrive', async () => {
+    await service.pipeStream(IDENTITY, USER, ANY_DTO, req, res);
+
+    expect(res.setHeader).toHaveBeenCalledWith('Content-Type', 'text/event-stream');
+    expect(res.setHeader).toHaveBeenCalledWith('X-Accel-Buffering', 'no');
+    expect(res.flushHeaders).toHaveBeenCalled();
+    expect(res.socket?.setNoDelay).toHaveBeenCalledWith(true);
+  });
+
+  it('pipes the upstream body untouched — no frame parsing in the gateway', async () => {
+    const upstream = upstreamStub();
+    (kebi.postStream as jest.Mock).mockResolvedValue(upstream);
+
+    await service.pipeStream(IDENTITY, USER, ANY_DTO, req, res);
+
+    // Byte-transparent: new kebi frame types need no change here.
+    expect(upstream.pipe).toHaveBeenCalledWith(res);
+  });
+
+  it('aborts the upstream stream when the client hangs up (stop mid-answer)', async () => {
+    await service.pipeStream(IDENTITY, USER, ANY_DTO, req, res);
+    const signal = (kebi.postStream as jest.Mock).mock.calls[0][3] as AbortSignal;
+    expect(signal.aborted).toBe(false);
+
+    // What "stop" looks like server-side: the app drops the request mid-stream.
+    req.emit('close');
+
+    expect(signal.aborted).toBe(true);
+  });
 
   it('forwards the client-supplied local_time (kebi ADR-138)', async () => {
     const dto: ChatRequestBodyDto = {

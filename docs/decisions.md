@@ -17,6 +17,16 @@ Format:
 
 ---
 
+## ADR-055: The stream may say anything; only the final frame may link
+
+**Date:** 2026-08-11\
+**Status:** accepted\
+**Context:** kebi's stream stopped being a progress feed and became the turn itself (its ADR-157/158/159): the agent narrates while it thinks, the answer arrives token by token, and text that started as thinking can turn out to be the answer's first sentence. The apps ignored the new frames, so nothing broke and nothing showed — a shimmer skeleton popping to a finished line, then the whole answer landing at once. The hazard in adopting it is that our answer text is not plain text: entity names are `kebi://` markdown links (ADR-136), and a link assembled character by character is a link that is malformed for most of its life — every partial render a chance to leak `[Luigi` or linkify the wrong span.\
+**Decision:** Deltas are **prose, never structure**. The client appends them verbatim and is forbidden from linkifying, parsing, or otherwise interpreting them; the final `message` frame **replaces the accumulated text wholesale** — never diffed, never appended to — and remains the only carrier of links and entities. Since the words match, the swap reads as names becoming tappable rather than as a re-render. The same rule governs the trace: live `reasoning_delta` text is provisional and its step's `done` summary supersedes it. Deltas are **never required** — a turn carrying none must render exactly as it did before, which is what keeps an old backend, a fast path, and an error path all working. `promote` is the one case where text moves rather than accumulates: it carries the full prefix, so the answer is seeded from it and the thinking row it came from is cleared.\
+**Consequences:** A partial link is now unrepresentable rather than merely unlikely — the failure mode is designed out, not guarded against. The gateway stays byte-transparent and needs no change when kebi adds a frame type, but it does own delivery: SSE streams run with no request timeout and opt out of proxy buffering and Nagle, because a turn is a long-lived stream and a coalesced token is an invisible one. What the user has read is never retracted: stopping mid-answer, or losing the network, keeps the partial answer and the partial thinking on screen. The cost is that the trace clamps live narration to two lines like any summary — the thinking panel narrates, the answer carries the content — and that a client rendering deltas re-renders per token, so anything on that path (the answer's markdown parse, the turn rows) must stay memoized.
+
+---
+
 ## ADR-054: The about-me is ours to hold, the movement seed is not ours to assert
 
 **Date:** 2026-08-10\
