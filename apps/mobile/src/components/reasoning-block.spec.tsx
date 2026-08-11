@@ -29,6 +29,37 @@ describe('ReasoningBlock', () => {
     expect(getByText('post-club food, late night')).toBeTruthy();
   });
 
+  it('renders live narration on an active step instead of the shimmer', () => {
+    const { getByText } = render(
+      <ReasoningBlock
+        steps={[{ id: 'b', status: 'active', title: 'thinking', narration: "nothing saved, so let's", summary: null }]}
+      />,
+    );
+    expect(getByText("nothing saved, so let's")).toBeTruthy();
+  });
+
+  it("the done frame's summary supersedes narration left on the step", () => {
+    const { getByText, queryByText } = render(
+      <ReasoningBlock
+        steps={[{ id: 'b', status: 'done', title: 'thinking', narration: 'half-typed thought', summary: 'checked your saves' }]}
+        done
+      />,
+    );
+    expect(getByText('checked your saves')).toBeTruthy();
+    expect(queryByText('half-typed thought')).toBeNull();
+  });
+
+  it('keeps what typed out on a step interrupted mid-thought', () => {
+    // Stream died while this row was still typing — whatever rendered stays.
+    const { getByText } = render(
+      <ReasoningBlock
+        steps={[{ id: 'b', status: 'active', title: 'thinking', narration: 'looking at what', summary: null }]}
+        done
+      />,
+    );
+    expect(getByText('looking at what')).toBeTruthy();
+  });
+
   it('toggles collapsed state from the header when uncontrolled', () => {
     const onToggle = jest.fn();
     const { getByRole } = render(<ReasoningBlock steps={DONE} done onToggle={onToggle} />);

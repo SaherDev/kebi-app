@@ -4,7 +4,9 @@ import { validate } from '../validate';
 import {
   SseDoneSchema,
   SseErrorSchema,
+  SseMessageDeltaSchema,
   SseMessageSchema,
+  SseReasoningDeltaSchema,
   SseReasoningStepSchema,
 } from '../models/sse';
 
@@ -26,7 +28,9 @@ import {
 /** Per-event payload validators, keyed by SSE `event:` name. */
 const FRAME_SCHEMAS = {
   reasoning_step: SseReasoningStepSchema,
+  reasoning_delta: SseReasoningDeltaSchema,
   message: SseMessageSchema,
+  message_delta: SseMessageDeltaSchema,
   done: SseDoneSchema,
   error: SseErrorSchema,
 } as const satisfies Record<SseEvent['type'], z.ZodTypeAny>;

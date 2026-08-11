@@ -51,6 +51,12 @@ function Probe() {
       {act('step-done', () => tr.upsertStep(key.current, step({ status: 'done', summary: '2 spots' })))}
       {act('step-other', () => tr.upsertStep(key.current, step({ id: 'rank#1', title: 'ranked' })))}
       {act('step-debug', () => tr.upsertStep(key.current, step({ id: 'dbg#9', visibility: 'debug' })))}
+      {act('delta-step', () => tr.appendStepText(key.current, { id: 'find_saved#0', text: 'checking ' }))}
+      {act('delta-step2', () => tr.appendStepText(key.current, { id: 'find_saved#0', text: 'your saves' }))}
+      {act('delta-step-unknown', () => tr.appendStepText(key.current, { id: 'ghost#9', text: 'nope' }))}
+      {act('delta-msg', () => tr.appendMessage(key.current, { text: 'tonight, ' }))}
+      {act('delta-msg2', () => tr.appendMessage(key.current, { text: 'go to Luigis' }))}
+      {act('delta-msg-promote', () => tr.appendMessage(key.current, { text: 'tonight, ', promote: true }))}
       {act('msg', () => tr.setMessage(key.current, 'here you go', []))}
       {act('msg-linked', () => tr.setMessage(key.current, 'tonight is [Luigis](kebi://venue/c0ffee00)', [LUIGIS]))}
       {act('finish', () => tr.finishTurn(key.current, 1))}
@@ -70,7 +76,8 @@ function Probe() {
 function line(t: KebiTurn): string {
   const statuses = t.steps.map((s) => s.status).join(',');
   const entities = t.entities.map((e) => `${e.kind}:${e.key}`).join(',');
-  return `${t.key}|kebi|status:${t.status}|steps:${t.steps.length}|st:${statuses}|msg:${t.message}|entities:${entities}|collapsed:${t.collapsed}|stopped:${t.stopped ?? false}`;
+  const narration = t.steps.map((s) => s.narration ?? '').join(',');
+  return `${t.key}|kebi|status:${t.status}|steps:${t.steps.length}|st:${statuses}|narr:${narration}|msg:${t.message}|entities:${entities}|collapsed:${t.collapsed}|stopped:${t.stopped ?? false}`;
 }
 
 function setup() {
@@ -121,6 +128,84 @@ describe('ChatTranscriptProvider', () => {
     expect(kebi()).toContain('steps:2');
     press('step-debug');
     expect(kebi()).toContain('steps:2'); // debug not rendered
+  });
+
+  it('appends reasoning deltas onto the active row they name', () => {
+    const { press, kebi } = setup();
+    press('start');
+    press('step-active');
+    press('delta-step');
+    press('delta-step2');
+    // One row, text accumulated in arrival order — not one row per delta.
+    expect(kebi()).toContain('steps:1');
+    expect(kebi()).toContain('narr:checking your saves');
+  });
+
+  it("ignores a reasoning delta for a row that isn't on screen", () => {
+    const { press, kebi } = setup();
+    press('start');
+    press('step-active');
+    press('delta-step-unknown');
+    expect(kebi()).toContain('steps:1');
+    expect(kebi()).toContain('narr:');
+    expect(kebi()).not.toContain('nope');
+  });
+
+  it("the step's done frame supersedes the text that typed out", () => {
+    const { press, kebi } = setup();
+    press('start');
+    press('step-active');
+    press('delta-step');
+    press('step-done');
+    expect(kebi()).toContain('narr:'); // cleared
+    expect(kebi()).not.toContain('checking ');
+  });
+
+  it('appends message deltas into the answer', () => {
+    const { press, kebi } = setup();
+    press('start');
+    press('delta-msg');
+    press('delta-msg2');
+    expect(kebi()).toContain('msg:tonight, go to Luigis');
+  });
+
+  it('promote seeds the answer and clears the row that was typing', () => {
+    const { press, kebi } = setup();
+    press('start');
+    press('step-active');
+    press('delta-step'); // text typing into the thinking row
+    press('delta-msg-promote'); // …turns out to be the answer's start
+    expect(kebi()).toContain('narr:'); // row kept, its typed text cleared
+    expect(kebi()).toContain('steps:1');
+    // Seeded with the full prefix, NOT appended to what was already there.
+    expect(kebi()).toContain('msg:tonight, ');
+    press('delta-msg2');
+    expect(kebi()).toContain('msg:tonight, go to Luigis');
+  });
+
+  it('the final message frame replaces the streamed text wholesale', () => {
+    const { press, kebi } = setup();
+    press('start');
+    press('delta-msg');
+    press('delta-msg2');
+    press('msg-linked');
+    // Not appended to, not diffed — replaced, and only now carrying links.
+    expect(kebi()).toContain('msg:tonight is [Luigis](kebi://venue/c0ffee00)');
+    expect(kebi()).toContain('entities:venue:c0ffee00');
+  });
+
+  it('keeps the streamed answer when the user stops mid-stream', () => {
+    const { press, kebi } = setup();
+    press('start');
+    press('step-active');
+    press('delta-step');
+    press('delta-msg'); // half an answer on screen
+    press('stop');
+    expect(kebi()).toContain('status:done');
+    expect(kebi()).toContain('stopped:true');
+    // What was rendered stays — the partial answer and the partial thinking.
+    expect(kebi()).toContain('msg:tonight, ');
+    expect(kebi()).toContain('narr:checking ');
   });
 
   it('stores the message frame entities alongside the text', () => {

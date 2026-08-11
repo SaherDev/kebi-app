@@ -80,7 +80,7 @@ export function ChatScreen({ onClose, seed }: ChatScreenProps) {
   // would re-render every turn in the list. Takes `onClose` because chat is an
   // overlay: the card has to be pushed with the chat down, not under it.
   const openEntity = useOpenChatEntity(onClose);
-  const { turns, startTurn, upsertStep, setMessage, finishTurn, stopTurn, failTurn, toggleCollapse, clearTranscript, restoreTranscript } =
+  const { turns, startTurn, upsertStep, appendStepText, appendMessage, setMessage, finishTurn, stopTurn, failTurn, toggleCollapse, clearTranscript, restoreTranscript } =
     transcript;
 
   const [draft, setDraft] = useState('');
@@ -203,7 +203,17 @@ export function ChatScreen({ onClose, seed }: ChatScreenProps) {
           case 'reasoning_step':
             upsertStep(kebiKey, ev.data);
             break;
+          case 'reasoning_delta':
+            // The agent thinking out loud into a row already on screen.
+            appendStepText(kebiKey, ev.data);
+            break;
+          case 'message_delta':
+            // The answer typing into the bubble (plain prose, never links).
+            appendMessage(kebiKey, ev.data);
+            break;
           case 'message':
+            // Authoritative: replaces everything `message_delta` streamed, and
+            // is the only frame that carries links + entities.
             setMessage(kebiKey, ev.data.content, ev.data.entities);
             break;
           case 'done':

@@ -1,4 +1,4 @@
-import { Fragment } from 'react';
+import { Fragment, useMemo } from 'react';
 import { Text, View } from 'react-native';
 import type { ChatEntity } from '@kebi-app/shared';
 
@@ -110,8 +110,14 @@ interface ChatAnswerProps {
 }
 
 export function ChatAnswer({ message, entities, onOpen }: ChatAnswerProps) {
-  const blocks = toBlocks(message);
-  const byUri = new Map(entities.map((entity) => [entity.uri, entity]));
+  // `message` grows one `message_delta` at a time while the answer streams, so
+  // this component re-renders per token — memoized so a growing answer costs one
+  // parse per frame instead of re-splitting every earlier block along with it.
+  const blocks = useMemo(() => toBlocks(message), [message]);
+  const byUri = useMemo(
+    () => new Map(entities.map((entity) => [entity.uri, entity])),
+    [entities],
+  );
 
   const renderLine = (parts: InlinePart[]) =>
     parts.map((part, i) => {

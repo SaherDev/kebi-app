@@ -230,33 +230,46 @@ const DONE_STEPS: ReasoningBlockStep[] = [
 
 const RUNNING_STEPS: ReasoningBlockStep[] = [
   { id: 'r1', status: 'done', title: 'picked up the context', summary: "post-club food, late night, near where you'll be coming from shibuya" },
-  { id: 'r2', status: 'active', title: 'scanning late-night spots', summary: null },
+  // Live thinking text mid-type (a `reasoning_delta` row) — no shimmer.
+  { id: 'r2', status: 'active', title: 'thinking', summary: null, narration: "nothing in your saves is open this late, so let me look at what's" },
+  // Active with nothing typed yet — the shimmer's remaining job.
+  { id: 'r3', status: 'active', title: 'scanning late-night spots', summary: null },
 ];
 
 // The actual halal-dinner turn, captured frame-by-frame with each frame's real
 // offset (ms from the first frame). This is the reference the chat-screen reducer
-// follows: drop `debug` frames, upsert reasoning steps by `id`, flip `done` on the
-// done frame. The gaps between user steps are the hidden "thinking" the agent did
-// between tool calls — so the panel sits on its done steps for ~5s before "got it".
+// follows: drop `debug` frames, upsert reasoning steps by `id`, append
+// `reasoning_delta` text onto the active row, flip `done` on the done frame.
+//
+// Location steps are gone: kebi emits them as `debug` now, so they never reach
+// the panel. What fills the gaps between tool calls instead is the agent's own
+// thinking, typing out live — the `delta` frames below.
 type ReplayFrame =
   | { at: number; vis: 'user' | 'debug'; id: string; title: string; summary: string | null; status: ReasoningStepStatus }
+  /** A `reasoning_delta`: text appended to the row `id` already on screen. */
+  | { at: number; delta: string; id: string }
   | { at: number; done: true };
 
 const REAL_STREAM: ReplayFrame[] = [
-  { at: 0, vis: 'user', id: 'agent.location#0', title: 'found your location', summary: null, status: 'active' },
-  { at: 1715, vis: 'user', id: 'agent.location#0', title: 'found your location', summary: 'around Izumi 2, Suginami, Japan', status: 'done' },
-  { at: 1721, vis: 'debug', id: 'agent.tool_decision#0', title: 'thinking', summary: null, status: 'active' },
-  { at: 3261, vis: 'debug', id: 'agent.tool_decision#0', title: 'thinking', summary: 'thinking…', status: 'done' },
+  { at: 0, vis: 'user', id: 'agent.tool_decision#0', title: 'thinking', summary: null, status: 'active' },
+  { at: 420, delta: 'okay — halal, ', id: 'agent.tool_decision#0' },
+  { at: 900, delta: 'dinner tonight. ', id: 'agent.tool_decision#0' },
+  { at: 1500, delta: "let me check what you've saved first", id: 'agent.tool_decision#0' },
+  { at: 3261, vis: 'user', id: 'agent.tool_decision#0', title: 'thinking', summary: "checking what you've saved", status: 'done' },
   { at: 3264, vis: 'user', id: 'find_saved#0', title: 'searched your saved spots', summary: null, status: 'active' },
   { at: 3291, vis: 'user', id: 'find_saved#0', title: 'searched your saved spots', summary: 'nothing saved matched that', status: 'done' },
-  { at: 3293, vis: 'debug', id: 'agent.tool_decision#1', title: 'thinking', summary: null, status: 'active' },
-  { at: 6443, vis: 'debug', id: 'agent.tool_decision#1', title: 'thinking', summary: 'thinking…', status: 'done' },
+  { at: 3293, vis: 'user', id: 'agent.tool_decision#1', title: 'thinking', summary: null, status: 'active' },
+  { at: 3800, delta: 'nothing in your saves for that — ', id: 'agent.tool_decision#1' },
+  { at: 4600, delta: "so let's see what's actually around you", id: 'agent.tool_decision#1' },
+  { at: 6443, vis: 'user', id: 'agent.tool_decision#1', title: 'thinking', summary: 'looking further out', status: 'done' },
   { at: 6447, vis: 'user', id: 'discover_places#1', title: 'searched nearby', summary: null, status: 'active' },
   { at: 6447, vis: 'debug', id: 'discover_places#1.start', title: '', summary: null, status: 'active' },
   { at: 6447, vis: 'debug', id: 'discover_places#1.start', title: '', summary: 'checking nearby', status: 'done' },
   { at: 6996, vis: 'user', id: 'discover_places#1', title: 'searched nearby', summary: "5 spots — Wagyu Steak & Hamburger, Wagyu, +3 more (5 didn't fit)", status: 'done' },
-  { at: 6999, vis: 'debug', id: 'agent.tool_decision#2', title: 'thinking', summary: null, status: 'active' },
-  { at: 11796, vis: 'debug', id: 'agent.tool_decision#2', title: 'thinking', summary: 'drafting the reply…', status: 'done' },
+  { at: 6999, vis: 'user', id: 'agent.tool_decision#2', title: 'thinking', summary: null, status: 'active' },
+  { at: 7500, delta: 'five that fit. ', id: 'agent.tool_decision#2' },
+  { at: 8200, delta: 'the Shibuya one is the pick for tonight', id: 'agent.tool_decision#2' },
+  { at: 11796, vis: 'user', id: 'agent.tool_decision#2', title: 'thinking', summary: 'drafting the reply…', status: 'done' },
   { at: 11800, done: true },
 ];
 
@@ -280,15 +293,27 @@ function RealStreamDemo() {
           setDurationMs(f.at);
           return;
         }
+        if ('delta' in f) {
+          // Live thinking text onto the row already on screen.
+          setSteps((prev) =>
+            prev.map((s) =>
+              s.id === f.id ? { ...s, narration: (s.narration ?? '') + f.delta } : s,
+            ),
+          );
+          return;
+        }
         if (f.vis === 'debug') return; // reducer drops debug frames
         setSteps((prev) => {
+          const i = prev.findIndex((s) => s.id === f.id);
           const step: ReasoningBlockStep = {
             id: f.id,
             status: f.status,
             title: f.title || undefined,
             summary: f.summary,
           };
-          const i = prev.findIndex((s) => s.id === f.id);
+          // A `done` frame supersedes whatever typed out; an active re-upsert keeps it.
+          const narration = i === -1 ? undefined : prev[i].narration;
+          if (f.status === 'active' && narration) step.narration = narration;
           if (i === -1) return [...prev, step];
           const next = prev.slice();
           next[i] = step;
@@ -310,7 +335,16 @@ function RealStreamDemo() {
 // Real long/raw summaries from a live stream (the halal-dinner turn) — verifies
 // the narration clamp holds: a model-list line and a multi-paragraph draft.
 const LONG_STEPS: ReasoningBlockStep[] = [
-  { id: 'l1', status: 'done', title: 'found your location', summary: 'around Izumi 2, Suginami, Japan.' },
+  // Raw model monologue still typing — the clamp has to hold on narration too,
+  // not just on settled summaries.
+  {
+    id: 'l1',
+    status: 'active',
+    title: 'thinking',
+    summary: null,
+    narration:
+      "right, halal and it's already late — the Shinjuku places will be winding down, so I should weight the ones that run past midnight and are walkable from where they'll be coming from, rather than the higher-rated ones further out",
+  },
   {
     id: 'l2',
     status: 'done',

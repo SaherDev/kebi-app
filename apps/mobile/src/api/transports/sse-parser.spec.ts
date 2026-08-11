@@ -4,6 +4,8 @@ import {
   SseDone,
   SseError,
   SseMessage,
+  SseMessageDelta,
+  SseReasoningDelta,
   SseReasoningStep,
 } from '../models/sse';
 
@@ -29,14 +31,40 @@ describe('parseSseFrames', () => {
     const p = parseSseFrames();
     const events = [
       ...p.push(frame('reasoning_step', ACTIVE)),
+      ...p.push(frame('reasoning_delta', { id: 'find_saved#0', text: 'checking ' })),
+      ...p.push(frame('message_delta', { text: 'tonight, ', promote: true })),
       ...p.push(frame('message', { content: 'here you go', entities: [] })),
       ...p.push(frame('done', { tool_calls_used: 1 })),
     ];
 
-    expect(events.map((e) => e.type)).toEqual(['reasoning_step', 'message', 'done']);
+    expect(events.map((e) => e.type)).toEqual([
+      'reasoning_step',
+      'reasoning_delta',
+      'message_delta',
+      'message',
+      'done',
+    ]);
     expect(events[0].data).toBeInstanceOf(SseReasoningStep);
-    expect(events[1].data).toBeInstanceOf(SseMessage);
-    expect(events[2].data).toBeInstanceOf(SseDone);
+    expect(events[1].data).toBeInstanceOf(SseReasoningDelta);
+    expect(events[2].data).toBeInstanceOf(SseMessageDelta);
+    expect(events[3].data).toBeInstanceOf(SseMessage);
+    expect(events[4].data).toBeInstanceOf(SseDone);
+  });
+
+  it('carries promote through, and leaves it unset when absent', () => {
+    const p = parseSseFrames();
+    const [seed] = p.push(frame('message_delta', { text: 'tonight, ', promote: true }));
+    const [more] = p.push(frame('message_delta', { text: 'go to Luigis' }));
+    expect((seed.data as SseMessageDelta).promote).toBe(true);
+    expect((more.data as SseMessageDelta).promote).toBeUndefined();
+  });
+
+  it('keeps delta text verbatim — whitespace is load-bearing when appending', () => {
+    const p = parseSseFrames();
+    // A single leading space belongs to SSE framing; a second one is data, and
+    // dropping it would glue two streamed words together.
+    const [ev] = p.push('event: reasoning_delta\ndata: {"id":"a#0","text":" so let me"}\n\n');
+    expect((ev.data as SseReasoningDelta).text).toBe(' so let me');
   });
 
   it('upserts a step lifecycle — active then done share the id', () => {

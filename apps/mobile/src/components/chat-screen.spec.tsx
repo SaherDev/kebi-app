@@ -168,6 +168,95 @@ describe('ChatScreen', () => {
     await waitFor(() => expect(getByText('hey saher, what is the move?')).toBeTruthy());
   });
 
+  it('types the thinking out live, then promotes it into the answer', async () => {
+    // The trivial-turn shape: one thinking row, no tool steps, no location step
+    // — the agent's talk turns out to BE the answer, so it moves.
+    const { release } = scriptGatedStream(
+      [
+        frame('reasoning_step', {
+          id: 'agent.tool_decision#0',
+          step: 'agent.tool_decision',
+          title: 'thinking',
+          summary: null,
+          status: 'active',
+          visibility: 'user',
+        }),
+        frame('reasoning_delta', { id: 'agent.tool_decision#0', text: 'hey saher' }),
+        frame('reasoning_delta', { id: 'agent.tool_decision#0', text: " — that's you" }),
+      ],
+      [
+        frame('message_delta', { text: "hey saher — that's you, ", promote: true }),
+        frame('message_delta', { text: 'we have met' }),
+        frame('message', { content: "hey saher — that's you, we have met", entities: [] }),
+        frame('done', { tool_calls_used: 0 }),
+      ],
+    );
+
+    const { submit, getByText, queryByText } = renderChat();
+    submit('whats my name?');
+
+    // Mid-stream: the thinking is typing into the trace row, not the bubble.
+    await waitFor(() => expect(getByText("hey saher — that's you")).toBeTruthy());
+
+    release();
+
+    // Promoted: the same words now live in the answer, and the trace row no
+    // longer holds the typed text (its own summary fills in later).
+    await waitFor(() => expect(getByText("hey saher — that's you, we have met")).toBeTruthy());
+    expect(queryByText("hey saher — that's you")).toBeNull();
+  });
+
+  it('streams the answer as plain prose, then the final frame links the names', async () => {
+    const { release } = scriptGatedStream(
+      [
+        frame('message_delta', { text: 'tonight, ' }),
+        frame('message_delta', { text: 'go to Contact Tokyo' }),
+      ],
+      [
+        frame('message', {
+          content: 'tonight, go to [Contact Tokyo](kebi://venue/c0ffee00)',
+          entities: [
+            {
+              kind: 'venue',
+              key: 'c0ffee00',
+              name: 'Contact Tokyo',
+              uri: 'kebi://venue/c0ffee00',
+              icon: '🪩',
+            },
+          ],
+        }),
+        frame('done', { tool_calls_used: 1 }),
+      ],
+    );
+
+    const { submit, getByText, getAllByText, queryByText } = renderChat();
+    submit('drinks tonight');
+
+    // Streaming: one accumulated run of prose, no links yet.
+    await waitFor(() => expect(getByText('tonight, go to Contact Tokyo')).toBeTruthy());
+
+    release();
+
+    // The final frame replaced it wholesale: same words, now tappable (inline +
+    // the rail chip) — and never the raw markdown.
+    await waitFor(() => expect(getAllByText('Contact Tokyo')).toHaveLength(2));
+    expect(getByText(/tonight, go to/)).toBeTruthy(); // the prose around the link
+    expect(queryByText(/kebi:\/\//)).toBeNull();
+  });
+
+  it('renders a turn that carries no deltas at all, exactly as before', async () => {
+    // Old backend / fast path: `message` alone must still render the answer.
+    scriptStream([
+      frame('message', { content: 'no deltas here', entities: [] }),
+      frame('done', { tool_calls_used: 0 }),
+    ]);
+
+    const { submit, getByText } = renderChat();
+    submit('hey');
+
+    await waitFor(() => expect(getByText('no deltas here')).toBeTruthy());
+  });
+
   it('shows an inline error when the stream emits an error frame', async () => {
     scriptStream([frame('error', { detail: 'agent disabled' })]);
 

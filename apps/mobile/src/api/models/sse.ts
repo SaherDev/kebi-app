@@ -5,6 +5,8 @@ import type {
   SseDone as SseDoneContract,
   SseError as SseErrorContract,
   SseMessage as SseMessageContract,
+  SseMessageDelta as SseMessageDeltaContract,
+  SseReasoningDelta as SseReasoningDeltaContract,
   SseReasoningStep as SseReasoningStepContract,
 } from '@kebi-app/shared';
 import { ChatEntitySchema } from './chat';
@@ -55,6 +57,45 @@ export const SseReasoningStepSchema = z
     timestamp: z.string().optional(),
   })
   .transform((p) => new SseReasoningStep(p));
+
+/**
+ * A `reasoning_delta` frame: a fragment of the agent's thinking, appended to the
+ * `active` row already on screen with the same `id`. The row's later `done`
+ * frame supersedes whatever typed out here.
+ */
+export class SseReasoningDelta implements SseReasoningDeltaContract {
+  readonly id: string;
+  readonly text: string;
+
+  constructor(p: SseReasoningDeltaContract) {
+    this.id = p.id;
+    this.text = p.text;
+  }
+}
+
+export const SseReasoningDeltaSchema = z
+  .object({ id: z.string(), text: z.string() })
+  .transform((p) => new SseReasoningDelta(p));
+
+/**
+ * A `message_delta` frame: a fragment of the answer. `promote` marks the first
+ * delta of an answer that had been typing into a thinking row — it carries the
+ * full prefix, so the client seeds the bubble with it rather than appending.
+ * Plain prose only: never linkified client-side, and never markdown.
+ */
+export class SseMessageDelta implements SseMessageDeltaContract {
+  readonly text: string;
+  readonly promote?: boolean;
+
+  constructor(p: SseMessageDeltaContract) {
+    this.text = p.text;
+    if (p.promote !== undefined) this.promote = p.promote;
+  }
+}
+
+export const SseMessageDeltaSchema = z
+  .object({ text: z.string(), promote: z.boolean().optional() })
+  .transform((p) => new SseMessageDelta(p));
 
 /**
  * The final `message` frame. `content` already carries the answer's entity

@@ -7,7 +7,12 @@ import {
   useRef,
   type ReactNode,
 } from 'react';
-import type { ChatEntity, SseReasoningStep } from '@kebi-app/shared';
+import type {
+  ChatEntity,
+  SseMessageDelta,
+  SseReasoningDelta,
+  SseReasoningStep,
+} from '@kebi-app/shared';
 import type { ReasoningBlockStep } from './reasoning-block';
 
 /**
@@ -38,8 +43,10 @@ export interface KebiTurn {
   role: 'kebi';
   /** Reasoning steps, upserted by id — fed straight into <ReasoningBlock>. */
   steps: ReasoningBlockStep[];
-  /** Assistant text (the `message` frame content) — entity names in it are
-   *  markdown links to `kebi://{kind}/{key}` (ADR-136). */
+  /** Assistant text. While the answer streams this is the accumulated
+   *  `message_delta` prose (plain, link-free); the final `message` frame
+   *  replaces it wholesale with content whose entity names are markdown links
+   *  to `kebi://{kind}/{key}` (ADR-136). */
   message: string;
   /** One per link in `message`, resolving what a tap opens. */
   entities: ChatEntity[];
@@ -66,6 +73,8 @@ interface TranscriptState {
 type Action =
   | { type: 'START_TURN'; text: string; userKey: string; kebiKey: string; at: number }
   | { type: 'UPSERT_STEP'; kebiKey: string; step: SseReasoningStep }
+  | { type: 'APPEND_STEP_TEXT'; kebiKey: string; delta: SseReasoningDelta }
+  | { type: 'APPEND_MESSAGE'; kebiKey: string; delta: SseMessageDelta }
   | { type: 'SET_MESSAGE'; kebiKey: string; content: string; entities: ChatEntity[] }
   | { type: 'FINISH'; kebiKey: string; toolCallsUsed: number; now: number }
   | { type: 'STOP'; kebiKey: string; now: number }
@@ -74,9 +83,22 @@ type Action =
   | { type: 'CLEAR' }
   | { type: 'RESTORE'; turns: ChatTurn[] };
 
-/** Map an SSE reasoning step onto the presentational shape ReasoningBlock wants. */
-function toBlockStep(step: SseReasoningStep): ReasoningBlockStep {
-  return { id: step.id, status: step.status, title: step.title, summary: step.summary };
+/**
+ * Map an SSE reasoning step onto the presentational shape ReasoningBlock wants.
+ *
+ * `narration` (live `reasoning_delta` text) is carried over only while the step
+ * is still `active`: the `done` frame supersedes whatever typed out, so dropping
+ * it there is what makes the row settle onto its authoritative `summary`.
+ */
+function toBlockStep(step: SseReasoningStep, prev?: ReasoningBlockStep): ReasoningBlockStep {
+  const next: ReasoningBlockStep = {
+    id: step.id,
+    status: step.status,
+    title: step.title,
+    summary: step.summary,
+  };
+  if (step.status === 'active' && prev?.narration) next.narration = prev.narration;
+  return next;
 }
 
 /** Apply `fn` to the kebi turn with `key`, leaving every other turn untouched. */
@@ -119,9 +141,9 @@ function reducer(state: TranscriptState, action: Action): TranscriptState {
       // Debug steps ride the stream but never render (ADR-102) — the store owns
       // this policy, not the parser.
       if (action.step.visibility === 'debug') return state;
-      const next = toBlockStep(action.step);
       return mapKebi(state, action.kebiKey, (turn) => {
-        const idx = turn.steps.findIndex((s) => s.id === next.id);
+        const idx = turn.steps.findIndex((s) => s.id === action.step.id);
+        const next = toBlockStep(action.step, idx === -1 ? undefined : turn.steps[idx]);
         // Replace only the matched step (new object); keep every other step's
         // reference so the memoized StepRow doesn't re-run its animations.
         const steps =
@@ -132,7 +154,38 @@ function reducer(state: TranscriptState, action: Action): TranscriptState {
       });
     }
 
+    case 'APPEND_STEP_TEXT':
+      // Live thinking text for a row already on screen. An id with no matching
+      // row is a delta for a step the store dropped (debug) or never saw — skip
+      // it rather than inventing a row the contract never announced.
+      return mapKebi(state, action.kebiKey, (turn) => {
+        const idx = turn.steps.findIndex((s) => s.id === action.delta.id);
+        if (idx === -1) return turn;
+        const steps = turn.steps.map((s, i) =>
+          i === idx ? { ...s, narration: (s.narration ?? '') + action.delta.text } : s,
+        );
+        return { ...turn, steps };
+      });
+
+    case 'APPEND_MESSAGE':
+      return mapKebi(state, action.kebiKey, (turn) => {
+        if (!action.delta.promote) {
+          return { ...turn, message: turn.message + action.delta.text };
+        }
+        // Promote: the text that had been typing into a thinking row IS the
+        // start of the answer. This delta carries the full prefix, so the
+        // bubble is SEEDED (not appended to) and the row's typed narration is
+        // cleared — nothing the user read is lost, it moves. The row stays; its
+        // `done` frame fills the summary.
+        const steps = turn.steps.map((s) =>
+          s.status === 'active' && s.narration ? { ...s, narration: undefined } : s,
+        );
+        return { ...turn, steps, message: action.delta.text };
+      });
+
     case 'SET_MESSAGE':
+      // Authoritative — a wholesale replace of whatever streamed, never a diff
+      // or append. Same words; the links are what's new.
       return mapKebi(state, action.kebiKey, (turn) => ({
         ...turn,
         message: action.content,
@@ -186,6 +239,11 @@ export interface ChatTranscriptValue {
   /** Append a user turn + an empty streaming kebi turn; returns the kebi key. */
   startTurn: (text: string) => string;
   upsertStep: (kebiKey: string, step: SseReasoningStep) => void;
+  /** Append live thinking text to the `active` step the delta's `id` names. */
+  appendStepText: (kebiKey: string, delta: SseReasoningDelta) => void;
+  /** Append (or, on `promote`, seed) the streaming answer text. */
+  appendMessage: (kebiKey: string, delta: SseMessageDelta) => void;
+  /** Final `message` frame — replaces the streamed text wholesale. */
   setMessage: (kebiKey: string, content: string, entities: ChatEntity[]) => void;
   finishTurn: (kebiKey: string, toolCallsUsed: number) => void;
   /** User cancelled the stream — finish the turn and mark it stopped. */
@@ -202,6 +260,8 @@ const fallback: ChatTranscriptValue = {
   turns: [],
   startTurn: () => '',
   upsertStep: () => undefined,
+  appendStepText: () => undefined,
+  appendMessage: () => undefined,
   setMessage: () => undefined,
   finishTurn: () => undefined,
   stopTurn: () => undefined,
@@ -228,6 +288,14 @@ export function ChatTranscriptProvider({ children }: { children: ReactNode }) {
 
   const upsertStep = useCallback((kebiKey: string, step: SseReasoningStep) => {
     dispatch({ type: 'UPSERT_STEP', kebiKey, step });
+  }, []);
+
+  const appendStepText = useCallback((kebiKey: string, delta: SseReasoningDelta) => {
+    dispatch({ type: 'APPEND_STEP_TEXT', kebiKey, delta });
+  }, []);
+
+  const appendMessage = useCallback((kebiKey: string, delta: SseMessageDelta) => {
+    dispatch({ type: 'APPEND_MESSAGE', kebiKey, delta });
   }, []);
 
   const setMessage = useCallback(
@@ -266,6 +334,8 @@ export function ChatTranscriptProvider({ children }: { children: ReactNode }) {
       turns: state.turns,
       startTurn,
       upsertStep,
+      appendStepText,
+      appendMessage,
       setMessage,
       finishTurn,
       stopTurn,
@@ -274,7 +344,7 @@ export function ChatTranscriptProvider({ children }: { children: ReactNode }) {
       clearTranscript,
       restoreTranscript,
     }),
-    [state.turns, startTurn, upsertStep, setMessage, finishTurn, stopTurn, failTurn, toggleCollapse, clearTranscript, restoreTranscript],
+    [state.turns, startTurn, upsertStep, appendStepText, appendMessage, setMessage, finishTurn, stopTurn, failTurn, toggleCollapse, clearTranscript, restoreTranscript],
   );
 
   return <ChatTranscriptContext.Provider value={value}>{children}</ChatTranscriptContext.Provider>;

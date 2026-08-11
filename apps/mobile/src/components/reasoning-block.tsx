@@ -20,8 +20,10 @@ import { DURATION, STAGGER_MS } from '../theme/motion';
  *
  * Driven entirely by the ADR-102 stream lifecycle the chat screen upserts by
  * `id`: a `done` step shows a filled check node + its narration; an `active`
- * step shows a ring + pulsing dot + shimmer skeleton (because its `summary` is
- * still `null`) — and an interrupted step left `active` simply stays a skeleton.
+ * step shows a ring + pulsing dot over its live thinking text as
+ * `reasoning_delta` frames type it out — falling back to a shimmer skeleton
+ * until the first delta lands (or for a stream that sends none at all), and an
+ * interrupted step keeps whatever had typed out when the stream died.
  * There are no pending rows and no "step N of M": the agent is dynamic, so the
  * contract carries no total (see api-contract.md). The run-level `done` flag
  * flips the header dot to success and is the cue to collapse on the next turn.
@@ -37,6 +39,13 @@ export interface ReasoningBlockStep {
   title?: string;
   /** Result detail — the muted line (contract `summary`); `null` while active → skeleton. */
   summary: string | null;
+  /**
+   * Live thinking text accumulated from `reasoning_delta` frames while the step
+   * is active — the agent talking as it works. Rendered in place of the shimmer
+   * (which stays as the empty state, before the first delta lands), and dropped
+   * when the step's `done` frame supersedes it with an authoritative `summary`.
+   */
+  narration?: string;
 }
 
 export interface ReasoningBlockProps {
@@ -210,7 +219,9 @@ function Chevron({ expanded }: { expanded: boolean }) {
 }
 
 /**
- * One step: node on the rail + narration, or a shimmer skeleton while active.
+ * One step: node on the rail + narration (the settled `summary`, or the live
+ * text streaming into it), falling back to a shimmer skeleton while active with
+ * nothing to show yet.
  *
  * Memoized: the stream upserts by id, keeping referential identity for unchanged
  * steps (see the chat reducer), so a new frame only re-renders the row that
@@ -263,14 +274,18 @@ const StepRow = memo(function StepRow({
             {step.title}
           </Text>
         ) : null}
-        {step.summary ? (
+        {step.summary ?? step.narration ? (
           // Result detail — muted under a title, primary when there's no title.
+          // While the step is active this is the live `reasoning_delta` text
+          // typing out; the `done` frame swaps it for the authoritative summary.
+          // Clamped either way: the trace narrates, the answer carries the
+          // content, so a long monologue must not push the answer off-screen.
           <Text
             numberOfLines={summaryLines}
             className={step.title ? 'text-[12px] text-text-muted' : 'text-[13px] text-text'}
             style={{ lineHeight: step.title ? 18 : 20 }}
           >
-            {step.summary}
+            {step.summary ?? step.narration}
           </Text>
         ) : interrupted ? (
           // The run was stopped before this step finished — mark it failed. With
