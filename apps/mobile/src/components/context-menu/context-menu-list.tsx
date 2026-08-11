@@ -47,7 +47,10 @@ export function ContextMenuList({ items, onSelect, maxHeight }: ContextMenuListP
         className="flex-row items-center gap-2.5 rounded-medium px-2.5 py-2 active:bg-surface"
       >
         <View className="w-5 items-center">
-          <Text className="text-[15px]">{item.emoji}</Text>
+          {/* Emoji glyphs render taller than their font box; without explicit
+              line-height room iOS clips the tall ones (✍️, 🗑️) — same fix as
+              settings-row. */}
+          <Text style={{ fontSize: 15, lineHeight: 19 }}>{item.emoji}</Text>
         </View>
         <Text
           className={`text-small font-medium ${item.destructive ? 'text-danger' : 'text-text'}`}

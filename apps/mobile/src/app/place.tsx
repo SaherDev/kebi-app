@@ -31,7 +31,11 @@ import { useChat } from '../components/chat-context';
 import { PLACE_ORIGIN_CHAT } from '../components/use-open-chat-entity';
 import { usePlaceActions } from '../components/place-actions-context';
 import { useNoteSheet } from '../components/note-sheet-context';
-import { useCurateMenuItem } from '../components/use-curate-menu-item';
+import {
+  placeCurateTarget,
+  useCurateMenuItem,
+  withCurateItem,
+} from '../components/use-curate-menu-item';
 import { buildMapsTargets } from '../lib/maps-links';
 import { sharePlace } from '../lib/place-share';
 import { PRESS } from '../theme/motion';
@@ -298,27 +302,8 @@ function PlaceMenuSheet({
   // sheet, anchored to this place. Null for everyone else, so the row is simply
   // absent rather than disabled. Not added to usePlaceMenuItems itself — that
   // builder also feeds the library card long-press, which is not a door.
-  const curateItem = useCurateMenuItem(
-    useMemo(
-      () => ({
-        // `id` is nullable on PlaceCore (a place kebi surfaced but never
-        // catalogued). No id means no anchor rather than a wrong one: the note
-        // still sends, and kebi resolves the subject from the prose the way it
-        // does for unanchored writes.
-        anchor: view.place.id ? { place_id: view.place.id } : undefined,
-        view: {
-          emoji: placeEmoji(view.place),
-          name: view.place.place_name,
-          context: view.place.location?.city ?? undefined,
-        },
-      }),
-      [view.place],
-    ),
-  );
-  const items = useMemo(
-    () => (curateItem ? [...placeItems, curateItem] : placeItems),
-    [placeItems, curateItem],
-  );
+  const curateItem = useCurateMenuItem(useMemo(() => placeCurateTarget(view.place), [view.place]));
+  const items = useMemo(() => withCurateItem(placeItems, curateItem), [placeItems, curateItem]);
   return (
     <ActionSheet
       open={open}

@@ -2,8 +2,9 @@ import type { ReactNode } from 'react';
 import { renderHook } from '@testing-library/react-native';
 import { NO_CAPABILITIES } from '../capabilities/capability';
 import { CapabilitiesProvider } from '../capabilities/capabilities-context';
-import { useCurateMenuItem } from './use-curate-menu-item';
+import { placeCurateTarget, useCurateMenuItem, withCurateItem } from './use-curate-menu-item';
 import type { CurateTarget } from './curate-sheet-context';
+import type { ContextMenuItem } from './context-menu/context-menu-types';
 
 const mockOpen = jest.fn();
 jest.mock('./curate-sheet-context', () => ({
@@ -60,6 +61,67 @@ describe('useCurateMenuItem', () => {
     result.current?.onPress();
 
     expect(mockOpen).toHaveBeenCalledWith(TARGET);
+  });
+
+  describe('withCurateItem', () => {
+    const item = (label: string, destructive = false): ContextMenuItem => ({
+      emoji: '·',
+      label,
+      destructive,
+      onPress: () => undefined,
+    });
+    const CURATE = item('add what you know');
+
+    it('slots the row before the destructive items, never after them', () => {
+      // The long-press menu draws its divider before the first destructive item,
+      // so appending would land a public write below "forget this place".
+      const menu = [item('looks right'), item('been there'), item('forget', true)];
+
+      expect(withCurateItem(menu, CURATE).map((i) => i.label)).toEqual([
+        'looks right',
+        'been there',
+        'add what you know',
+        'forget',
+      ]);
+    });
+
+    it('appends when the menu has no destructive item', () => {
+      const menu = [item('open'), item('save it')];
+
+      expect(withCurateItem(menu, CURATE).map((i) => i.label)).toEqual([
+        'open',
+        'save it',
+        'add what you know',
+      ]);
+    });
+
+    it('returns the menu untouched for a non-insider', () => {
+      const menu = [item('looks right'), item('forget', true)];
+
+      expect(withCurateItem(menu, null)).toBe(menu);
+    });
+  });
+
+  describe('placeCurateTarget', () => {
+    const place = (id: string | null) =>
+      ({
+        id,
+        place_name: 'Single Fin Bali',
+        icon: '🏄',
+        categories: [],
+        location: { city: 'Bali' },
+      }) as never;
+
+    it('anchors to the place id', () => {
+      expect(placeCurateTarget(place('place_1'))).toMatchObject({
+        anchor: { place_id: 'place_1' },
+        view: { name: 'Single Fin Bali', context: 'Bali' },
+      });
+    });
+
+    it('sends no anchor when the place has no catalog id, rather than a wrong one', () => {
+      expect(placeCurateTarget(place(null)).anchor).toBeUndefined();
+    });
   });
 
   it('denies while the capability is unresolved (fail closed)', () => {
