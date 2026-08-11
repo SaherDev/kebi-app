@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Kebi Chat — Polish Pass (answer contrast · stop · send)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg:#FAFAF9; --surface:#F1F1EF; --surface-2:#E8E8E5;
+    --text:#1A1A1A; --text-muted:#8A8A87; --text-soft:#B5B5B1;
+    --danger:#D14343; --pill-danger:#FCEEEE;
+  }
+  html,body{ background:#2A2A28; font-family:'Inter',system-ui,sans-serif;
+    -webkit-font-smoothing:antialiased; min-height:100vh; color:#EDEDEA; padding:40px 24px 64px; }
+  h1{ font-size:22px; font-weight:700; letter-spacing:-.01em; margin-bottom:6px; }
+  h2{ font-size:17px; font-weight:700; letter-spacing:-.01em; margin:44px 0 6px;
+    padding-top:28px; border-top:1px solid #3A3A37; }
+  .lede{ font-size:14px; color:#B5B5B1; max-width:900px; line-height:1.55; margin-bottom:30px; }
+  .lede b{ color:#D9D9D5; font-weight:600; }
+  .lede code{ background:#3A3A37; padding:1px 5px; border-radius:5px; font-size:12.5px; }
+  .cols{ display:flex; gap:36px; align-items:flex-start; flex-wrap:wrap; }
+  .col{ width:360px; }
+  .cap{ font-size:13px; font-weight:600; color:#9A9A96; margin-bottom:4px; }
+  .cap b{ color:#D9D9D5; }
+  .subcap{ font-size:12px; color:#8A8A87; line-height:1.5; margin-bottom:12px; min-height:50px; }
+  .subcap code{ background:#3A3A37; padding:1px 5px; border-radius:5px; font-size:11.5px; }
+
+  .stage{ background:var(--bg); border-radius:24px; padding:16px; }
+
+  /* ── turn chrome (matches chat-screen.tsx rows) ── */
+  .eyebrow{ display:flex; align-items:center; gap:8px; margin-bottom:6px; }
+  .eyebrow.you{ justify-content:flex-end; }
+  .eyebrow .who{ font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.08em; color:var(--text-soft); }
+  .eyebrow .time{ font-size:11px; color:var(--text-soft); }
+
+  .uturn{ text-align:right; margin-bottom:18px; }
+  .uturn .utext{ font-size:16px; line-height:1.6; color:var(--text); letter-spacing:-.005em; }
+
+  .reasoning{ background:var(--surface); border-radius:12px; padding:9px 11px; display:flex;
+    align-items:center; gap:8px; margin-bottom:10px; }
+  .reasoning .dot{ width:6px; height:6px; border-radius:50%; background:#5B8A4E; flex-shrink:0; }
+  .reasoning .lbl{ font-size:12.5px; font-weight:600; color:var(--text); }
+  .reasoning .meta{ font-size:12px; color:var(--text-soft); }
+  .reasoning .chev{ margin-left:auto; color:var(--text-soft); font-size:12px; }
+
+  .prose{ font-size:16px; line-height:1.6; letter-spacing:-.005em; }
+  .prose p + p{ margin-top:12px; }
+  .prose .strong{ font-weight:600; color:var(--text); }
+  .commentary{ font-size:14px; line-height:1.6; color:var(--text-soft); margin-bottom:10px; }
+
+  /* §1 tiers under comparison */
+  .tier-ink   { color:#1A1A1A; }
+  .tier-body  { color:#44423E; }
+  .tier-muted { color:#6F6F6B; }
+
+  /* ── composer (matches the pill in chat-screen.tsx) ── */
+  .composer{ display:flex; flex-direction:column; }
+  .draftline{ font-size:16px; color:var(--text-soft); padding:6px 8px 14px; }
+  .draftline.filled{ color:var(--text); }
+  .pillbar{ display:flex; align-items:center; gap:24px; align-self:flex-end;
+    background:var(--surface); border-radius:999px; padding:12px 20px; }
+  .pillbar .ic{ display:inline-flex; }
+  .pillbar svg{ width:18px; height:18px; stroke:var(--text); stroke-width:1.6; fill:none;
+    stroke-linecap:round; stroke-linejoin:round; }
+  .pillbar .soft svg{ stroke:var(--text-soft); }
+
+  /* round action button used by stop/send options */
+  .orb{ width:36px; height:36px; border-radius:50%; display:flex; align-items:center;
+    justify-content:center; flex-shrink:0; }
+  .orb.ink{ background:var(--text); }
+  .orb.danger-tint{ background:var(--pill-danger); }
+  .orb.outline{ background:transparent; border:2px solid var(--text); }
+  .orb.surface{ background:var(--surface-2); }
+  .orb .sq{ width:12px; height:12px; border-radius:3px; background:var(--bg); }
+  .orb.danger-tint .sq{ background:var(--danger); }
+  .orb.outline .sq{ background:var(--text); }
+  .orb svg{ width:16px; height:16px; fill:none; stroke-width:1.8;
+    stroke-linecap:round; stroke-linejoin:round; }
+  .orb.ink svg{ stroke:var(--bg); }
+  .orb.surface svg{ stroke:var(--text-soft); }
+  .orb.pressed{ transform:scale(.88); opacity:.85; }
+
+  /* bare icons (today's look, kept in some options) */
+  .bare svg{ width:18px; height:18px; fill:none; stroke-width:1.8;
+    stroke-linecap:round; stroke-linejoin:round; }
+  .bare.inkline svg{ stroke:var(--text); stroke-width:2.4; }
+  .bare.softline svg{ stroke:var(--text-soft); }
+  .bare.pressed{ transform:scale(.85); opacity:.7; }
+  .flash{ background:var(--surface-2); border-radius:50%; width:34px; height:34px;
+    display:flex; align-items:center; justify-content:center; }
+
+  .staterow{ display:flex; flex-direction:column; gap:14px; }
+  .statelbl{ font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.08em;
+    color:var(--text-soft); margin:0 0 6px 4px; }
+
+  /* chosen-option marker (same convention as the other options files) */
+  .col.picked .stage{ box-shadow:0 0 0 3px #5B8A4E; }
+  .col.picked .cap b{ color:#8FBF7F; }
+  .col.dropped{ opacity:.42; }
+  .badge{ display:inline-block; background:#5B8A4E; color:#F3F8F0; font-size:10px; font-weight:700;
+    text-transform:uppercase; letter-spacing:.08em; border-radius:5px; padding:2px 6px; margin-left:7px; }
+</style>
+</head>
+<body>
+
+<h1>chat polish — answer contrast · stop that means stop · send you can feel</h1>
+<p class="lede">
+  three small fixes to the chat screen, options side by side. <b>§1</b> — kebi's answer body currently renders
+  in <code>--text-muted</code> (#8A8A87) so the product's main content reads as secondary text. <b>§2</b> — the stop
+  control is a thin outline square with the same weight as the mic; it doesn't read as "this kills the stream".
+  <b>§3</b> — send is a bare icon with no pressed feedback and no armed state. §2 and §3 are the same physical
+  button (send ⇄ stop toggle), so pick a pair that matches.
+</p>
+
+<!-- ═══════════════════════ §1 — answer text contrast ═══════════════════════ -->
+<h2>§1 · answer text — how dark should kebi speak?</h2>
+<p class="lede">
+  every option keeps the two-tier rule: commentary (agent working) stays <code>--text-soft</code>, bold/link spans stay
+  full ink. only the <b>answer body</b> tier changes. the user turn is shown above for the contrast relationship.
+</p>
+<div class="cols">
+
+  <div class="col picked">
+    <div class="cap"><b>1a · full ink</b><span class="badge">locked</span></div>
+    <div class="subcap">answer body = <code>--text</code> (#1A1A1A), same as the user's messages. maximum readability; the voices are distinguished by layout (left/right + eyebrow), not by color.</div>
+    <div class="stage">
+      <div class="eyebrow you"><span class="time">2:09 pm</span><span class="who">you</span></div>
+      <div class="uturn"><div class="utext">try again</div></div>
+      <div class="eyebrow"><span class="who">kebi</span><span class="time">2:09 pm</span></div>
+      <div class="commentary">looking back at your saves for the gili leg…</div>
+      <div class="prose tier-ink">
+        <p>monday is actually a great night to be in canggu, and your saves line up with it.</p>
+        <p>start at <span class="strong">Luigi's</span> — monday is literally their night, house and techno DJ set, pizza plus proper dancefloor energy.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="col dropped">
+    <div class="cap"><b>1b · warm body ink</b></div>
+    <div class="subcap">new token <code>--text-body</code> (#44423E) between ink and muted. clearly readable, but the user's ink stays one step darker — the "two voices" idea survives in color, subtly.</div>
+    <div class="stage">
+      <div class="eyebrow you"><span class="time">2:09 pm</span><span class="who">you</span></div>
+      <div class="uturn"><div class="utext">try again</div></div>
+      <div class="eyebrow"><span class="who">kebi</span><span class="time">2:09 pm</span></div>
+      <div class="commentary">looking back at your saves for the gili leg…</div>
+      <div class="prose tier-body">
+        <p>monday is actually a great night to be in canggu, and your saves line up with it.</p>
+        <p>start at <span class="strong">Luigi's</span> — monday is literally their night, house and techno DJ set, pizza plus proper dancefloor energy.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="col dropped">
+    <div class="cap"><b>1c · darker muted</b></div>
+    <div class="subcap">smallest move: keep the muted idea but darken the token itself to #6F6F6B. safest for the current look, though long answers still read slightly "faded".</div>
+    <div class="stage">
+      <div class="eyebrow you"><span class="time">2:09 pm</span><span class="who">you</span></div>
+      <div class="uturn"><div class="utext">try again</div></div>
+      <div class="eyebrow"><span class="who">kebi</span><span class="time">2:09 pm</span></div>
+      <div class="commentary">looking back at your saves for the gili leg…</div>
+      <div class="prose tier-muted">
+        <p>monday is actually a great night to be in canggu, and your saves line up with it.</p>
+        <p>start at <span class="strong">Luigi's</span> — monday is literally their night, house and techno DJ set, pizza plus proper dancefloor energy.</p>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ═══════════════════════ §2 — stop button ═══════════════════════ -->
+<h2>§2 · stop — a control that means "abort"</h2>
+<p class="lede">
+  all options replace today's thin outline square. shown inside the real composer pill next to the mic,
+  while a turn streams.
+</p>
+<div class="cols">
+
+  <div class="col picked">
+    <div class="cap"><b>2a · ink orb</b><span class="badge">locked</span></div>
+    <div class="subcap">solid <code>--text</code> circle, filled square knocked out in <code>--bg</code>. the classic (chatgpt/claude) stop — the heaviest element on screen exactly while streaming.</div>
+    <div class="stage">
+      <div class="composer">
+        <div class="draftline">tell me what you want…</div>
+        <div class="pillbar">
+          <span class="ic"><svg viewBox="0 0 24 24"><path d="M12 2a3 3 0 013 3v6a3 3 0 01-6 0V5a3 3 0 013-3z"/><path d="M19 10v1a7 7 0 01-14 0v-1"/><path d="M12 18v4"/></svg></span>
+          <span class="orb ink"><span class="sq"></span></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col dropped">
+    <div class="cap"><b>2b · danger tint</b></div>
+    <div class="subcap"><code>--pill-danger-bg</code> circle with a <code>--danger</code> square. unmistakably "abort" — but it's the only red element in chat, so it may read louder than kebi's calm palette wants.</div>
+    <div class="stage">
+      <div class="composer">
+        <div class="draftline">tell me what you want…</div>
+        <div class="pillbar">
+          <span class="ic"><svg viewBox="0 0 24 24"><path d="M12 2a3 3 0 013 3v6a3 3 0 01-6 0V5a3 3 0 013-3z"/><path d="M19 10v1a7 7 0 01-14 0v-1"/><path d="M12 18v4"/></svg></span>
+          <span class="orb danger-tint"><span class="sq"></span></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col dropped">
+    <div class="cap"><b>2c · ringed square</b></div>
+    <div class="subcap">2px ink ring around a solid ink square. stronger than today without a filled disc — the middle ground if 2a feels too heavy for the pill.</div>
+    <div class="stage">
+      <div class="composer">
+        <div class="draftline">tell me what you want…</div>
+        <div class="pillbar">
+          <span class="ic"><svg viewBox="0 0 24 24"><path d="M12 2a3 3 0 013 3v6a3 3 0 01-6 0V5a3 3 0 013-3z"/><path d="M19 10v1a7 7 0 01-14 0v-1"/><path d="M12 18v4"/></svg></span>
+          <span class="orb outline"><span class="sq"></span></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ═══════════════════════ §3 — send button ═══════════════════════ -->
+<h2>§3 · send — armed when typed, felt when pressed</h2>
+<p class="lede">
+  three states per option: <b>empty</b> (no draft), <b>armed</b> (draft has text), <b>pressed</b> (finger down —
+  in the app this is scale/opacity via <code>Pressable</code> + a light haptic). streaming then swaps in whatever §2 wins.
+</p>
+<div class="cols">
+
+  <div class="col picked">
+    <div class="cap"><b>3a · orb toggle</b><span class="badge">locked</span></div>
+    <div class="subcap">empty = soft bare plane (today). typed = the plane <b>pops into an ink orb</b> — the button visibly arms as you type. pressed = orb scales to .88 + dims. pairs naturally with stop 2a: one orb, two glyphs.</div>
+    <div class="stage">
+      <div class="staterow">
+        <div>
+          <div class="statelbl">empty</div>
+          <div class="composer"><div class="draftline">tell me what you want…</div>
+            <div class="pillbar">
+              <span class="ic"><svg viewBox="0 0 24 24"><path d="M12 2a3 3 0 013 3v6a3 3 0 01-6 0V5a3 3 0 013-3z"/><path d="M19 10v1a7 7 0 01-14 0v-1"/><path d="M12 18v4"/></svg></span>
+              <span class="ic bare softline"><svg viewBox="0 0 24 24"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/></svg></span>
+            </div>
+          </div>
+        </div>
+        <div>
+          <div class="statelbl">armed</div>
+          <div class="composer"><div class="draftline filled">3 weeks bali gili lombok</div>
+            <div class="pillbar">
+              <span class="ic"><svg viewBox="0 0 24 24"><path d="M12 2a3 3 0 013 3v6a3 3 0 01-6 0V5a3 3 0 013-3z"/><path d="M19 10v1a7 7 0 01-14 0v-1"/><path d="M12 18v4"/></svg></span>
+              <span class="orb ink"><svg viewBox="0 0 24 24"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/></svg></span>
+            </div>
+          </div>
+        </div>
+        <div>
+          <div class="statelbl">pressed</div>
+          <div class="composer"><div class="draftline filled">3 weeks bali gili lombok</div>
+            <div class="pillbar">
+              <span class="ic"><svg viewBox="0 0 24 24"><path d="M12 2a3 3 0 013 3v6a3 3 0 01-6 0V5a3 3 0 013-3z"/><path d="M19 10v1a7 7 0 01-14 0v-1"/><path d="M12 18v4"/></svg></span>
+              <span class="orb ink pressed"><svg viewBox="0 0 24 24"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/></svg></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col dropped">
+    <div class="cap"><b>3b · heavy line</b></div>
+    <div class="subcap">no orb — the plane itself arms: soft → full ink at a heavier stroke. pressed shows a <code>--surface-2</code> disc flash behind the icon. quietest option; keeps the pill airy but the armed change is easy to miss.</div>
+    <div class="stage">
+      <div class="staterow">
+        <div>
+          <div class="statelbl">empty</div>
+          <div class="composer"><div class="draftline">tell me what you want…</div>
+            <div class="pillbar">
+              <span class="ic"><svg viewBox="0 0 24 24"><path d="M12 2a3 3 0 013 3v6a3 3 0 01-6 0V5a3 3 0 013-3z"/><path d="M19 10v1a7 7 0 01-14 0v-1"/><path d="M12 18v4"/></svg></span>
+              <span class="ic bare softline"><svg viewBox="0 0 24 24"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/></svg></span>
+            </div>
+          </div>
+        </div>
+        <div>
+          <div class="statelbl">armed</div>
+          <div class="composer"><div class="draftline filled">3 weeks bali gili lombok</div>
+            <div class="pillbar">
+              <span class="ic"><svg viewBox="0 0 24 24"><path d="M12 2a3 3 0 013 3v6a3 3 0 01-6 0V5a3 3 0 013-3z"/><path d="M19 10v1a7 7 0 01-14 0v-1"/><path d="M12 18v4"/></svg></span>
+              <span class="ic bare inkline"><svg viewBox="0 0 24 24"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/></svg></span>
+            </div>
+          </div>
+        </div>
+        <div>
+          <div class="statelbl">pressed</div>
+          <div class="composer"><div class="draftline filled">3 weeks bali gili lombok</div>
+            <div class="pillbar">
+              <span class="ic"><svg viewBox="0 0 24 24"><path d="M12 2a3 3 0 013 3v6a3 3 0 01-6 0V5a3 3 0 013-3z"/><path d="M19 10v1a7 7 0 01-14 0v-1"/><path d="M12 18v4"/></svg></span>
+              <span class="flash"><span class="ic bare inkline pressed"><svg viewBox="0 0 24 24"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/></svg></span></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col dropped">
+    <div class="cap"><b>3c · always an orb</b></div>
+    <div class="subcap">the button is a disc in every state: <code>--surface-2</code> with a soft plane when empty, ink when armed, scaled when pressed. biggest tap target and most "button-like" at rest — but the pill gets visually busier.</div>
+    <div class="stage">
+      <div class="staterow">
+        <div>
+          <div class="statelbl">empty</div>
+          <div class="composer"><div class="draftline">tell me what you want…</div>
+            <div class="pillbar">
+              <span class="ic"><svg viewBox="0 0 24 24"><path d="M12 2a3 3 0 013 3v6a3 3 0 01-6 0V5a3 3 0 013-3z"/><path d="M19 10v1a7 7 0 01-14 0v-1"/><path d="M12 18v4"/></svg></span>
+              <span class="orb surface"><svg viewBox="0 0 24 24"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/></svg></span>
+            </div>
+          </div>
+        </div>
+        <div>
+          <div class="statelbl">armed</div>
+          <div class="composer"><div class="draftline filled">3 weeks bali gili lombok</div>
+            <div class="pillbar">
+              <span class="ic"><svg viewBox="0 0 24 24"><path d="M12 2a3 3 0 013 3v6a3 3 0 01-6 0V5a3 3 0 013-3z"/><path d="M19 10v1a7 7 0 01-14 0v-1"/><path d="M12 18v4"/></svg></span>
+              <span class="orb ink"><svg viewBox="0 0 24 24"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/></svg></span>
+            </div>
+          </div>
+        </div>
+        <div>
+          <div class="statelbl">pressed</div>
+          <div class="composer"><div class="draftline filled">3 weeks bali gili lombok</div>
+            <div class="pillbar">
+              <span class="ic"><svg viewBox="0 0 24 24"><path d="M12 2a3 3 0 013 3v6a3 3 0 01-6 0V5a3 3 0 013-3z"/><path d="M19 10v1a7 7 0 01-14 0v-1"/><path d="M12 18v4"/></svg></span>
+              <span class="orb ink pressed"><svg viewBox="0 0 24 24"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/></svg></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>
