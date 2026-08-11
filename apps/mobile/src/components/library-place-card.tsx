@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { useRouter } from 'expo-router';
 import {
   derivePills,
@@ -9,6 +10,11 @@ import { HighlightText } from './highlight-text';
 import { PlaceCardBody, formatDetailLine, type PlaceCardPill } from './place-card-body';
 import { ContextMenuTrigger } from './context-menu/context-menu-trigger';
 import { usePlaceMenuItems } from './use-place-menu-items';
+import {
+  placeCurateTarget,
+  useCurateMenuItem,
+  withCurateItem,
+} from './use-curate-menu-item';
 import { usePlaceDetail } from './place-detail-context';
 import { usePlaceActions } from './place-actions-context';
 import { useTranslation } from '../i18n/context';
@@ -33,7 +39,14 @@ export function LibraryPlaceCard({ view, highlight }: LibraryPlaceCardProps) {
   const router = useRouter();
   const placeDetail = usePlaceDetail();
   const { resolve } = usePlaceActions();
-  const items = usePlaceMenuItems(view);
+  const placeItems = usePlaceMenuItems(view);
+  // The library card is a door too: same actions, same anchor as the place
+  // page's ••• sheet. Null for a non-insider, so the row is simply absent.
+  const curateItem = useCurateMenuItem(useMemo(() => placeCurateTarget(view.place), [view.place]));
+  const items = useMemo(
+    () => withCurateItem(placeItems, curateItem),
+    [placeItems, curateItem],
+  );
 
   const { userData, removed } = resolve(view);
   if (removed) return null; // optimistically gone after a forget

@@ -129,7 +129,7 @@ export function ActionSheet({ open, onClose, header, items, closeLabel }: Action
           <View className="flex-row items-center gap-3 px-1 pb-1 pt-0.5">
             {header.avatar || header.emoji ? (
               <View className="size-9 items-center justify-center overflow-hidden rounded-[10px] bg-surface-2">
-                {header.avatar ?? <Text className="text-[19px]">{header.emoji}</Text>}
+                {header.avatar ?? <Text style={{ fontSize: 19, lineHeight: 24 }}>{header.emoji}</Text>}
               </View>
             ) : null}
             <View>
@@ -187,7 +187,9 @@ function SheetGroup({ items, onClose }: { items: ContextMenuItem[]; onClose: () 
           }`}
         >
           <View className="w-6 items-center">
-            <Text className="text-[17px]">{item.emoji}</Text>
+            {/* Explicit line-height: iOS clips tall emoji (✍️, 🗑️) when the
+                Text has no headroom — same fix as settings-row. */}
+            <Text style={{ fontSize: 17, lineHeight: 21 }}>{item.emoji}</Text>
           </View>
           <View>
             <Text
