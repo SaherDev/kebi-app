@@ -16,11 +16,13 @@ export class UserProfile implements UserProfileContract {
   readonly name: string;
   readonly email: string;
   readonly plan: PlanTier;
+  readonly can_curate: boolean;
 
   constructor(p: UserProfileContract) {
     this.name = p.name;
     this.email = p.email;
     this.plan = p.plan;
+    this.can_curate = p.can_curate;
   }
 }
 
@@ -29,5 +31,9 @@ export const UserProfileSchema = z
     name: z.string(),
     email: z.string(),
     plan: z.enum(PLAN_TIERS),
+    // Defaulted, not required: a gateway that predates the field must not fail
+    // validation and blank the whole settings screen. Absent reads as
+    // not-a-curator, the same fail-closed default the guard uses.
+    can_curate: z.boolean().default(false),
   })
   .transform((p) => new UserProfile(p));

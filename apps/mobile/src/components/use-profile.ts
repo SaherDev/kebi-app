@@ -39,16 +39,15 @@ export function useProfile(): UseProfile {
 
   const refetch = useCallback(() => setNonce((n) => n + 1), []);
 
+  // Both updaters spread `prev` so an added profile field is carried forward
+  // rather than silently dropped — a capability reset by an unrelated name edit
+  // would be a permission bug, not a display one.
   const setLocalName = useCallback((name: string) => {
-    setProfile((prev) =>
-      prev ? new UserProfile({ name, email: prev.email, plan: prev.plan }) : prev,
-    );
+    setProfile((prev) => (prev ? new UserProfile({ ...prev, name }) : prev));
   }, []);
 
   const setLocalPlan = useCallback((plan: PlanTier) => {
-    setProfile((prev) =>
-      prev ? new UserProfile({ name: prev.name, email: prev.email, plan }) : prev,
-    );
+    setProfile((prev) => (prev ? new UserProfile({ ...prev, plan }) : prev));
   }, []);
 
   useEffect(() => {
