@@ -23,6 +23,7 @@ import { Illustration } from '@/components/illustrations/Illustration';
 import { KebiCard } from '@kebi-app/ui';
 import { useHomeStore, type ThreadEntry } from '@/store/home-store';
 import { ChatStream } from '@/components/chat/chat-stream';
+import { TurnProcess } from '@/components/chat/turn-process';
 import { ReasoningCard } from '@/components/chat/renderers/reasoning-step-renderer';
 
 const LOADING_LINES = [
@@ -115,6 +116,11 @@ function ThreadEntryView({ entry }: { entry: ThreadEntry }) {
   }
   if (entry.type === 'reasoning') {
     return <ReasoningThreadEntry steps={entry.steps} />;
+  }
+  if (entry.type === 'process') {
+    // A settled turn: one "thought for Ns" line that expands to the full
+    // interleaved process (ADR-055).
+    return <TurnProcess segments={entry.segments} settled durationMs={entry.durationMs} />;
   }
   if (entry.type === 'error') {
     return null;

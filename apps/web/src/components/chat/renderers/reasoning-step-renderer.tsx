@@ -14,21 +14,52 @@ function useElapsed() {
   return elapsed;
 }
 
-// Used in thread (after streaming) and during streaming — same visual
+/**
+ * The work chip — "thought for 2s" over the tools the agent ran, collapsible.
+ *
+ * WORK ONLY (ADR-055): the agent's own talk is not a row here, it renders as
+ * message prose in the transcript, because the same sentences arrive as
+ * `reasoning_delta` text and drawing them in both places would print each one
+ * twice. `foldChatStream` decides what reaches this component.
+ */
 export function ReasoningCard({
   steps,
   isStreaming = false,
   writingResponse = false,
+  bare = false,
 }: {
   steps: SseReasoningStep[];
   isStreaming?: boolean;
   writingResponse?: boolean;
+  /**
+   * Rows only — no header, no card. Used inside an expanded turn process, where
+   * the turn's own "thought for 19.7s" header already owns the disclosure: a
+   * header per chip there stacks disclosures inside the one just opened, and
+   * times single tool calls at "0.1s".
+   */
+  bare?: boolean;
 }) {
-  const [expanded, setExpanded] = useState(true);
+  const [expanded, setExpanded] = useState(false);
   const elapsed = useElapsed();
   const latestStep = steps[steps.length - 1];
   const stepCount = steps.length;
   const hasSteps = stepCount > 0;
+  // Settled, the chip is one line; while it runs it says what is happening now.
+  const headerLabel = isStreaming
+    ? (latestStep?.title ?? 'thinking')
+    : `thought for ${elapsed}s`;
+
+  if (bare) {
+    return (
+      <div className="flex flex-col gap-3.5 min-w-0">
+        {steps.map((step, i) => (
+          <p key={i} className="text-sm italic leading-relaxed break-words text-foreground/60">
+            {step.summary ?? step.title}
+          </p>
+        ))}
+      </div>
+    );
+  }
 
   return (
     <div className="rounded-2xl border border-border/40 bg-card overflow-hidden min-w-0">
@@ -43,11 +74,11 @@ export function ReasoningCard({
           }`}
         />
         <span className="flex-1 truncate text-sm italic text-muted-foreground min-w-0">
-          {latestStep?.summary ?? 'Starting up…'}
+          {headerLabel}
         </span>
         {hasSteps && (
           <span className="flex shrink-0 items-center gap-1 text-[10px] font-medium uppercase tracking-widest text-muted-foreground/50">
-            {isStreaming ? `${elapsed}s` : `STEP ${stepCount}`}
+            {isStreaming ? `${elapsed}s` : `${stepCount} ${stepCount === 1 ? 'STEP' : 'STEPS'}`}
             {expanded
               ? <ChevronUp className="h-3 w-3" />
               : <ChevronDown className="h-3 w-3" />}
