@@ -123,7 +123,8 @@
     "saved": "saved {{name}}",
     "savedMany": "saved {{count}} places",
     "saveFailed": "couldn't save that — try again",
-    "unsupportedUrl": "that link isn't supported yet"
+    "unsupportedUrl": "that link isn't supported yet",
+    "tryAgain": "try again"
   },
   "library": {
     "eyebrow": "your stash",
@@ -226,12 +227,21 @@
     "placeholder": "paste a link or type a place name...",
     "cta": "save it",
     "saving": "saving",
+    "close": "close",
     "hint": "kebi figures out the rest. you can fix anything later.",
     "source": {
       "tiktok": "looks like a tiktok link",
       "instagram": "looks like an instagram link",
       "youtube": "looks like a youtube link",
       "google_maps_list": "looks like a maps list"
+    },
+    "hintBackground": "you'll get a ping when it's saved.",
+    "working": {
+      "tiktok": "still reading that tiktok — we'll finish in the background",
+      "instagram": "still reading that instagram — we'll finish in the background",
+      "youtube": "still reading that youtube — we'll finish in the background",
+      "google_maps_list": "still reading that maps list — we'll finish in the background",
+      "manual": "still on it — we'll finish in the background"
     }
   },
   "settings": {

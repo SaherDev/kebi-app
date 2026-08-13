@@ -70,6 +70,34 @@ describe('SaveSheet', () => {
     expect(onSubmit).toHaveBeenCalledWith(sharedUrl);
   });
 
+  it('backgrounded → live status line, close CTA works, background hint shows', () => {
+    const onClose = jest.fn();
+    const { getAllByLabelText, getByText, queryByText } = render(
+      <SaveSheet
+        open
+        status="backgrounded"
+        onClose={onClose}
+        onSubmit={noop}
+        initialValue="https://www.tiktok.com/@x/video/1"
+      />,
+    );
+    // The meta line becomes the live status (locked option c).
+    expect(getByText("still reading that tiktok — we'll finish in the background")).toBeTruthy();
+    expect(queryByText('looks like a tiktok link')).toBeNull();
+    expect(getByText("you'll get a ping when it's saved.")).toBeTruthy();
+    // Two "close" affordances (scrim renders first, CTA second) — press the CTA.
+    const cta = getAllByLabelText('close')[1];
+    fireEvent.press(cta);
+    expect(onClose).toHaveBeenCalled();
+  });
+
+  it('backgrounded with a plain name → generic working copy', () => {
+    const { getByText } = render(
+      <SaveSheet open status="backgrounded" onClose={noop} onSubmit={noop} initialValue="coco tam" />,
+    );
+    expect(getByText("still on it — we'll finish in the background")).toBeTruthy();
+  });
+
   it('shows the source meta hint for a tiktok link, not for a plain name', () => {
     const { getByText, queryByText, getByPlaceholderText } = render(
       <SaveSheet open onClose={noop} onSubmit={noop} />,
