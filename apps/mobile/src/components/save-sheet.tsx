@@ -27,19 +27,24 @@ import { Icon } from './icon';
 import { Spinner } from './spinner';
 
 /**
- * Save sheet (kebi-save-sheet-{empty,,saving}-mockup.html). The bottom sheet for
- * capturing a new place: paste a link or type a place name, kebi figures out the
- * rest. Shares the action-sheet language — grabber, scrim, spring up from the
- * bottom, drag/backdrop to dismiss — with a textarea body. Three states:
- *   empty  → CTA disabled (35% opacity), no meta row
- *   filled → source meta row appears for link inputs, CTA active
- *   saving → spinner + "saving", input + dismissal locked
+ * Save sheet (kebi-save-sheet-{empty,,saving,background}-mockup.html). The bottom
+ * sheet for capturing a new place: paste a link or type a place name, kebi
+ * figures out the rest. Shares the action-sheet language — grabber, scrim,
+ * spring up from the bottom, drag/backdrop to dismiss — with a textarea body.
+ * Four states:
+ *   empty        → CTA disabled (35% opacity), no meta row
+ *   filled       → source meta row appears for link inputs, CTA active
+ *   saving       → spinner + "saving", input + dismissal locked
+ *   backgrounded → extract still running past the grace window: the meta row
+ *                  becomes a live status with a pulsing dot, the CTA relaxes to
+ *                  a plain "close", dismissal unlocks (locked option c,
+ *                  kebi-save-sheet-background-options.html)
  *
  * Presentational: `status` is owned by the caller so the API task only flips it;
  * the draft text is local and resets on each open. Submitting fires the save
  * haptic and hands the text to `onSubmit` — persistence is wired separately.
  */
-type SaveSheetStatus = 'idle' | 'saving';
+type SaveSheetStatus = 'idle' | 'saving' | 'backgrounded';
 
 interface SaveSheetProps {
   open: boolean;
@@ -76,6 +81,7 @@ export function SaveSheet({
   const insets = useSafeAreaInsets();
   const { height } = useWindowDimensions();
   const softColor = useUnstableNativeVariable('--text-soft') ?? undefined;
+  const mutedColor = useUnstableNativeVariable('--text-muted') ?? undefined;
 
   const [mounted, setMounted] = useState(open);
   const [value, setValue] = useState(initialValue);
@@ -84,6 +90,7 @@ export function SaveSheet({
   const keyboard = useAnimatedKeyboard();
 
   const saving = status === 'saving';
+  const backgrounded = status === 'backgrounded';
 
   useEffect(() => {
     if (open) setMounted(true);
@@ -148,7 +155,7 @@ export function SaveSheet({
   const source = detectSource(value);
   const showMeta = value.trim() !== '' && isLinkSource(source);
   const isEmpty = value.trim() === '';
-  const canSave = !isEmpty && !saving;
+  const canSave = !isEmpty && status === 'idle';
 
   const handleSave = () => {
     if (!canSave) return;
@@ -188,16 +195,24 @@ export function SaveSheet({
             <TextInput
               value={value}
               onChangeText={setValue}
-              editable={!saving}
+              editable={status === 'idle'}
               placeholder={t('save.placeholder')}
               placeholderTextColor={softColor}
               multiline
               textAlignVertical="top"
               autoCapitalize="none"
               autoCorrect={false}
+              // Dim via inline style, not a toggled className (see button.tsx note).
+              style={backgrounded ? { color: mutedColor } : undefined}
               className="min-h-14 p-0 text-[16px] leading-6 text-text"
             />
-            {showMeta ? (
+            {backgrounded ? (
+              // Locked option c: the meta line becomes the live status.
+              <View className="mt-2 flex-row items-center gap-2 border-t border-surface-2 pt-2">
+                <View className="h-1.5 w-1.5 animate-pulse-dot rounded-full bg-warn" />
+                <Text className="text-small text-text-muted">{t(`save.working.${source}`)}</Text>
+              </View>
+            ) : showMeta ? (
               <View className="mt-2 flex-row items-center gap-2 border-t border-surface-2 pt-2">
                 <Icon name="link" size={12} className="text-text-muted" />
                 <Text className="text-small text-text-muted">{t(`save.source.${source}`)}</Text>
@@ -205,26 +220,40 @@ export function SaveSheet({
             ) : null}
           </View>
 
-          <Pressable
-            onPress={handleSave}
-            disabled={!canSave}
-            accessibilityRole="button"
-            accessibilityLabel={saving ? t('save.saving') : t('save.cta')}
-            accessibilityState={{ disabled: !canSave, busy: saving }}
-            // Disabled/saving dim via inline style — see button.tsx: a toggled
-            // `opacity-*` className can stay stuck dim under NativeWind.
-            style={{ opacity: canSave ? 1 : 0.4 }}
-            className={`flex-row items-center justify-center gap-2 rounded-card bg-text px-4 py-3.5 ${PRESS}`}
-          >
-            {saving ? <Spinner /> : null}
-            <Text className="text-small font-semibold text-bg">
-              {saving ? t('save.saving') : t('save.cta')}
-            </Text>
-          </Pressable>
+          {backgrounded ? (
+            // Locked option c: the CTA relaxes to a plain secondary "close".
+            <Pressable
+              onPress={onClose}
+              accessibilityRole="button"
+              accessibilityLabel={t('save.close')}
+              className={`flex-row items-center justify-center gap-2 rounded-card bg-surface px-4 py-3.5 ${PRESS}`}
+            >
+              <Text className="text-small font-semibold text-text">{t('save.close')}</Text>
+            </Pressable>
+          ) : (
+            <Pressable
+              onPress={handleSave}
+              disabled={!canSave}
+              accessibilityRole="button"
+              accessibilityLabel={saving ? t('save.saving') : t('save.cta')}
+              accessibilityState={{ disabled: !canSave, busy: saving }}
+              // Disabled/saving dim via inline style — see button.tsx: a toggled
+              // `opacity-*` className can stay stuck dim under NativeWind.
+              style={{ opacity: canSave ? 1 : 0.4 }}
+              className={`flex-row items-center justify-center gap-2 rounded-card bg-text px-4 py-3.5 ${PRESS}`}
+            >
+              {saving ? <Spinner /> : null}
+              <Text className="text-small font-semibold text-bg">
+                {saving ? t('save.saving') : t('save.cta')}
+              </Text>
+            </Pressable>
+          )}
 
           <View className="flex-row items-center justify-center gap-1.5">
             <Icon name="alert" size={11} className="text-text-soft" />
-            <Text className="text-small text-text-soft">{t('save.hint')}</Text>
+            <Text className="text-small text-text-soft">
+              {backgrounded ? t('save.hintBackground') : t('save.hint')}
+            </Text>
           </View>
         </Animated.View>
       </GestureDetector>

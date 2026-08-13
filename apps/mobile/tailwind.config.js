@@ -107,6 +107,7 @@ module.exports = {
       animation: {
         breathe: 'breathe 2400ms ease-in-out infinite',
         spin: 'spin 700ms linear infinite',
+        'pulse-dot': 'pulse-dot 1400ms ease-in-out infinite',
       },
     },
   },
