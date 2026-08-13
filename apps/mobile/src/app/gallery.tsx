@@ -12,6 +12,9 @@ import { PlaceAvatar } from '../components/place-avatar';
 import { PlaceCard } from '../components/place-card';
 import { PlaceChip } from '../components/place-chip';
 import { PlaceClaimsSection } from '../components/place-claims-section';
+import { AreaChildRow, AreaPlaceRow } from '../components/area-row';
+import { ChatEntityRail } from '../components/chat-entity-rail';
+import { AreaSubArea, AreaVenueRow } from '../api/models/area';
 import { Mascot } from '../components/mascot';
 import { Splash } from '../components/splash';
 import { SocialButton } from '../components/auth/social-button';
@@ -28,7 +31,7 @@ import { usePlaceMenuItems } from '../components/use-place-menu-items';
 import { useToast } from '../components/toast-context';
 import { triggerHaptic } from '../lib/haptics';
 import { makeSamplePlace } from '../lib/sample-place';
-import type { PlaceNote, PlaceTag, ReasoningStepStatus } from '@kebi-app/shared';
+import { isAgentTalkStep, type ChatEntity, type PlaceNote, type PlaceTag, type ReasoningStepStatus } from '@kebi-app/shared';
 
 /**
  * Component gallery — a dev-only route (`/gallery`) for eyeballing the
@@ -36,6 +39,47 @@ import type { PlaceNote, PlaceTag, ReasoningStepStatus } from '@kebi-app/shared'
  * here whenever a new shared component lands so we can check it in isolation.
  * Demo labels are dev-only strings, not product copy (so not routed via i18n).
  */
+
+/** Area screen rows + a mixed chat rail (ADR-153). Dev-only fixtures. */
+const DEMO_CHILD_AREA = new AreaSubArea({
+  key: 'id/bali/canggu',
+  name: 'Canggu',
+  uri: 'kebi://area/aWQvYmFsaS9jYW5nZ3U',
+  icon: '\u{1F3C4}',
+  hook: null,
+  saved_count: 4,
+});
+
+const DEMO_WORTH_KNOWING = new AreaSubArea({
+  key: 'id/bali/ubud',
+  name: 'Ubud',
+  uri: 'kebi://area/aWQvYmFsaS91YnVk',
+  icon: '\u{1F33F}',
+  hook: 'rice fields, vegetarian, quiet',
+  saved_count: 0,
+});
+
+const DEMO_AREA_VENUE = new AreaVenueRow({
+  id: 'c0ffee00',
+  name: 'Savaya Bali',
+  uri: 'kebi://venue/c0ffee00',
+  icon: '\u{1F378}',
+  subtitle: 'beach club \u00b7 lively',
+  liked: true,
+  visited: true,
+});
+
+const DEMO_RAIL_ENTITIES: ChatEntity[] = [
+  {
+    kind: 'area',
+    key: 'id/bali/canggu',
+    name: 'Canggu',
+    uri: 'kebi://area/aWQvYmFsaS9jYW5nZ3U',
+    icon: '\u{1F3C4}',
+  },
+  { kind: 'venue', key: 'c0ffee00', name: "Luigi's", uri: 'kebi://venue/c0ffee00', icon: '\u{1F35D}' },
+  { kind: 'venue', key: '7861b346', name: 'Vault', uri: 'kebi://venue/7861b346', icon: null },
+];
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -186,47 +230,67 @@ const DONE_STEPS: ReasoningBlockStep[] = [
 
 const RUNNING_STEPS: ReasoningBlockStep[] = [
   { id: 'r1', status: 'done', title: 'picked up the context', summary: "post-club food, late night, near where you'll be coming from shibuya" },
-  { id: 'r2', status: 'active', title: 'scanning late-night spots', summary: null },
+  // Active with nothing to show yet — the shimmer skeleton.
+  { id: 'r3', status: 'active', title: 'scanning late-night spots', summary: null },
 ];
 
 // The actual halal-dinner turn, captured frame-by-frame with each frame's real
 // offset (ms from the first frame). This is the reference the chat-screen reducer
-// follows: drop `debug` frames, upsert reasoning steps by `id`, flip `done` on the
-// done frame. The gaps between user steps are the hidden "thinking" the agent did
-// between tool calls — so the panel sits on its done steps for ~5s before "got it".
+// follows: drop `debug` frames, upsert reasoning steps by `id`, append
+// `reasoning_delta` text onto the active row, flip `done` on the done frame.
+//
+// Location steps are gone: kebi emits them as `debug` now, so they never reach
+// the panel. What fills the gaps between tool calls instead is the agent's own
+// thinking, typing out live — the `delta` frames below.
 type ReplayFrame =
   | { at: number; vis: 'user' | 'debug'; id: string; title: string; summary: string | null; status: ReasoningStepStatus }
+  /** A `reasoning_delta`: text appended to the row `id` already on screen. */
+  | { at: number; delta: string; id: string }
   | { at: number; done: true };
 
 const REAL_STREAM: ReplayFrame[] = [
-  { at: 0, vis: 'user', id: 'agent.location#0', title: 'found your location', summary: null, status: 'active' },
-  { at: 1715, vis: 'user', id: 'agent.location#0', title: 'found your location', summary: 'around Izumi 2, Suginami, Japan', status: 'done' },
-  { at: 1721, vis: 'debug', id: 'agent.tool_decision#0', title: 'thinking', summary: null, status: 'active' },
-  { at: 3261, vis: 'debug', id: 'agent.tool_decision#0', title: 'thinking', summary: 'thinking…', status: 'done' },
+  { at: 0, vis: 'user', id: 'agent.tool_decision#0', title: 'thinking', summary: null, status: 'active' },
+  { at: 420, delta: 'okay — halal, ', id: 'agent.tool_decision#0' },
+  { at: 900, delta: 'dinner tonight. ', id: 'agent.tool_decision#0' },
+  { at: 1500, delta: "let me check what you've saved first", id: 'agent.tool_decision#0' },
+  { at: 3261, vis: 'user', id: 'agent.tool_decision#0', title: 'thinking', summary: "checking what you've saved", status: 'done' },
   { at: 3264, vis: 'user', id: 'find_saved#0', title: 'searched your saved spots', summary: null, status: 'active' },
   { at: 3291, vis: 'user', id: 'find_saved#0', title: 'searched your saved spots', summary: 'nothing saved matched that', status: 'done' },
-  { at: 3293, vis: 'debug', id: 'agent.tool_decision#1', title: 'thinking', summary: null, status: 'active' },
-  { at: 6443, vis: 'debug', id: 'agent.tool_decision#1', title: 'thinking', summary: 'thinking…', status: 'done' },
+  { at: 3293, vis: 'user', id: 'agent.tool_decision#1', title: 'thinking', summary: null, status: 'active' },
+  { at: 3800, delta: 'nothing in your saves for that — ', id: 'agent.tool_decision#1' },
+  { at: 4600, delta: "so let's see what's actually around you", id: 'agent.tool_decision#1' },
+  { at: 6443, vis: 'user', id: 'agent.tool_decision#1', title: 'thinking', summary: 'looking further out', status: 'done' },
   { at: 6447, vis: 'user', id: 'discover_places#1', title: 'searched nearby', summary: null, status: 'active' },
   { at: 6447, vis: 'debug', id: 'discover_places#1.start', title: '', summary: null, status: 'active' },
   { at: 6447, vis: 'debug', id: 'discover_places#1.start', title: '', summary: 'checking nearby', status: 'done' },
   { at: 6996, vis: 'user', id: 'discover_places#1', title: 'searched nearby', summary: "5 spots — Wagyu Steak & Hamburger, Wagyu, +3 more (5 didn't fit)", status: 'done' },
-  { at: 6999, vis: 'debug', id: 'agent.tool_decision#2', title: 'thinking', summary: null, status: 'active' },
-  { at: 11796, vis: 'debug', id: 'agent.tool_decision#2', title: 'thinking', summary: 'drafting the reply…', status: 'done' },
+  { at: 6999, vis: 'user', id: 'agent.tool_decision#2', title: 'thinking', summary: null, status: 'active' },
+  { at: 7500, delta: 'five that fit. ', id: 'agent.tool_decision#2' },
+  { at: 8200, delta: 'the Shibuya one is the pick for tonight', id: 'agent.tool_decision#2' },
+  { at: 11796, vis: 'user', id: 'agent.tool_decision#2', title: 'thinking', summary: 'drafting the reply…', status: 'done' },
   { at: 11800, done: true },
 ];
 
-// Replays REAL_STREAM at real wall-clock timing through the same reducer the chat
-// screen will use; "replay" restarts. durationMs uses wall-clock (~11.8s) — what
-// the user actually waited — not the sum of the visible steps' latencies.
+/** What the transcript builds out of the stream: prose the agent said, work chips. */
+type DemoSegment =
+  | { kind: 'prose'; key: string; stepId: string; text: string }
+  | { kind: 'work'; key: string; steps: ReasoningBlockStep[] };
+
+/**
+ * Replays REAL_STREAM at real wall-clock timing through the same shape the chat
+ * reducer builds; "replay" restarts. This is the target layout end to end: the
+ * agent's talk lands as message prose, its tools collapse into chips between the
+ * sentences, and no `agent.tool_decision` row is ever drawn (its summary is the
+ * prose, so a row would print it twice).
+ */
 function RealStreamDemo() {
   const [runId, setRunId] = useState(0);
-  const [steps, setSteps] = useState<ReasoningBlockStep[]>([]);
+  const [segments, setSegments] = useState<DemoSegment[]>([]);
   const [done, setDone] = useState(false);
   const [durationMs, setDurationMs] = useState<number | undefined>(undefined);
 
   useEffect(() => {
-    setSteps([]);
+    setSegments([]);
     setDone(false);
     setDurationMs(undefined);
     const timers = REAL_STREAM.map((f) =>
@@ -236,19 +300,49 @@ function RealStreamDemo() {
           setDurationMs(f.at);
           return;
         }
-        if (f.vis === 'debug') return; // reducer drops debug frames
-        setSteps((prev) => {
-          const step: ReasoningBlockStep = {
+        if ('delta' in f) {
+          // The agent talking — appended to its prose segment, not to a row.
+          setSegments((prev) =>
+            prev.map((s) =>
+              s.kind === 'prose' && s.stepId === f.id ? { ...s, text: s.text + f.delta } : s,
+            ),
+          );
+          return;
+        }
+        if (f.vis === 'debug') return; // the store drops debug frames
+        setSegments((prev) => {
+          if (isAgentTalkStep({ id: f.id, step: f.id.split('#')[0] })) {
+            const i = prev.findIndex((s) => s.kind === 'prose' && s.stepId === f.id);
+            if (i === -1) {
+              return [...prev, { kind: 'prose', key: `p${prev.length}`, stepId: f.id, text: '' }];
+            }
+            // The done frame supersedes what typed out.
+            if (f.status !== 'done' || f.summary === null) return prev;
+            const next = prev.slice();
+            next[i] = { ...(prev[i] as DemoSegment & { kind: 'prose' }), text: f.summary };
+            return next;
+          }
+          const row: ReasoningBlockStep = {
             id: f.id,
             status: f.status,
             title: f.title || undefined,
             summary: f.summary,
           };
-          const i = prev.findIndex((s) => s.id === f.id);
-          if (i === -1) return [...prev, step];
+          const last = prev[prev.length - 1];
+          const owner = prev.findIndex(
+            (s) => s.kind === 'work' && s.steps.some((r) => r.id === row.id),
+          );
           const next = prev.slice();
-          next[i] = step;
-          return next;
+          if (owner !== -1) {
+            const chip = prev[owner] as DemoSegment & { kind: 'work' };
+            next[owner] = { ...chip, steps: chip.steps.map((r) => (r.id === row.id ? row : r)) };
+            return next;
+          }
+          if (last?.kind === 'work') {
+            next[next.length - 1] = { ...last, steps: [...last.steps, row] };
+            return next;
+          }
+          return [...prev, { kind: 'work', key: `w${prev.length}`, steps: [row] }];
         });
       }, f.at),
     );
@@ -257,7 +351,20 @@ function RealStreamDemo() {
 
   return (
     <View className="gap-3">
-      <ReasoningBlock steps={steps} done={done} durationMs={durationMs} />
+      {segments.map((segment) =>
+        segment.kind === 'work' ? (
+          <ReasoningBlock
+            key={segment.key}
+            steps={segment.steps}
+            done={done || segment.steps.every((s) => s.status === 'done')}
+            durationMs={done ? durationMs : undefined}
+          />
+        ) : segment.text ? (
+          <Text key={segment.key} className="text-[17px] leading-relaxed text-text-muted">
+            {segment.text}
+          </Text>
+        ) : null,
+      )}
       <Button variant="outlined" label="replay" onPress={() => setRunId((r) => r + 1)} />
     </View>
   );
@@ -266,7 +373,6 @@ function RealStreamDemo() {
 // Real long/raw summaries from a live stream (the halal-dinner turn) — verifies
 // the narration clamp holds: a model-list line and a multi-paragraph draft.
 const LONG_STEPS: ReasoningBlockStep[] = [
-  { id: 'l1', status: 'done', title: 'found your location', summary: 'around Izumi 2, Suginami, Japan.' },
   {
     id: 'l2',
     status: 'done',
@@ -445,6 +551,19 @@ export default function GalleryScreen() {
 
         <Section title="Save sheet — empty / filled / saving">
           <SaveSheetDemo />
+        </Section>
+
+        <Section title="Area rows — child area (count) / venue (leaf)">
+          <View>
+            <AreaChildRow area={DEMO_CHILD_AREA} />
+            {/* worth-knowing rows carry a hook and no count */}
+            <AreaChildRow area={DEMO_WORTH_KNOWING} />
+            <AreaPlaceRow place={DEMO_AREA_VENUE} />
+          </View>
+        </Section>
+
+        <Section title="Chat rail — mixed kinds, one chip shape">
+          <ChatEntityRail entities={DEMO_RAIL_ENTITIES} label="mentioned" onOpen={() => undefined} />
         </Section>
 
         <Section title="Place avatar">

@@ -59,9 +59,11 @@ function renderCard() {
 describe('LibraryPlaceCard', () => {
   beforeEach(() => mockPush.mockClear());
 
-  it('navigates to the place page on tap (path A)', () => {
+  it('navigates to the place page on tap, carrying the id it refreshes from', () => {
     const { getByRole } = renderCard();
     fireEvent.press(getByRole('button', { name: 'Saint Jardim' }));
-    expect(mockPush).toHaveBeenCalledWith('/place');
+    // The card also seeds place-detail-context so the screen paints instantly;
+    // `id` is what the screen re-fetches behind that seed (ADR-151).
+    expect(mockPush).toHaveBeenCalledWith({ pathname: '/place', params: { id: 'p1' } });
   });
 });

@@ -1,4 +1,9 @@
-import type { IdentityClaims, MovementProfile, PlanTier } from '@kebi-app/shared';
+import type {
+  IdentityClaims,
+  MovementProfile,
+  PlanTier,
+  UserAboutMe,
+} from '@kebi-app/shared';
 
 /**
  * Product claims decoded from a verified token, as a class instance (not a plain
@@ -10,6 +15,7 @@ export class TokenClaims implements IdentityClaims {
   readonly ai_enabled?: boolean;
   readonly plan?: PlanTier;
   readonly movement_profile?: MovementProfile;
+  readonly about_me?: UserAboutMe;
   readonly can_curate?: boolean;
   readonly internal_id?: string;
 
@@ -17,6 +23,7 @@ export class TokenClaims implements IdentityClaims {
     if (params.ai_enabled !== undefined) this.ai_enabled = params.ai_enabled;
     if (params.plan !== undefined) this.plan = params.plan;
     if (params.movement_profile !== undefined) this.movement_profile = params.movement_profile;
+    if (params.about_me !== undefined) this.about_me = params.about_me;
     if (params.can_curate !== undefined) this.can_curate = params.can_curate;
     if (params.internal_id !== undefined) this.internal_id = params.internal_id;
   }

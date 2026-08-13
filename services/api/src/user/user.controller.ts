@@ -12,11 +12,14 @@ import {
 } from '@nestjs/common';
 import type {
   AuthUser,
+  MovementProfile,
   IntentsResponse,
   LibraryResponse,
   LibraryUserData,
   NormalizedIdentity,
+  UserAboutMe,
   UserProfile,
+  UserSettingsResponse,
 } from '@kebi-app/shared';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { CurrentIdentity } from '../common/decorators/current-identity.decorator';
@@ -26,6 +29,8 @@ import { LibraryQueryDto } from './dto/library-query.dto';
 import { SaveUserPlaceDto } from './dto/save-user-place.dto';
 import { UpdatePlanDto } from './dto/update-plan.dto';
 import { UpdateUserPlaceDto } from './dto/update-user-place.dto';
+import { UpdateAboutMeDto } from './dto/update-about-me.dto';
+import { UpdateMovementProfileDto } from './dto/update-movement-profile.dto';
 import { UpdateUserProfileDto } from './dto/update-user-profile.dto';
 import { UserService } from './user.service';
 
@@ -57,6 +62,29 @@ export class UserController {
     @Body() dto: UpdatePlanDto
   ): Promise<UserProfile> {
     return this.userService.changePlan(identity, user, dto.plan);
+  }
+
+  @Get('settings')
+  async getSettings(@CurrentUser() user: AuthUser): Promise<UserSettingsResponse> {
+    return this.userService.getSettings(user.id);
+  }
+
+  @Patch('about-me')
+  async updateAboutMe(
+    @CurrentIdentity() identity: NormalizedIdentity,
+    @CurrentUser() user: AuthUser,
+    @Body() dto: UpdateAboutMeDto
+  ): Promise<UserAboutMe> {
+    return this.userService.updateAboutMe(identity, user, dto);
+  }
+
+  @Patch('movement')
+  async updateMovementProfile(
+    @CurrentIdentity() identity: NormalizedIdentity,
+    @CurrentUser() user: AuthUser,
+    @Body() dto: UpdateMovementProfileDto
+  ): Promise<MovementProfile> {
+    return this.userService.updateMovementProfile(identity, user, dto);
   }
 
   @Get('library')

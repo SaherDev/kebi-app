@@ -7,16 +7,20 @@ import type {
   LibraryUserData,
   NormalizedIdentity,
   PlanTier,
+  MovementProfile,
   SaveUserPlaceRequest,
   UpdateUserPlaceRequest,
+  UserAboutMe,
   UserProfile,
+  UserSettingsResponse,
 } from '@kebi-app/shared';
 import { KebiHttpClient } from '../kebi/kebi-http.client';
 import { PROFILE_WRITER } from '../auth/profile-writer.interface';
 import type { ProfileWriter } from '../auth/profile-writer.interface';
-import { IDENTITY_METADATA_WRITER } from '../auth/identity-metadata.writer';
-import type { IdentityMetadataWriter } from '../auth/identity-metadata.writer';
+import { ClaimStamper } from '../auth/claim-stamper';
 import { UserSettingsService } from '../auth/user-settings.service';
+import { UpdateAboutMeDto } from './dto/update-about-me.dto';
+import { UpdateMovementProfileDto } from './dto/update-movement-profile.dto';
 import { IntentsQueryDto } from './dto/intents-query.dto';
 import { LibraryQueryDto } from './dto/library-query.dto';
 import { SaveUserPlaceDto } from './dto/save-user-place.dto';
@@ -25,26 +29,34 @@ import { UpdateUserPlaceDto } from './dto/update-user-place.dto';
 /** Fallback tier if a (provisioned) token somehow lacks a plan claim. */
 const DEFAULT_PLAN = 'homebody' as const;
 
+/** What a fully-cleared about-me reads as — stored as null, echoed as fields. */
+const EMPTY_ABOUT_ME: UserAboutMe = { call_me: null, home_country: null, about: null };
+
 @Injectable()
 export class UserService {
   constructor(
     private readonly kebi: KebiHttpClient,
     @Inject(PROFILE_WRITER) private readonly profileWriter: ProfileWriter,
     private readonly userSettings: UserSettingsService,
-    @Inject(IDENTITY_METADATA_WRITER)
-    private readonly metadataWriter: IdentityMetadataWriter,
+    private readonly claimStamper: ClaimStamper,
   ) {}
 
   /**
    * The user's display profile, read gateway-local (never forwarded to kebi).
-   * `name`/`email` come from the verified JWT (Supabase PII); `plan` from the
-   * product claim. The internal id is never exposed (scoped ADR-044 relaxation).
+   * `name`/`email` come from the verified JWT (Supabase PII); `plan` and
+   * `can_curate` from the product claims. The internal id is never exposed
+   * (scoped ADR-044 relaxation).
+   *
+   * `can_curate` falls back to `false` like the guard does: an absent claim
+   * (pre-grant or pre-migration token) is not a curator, so the client renders
+   * the non-insider surface rather than offering writes that would 403.
    */
   getProfile(identity: NormalizedIdentity, user: AuthUser): UserProfile {
     return {
       name: identity.name ?? '',
       email: identity.email ?? '',
       plan: user.plan ?? DEFAULT_PLAN,
+      can_curate: user.can_curate ?? false,
     };
   }
 
@@ -80,20 +92,70 @@ export class UserService {
     plan: PlanTier,
   ): Promise<UserProfile> {
     const settings = await this.userSettings.updatePlan(user.id, plan);
-    await this.metadataWriter.stamp(identity.externalId, {
-      internal_id: user.id,
-      ai_enabled: settings.ai_enabled,
-      plan: settings.plan,
-      can_curate: settings.can_curate,
-      ...(settings.movement_profile !== null && {
-        movement_profile: settings.movement_profile,
-      }),
-    });
+    await this.claimStamper.stamp(identity.externalId, user.id, settings);
     return {
       name: identity.name ?? '',
       email: identity.email ?? '',
       plan: settings.plan,
     };
+  }
+
+  /**
+   * The caller's own settings, for the screens that edit them. Reads the
+   * settings row rather than the request's claims, so a value written seconds
+   * ago is visible immediately instead of waiting for the token to refresh.
+   */
+  async getSettings(userId: string): Promise<UserSettingsResponse> {
+    const settings = await this.userSettings.ensureForUser(userId);
+    // `?? null`, not a pass-through: a settings row written before these fields
+    // existed has them `undefined`, JSON drops undefined keys, and the client's
+    // schema requires the key to be present. Absent must serialize as null.
+    return {
+      about_me: settings.about_me ?? null,
+      movement_profile: settings.movement_profile ?? null,
+    };
+  }
+
+  /**
+   * Write the about-me kebi reads as a cold-start prior (ADR-154). Stored whole:
+   * a field the client omits is cleared, so there is no sentinel for "erase this"
+   * and a cleared field is `null` rather than empty prose. Re-stamps the claims,
+   * so the change reaches kebi on the next token refresh — same as a plan switch.
+   *
+   * `call_me` is stored here and nowhere else — one write, to our own row, with
+   * no Admin-API round-trip to rename the account for a name only kebi asked
+   * for. Cleared, it falls back to the account display name at forward time, so
+   * the user is never left nameless.
+   */
+  async updateAboutMe(
+    identity: NormalizedIdentity,
+    user: AuthUser,
+    dto: UpdateAboutMeDto,
+  ): Promise<UserAboutMe> {
+    const aboutMe: UserAboutMe = {
+      call_me: dto.call_me ?? null,
+      home_country: dto.home_country ?? null,
+      about: dto.about ?? null,
+    };
+    const settings = await this.userSettings.updateAboutMe(user.id, aboutMe);
+    await this.claimStamper.stamp(identity.externalId, user.id, settings);
+    return settings.about_me ?? EMPTY_ABOUT_ME;
+  }
+
+  /**
+   * Write modes a human actually chose. The settings service stamps
+   * `source: 'user'` — reaching this method is the evidence for it (ADR-155) —
+   * and only then does kebi honour the modes instead of its wide fallback.
+   */
+  async updateMovementProfile(
+    identity: NormalizedIdentity,
+    user: AuthUser,
+    dto: UpdateMovementProfileDto,
+  ): Promise<MovementProfile> {
+    const settings = await this.userSettings.updateMovementProfile(user.id, dto);
+    await this.claimStamper.stamp(identity.externalId, user.id, settings);
+    // Non-null by construction — the setter always writes a profile.
+    return settings.movement_profile as MovementProfile;
   }
 
   async getLibrary(
@@ -141,13 +203,8 @@ export class UserService {
     dto: SaveUserPlaceDto,
     plan?: PlanTier,
   ): Promise<LibraryUserData> {
-    const body: SaveUserPlaceRequest = {
-      place_core_id: dto.place_core_id,
-      recommendation_id: dto.recommendation_id,
-      // The consult reason the card is showing — kebi writes it as a kebi_message
-      // claim on the place (ADR-127), since it is not otherwise stored server-side.
-      ...(dto.reason != null ? { reason: dto.reason } : {}),
-    };
+    // The place id is the whole body (ADR-151) — kebi 422s on any other key.
+    const body: SaveUserPlaceRequest = { place_core_id: dto.place_core_id };
     // plan rides along so kebi can enforce the save_limit (ADR-112); a re-save
     // of an existing place is idempotent and never counts against the cap.
     return this.kebi.post<LibraryUserData>('/v1/user/places', userId, body, plan);

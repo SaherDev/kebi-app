@@ -1,4 +1,5 @@
 import { render, fireEvent, waitFor } from '@testing-library/react-native';
+import { FlatList } from 'react-native';
 import type { SseEvent } from '@kebi-app/shared';
 import { ChatScreen } from './chat-screen';
 import { ChatTranscriptProvider } from './chat-transcript-context';
@@ -12,7 +13,9 @@ const mockChain = (): unknown => new Proxy({}, { get: () => () => mockChain() })
 jest.mock('react-native-gesture-handler', () => ({
   GestureHandlerRootView: (p: { children: unknown }) => p.children,
   GestureDetector: (p: { children: unknown }) => p.children,
-  Gesture: { Pan: () => mockChain() },
+  // LongPress too: the entity rail's chips are long-pressable now (the curate
+  // door), so ContextMenuTrigger builds one on every render.
+  Gesture: { Pan: () => mockChain(), LongPress: () => mockChain() },
 }));
 
 // streamChat is replaced per test with a scripted frame sequence. The factory
@@ -54,32 +57,6 @@ function scriptGatedStream(before: SseEvent[], after: SseEvent[]) {
   return { release };
 }
 
-// A `research` tool_result frame (ADR-050): a ResearchResult payload — notes
-// about an area, no place candidates. The turn's answer is the message prose.
-const researchFrame = (over: Record<string, unknown> = {}) =>
-  frame('tool_result', {
-    tool: 'research',
-    tool_call_id: 'r1',
-    payload: {
-      entity_name: 'Da Nang',
-      entity_key: 'vn:da-nang',
-      notes: [
-        {
-          id: 'n1',
-          text: 'my khe is calm at sunrise',
-          tags: [],
-          source: 'community',
-          confidence: 0.9,
-          agree_count: 0,
-          disagree_count: 0,
-        },
-      ],
-      empty_reason: null,
-      clarification: null,
-      ...over,
-    },
-  });
-
 function renderChat(onClose: () => void = () => undefined) {
   const utils = render(
     <ToastProvider>
@@ -103,7 +80,7 @@ describe('ChatScreen', () => {
     mockPush.mockClear();
   });
 
-  it('renders the user turn, streamed steps, message, and a place skeleton', async () => {
+  it('renders the user turn, the streamed steps, and the prose answer', async () => {
     scriptStream([
       frame('reasoning_step', {
         id: 'find_saved#0',
@@ -121,46 +98,36 @@ describe('ChatScreen', () => {
         status: 'done',
         visibility: 'user',
       }),
-      frame('tool_result', {
-        tool: 'find_saved',
-        tool_call_id: 'c1',
-        payload: {
-          candidates: [
-            {
-              place: {
-                id: null,
-                provider_id: null,
-                place_name: 'Contact Tokyo',
-                place_name_aliases: [],
-                categories: ['bar'],
-                tags: [],
-                location: null,
-                created_at: null,
-                refreshed_at: null,
-              },
-              source: 'discovered',
-              reason: null,
-            },
-          ],
-          recommendation_id: 'rec_1',
-        },
+      frame('message', {
+        content: 'tonight is [Contact Tokyo](kebi://venue/c0ffee00) night',
+        entities: [
+          {
+            kind: 'venue',
+            key: 'c0ffee00',
+            name: 'Contact Tokyo',
+            uri: 'kebi://venue/c0ffee00',
+            icon: '🪩',
+          },
+        ],
       }),
-      frame('message', { content: 'here are a couple spots' }),
       frame('done', { tool_calls_used: 1 }),
     ]);
 
-    const { submit, getByText, queryByText, queryByLabelText } = renderChat();
+    const { submit, getAllByText, getByText, queryByText } = renderChat();
     submit('drinks tonight');
 
     expect(getByText('drinks tonight')).toBeTruthy(); // user turn rendered immediately
-    await waitFor(() => expect(getByText('Contact Tokyo')).toBeTruthy()); // real card
+    // The prose IS the answer (ADR-136) and the entity link renders as its
+    // label — never the raw markdown. The name appears twice: once inline in
+    // the sentence, once as the rail chip indexing it.
+    await waitFor(() => expect(getAllByText('Contact Tokyo')).toHaveLength(2));
+    expect(getByText('mentioned')).toBeTruthy(); // the rail's eyebrow
+    expect(getByText('🪩')).toBeTruthy(); // kebi's icon, not our fallback
     expect(getByText('searched your saved spots')).toBeTruthy(); // reasoning step
-    expect(queryByLabelText('loading places')).toBeNull(); // skeleton gone once done
-    // The prose message is hidden when the turn has cards (cards are the answer).
-    expect(queryByText('here are a couple spots')).toBeNull();
+    expect(queryByText(/kebi:\/\//)).toBeNull();
   });
 
-  it('renders the prose answer on a research turn — no card, no skeleton, no no-match line', async () => {
+  it('renders the prose answer on a research turn', async () => {
     const { release } = scriptGatedStream(
       [
         frame('reasoning_step', {
@@ -171,127 +138,30 @@ describe('ChatScreen', () => {
           status: 'done',
           visibility: 'user',
         }),
-        researchFrame(),
       ],
       [
-        frame('message', { content: 'da nang tips: my khe beach is calm at sunrise' }),
+        frame('message', {
+          content: 'da nang tips: my khe beach is calm at sunrise',
+          entities: [],
+        }),
         frame('done', { tool_calls_used: 1 }),
       ],
     );
 
-    const { submit, getByText, queryByText, queryByLabelText } = renderChat();
+    const { submit, getByText } = renderChat();
     submit('any tips for da nang?');
 
-    // Mid-stream, the research tool_result has landed: no skeleton — the turn
-    // will not produce a card, so nothing should promise one.
     await waitFor(() => expect(getByText('looked up da nang')).toBeTruthy());
-    expect(queryByLabelText('loading places')).toBeNull();
 
     release();
     await waitFor(() =>
       expect(getByText('da nang tips: my khe beach is calm at sunrise')).toBeTruthy(),
     );
-    expect(queryByText("couldn't find a match")).toBeNull();
-    expect(queryByLabelText('loading places')).toBeNull();
-  });
-
-  it("renders kebi's prose (not the generic no-match) when research comes back empty", async () => {
-    scriptStream([
-      researchFrame({ notes: [], empty_reason: 'no_claims', clarification: 'which area?' }),
-      frame('message', { content: 'no intel on that yet — want hoi an instead?' }),
-      frame('done', { tool_calls_used: 1 }),
-    ]);
-
-    const { submit, getByText, queryByText } = renderChat();
-    submit('tips for my khe?');
-
-    await waitFor(() =>
-      expect(getByText('no intel on that yet — want hoi an instead?')).toBeTruthy(),
-    );
-    expect(queryByText("couldn't find a match")).toBeNull();
-  });
-
-  it('shows the skeleton mid-stream once a consult result carries candidates', async () => {
-    const { release } = scriptGatedStream(
-      [
-        frame('tool_result', {
-          tool: 'find_saved',
-          tool_call_id: 'c1',
-          payload: {
-            candidates: [
-              {
-                place: {
-                  id: null,
-                  provider_id: null,
-                  place_name: 'Fuglen',
-                  place_name_aliases: [],
-                  categories: ['cafe'],
-                  tags: [],
-                  location: null,
-                  created_at: null,
-                  refreshed_at: null,
-                },
-                source: 'saved',
-                reason: null,
-              },
-            ],
-            recommendation_id: 'rec_1',
-          },
-        }),
-      ],
-      [frame('done', { tool_calls_used: 1 })],
-    );
-
-    const { submit, getByLabelText, getByText, queryByLabelText } = renderChat();
-    submit('coffee near me');
-
-    await waitFor(() => expect(getByLabelText('loading places')).toBeTruthy());
-    release();
-    await waitFor(() => expect(getByText('Fuglen')).toBeTruthy());
-    expect(queryByLabelText('loading places')).toBeNull();
-  });
-
-  it('keeps the empty-reason line for a consult turn with no candidates and no prose', async () => {
-    scriptStream([
-      frame('tool_result', {
-        tool: 'discover_places',
-        tool_call_id: 'c1',
-        payload: { candidates: [], empty_reason: 'no_location', recommendation_id: 'rec_1' },
-      }),
-      frame('done', { tool_calls_used: 1 }),
-    ]);
-
-    const { submit, getByText } = renderChat();
-    submit('coffee near me');
-
-    await waitFor(() =>
-      expect(getByText('turn on location so i can find places near you')).toBeTruthy(),
-    );
-  });
-
-  it('lets prose carry a candidate-less consult turn when kebi wrote one', async () => {
-    scriptStream([
-      frame('tool_result', {
-        tool: 'discover_places',
-        tool_call_id: 'c1',
-        payload: { candidates: [], empty_reason: 'no_match', recommendation_id: 'rec_1' },
-      }),
-      frame('message', { content: 'nothing open nearby right now — try later tonight?' }),
-      frame('done', { tool_calls_used: 1 }),
-    ]);
-
-    const { submit, getByText, queryByText } = renderChat();
-    submit('quiet bar right now');
-
-    await waitFor(() =>
-      expect(getByText('nothing open nearby right now — try later tonight?')).toBeTruthy(),
-    );
-    expect(queryByText("couldn't find a match")).toBeNull();
   });
 
   it('shows the agent message when the turn has no places', async () => {
     scriptStream([
-      frame('message', { content: 'hey saher, what is the move?' }),
+      frame('message', { content: 'hey saher, what is the move?', entities: [] }),
       frame('done', { tool_calls_used: 0 }),
     ]);
 
@@ -299,6 +169,177 @@ describe('ChatScreen', () => {
     submit('hey');
 
     await waitFor(() => expect(getByText('hey saher, what is the move?')).toBeTruthy());
+  });
+
+  it('types the thinking out live, then promotes it into the answer', async () => {
+    // The trivial-turn shape: one thinking row, no tool steps, no location step
+    // — the agent's talk turns out to BE the answer, so it moves.
+    const { release } = scriptGatedStream(
+      [
+        frame('reasoning_step', {
+          id: 'agent.tool_decision#0',
+          step: 'agent.tool_decision',
+          title: 'thinking',
+          summary: null,
+          status: 'active',
+          visibility: 'user',
+        }),
+        frame('reasoning_delta', { id: 'agent.tool_decision#0', text: 'hey saher' }),
+        frame('reasoning_delta', { id: 'agent.tool_decision#0', text: " — that's you" }),
+      ],
+      [
+        frame('message_delta', { text: "hey saher — that's you, ", promote: true }),
+        frame('message_delta', { text: 'we have met' }),
+        frame('message', { content: "hey saher — that's you, we have met", entities: [] }),
+        frame('done', { tool_calls_used: 0 }),
+      ],
+    );
+
+    const { submit, getByText, queryByText } = renderChat();
+    submit('whats my name?');
+
+    // Mid-stream: the thinking is typing into the trace row, not the bubble.
+    await waitFor(() => expect(getByText("hey saher — that's you")).toBeTruthy());
+
+    release();
+
+    // Promoted: the same words now live in the answer, and the trace row no
+    // longer holds the typed text (its own summary fills in later).
+    await waitFor(() => expect(getByText("hey saher — that's you, we have met")).toBeTruthy());
+    expect(queryByText("hey saher — that's you")).toBeNull();
+  });
+
+  it('streams the answer as plain prose, then the final frame links the names', async () => {
+    const { release } = scriptGatedStream(
+      [
+        frame('message_delta', { text: 'tonight, ' }),
+        frame('message_delta', { text: 'go to Contact Tokyo' }),
+      ],
+      [
+        frame('message', {
+          content: 'tonight, go to [Contact Tokyo](kebi://venue/c0ffee00)',
+          entities: [
+            {
+              kind: 'venue',
+              key: 'c0ffee00',
+              name: 'Contact Tokyo',
+              uri: 'kebi://venue/c0ffee00',
+              icon: '🪩',
+            },
+          ],
+        }),
+        frame('done', { tool_calls_used: 1 }),
+      ],
+    );
+
+    const { submit, getByText, getAllByText, queryByText } = renderChat();
+    submit('drinks tonight');
+
+    // Streaming: one accumulated run of prose, no links yet.
+    await waitFor(() => expect(getByText('tonight, go to Contact Tokyo')).toBeTruthy());
+
+    release();
+
+    // The final frame replaced it wholesale: same words, now tappable (inline +
+    // the rail chip) — and never the raw markdown.
+    await waitFor(() => expect(getAllByText('Contact Tokyo')).toHaveLength(2));
+    expect(getByText(/tonight, go to/)).toBeTruthy(); // the prose around the link
+    expect(queryByText(/kebi:\/\//)).toBeNull();
+  });
+
+  it('interleaves typed prose with work chips, and never doubles the talk', async () => {
+    const talk = (id: string, status: 'active' | 'done', summary: string | null) =>
+      frame('reasoning_step', {
+        id,
+        step: 'agent.tool_decision',
+        title: 'thinking',
+        summary,
+        status,
+        visibility: 'user',
+      });
+
+    const { release } = scriptGatedStream(
+      [
+        talk('agent.tool_decision#0', 'active', null),
+        frame('reasoning_delta', { id: 'agent.tool_decision#0', text: 'canggu on a tuesday — ' }),
+        frame('reasoning_delta', { id: 'agent.tool_decision#0', text: 'let me look' }),
+        // The talk settles; its summary must NOT also appear as a chip row.
+        talk('agent.tool_decision#0', 'done', 'canggu on a tuesday — let me look'),
+        frame('reasoning_step', {
+          id: 'find_saved#0',
+          step: 'find_saved',
+          title: 'searched your saved spots',
+          summary: 'nothing matched',
+          status: 'done',
+          visibility: 'user',
+        }),
+      ],
+      [
+        frame('message_delta', { text: 'nothing saved yet, so here is the plan', promote: false }),
+        frame('message', { content: 'nothing saved yet, so here is the plan', entities: [] }),
+        frame('done', { tool_calls_used: 1 }),
+      ],
+    );
+
+    const { submit, getByText, getAllByText, queryByText } = renderChat();
+    submit('what should i do tonight in canggu?');
+
+    // The talk is prose in the body — not a checklist row, and only once even
+    // though its `done` summary repeats the same words.
+    await waitFor(() =>
+      expect(getAllByText('canggu on a tuesday — let me look')).toHaveLength(1),
+    );
+    // Work lands as a chip row alongside it.
+    expect(getByText('searched your saved spots')).toBeTruthy();
+    expect(queryByText('thinking')).toBeNull(); // the talk step's title is never a row
+
+    release();
+    await waitFor(() => expect(getByText('nothing saved yet, so here is the plan')).toBeTruthy());
+    // The prose that came before it is still there, above the answer.
+    expect(getAllByText('canggu on a tuesday — let me look')).toHaveLength(1);
+  });
+
+  it('renders a turn that carries no deltas at all, exactly as before', async () => {
+    // Old backend / fast path: `message` alone must still render the answer.
+    scriptStream([
+      frame('message', { content: 'no deltas here', entities: [] }),
+      frame('done', { tool_calls_used: 0 }),
+    ]);
+
+    const { submit, getByText } = renderChat();
+    submit('hey');
+
+    await waitFor(() => expect(getByText('no deltas here')).toBeTruthy());
+  });
+
+  it('scrolls to the new turn on send, even after reading further up', async () => {
+    // Sending is an explicit "show me the new turn": if following stayed off
+    // because the user had scrolled up, their message lands below the fold and
+    // the reply streams in off screen.
+    const scrollToEnd = jest.spyOn(FlatList.prototype, 'scrollToEnd').mockImplementation(() => undefined);
+    scriptStream([
+      frame('message', { content: 'here you go', entities: [] }),
+      frame('done', { tool_calls_used: 0 }),
+    ]);
+
+    const { submit, UNSAFE_getByType } = renderChat();
+    const list = UNSAFE_getByType(FlatList);
+    // The user scrolled up to re-read an earlier answer.
+    list.props.onScrollBeginDrag();
+    list.props.onScroll({
+      nativeEvent: {
+        layoutMeasurement: { height: 600 },
+        contentOffset: { y: 0 },
+        contentSize: { height: 2000 },
+      },
+    });
+    list.props.onScrollEndDrag();
+    scrollToEnd.mockClear();
+
+    submit('and what about lombok?');
+
+    expect(scrollToEnd).toHaveBeenCalled();
+    scrollToEnd.mockRestore();
   });
 
   it('shows an inline error when the stream emits an error frame', async () => {
@@ -312,7 +353,7 @@ describe('ChatScreen', () => {
 
   it('auto-sends a seed message once on mount', async () => {
     scriptStream([
-      frame('message', { content: 'on it' }),
+      frame('message', { content: 'on it', entities: [] }),
       frame('done', { tool_calls_used: 0 }),
     ]);
 
@@ -337,7 +378,7 @@ describe('ChatScreen', () => {
   });
 
   it('clearing from the ••• empties the chat', async () => {
-    scriptStream([frame('message', { content: 'hey saher' }), frame('done', { tool_calls_used: 0 })]);
+    scriptStream([frame('message', { content: 'hey saher', entities: [] }), frame('done', { tool_calls_used: 0 })]);
     const { submit, getByText, getByLabelText, queryByText } = renderChat();
 
     // Both top-bar buttons render even on an empty chat.
@@ -371,7 +412,7 @@ describe('ChatScreen', () => {
   });
 
   it('undo on the cleared toast restores the transcript', async () => {
-    scriptStream([frame('message', { content: 'hey saher' }), frame('done', { tool_calls_used: 0 })]);
+    scriptStream([frame('message', { content: 'hey saher', entities: [] }), frame('done', { tool_calls_used: 0 })]);
     const { submit, getByText, getByLabelText, queryByText } = renderChat();
 
     submit('hey');
@@ -389,7 +430,7 @@ describe('ChatScreen', () => {
   });
 
   it('wipes kebi conversation memory once the undo window closes', async () => {
-    scriptStream([frame('message', { content: 'hey saher' }), frame('done', { tool_calls_used: 0 })]);
+    scriptStream([frame('message', { content: 'hey saher', entities: [] }), frame('done', { tool_calls_used: 0 })]);
     const { submit, getByText, getByLabelText } = renderChat();
     submit('hey');
     await waitFor(() => expect(getByText('hey saher')).toBeTruthy());
@@ -407,7 +448,7 @@ describe('ChatScreen', () => {
   });
 
   it('undo cancels the server wipe', async () => {
-    scriptStream([frame('message', { content: 'hey saher' }), frame('done', { tool_calls_used: 0 })]);
+    scriptStream([frame('message', { content: 'hey saher', entities: [] }), frame('done', { tool_calls_used: 0 })]);
     const { submit, getByText, getByLabelText } = renderChat();
     submit('hey');
     await waitFor(() => expect(getByText('hey saher')).toBeTruthy());

@@ -30,12 +30,14 @@ import { SavedPlacesProvider } from "../components/saved-places-context";
 import { PlaceDetailProvider } from "../components/place-detail-context";
 import { PlaceActionsProvider } from "../components/place-actions-context";
 import { NoteSheetProvider } from "../components/note-sheet-context";
+import { CurateSheetProvider } from "../components/curate-sheet-context";
 import { ChatProvider } from "../components/chat-context";
 import { ChatTranscriptProvider } from "../components/chat-transcript-context";
 import { ContextMenuProvider } from "../components/context-menu/context-menu-context";
 import { ShareIntentReceiver } from "../components/share-intent-receiver";
 import { Splash } from "../components/splash";
 import { AuthProvider, useAuth } from "../auth/auth-context";
+import { CapabilitiesProvider } from "../capabilities";
 import { getStoredTheme } from "../lib/theme-preference";
 
 // Keep the splash visible until the Inter weights are loaded.
@@ -115,6 +117,12 @@ export default function RootLayout() {
       <I18nProvider>
         <SafeAreaProvider>
           <AuthProvider>
+            {/* CapabilitiesProvider sits directly under AuthProvider: it reads
+                auth status to know when to ask and when to clear, and it must
+                wrap everything below so any surface can gate on a permission
+                without its own fetch. Nothing renders differently by being
+                inside it — it only answers useCan(). */}
+            <CapabilitiesProvider>
             {/* ContextMenuProvider wraps Toast so a long-press overlay (and its
                 frosted blur) renders above the app but below toasts. */}
             <ContextMenuProvider>
@@ -132,6 +140,9 @@ export default function RootLayout() {
                 <PlaceDetailProvider>
                 {/* NoteSheetProvider mounts the global note editor; any surface
                     raises it via useNoteSheet().open(view) — saves via place actions. */}
+                {/* CurateSheetProvider mounts the insider composer once; every
+                    door raises it via useCurateSheet().open(target). */}
+                <CurateSheetProvider>
                 <NoteSheetProvider>
                 {/* SaveSheetProvider sits under ToastProvider so a save toast
                     renders above the sheet; it mounts the save sheet once and
@@ -159,11 +170,13 @@ export default function RootLayout() {
                   {!splashDone && <Splash onDone={() => setSplashDone(true)} />}
                 </SaveSheetProvider>
                 </NoteSheetProvider>
+                </CurateSheetProvider>
                 </PlaceDetailProvider>
                 </SavedPlacesProvider>
                 </PlaceActionsProvider>
               </ToastProvider>
             </ContextMenuProvider>
+          </CapabilitiesProvider>
           </AuthProvider>
         </SafeAreaProvider>
       </I18nProvider>

@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { Text, View } from 'react-native';
-import { findPriceTag, type SavedPlaceView } from '@kebi-app/shared';
+import { findPriceTag, type PlaceView } from '@kebi-app/shared';
 import { Icon } from './icon';
 import { useTranslation } from '../i18n/context';
 
@@ -11,7 +11,8 @@ const APPROVED_GLYPH = '👍';
 /**
  * The place page's meta wrapper (kebi-place-mockup.html `.meta-wrapper`): a
  * `--surface` box of small chips for the place's at-a-glance facts. v1 shows the
- * user's `liked` / `went` / `approved` state when set, plus price (¥/$$/$$$). The
+ * user's `liked` / `went` / `approved` state when set, plus price (¥/$$/$$$).
+ * On an unsaved place there is no user-state, so price is all it can hold. The
  * unconfirmed (`approve?`) state is the amber pill below the title; once confirmed
  * it surfaces here as the `approved` chip. The mockup's
  * live "open" dot and "8 min" distance are dropped (no live hours / no client geo
@@ -28,12 +29,14 @@ function MetaChip({ leading, tone = 'text-text', children }: { leading?: ReactNo
   );
 }
 
-export function PlaceMetaWrapper({ view }: { view: SavedPlaceView }) {
+export function PlaceMetaWrapper({ view }: { view: PlaceView }) {
   const { t } = useTranslation();
   const price = findPriceTag(view.place);
-  const approved = view.user_data.approved;
-  const liked = view.user_data.liked === true;
-  const went = view.user_data.visited;
+  // An unsaved place (ADR-151) has no user-state, so only price can show — the
+  // wrapper's own rule is unchanged: it hides when it has nothing.
+  const approved = view.user_data?.approved ?? false;
+  const liked = view.user_data?.liked === true;
+  const went = view.user_data?.visited ?? false;
 
   if (!price && !approved && !liked && !went) return null;
 

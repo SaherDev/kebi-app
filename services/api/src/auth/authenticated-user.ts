@@ -1,4 +1,9 @@
-import type { AuthUser, MovementProfile, PlanTier } from '@kebi-app/shared';
+import type {
+  AuthUser,
+  MovementProfile,
+  PlanTier,
+  UserAboutMe,
+} from '@kebi-app/shared';
 
 /**
  * The authenticated principal attached to a request (`req.user`). A class, not a
@@ -11,6 +16,7 @@ export class AuthenticatedUser implements AuthUser {
   readonly ai_enabled: boolean;
   readonly plan?: PlanTier;
   readonly movement_profile?: MovementProfile;
+  readonly about_me?: UserAboutMe;
   readonly can_curate?: boolean;
 
   constructor(params: AuthUser) {
@@ -20,6 +26,7 @@ export class AuthenticatedUser implements AuthUser {
     if (params.movement_profile !== undefined) {
       this.movement_profile = params.movement_profile;
     }
+    if (params.about_me !== undefined) this.about_me = params.about_me;
     if (params.can_curate !== undefined) this.can_curate = params.can_curate;
   }
 }

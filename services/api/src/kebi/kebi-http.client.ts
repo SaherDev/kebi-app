@@ -9,6 +9,9 @@ import { EntitlementsService } from '../entitlements/entitlements.service';
 
 const KEBI_TIMEOUT_MS = 30000;
 
+/** No timeout on SSE streams — `0` disables it (see {@link KebiHttpClient.postStream}). */
+const STREAM_TIMEOUT_MS = 0;
+
 /** ADR-112 capability headers — the gateway forwards capabilities, never the plan name. */
 const ENTITLEMENT_HEADERS = {
   taste: 'X-Gateway-Taste-Enabled',
@@ -66,9 +69,9 @@ export class KebiHttpClient {
     this.logger.debug(`Initialized with base URL: ${this.baseUrl}`);
   }
 
-  async get<T>(path: string, userId: string): Promise<T> {
+  async get<T>(path: string, userId: string, capabilities?: GatewayCapabilities): Promise<T> {
     const response = await firstValueFrom(
-      this.httpService.get<T>(this.url(path), this.config(userId)),
+      this.httpService.get<T>(this.url(path), this.config(userId, undefined, capabilities)),
     );
     return response.data;
   }
@@ -93,9 +96,13 @@ export class KebiHttpClient {
     return response.data;
   }
 
-  async delete<T = void>(path: string, userId: string): Promise<T> {
+  async delete<T = void>(
+    path: string,
+    userId: string,
+    capabilities?: GatewayCapabilities,
+  ): Promise<T> {
     const response = await firstValueFrom(
-      this.httpService.delete<T>(this.url(path), this.config(userId)),
+      this.httpService.delete<T>(this.url(path), this.config(userId, undefined, capabilities)),
     );
     return response.data;
   }
@@ -104,6 +111,12 @@ export class KebiHttpClient {
    * Open a raw SSE stream (`responseType: 'stream'`) — the body is returned as a
    * Node.js Readable without buffering. `signal` aborts the upstream connection
    * on client disconnect.
+   *
+   * The request timeout is disabled (`timeout: 0`): a chat turn is a long-lived
+   * stream, not a request/response, so the 30s budget would kill a turn whose
+   * tool phase or answer runs past it — mid-answer, after the user has already
+   * read half of it. The stream's lifetime is bounded by `signal` instead: the
+   * client hanging up (or pressing stop) aborts the upstream connection.
    */
   async postStream(
     path: string,
@@ -116,7 +129,11 @@ export class KebiHttpClient {
       this.httpService.post<Readable>(
         this.url(path),
         body,
-        this.config(userId, plan, undefined, { responseType: 'stream', signal }),
+        this.config(userId, plan, undefined, {
+          responseType: 'stream',
+          signal,
+          timeout: STREAM_TIMEOUT_MS,
+        }),
       ),
     );
     return response.data;

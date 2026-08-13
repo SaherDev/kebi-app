@@ -182,12 +182,28 @@ describe('KebiHttpClient', () => {
         { message: 'hi' },
         {
           responseType: 'stream',
-          timeout: 30000,
+          timeout: 0,
           signal: controller.signal,
           headers: GATEWAY_HEADERS,
         }
       );
       expect(result).toBe(fakeStream);
+    });
+
+    it('disables the request timeout — a turn outlives the 30s budget', async () => {
+      const fakeStream = new PassThrough();
+      (httpService.post as jest.Mock).mockReturnValueOnce(
+        of({ data: fakeStream } as unknown as AxiosResponse)
+      );
+
+      await client.postStream('/v1/chat/stream', USER_ID, { message: 'hi' });
+
+      // A long tool phase (or a long answer) must not kill the stream mid-token;
+      // the AbortSignal, not a timer, is what ends a chat turn.
+      const config = (httpService.post as jest.Mock).mock.calls[0][2];
+      expect(config.timeout).toBe(0);
+      // Non-stream calls keep the 30s budget.
+      expect(STD_CONFIG.timeout).toBe(30000);
     });
 
     it('passes signal: undefined when none is given', async () => {
@@ -203,7 +219,7 @@ describe('KebiHttpClient', () => {
         { message: 'hi' },
         {
           responseType: 'stream',
-          timeout: 30000,
+          timeout: 0,
           signal: undefined,
           headers: GATEWAY_HEADERS,
         }

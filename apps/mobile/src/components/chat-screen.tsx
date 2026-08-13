@@ -1,4 +1,4 @@
-import { memo, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import {
   FlatList,
   Pressable,
@@ -23,9 +23,11 @@ import { Icon } from './icon';
 import { Mascot } from './mascot';
 import { ActionSheet } from './action-sheet';
 import { ReasoningBlock } from './reasoning-block';
-import { PlaceCardSkeleton } from './place-card-skeleton';
-import { ChatPlaceCard } from './chat-place-card';
-import { hasConsultResults, hasPlaceCandidates } from './chat-place-card-data';
+import { ChatAnswer } from './chat-answer';
+import { TurnProcess } from './turn-process';
+import { ChatEntityRail } from './chat-entity-rail';
+import { useOpenChatEntity } from './use-open-chat-entity';
+import type { ChatEntity } from '@kebi-app/shared';
 import {
   useChatTranscript,
   type ChatTranscriptValue,
@@ -36,13 +38,17 @@ import {
 import { useApiClient } from '../api/hooks';
 import { streamChat } from '../api/chat';
 import { deleteUserData } from '../api/user-data';
-import { TOAST_DISMISS_MS } from '../theme/motion';
+import { PRESS, TOAST_DISMISS_MS } from '../theme/motion';
 import { getDeviceLocation } from '../lib/location';
+import { shouldFollow } from '../lib/stream-follow';
 import { formatClockTime } from '../lib/format-relative-time';
 import { triggerHaptic } from '../lib/haptics';
 import { useToast } from './toast-context';
 import { useUpgradeToast } from './use-upgrade-toast';
 import { useTranslation } from '../i18n/context';
+
+/** Scroll sampling while a turn streams — tight enough to track the tail. */
+const SCROLL_THROTTLE_MS = 16;
 
 interface ChatScreenProps {
   /** Close the chat — runs the collapse-back-into-the-button animation. */
@@ -63,7 +69,8 @@ interface ChatScreenProps {
  * survives close→reopen), opens the SSE stream, and dispatches each frame into
  * the transcript store — reasoning steps drive `ReasoningBlock`, the message
  * frame fills the answer, tool results stash a place-card skeleton (Task 2 will
- * render the real card). Bottom is a photo/mic toolbar pill (no AI button).
+ * render the real card). Bottom is the composer card — field + mic + send⇄stop
+ * orb in one surface container (kebi-chat-input-options a, no AI button).
  */
 export function ChatScreen({ onClose, seed }: ChatScreenProps) {
   const { t } = useTranslation();
@@ -75,7 +82,11 @@ export function ChatScreen({ onClose, seed }: ChatScreenProps) {
   const { show: showToast, reserveTopAnchor } = useToast();
   const showUpgrade = useUpgradeToast();
   const transcript = useChatTranscript();
-  const { turns, startTurn, upsertStep, setMessage, addToolResult, finishTurn, stopTurn, failTurn, toggleCollapse, clearTranscript, restoreTranscript } =
+  // Stable across renders — TurnRow is memoized, so a fresh handler per render
+  // would re-render every turn in the list. Takes `onClose` because chat is an
+  // overlay: the card has to be pushed with the chat down, not under it.
+  const openEntity = useOpenChatEntity(onClose);
+  const { turns, startTurn, upsertStep, appendStepText, appendMessage, setMessage, finishTurn, stopTurn, failTurn, toggleCollapse, clearTranscript, restoreTranscript } =
     transcript;
 
   const [draft, setDraft] = useState('');
@@ -87,6 +98,8 @@ export function ChatScreen({ onClose, seed }: ChatScreenProps) {
   // Only auto-scroll when the user is already at the bottom — don't yank the
   // list down while they've scrolled up to read an earlier turn.
   const atBottomRef = useRef(true);
+  // Whether the user's finger is what is moving the list (see `onScroll`).
+  const draggingRef = useRef(false);
 
   // Abort an in-flight stream when the chat closes (the overlay unmounts us).
   // The transcript persists above, so a partial turn stays visible on reopen.
@@ -117,10 +130,18 @@ export function ChatScreen({ onClose, seed }: ChatScreenProps) {
 
   const onScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
     const { layoutMeasurement, contentOffset, contentSize } = e.nativeEvent;
-    atBottomRef.current = layoutMeasurement.height + contentOffset.y >= contentSize.height - 40;
+    atBottomRef.current = shouldFollow({
+      fromBottom: contentSize.height - (layoutMeasurement.height + contentOffset.y),
+      dragging: draggingRef.current,
+      following: atBottomRef.current,
+    });
   };
   const onContentSizeChange = () => {
-    if (atBottomRef.current) listRef.current?.scrollToEnd({ animated: !reducedMotion });
+    // Not animated while a turn streams: a 300ms scroll animation restarting on
+    // every token never arrives, so the tail stays just off screen.
+    if (atBottomRef.current) {
+      listRef.current?.scrollToEnd({ animated: !reducedMotion && !isStreaming });
+    }
   };
 
   // The composer button is "send" normally and "stop" while a turn streams —
@@ -169,6 +190,18 @@ export function ChatScreen({ onClose, seed }: ChatScreenProps) {
     });
   }
 
+  /**
+   * Send the draft from the composer (orb tap or keyboard return). Guarded the
+   * same way the button disables, so a hardware return on an empty draft (or
+   * mid-stream) is a no-op. Haptic fires only here — a seed auto-send is not
+   * something the user did, so `submit` itself stays silent.
+   */
+  function sendDraft() {
+    if (!canSend || abortRef.current) return;
+    triggerHaptic('send-message');
+    void submit(draft);
+  }
+
   /** Cancel the in-flight stream: flag the turn stopped, then abort it. */
   function stop() {
     if (!abortRef.current) return;
@@ -188,7 +221,12 @@ export function ChatScreen({ onClose, seed }: ChatScreenProps) {
     const controller = new AbortController();
     abortRef.current = controller;
 
+    // Sending is an explicit "show me the new turn": resume following even if
+    // they had scrolled up to read an earlier answer, or the turn they just
+    // sent lands below the fold and the reply streams in off screen.
+    atBottomRef.current = true;
     const kebiKey = startTurn(text);
+    listRef.current?.scrollToEnd({ animated: !reducedMotion });
     const location = await getDeviceLocation();
     let finished = false;
 
@@ -198,11 +236,18 @@ export function ChatScreen({ onClose, seed }: ChatScreenProps) {
           case 'reasoning_step':
             upsertStep(kebiKey, ev.data);
             break;
-          case 'message':
-            setMessage(kebiKey, ev.data.content);
+          case 'reasoning_delta':
+            // The agent thinking out loud into a row already on screen.
+            appendStepText(kebiKey, ev.data);
             break;
-          case 'tool_result':
-            addToolResult(kebiKey, ev.data);
+          case 'message_delta':
+            // The answer typing into the bubble (plain prose, never links).
+            appendMessage(kebiKey, ev.data);
+            break;
+          case 'message':
+            // Authoritative: replaces everything `message_delta` streamed, and
+            // is the only frame that carries links + entities.
+            setMessage(kebiKey, ev.data.content, ev.data.entities);
             break;
           case 'done':
             finishTurn(kebiKey, ev.data.tool_calls_used);
@@ -280,24 +325,35 @@ export function ChatScreen({ onClose, seed }: ChatScreenProps) {
           data={turns}
           keyExtractor={(turn) => turn.key}
           renderItem={({ item }) => (
-            <TurnRow turn={item} labels={turnLabels} onToggle={toggleCollapse} />
+            <TurnRow
+              turn={item}
+              labels={turnLabels}
+              onToggle={toggleCollapse}
+              onOpenEntity={openEntity}
+            />
           )}
           contentContainerClassName="gap-6 px-6 pb-6 pt-2"
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
           onScroll={onScroll}
-          scrollEventThrottle={64}
+          onScrollBeginDrag={() => (draggingRef.current = true)}
+          onScrollEndDrag={() => (draggingRef.current = false)}
+          onMomentumScrollEnd={() => (draggingRef.current = false)}
+          scrollEventThrottle={SCROLL_THROTTLE_MS}
           onContentSizeChange={onContentSizeChange}
         />
 
-        {/* Editor line — multiline so long text wraps and the field grows (up to
-            ~5 lines, then scrolls). `submitBehavior="submit"` keeps return as the
+        {/* Composer card (kebi-chat-input-options, option a): ONE surface card
+            holds the field and the actions, so "where do i type" has a visible
+            answer — the bare line + detached pill read as more transcript. The
+            input is multiline so long text wraps and the card grows (up to ~5
+            lines, then scrolls); `submitBehavior="submit"` keeps return as the
             send key (and keeps the keyboard up) rather than inserting a newline. */}
-        <View className="px-6 pb-2 pt-2">
+        <View className="mx-4 mb-3 rounded-[20px] bg-surface pb-2 pe-2 ps-4 pt-3.5">
           <TextInput
             value={draft}
             onChangeText={setDraft}
-            onSubmitEditing={() => submit(draft)}
+            onSubmitEditing={sendDraft}
             placeholder={t('chat.placeholder')}
             placeholderTextColor={softColor}
             returnKeyType="send"
@@ -309,30 +365,42 @@ export function ChatScreen({ onClose, seed }: ChatScreenProps) {
             accessibilityLabel={t('chat.placeholder')}
             className="max-h-[120px] p-0 text-[17px] leading-relaxed text-text"
           />
-        </View>
 
-        {/* Composer pill (bottom-right): mic (voice, placeholder) + send/stop. One
-            outline toggle — paper-plane send when idle, a larger square stop while
-            a turn streams (tapping stop aborts the response). Muted when empty. */}
-        <View className="mx-4 mb-3 flex-row items-center gap-6 self-end rounded-full bg-surface px-5 py-3">
-          <Pressable accessibilityRole="button" accessibilityLabel={t('chat.voice')} hitSlop={8}>
-            <Icon name="mic" size={18} className="text-text" strokeWidth={1.6} />
-          </Pressable>
-          <Pressable
-            onPress={isStreaming ? stop : () => submit(draft)}
-            disabled={!isStreaming && !canSend}
-            accessibilityRole="button"
-            accessibilityLabel={isStreaming ? t('chat.stop') : t('chat.send')}
-            accessibilityState={{ disabled: !isStreaming && !canSend }}
-            hitSlop={8}
-          >
-            <Icon
-              name={isStreaming ? 'stop' : 'send'}
-              size={isStreaming ? 22 : 18}
-              className={isStreaming || canSend ? 'text-text' : 'text-text-soft'}
-              strokeWidth={1.8}
-            />
-          </Pressable>
+          {/* Actions row: mic (voice, placeholder) + the send⇄stop orb
+              (kebi-chat-polish-options 3a/2a). The orb "arms" as you type —
+              soft bare plane when the draft is empty, a solid ink disc once
+              there's text — and becomes the stop square while a turn streams
+              (tapping stop aborts the response). PRESS gives the tactile
+              scale/opacity dip on the armed orb. */}
+          <View className="mt-2 flex-row items-center justify-end gap-4">
+            <Pressable accessibilityRole="button" accessibilityLabel={t('chat.voice')} hitSlop={8}>
+              <Icon name="mic" size={18} className="text-text" strokeWidth={1.6} />
+            </Pressable>
+            <Pressable
+              onPress={isStreaming ? stop : sendDraft}
+              disabled={!isStreaming && !canSend}
+              accessibilityRole="button"
+              accessibilityLabel={isStreaming ? t('chat.stop') : t('chat.send')}
+              accessibilityState={{ disabled: !isStreaming && !canSend }}
+              hitSlop={8}
+              // PRESS stays in every state — NativeWind's transition classes
+              // must not mount/unmount between renders; only the fill toggles.
+              className={`h-9 w-9 items-center justify-center rounded-full ${
+                isStreaming || canSend ? 'bg-text' : ''
+              } ${PRESS}`}
+            >
+              {isStreaming ? (
+                <View className="h-3 w-3 rounded-[3px] bg-bg" />
+              ) : (
+                <Icon
+                  name="send"
+                  size={canSend ? 16 : 18}
+                  className={canSend ? 'text-bg' : 'text-text-soft'}
+                  strokeWidth={1.8}
+                />
+              )}
+            </Pressable>
+          </View>
         </View>
       </Animated.View>
 
@@ -369,6 +437,8 @@ interface TurnLabels {
   thought: string;
   stopped: string;
   interrupted: string;
+  /** Eyebrow over the entity rail — everywhere this turn named, area or venue. */
+  mentioned: string;
 }
 
 function labels(t: (k: string) => string): TurnLabels {
@@ -380,8 +450,16 @@ function labels(t: (k: string) => string): TurnLabels {
     thought: t('chat.thought'),
     stopped: t('chat.stopped'),
     interrupted: t('chat.interrupted'),
+    mentioned: t('chat.mentioned'),
   };
 }
+
+/**
+ * Prose segments carry no entities — links only ever arrive on the final
+ * `message` frame. A shared constant keeps ChatAnswer's memo from re-running on
+ * a fresh `[]` every render.
+ */
+const EMPTY_ENTITIES: ChatEntity[] = [];
 
 /**
  * Copy a turn's text to the clipboard (mockup `.turn-copy`). Always visible and
@@ -415,15 +493,17 @@ const TurnRow = memo(function TurnRow({
   turn,
   labels: l,
   onToggle,
+  onOpenEntity,
 }: {
   turn: ChatTurn;
   labels: TurnLabels;
   onToggle: ChatTranscriptValue['toggleCollapse'];
+  onOpenEntity: (entity: ChatEntity) => void;
 }) {
   return turn.role === 'you' ? (
     <UserTurnRow turn={turn} label={l.you} />
   ) : (
-    <KebiTurnRow turn={turn} labels={l} onToggle={onToggle} />
+    <KebiTurnRow turn={turn} labels={l} onToggle={onToggle} onOpenEntity={onOpenEntity} />
   );
 });
 
@@ -444,22 +524,25 @@ function KebiTurnRow({
   turn,
   labels: l,
   onToggle,
+  onOpenEntity,
 }: {
   turn: KebiTurn;
   labels: TurnLabels;
   onToggle: ChatTranscriptValue['toggleCollapse'];
+  onOpenEntity: (entity: ChatEntity) => void;
 }) {
-  // Consult-vs-prose gate (ADR-050): the card surface keys on actual place
-  // candidates, never on the mere presence of a tool result (a research turn
-  // has one too — its answer is the prose).
-  const hasCandidates = hasPlaceCandidates(turn.toolResults);
-  const isConsultTurn = hasConsultResults(turn.toolResults);
-
-  // Show the thinking panel once steps arrive, or while still streaming with no
-  // answer yet (a simple greeting that runs no tools collapses to just text).
-  const showReasoning =
-    turn.steps.length > 0 ||
-    (turn.status === 'streaming' && turn.message === '' && turn.toolResults.length === 0);
+  const settled = turn.status !== 'streaming';
+  // Stable so <TurnProcess> stays memoized: this row re-renders on every answer
+  // token, and a fresh lambda here would re-render the work chips with it —
+  // restarting their pulse/shimmer/collapse animations 30+ times a second.
+  const toggleThis = useCallback(
+    (next: boolean) => onToggle(turn.key, next),
+    [onToggle, turn.key],
+  );
+  // An empty chip is a turn still waiting on its first frame — show one so the
+  // turn isn't a blank row while kebi thinks.
+  const showPlaceholderChip =
+    turn.segments.length === 0 && turn.message === '' && turn.status === 'streaming';
 
   return (
     <View className="gap-1.5">
@@ -469,35 +552,33 @@ function KebiTurnRow({
         {turn.message ? <CopyButton text={turn.message} /> : null}
       </View>
 
-      {showReasoning ? (
-        <ReasoningBlock
-          steps={turn.steps}
-          done={turn.status !== 'streaming'}
-          durationMs={turn.durationMs}
-          runningLabel={l.thinking}
-          doneLabel={turn.stopped ? l.stopped : l.thought}
-          interruptedLabel={l.interrupted}
-          collapsed={turn.collapsed}
-          onToggle={(next) => onToggle(turn.key, next)}
-        />
+      {/* The process: what the agent SAID as commentary prose, what it DID as
+          chips between the sentences, live while it streams — then folded into
+          one "thought for 12s" header once it settles (ADR-055). */}
+      <TurnProcess
+        segments={turn.segments}
+        settled={settled}
+        stopped={turn.stopped}
+        durationMs={turn.stepDurationMs ?? turn.durationMs}
+        collapsed={turn.collapsed}
+        onToggle={toggleThis}
+        labels={l}
+        onOpenEntity={onOpenEntity}
+      />
+
+      {showPlaceholderChip ? (
+        <ReasoningBlock steps={[]} runningLabel={l.thinking} collapsed />
       ) : null}
 
-      {/* The agent's prose answer — suppressed only when the turn produced
-          place candidates (then the card is the whole answer, ADR-050). On
-          every other turn — plain chat, research, consult that found nothing —
-          the prose carries the conversation. */}
-      {turn.message && !hasCandidates ? (
-        <Text className="text-[17px] leading-relaxed text-text-muted">
-          {renderInlineMarkdown(turn.message)}
-        </Text>
+      {/* The prose IS the answer on every turn (ADR-136): kebi no longer sends
+          place payloads to chat, it names the places in the text and links
+          them. The rail below indexes those links one destination at a time. */}
+      {turn.message ? (
+        <ChatAnswer message={turn.message} entities={turn.entities} onOpen={onOpenEntity} />
       ) : null}
 
-      {/* The place card is a consult-only surface: skeleton while candidates
-          stream in, then the card. A candidate-less consult turn with no prose
-          still gets the card's empty-reason line (no_location is actionable). */}
-      {turn.status === 'streaming' && hasCandidates ? <PlaceCardSkeleton /> : null}
-      {turn.status === 'done' && (hasCandidates || (isConsultTurn && !turn.message)) ? (
-        <ChatPlaceCard toolResults={turn.toolResults} />
+      {turn.status === 'done' ? (
+        <ChatEntityRail entities={turn.entities} label={l.mentioned} onOpen={onOpenEntity} />
       ) : null}
 
       {turn.status === 'error' ? (
@@ -520,24 +601,6 @@ function errorMessage(err: unknown, t: (key: string) => string): string {
       ? (err as { status?: number }).status
       : undefined;
   return status === 429 ? t('chat.rateLimited') : t('chat.error');
-}
-
-/**
- * Render kebi's light markdown in an assistant message: `**bold**` spans become
- * semibold (and a touch darker); everything else is plain. kebi only sends bold
- * emphasis in conversational replies, so this stays minimal — no full parser.
- */
-function renderInlineMarkdown(text: string): ReactNode {
-  return text.split(/(\*\*[^*]+\*\*)/g).map((part, i) => {
-    const bold = /^\*\*([^*]+)\*\*$/.exec(part);
-    return bold ? (
-      <Text key={i} className="font-semibold text-text">
-        {bold[1]}
-      </Text>
-    ) : (
-      <Text key={i}>{part}</Text>
-    );
-  });
 }
 
 /** "9:38 pm" from an epoch — delegates to the shared lowercase, Intl-free clock. */

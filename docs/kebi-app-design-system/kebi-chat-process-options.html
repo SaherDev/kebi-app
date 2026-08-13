@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Kebi Chat — the expanded thinking process</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg:#FAFAF9; --surface:#F1F1EF; --surface-2:#E8E8E5;
+    --text:#1A1A1A; --text-muted:#8A8A87; --text-soft:#B5B5B1;
+    --success:#5B8A4E;
+  }
+  html,body{ background:#2A2A28; font-family:'Inter',system-ui,sans-serif;
+    -webkit-font-smoothing:antialiased; min-height:100vh; color:#EDEDEA; padding:40px 24px 64px; }
+  h1{ font-size:22px; font-weight:700; letter-spacing:-.01em; margin-bottom:6px; }
+  .lede{ font-size:14px; color:#B5B5B1; max-width:1180px; line-height:1.55; margin-bottom:14px; }
+  .lede b{ color:#D9D9D5; font-weight:600; }
+  .lede code{ background:#3A3A37; padding:1px 5px; border-radius:5px; font-size:12.5px; }
+
+  .cols{ display:flex; gap:18px; align-items:flex-start; flex-wrap:wrap; margin-top:26px; }
+  .col{ width:340px; flex-shrink:0; }
+  .label .n{ font-size:13.5px; font-weight:700; color:#EDEDEA; }
+  .label .d{ font-size:12px; color:#8A8A87; line-height:1.5; margin:4px 0 10px; }
+  .label .for{ color:#8FBF7F; font-weight:600; }
+  .label .against{ color:#D98A6A; font-weight:600; }
+  .badge{ display:inline-block; background:#5B8A4E; color:#F3F8F0; font-size:10px; font-weight:700;
+    text-transform:uppercase; letter-spacing:.08em; border-radius:5px; padding:2px 6px; margin-left:7px; }
+  .col.picked .phone{ box-shadow:0 0 0 3px var(--success); }
+  .col.picked .label .n{ color:#8FBF7F; }
+
+  .phone{ background:var(--bg); border-radius:22px; padding:18px 20px 22px; color:var(--text); }
+
+  /* ── turn header (KEBI · time · copy) ── */
+  .eyebrow{ display:flex; align-items:center; gap:8px; margin-bottom:10px; }
+  .eyebrow .who{ font-size:10.5px; font-weight:600; letter-spacing:.08em;
+    text-transform:uppercase; color:var(--text-soft); }
+  .eyebrow .at{ font-size:11px; color:var(--text-soft); }
+
+  /* ── the one turn-level disclosure ── */
+  .thead{ display:flex; align-items:center; gap:8px; margin-bottom:14px; }
+  .thead .dot{ width:6px; height:6px; border-radius:50%; background:var(--success); flex-shrink:0; }
+  .thead .lbl{ font-size:12px; font-weight:500; color:var(--text-muted); }
+  .thead .chev{ margin-left:auto; color:var(--text-soft); font-size:11px; }
+
+  /* ── process body ── */
+  .body{ display:flex; flex-direction:column; gap:13px; }
+  .talk{ font-size:14px; line-height:1.5; color:var(--text-soft); }
+
+  /* work row: check node + title + summary */
+  .row{ display:flex; gap:10px; align-items:flex-start; }
+  .node{ width:14px; height:14px; border-radius:50%; background:var(--text); flex-shrink:0;
+    display:flex; align-items:center; justify-content:center; margin-top:3px; }
+  .node svg{ width:8px; height:8px; }
+  .rtxt{ min-width:0; }
+  .rt{ font-size:13px; font-weight:500; color:var(--text); line-height:1.45; }
+  .rs{ font-size:12px; color:var(--text-muted); line-height:1.45; margin-top:2px; }
+  .rtime{ font-size:11px; color:var(--text-soft); margin-left:6px; font-weight:400; }
+
+  /* answer, after the process */
+  .rule{ height:1px; background:var(--surface-2); margin:16px 0 14px; }
+  .answer{ font-size:15.5px; line-height:1.55; color:var(--text-muted); }
+  .answer b{ color:var(--text); font-weight:600; }
+
+  /* ── B: per-row timing ── */
+  /* (uses .rtime) */
+
+  /* ── C: continuous rail ── */
+  .railed{ position:relative; padding-left:20px; }
+  .railed:before{ content:''; position:absolute; left:6px; top:4px; bottom:4px;
+    width:1px; background:var(--surface-2); }
+  .railed .row{ margin-left:-20px; padding-left:20px; }
+  .railed .node{ position:absolute; left:0; }
+  .railed .row{ position:relative; }
+
+  /* ── D: one-line work rows ── */
+  .oneline .rt{ display:inline; }
+  .oneline .rs{ display:inline; margin-top:0; }
+  .oneline .sep{ color:var(--text-soft); }
+
+  /* ── E: today (what shipped) ── */
+  .chip{ display:flex; align-items:center; gap:8px; }
+  .chip .dot{ width:6px; height:6px; border-radius:50%; background:var(--success); }
+  .chip .lbl{ font-size:12px; font-weight:500; color:var(--text-muted); }
+  .chip .chev{ margin-left:auto; color:var(--text-soft); font-size:11px; }
+  .chiprows{ padding-left:8px; margin-top:9px; display:flex; flex-direction:column; gap:12px; }
+
+  .foot{ max-width:1180px; margin:44px auto 0; font-size:13px; line-height:1.7;
+    color:#B5B5B1; letter-spacing:-.005em; }
+  .foot h2{ font-size:15px; font-weight:700; color:#FAFAF9; margin-bottom:10px; }
+  .foot h2:not(:first-child){ margin-top:26px; }
+  .foot code{ background:#3A3A37; padding:1px 5px; border-radius:5px; font-size:12.5px; }
+  .collapsed-note{ max-width:1180px; background:#332F26; border-radius:12px; padding:14px 16px;
+    font-size:13px; line-height:1.6; color:#E6DFCB; margin-top:8px; }
+</style>
+</head>
+<body>
+
+<h1>Kebi Chat — the expanded thinking process</h1>
+<p class="lede">
+  A settled turn collapses to <b>one</b> line: <code>● thought for 19.7s ▸</code> over the clean
+  answer. That is not in question here. These options are only about <b>what you see after you tap
+  it open</b> — where the shipped build currently stacks four more <code>thought for …s</code>
+  headers, each with its own dot and chevron, each wrapping a single work row.
+</p>
+<div class="collapsed-note">
+  <b>Collapsed (all options, unchanged):</b> &nbsp; ● thought for 19.7s&nbsp;&nbsp;▸ &nbsp;&nbsp;then the answer.
+</div>
+
+<div class="cols">
+
+  <!-- ─────────────────────────── E · today ─────────────────────────── -->
+  <div class="col">
+    <div class="label">
+      <div class="n">Today — nested chips</div>
+      <div class="d">What is in the build now, for comparison.
+        <span class="against">Four disclosures inside a disclosure; 0.1s reads as noise.</span></div>
+    </div>
+    <div class="phone">
+      <div class="eyebrow"><span class="who">Kebi</span><span class="at">12:51 pm</span></div>
+      <div class="thead"><span class="dot"></span><span class="lbl">thought for 19.7s</span><span class="chev">⌄</span></div>
+      <div class="body">
+        <div class="talk">Let me look into that…</div>
+
+        <div>
+          <div class="chip"><span class="dot"></span><span class="lbl">thought for 1.1s</span><span class="chev">⌄</span></div>
+          <div class="chiprows">
+            <div class="row">
+              <span class="node"><svg viewBox="0 0 8 8" fill="none" stroke="#FAFAF9" stroke-width="1.6"><path d="M1 4l2 2 4-4"/></svg></span>
+              <div class="rtxt"><div class="rt">dug into the local intel</div>
+                <div class="rs">couldn't pin down the place</div></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="talk">let me pull what i know about gili t properly</div>
+
+        <div>
+          <div class="chip"><span class="dot"></span><span class="lbl">thought for 0.1s</span><span class="chev">⌄</span></div>
+          <div class="chiprows">
+            <div class="row">
+              <span class="node"><svg viewBox="0 0 8 8" fill="none" stroke="#FAFAF9" stroke-width="1.6"><path d="M1 4l2 2 4-4"/></svg></span>
+              <div class="rtxt"><div class="rt">dug into the local intel</div>
+                <div class="rs">found 6 insider notes on Indonesia</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="rule"></div>
+      <div class="answer"><b>Gili T</b> for the weekend is a great call.</div>
+    </div>
+  </div>
+
+  <!-- ─────────────────────────── A · bare rows ─────────────────────────── -->
+  <div class="col picked">
+    <div class="label">
+      <div class="n">A · bare rows<span class="badge">recommended</span></div>
+      <div class="d">One header owns the disclosure; prose and work rows flow in stream order.
+        <span class="for">Removes 4 dots, 4 chevrons, 4 meaningless times.</span></div>
+    </div>
+    <div class="phone">
+      <div class="eyebrow"><span class="who">Kebi</span><span class="at">12:51 pm</span></div>
+      <div class="thead"><span class="dot"></span><span class="lbl">thought for 19.7s</span><span class="chev">⌄</span></div>
+      <div class="body">
+        <div class="talk">Let me look into that…</div>
+        <div class="row">
+          <span class="node"><svg viewBox="0 0 8 8" fill="none" stroke="#FAFAF9" stroke-width="1.6"><path d="M1 4l2 2 4-4"/></svg></span>
+          <div class="rtxt"><div class="rt">dug into the local intel</div>
+            <div class="rs">couldn't pin down the place</div></div>
+        </div>
+        <div class="talk">let me pull what i know about gili t properly</div>
+        <div class="row">
+          <span class="node"><svg viewBox="0 0 8 8" fill="none" stroke="#FAFAF9" stroke-width="1.6"><path d="M1 4l2 2 4-4"/></svg></span>
+          <div class="rtxt"><div class="rt">dug into the local intel</div>
+            <div class="rs">found 6 insider notes on Indonesia</div></div>
+        </div>
+        <div class="talk">nothing deep in my notes on gili t specifically, so let me hit the web</div>
+        <div class="row">
+          <span class="node"><svg viewBox="0 0 8 8" fill="none" stroke="#FAFAF9" stroke-width="1.6"><path d="M1 4l2 2 4-4"/></svg></span>
+          <div class="rtxt"><div class="rt">looked it up</div>
+            <div class="rs">read 5 sources — backpackingbella.com, alexandleahontour.org</div></div>
+        </div>
+      </div>
+      <div class="rule"></div>
+      <div class="answer"><b>Gili T</b> for the weekend is a great call.</div>
+    </div>
+  </div>
+
+  <!-- ─────────────────────────── B · bare + timing ─────────────────────────── -->
+  <div class="col">
+    <div class="label">
+      <div class="n">B · bare rows + per-row time</div>
+      <div class="d">Same, but each tool keeps its own duration as a trailing figure.
+        <span class="for">Timing survives without a header row.</span>
+        <span class="against">Sub-second times still read as noise.</span></div>
+    </div>
+    <div class="phone">
+      <div class="eyebrow"><span class="who">Kebi</span><span class="at">12:51 pm</span></div>
+      <div class="thead"><span class="dot"></span><span class="lbl">thought for 19.7s</span><span class="chev">⌄</span></div>
+      <div class="body">
+        <div class="talk">Let me look into that…</div>
+        <div class="row">
+          <span class="node"><svg viewBox="0 0 8 8" fill="none" stroke="#FAFAF9" stroke-width="1.6"><path d="M1 4l2 2 4-4"/></svg></span>
+          <div class="rtxt"><div class="rt">dug into the local intel<span class="rtime">1.1s</span></div>
+            <div class="rs">couldn't pin down the place</div></div>
+        </div>
+        <div class="talk">let me pull what i know about gili t properly</div>
+        <div class="row">
+          <span class="node"><svg viewBox="0 0 8 8" fill="none" stroke="#FAFAF9" stroke-width="1.6"><path d="M1 4l2 2 4-4"/></svg></span>
+          <div class="rtxt"><div class="rt">dug into the local intel<span class="rtime">0.1s</span></div>
+            <div class="rs">found 6 insider notes on Indonesia</div></div>
+        </div>
+        <div class="talk">nothing deep in my notes on gili t specifically, so let me hit the web</div>
+        <div class="row">
+          <span class="node"><svg viewBox="0 0 8 8" fill="none" stroke="#FAFAF9" stroke-width="1.6"><path d="M1 4l2 2 4-4"/></svg></span>
+          <div class="rtxt"><div class="rt">looked it up<span class="rtime">1.2s</span></div>
+            <div class="rs">read 5 sources — backpackingbella.com, alexandleahontour.org</div></div>
+        </div>
+      </div>
+      <div class="rule"></div>
+      <div class="answer"><b>Gili T</b> for the weekend is a great call.</div>
+    </div>
+  </div>
+
+  <!-- ─────────────────────────── C · continuous rail ─────────────────────────── -->
+  <div class="col">
+    <div class="label">
+      <div class="n">C · continuous rail</div>
+      <div class="d">Bare rows on one unbroken hairline, so talk and work read as a single thread.
+        <span class="for">Reads as one process, not loose blocks.</span>
+        <span class="against">The rail is another vertical line next to the answer.</span></div>
+    </div>
+    <div class="phone">
+      <div class="eyebrow"><span class="who">Kebi</span><span class="at">12:51 pm</span></div>
+      <div class="thead"><span class="dot"></span><span class="lbl">thought for 19.7s</span><span class="chev">⌄</span></div>
+      <div class="body railed">
+        <div class="talk">Let me look into that…</div>
+        <div class="row">
+          <span class="node"><svg viewBox="0 0 8 8" fill="none" stroke="#FAFAF9" stroke-width="1.6"><path d="M1 4l2 2 4-4"/></svg></span>
+          <div class="rtxt"><div class="rt">dug into the local intel</div>
+            <div class="rs">couldn't pin down the place</div></div>
+        </div>
+        <div class="talk">let me pull what i know about gili t properly</div>
+        <div class="row">
+          <span class="node"><svg viewBox="0 0 8 8" fill="none" stroke="#FAFAF9" stroke-width="1.6"><path d="M1 4l2 2 4-4"/></svg></span>
+          <div class="rtxt"><div class="rt">dug into the local intel</div>
+            <div class="rs">found 6 insider notes on Indonesia</div></div>
+        </div>
+        <div class="talk">nothing deep in my notes on gili t specifically, so let me hit the web</div>
+        <div class="row">
+          <span class="node"><svg viewBox="0 0 8 8" fill="none" stroke="#FAFAF9" stroke-width="1.6"><path d="M1 4l2 2 4-4"/></svg></span>
+          <div class="rtxt"><div class="rt">looked it up</div>
+            <div class="rs">read 5 sources — backpackingbella.com, alexandleahontour.org</div></div>
+        </div>
+      </div>
+      <div class="rule"></div>
+      <div class="answer"><b>Gili T</b> for the weekend is a great call.</div>
+    </div>
+  </div>
+
+  <!-- ─────────────────────────── D · one-line rows ─────────────────────────── -->
+  <div class="col">
+    <div class="label">
+      <div class="n">D · one-line work rows</div>
+      <div class="d">Each tool collapses to a single line, so the process is mostly the agent talking.
+        <span class="for">Shortest; the prose dominates.</span>
+        <span class="against">Long summaries wrap awkwardly or truncate.</span></div>
+    </div>
+    <div class="phone">
+      <div class="eyebrow"><span class="who">Kebi</span><span class="at">12:51 pm</span></div>
+      <div class="thead"><span class="dot"></span><span class="lbl">thought for 19.7s</span><span class="chev">⌄</span></div>
+      <div class="body oneline">
+        <div class="talk">Let me look into that…</div>
+        <div class="row">
+          <span class="node"><svg viewBox="0 0 8 8" fill="none" stroke="#FAFAF9" stroke-width="1.6"><path d="M1 4l2 2 4-4"/></svg></span>
+          <div class="rtxt"><span class="rt">dug into the local intel</span>
+            <span class="sep"> · </span><span class="rs">couldn't pin down the place</span></div>
+        </div>
+        <div class="talk">let me pull what i know about gili t properly</div>
+        <div class="row">
+          <span class="node"><svg viewBox="0 0 8 8" fill="none" stroke="#FAFAF9" stroke-width="1.6"><path d="M1 4l2 2 4-4"/></svg></span>
+          <div class="rtxt"><span class="rt">dug into the local intel</span>
+            <span class="sep"> · </span><span class="rs">found 6 insider notes on Indonesia</span></div>
+        </div>
+        <div class="talk">nothing deep in my notes on gili t specifically, so let me hit the web</div>
+        <div class="row">
+          <span class="node"><svg viewBox="0 0 8 8" fill="none" stroke="#FAFAF9" stroke-width="1.6"><path d="M1 4l2 2 4-4"/></svg></span>
+          <div class="rtxt"><span class="rt">looked it up</span>
+            <span class="sep"> · </span><span class="rs">read 5 sources — backpackingbella.com, alexandleahontour.org</span></div>
+        </div>
+      </div>
+      <div class="rule"></div>
+      <div class="answer"><b>Gili T</b> for the weekend is a great call.</div>
+    </div>
+  </div>
+
+</div>
+
+<div class="foot">
+  <h2>What is actually being decided</h2>
+  <p>
+    Only the <b>expanded</b> state. Every option collapses to the same single
+    <code>● thought for 19.7s ▸</code> line, and in every option the answer below is untouched
+    full-contrast message text. The commentary stays muted and a step smaller than the answer —
+    that tier split is already shipped and is not in question.
+  </p>
+
+  <h2>The streaming state</h2>
+  <p>
+    While a turn is <i>running</i> there is no turn-level header yet — the process is the content,
+    so it plays in place. Options A–D remove the per-chip header there too, which means live
+    progress is carried by the rows appearing one by one (check node lands as each tool finishes)
+    plus the agent's prose typing between them. If you want a live "working…" affordance beyond
+    that, say so — it is a separate decision from the settled layout.
+  </p>
+
+  <h2>Two things worth noting from the real turn</h2>
+  <p>
+    <b>Repeated titles.</b> "dug into the local intel" appears twice with different results
+    ("couldn't pin down the place" / "found 6 insider notes"). That is honest — the agent really
+    ran it twice — and the summaries differ, so the rows are not redundant. Merging them would mean
+    the client editing the record of what ran.
+  </p>
+  <p>
+    <b>Sub-second durations.</b> <code>thought for 0.1s</code> is true but useless. Options A, C and
+    D drop per-tool timing entirely and keep only the turn total; B keeps it if you want the detail.
+  </p>
+</div>
+
+</body>
+</html>

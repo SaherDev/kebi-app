@@ -1,10 +1,6 @@
 import type { Location } from "../schemas/location.js";
 import type { PlaceSource } from "./category-emoji.js";
-import type {
-  LiteralUnion,
-  PlaceCategory,
-  PlaceTag,
-} from "./place-taxonomy.js";
+import type { PlaceCategory, PlaceTag } from "./place-taxonomy.js";
 
 /**
  * Chat request body the gateway sends to kebi (POST /v1/chat,
@@ -16,15 +12,29 @@ import type {
  * `location` is the user's actual position. The frontend attaches it from
  * a session-only store; `null` when geolocation was denied/unavailable.
  *
+ * `local_time` is the caller's wall-clock time, client-supplied for the same
+ * reason `location` is: only the device knows the user's real clock, and a
+ * server clock in another timezone answers for the wrong day. Day of week is
+ * load-bearing (kebi ADR-138). `null` → kebi answers without a schedule
+ * rather than guessing one.
+ *
  * `movement_profile` is a user mobility setting carried as a Clerk
  * `publicMetadata` token claim (like `plan`). The gateway reads it from the
  * verified token and injects it here — the client never sends it. `null`
  * when the user has no profile set; kebi then applies a neutral fallback.
+ *
+ * `user_profile` is the "about me" block (kebi ADR-154), carried the same way —
+ * read off the stamped settings claim, with `call_me` falling back to the
+ * verified token's display name when unset. `null` when we know nothing about
+ * the user. kebi consumes it as a cold-start prior and stores none of it.
  */
 export interface ChatRequestDto {
   message: string;
   location: Location | null;
+  /** ISO-8601 wall-clock time with offset, e.g. `2026-08-10T19:30:00+08:00`. */
+  local_time: string | null;
   movement_profile: MovementProfile | null;
+  user_profile: ChatUserProfile | null;
 }
 
 /**
@@ -92,115 +102,74 @@ export interface PlaceCore {
 
 // ── Chat response (POST /v1/chat) ────────────────────────────────────────────
 // The agent runs a LangGraph turn with the consult-family tools plus the
-// knowledge tool `research` (kebi ADR-129). Each tool's structured payload is
-// surfaced in `data.tool_results`; the payload union is discriminated by
-// `tool` — NEVER by payload shape (ConsultResult and ResearchResult even share
-// an `empty_reason` field name with disjoint value sets). The top-level `type`
-// is only ever "agent" or "error" — all downstream failures are caught and
-// returned as type="error" with HTTP 200 (see api-contract.md).
-
-export type ConsultTool = "find_saved" | "suggest_places" | "discover_places";
-
-export type ResearchTool = "research";
-
-export type ChatTool = ConsultTool | ResearchTool;
-
-export const CONSULT_TOOLS = [
-  "find_saved",
-  "suggest_places",
-  "discover_places",
-] as const satisfies readonly ConsultTool[];
-
-export const RESEARCH_TOOL: ResearchTool = "research";
+// knowledge tool `research` (kebi ADR-129). Tool payloads stay server-side
+// (ADR-136): what the caller renders is `message` — prose with entity names
+// already wrapped as markdown links to `kebi://{kind}/{key}` — plus the flat
+// `entities` list resolving each link, and the turn's `recommendation_id`.
+// A new kebi tool therefore changes what the agent says, never what the client
+// draws. The top-level `type` is only ever "agent" or "error" — all downstream
+// failures are caught and returned as type="error" with HTTP 200 (see
+// api-contract.md).
 
 /**
- * Whether a tool result belongs to the consult family (place candidates) —
- * the canonical discrimination for `ToolResult.payload` (ADR-050). Unknown,
- * future, and `null` tool names are NOT consult (ADR-019): a new kebi tool
- * degrades to the prose path, never to a broken place card.
+ * What a chat link opens (kebi ADR-136): a detail surface for `venue` and
+ * `area`, the page itself in a browser for `web` (ADR-161). The vocabulary can
+ * grow — an unknown kind must degrade to plain prose, never crash.
  */
-export function isConsultTool(tool: string | null): tool is ConsultTool {
-  return tool !== null && (CONSULT_TOOLS as readonly string[]).includes(tool);
-}
+export type ChatEntityKind = "venue" | "area" | "web";
 
-export type ConsultCandidateSource = "saved" | "suggested" | "discovered";
-
-/** Why a tool produced no candidates (e.g. "no_location", "no_match"). */
-export type ConsultEmptyReason = LiteralUnion<"no_location" | "no_match">;
-
-export interface ConsultCandidate {
-  place: PlaceCore;
-  source: ConsultCandidateSource;
-  /** Namer's rationale, present for suggested/discovered candidates. */
-  reason?: string | null;
-}
-
-export interface ConsultResult {
-  candidates: ConsultCandidate[];
-  empty_reason?: ConsultEmptyReason | null;
+/**
+ * One linkable entity in a chat answer — one per markdown link in `message`,
+ * in the order the links appear. `kind` + `key` are `uri` pre-split so the
+ * client's link handler never parses: `key` is `places.id` for a venue, the
+ * slugged geo key (`{cc}[/{city}[/{neighborhood}]]`) for an area, and the raw
+ * page URL for a web source (ADR-161). `name` is the canonical display name,
+ * which may differ from the text the answer used ("Luigis" vs "Luigi's") — for
+ * `web` it is the source domain ("fifa.com"), and the wrapped text is the
+ * prose's own domain mention ("per the schedule on fifa.com").
+ */
+export interface ChatEntity {
+  kind: ChatEntityKind;
+  key: string;
+  name: string;
   /**
-   * Per-recommendation id minted by kebi. The client echoes it back when the
-   * user accepts/rejects (`POST /v1/signal`) or saves (`POST /v1/user/places`) a
-   * candidate, so the signal attributes to that recommendation.
+   * The pre-composed link. **Opaque — never rebuild it from `key`.** A venue's
+   * last segment is the `places.id` `GET /v1/places/{id}` takes, but an area's
+   * is its geo key run through kebi's codec (ADR-153), because the raw key is a
+   * slash path and would read as URL structure. The segment a request needs is
+   * therefore the one on the `uri`, not the one in `key`; `key` is the raw form,
+   * kept for display and matching only.
    */
-  recommendation_id: string;
+  uri: string;
+  /**
+   * Single emoji drawn beside the name (ADR-146). Always the stored row's
+   * icon, re-read at answer time (ADR-162) — a chip never contradicts the
+   * screen its tap opens. A venue's comes off its catalog row, where an LLM
+   * already picked it (ADR-117); an area's off its area row (profiler-picked,
+   * ADR-153); a web source's is always 🌐. **Nullable by design** — a row with
+   * no icon yet (or an area not yet profiled) ships `null` and the client
+   * falls back to its own kind/category mapping.
+   */
+  icon: string | null;
 }
 
-/** Why research produced no notes (e.g. "no_claims", "unresolved"). */
-export type ResearchEmptyReason = LiteralUnion<
-  "unresolved" | "ambiguous" | "no_claims" | "no_topic_match"
->;
-
-/**
- * One insider note from the knowledge layer, scoped to an area rather than a
- * place — the research analogue of {@link PlaceNote} (no `from_shared`, plus
- * the retrieval `confidence`). `id` is the underlying claim's stable id.
- */
-export interface ResearchNote {
-  id: string;
-  text: string;
-  tags: string[];
-  source: "community" | "expert" | "kebi";
-  confidence: number;
-  agree_count: number;
-  disagree_count: number;
-}
-
-/**
- * The `research` tool's payload (kebi ADR-129): knowledge notes about the
- * resolved area (`entity_name`/`entity_key`), not place candidates — there is
- * no `recommendation_id` and nothing in it is save/signal-able. The turn's
- * user-facing answer is the `message` prose; clients don't render this payload
- * yet (runtime validation is deferred to the surface that first consumes it,
- * ADR-046/ADR-050). `empty_reason` + `clarification` are set when `notes` is
- * empty.
- */
-export interface ResearchResult {
-  entity_name: string;
-  entity_key: string;
-  notes: ResearchNote[];
-  empty_reason?: ResearchEmptyReason | null;
-  clarification?: string | null;
-}
-
-export interface ConsultToolResult {
-  tool: ConsultTool;
-  tool_call_id: string;
-  payload: ConsultResult;
-}
-
-export interface ResearchToolResult {
-  tool: ResearchTool;
-  tool_call_id: string;
-  payload: ResearchResult;
-}
-
-/** Discriminated by `tool` — never sniff the payload shape (ADR-050). */
-export type ToolResult = ConsultToolResult | ResearchToolResult;
+// Tool results are gone from the wire (kebi ADR-136): the place/knowledge
+// payloads stay server-side and reach the client through the detail screen a
+// `kebi://` link opens. There is no `tool_results` field and no `tool_result`
+// SSE frame — a new kebi tool changes what the agent says, never what the
+// client draws.
 
 export interface AgentResponseData {
   reasoning_steps: ReasoningStep[];
-  tool_results: ToolResult[];
+  /** One per `kebi://` link in `message`, in the order they appear (ADR-136). */
+  entities: ChatEntity[];
+  /**
+   * The turn's consult id, echoed back by `POST /v1/signal` and
+   * `POST /v1/user/places` so the accept/reject/save attributes to it. It moved
+   * here from the consult payload when tool results left the wire (ADR-136);
+   * `null` on a turn where no place tool ran.
+   */
+  recommendation_id: string | null;
 }
 
 export interface ErrorResponseData {
@@ -297,13 +266,29 @@ export interface PlaceNote {
 }
 
 /**
- * A library entry: the catalog place, the caller's user-state, and the place's
- * insider notes (`claims`, ADR-127). `claims` is `[]` when a place has none.
+ * Any catalog place the caller can open, saved or not (ADR-151): the place, the
+ * caller's relationship to it, and the place's insider notes (`claims`,
+ * ADR-127). `claims` is `[]` when a place has none.
+ *
+ * `user_data` is `null` when the caller never saved this place — that null is
+ * the place screen's "offer save" signal, and it means there is no
+ * `user_place_id` to PATCH or DELETE, so every user-state affordance is absent.
+ * `GET /v1/places/{id}` returns this shape; `GET /v1/user/library` returns the
+ * saved narrowing below.
  */
-export interface SavedPlaceView {
+export interface PlaceView {
   place: PlaceCore;
-  user_data: UserPlace;
+  user_data: UserPlace | null;
   claims: PlaceNote[];
+}
+
+/**
+ * A library entry — a {@link PlaceView} the caller has saved. Carries
+ * `user_place_id`, so the mutating surfaces (Library pills, place menu, note
+ * sheet) take this type and keep their non-null guarantee.
+ */
+export interface SavedPlaceView extends PlaceView {
+  user_data: UserPlace;
 }
 
 /**
@@ -342,21 +327,112 @@ export interface UpdateUserPlaceRequest {
 }
 
 /**
- * POST /v1/user/places request body the gateway forwards to kebi — save a
- * place kebi recommended ("save it" on the consult card). Identity is the
- * X-Gateway-User-Id header, never the body; `source` is server-stamped (kebi).
+ * POST /v1/user/places request body the gateway forwards to kebi — the plain
+ * "save" on the place screen (ADR-151). Identity is the X-Gateway-User-Id
+ * header, never the body; `source` is server-stamped (kebi).
+ *
+ * The place id is the whole body. No attribution rides along: the only way a
+ * client holds a `places.id` is off a `kebi://venue/{id}` link kebi produced, so
+ * calling this endpoint at all is what marks the save as kebi-recommended. The
+ * retired card's `recommendation_id`/`reason` are now rejected as unknown keys.
  */
 export interface SaveUserPlaceRequest {
   place_core_id: string;
-  recommendation_id: string;
-  /**
-   * The pick's rationale the card is showing — the client supplies it since the
-   * reason isn't otherwise stored server-side. On create, kebi writes it to the
-   * knowledge layer as a user-scoped `kebi_message` claim on the place (ADR-127)
-   * — it is no longer stored on the save as `user_data.note`. Omit or `null` for
-   * no reason; a re-tap adds nothing (claim-text dedup).
-   */
-  reason?: string | null;
+}
+
+// ── Area screen (GET /v1/areas/{id}) ────────────────────────────────────────
+// The surface behind every `kebi://area/{id}` link (kebi ADR-153). The response
+// splits in two: a **global half** (the profile — generated once on first open,
+// identical for every caller) and a **personal half** (`saved_count` and the
+// body `section` — composed per request, never stored), the same split ADR-151
+// made on the place screen with its nullable `user_data`.
+
+/** One "best for" chip on the area profile. */
+export interface AreaChip {
+  icon: string | null;
+  text: string;
+}
+
+/** One tappable ancestor — `indonesia › bali` above the Canggu header. */
+export interface AreaBreadcrumbItem {
+  /** Raw geo key (`id/bali`). */
+  key: string;
+  name: string;
+  /** `kebi://area/{encoded key}` — hand back to the link handler, never parse. */
+  uri: string;
+}
+
+/**
+ * A child-area row in the body section. `saved_count` is the caller's own saves
+ * under that key — the drill-down promise that makes the row worth tapping —
+ * and is 0 on a "worth knowing" row.
+ */
+export interface AreaSubArea {
+  key: string;
+  name: string;
+  uri: string;
+  icon: string | null;
+  /** One-line profiler hook, on "worth knowing" rows. */
+  hook: string | null;
+  saved_count: number;
+}
+
+/**
+ * A venue row in the body section — only ever the caller's own saves.
+ * `subtitle` is server-composed from catalog data; `liked`/`visited` are the
+ * caller's pill state, for the row's accents.
+ */
+export interface AreaVenueRow {
+  /** `places.id` — opens the place screen. */
+  id: string;
+  name: string;
+  uri: string;
+  icon: string | null;
+  subtitle: string | null;
+  liked: boolean | null;
+  visited: boolean;
+}
+
+/**
+ * The one body block below the profile.
+ *
+ * `saved` — the caller's footprint here: child-area rows at wide levels, venue
+ * rows at the leaf (both can appear when a save carries no geo deeper than the
+ * current level). `worth_knowing` — the profiler's notable children, shown only
+ * when the caller has no saves under the key. Never venue suggestions:
+ * discovery stays in chat.
+ */
+export interface AreaSection {
+  kind: "saved" | "worth_knowing";
+  areas: AreaSubArea[];
+  places: AreaVenueRow[];
+}
+
+/**
+ * One area as the client renders it (kebi ADR-153).
+ *
+ * `profiled: false` means the global half is still being generated — the open
+ * that returned this response is what triggered it — so `level`/`icon`/`summary`
+ * are null, `best_for` is empty, and `name`/`breadcrumb` are slug-derived
+ * fallbacks. The dressed screen is there within seconds on the next fetch, the
+ * same first-open contract as a thin place (ADR-152). The personal half is
+ * always live, thin or not. `section` is null when there is nothing to show
+ * below the profile.
+ */
+export interface AreaScreenView {
+  /** Raw geo key (`id/bali/canggu`) — also what the chat entity carries. */
+  key: string;
+  /** This area's own `kebi://area/{encoded key}`. */
+  uri: string;
+  name: string;
+  level: string | null;
+  icon: string | null;
+  summary: string | null;
+  best_for: AreaChip[];
+  breadcrumb: AreaBreadcrumbItem[];
+  saved_count: number;
+  profiled: boolean;
+  section: AreaSection | null;
 }
 
 // ── Home screen (greeting + recall) ─────────────────────────────────────────
@@ -440,30 +516,90 @@ export const REACH_VALUES: readonly Reach[] = [
 ] as const;
 
 /**
+ * Whether a human ever chose the movement profile's modes, or a config seed
+ * supplied them (kebi ADR-155). Only `user` counts as resolved: kebi ignores a
+ * seeded block's modes and substitutes its own deliberately wide fallback
+ * (ADR-156), because capping an unknown user at walking range hides places they
+ * never learn about. Absent reads as `default` upstream.
+ */
+export type MovementSource = "user" | "default";
+
+export const MOVEMENT_SOURCES: readonly MovementSource[] = [
+  "user",
+  "default",
+] as const;
+
+/**
  * User mobility setting. Owned by the product as a Clerk `publicMetadata`
  * claim (like `plan`); the gateway forwards it to kebi in the chat body.
  */
 export interface MovementProfile {
   available_modes: MovementMode[];
   reach: Reach;
+  /** Absent is read as `default` by kebi — only a setter writes `user`. */
+  source?: MovementSource;
 }
 
 /**
- * Default movement profile for a new user, used until they set their own
- * (ADR-066 setter owed). The runtime value is config-driven
- * (`movement.default_profile` in the gateway's app.yaml); this is the code-level
- * fallback when that key is absent.
+ * Default movement profile for a new user, used until they set their own. The
+ * runtime value is config-driven (`user_settings.defaults.movement_profile` in
+ * the gateway's app.yaml); this is the code-level fallback when that key is
+ * absent. `source` is `default` by construction — these modes are ours, not the
+ * user's, and marking them `user` would have kebi honour a cap nobody chose.
  */
 export const DEFAULT_MOVEMENT_PROFILE: MovementProfile = {
   available_modes: ["walking", "transit"],
   reach: "normal",
+  source: "default",
 };
+
+/**
+ * The user's stored "about me" (kebi ADR-154), owned by `user_settings` and
+ * stamped into the token claims like `movement_profile`. Both fields nullable —
+ * a cleared field is `null`, never an empty string, so nothing reaches kebi as
+ * prose the user did not write.
+ *
+ * `call_me` lives here and only here — one write, to our own row, rather than a
+ * round-trip to the auth provider's Admin API for a name kebi is the one asking
+ * for. The account display name stays what it is (login identity, avatar); an
+ * unset `call_me` falls back to it at forward time, so a user who never opens
+ * the form is still addressed by name.
+ */
+export interface UserAboutMe {
+  call_me: string | null;
+  /** ISO 3166-1 alpha-2, uppercase. Validated at the gateway edge. */
+  home_country: string | null;
+  about: string | null;
+}
+
+/**
+ * The `user_profile` block on the kebi chat body — the stored about-me as sent,
+ * with `call_me` falling back to the account display name when unset. kebi
+ * weighs `about` as a low-trust cold-start prior (except a stated restriction,
+ * read as a hard constraint) and answers entry/visa questions live when
+ * `home_country` is present. It stores none of it.
+ */
+export type ChatUserProfile = UserAboutMe;
+
+/**
+ * The caller's own settings, read back for the screens that edit them
+ * (gateway-local `GET /user/settings`). They ride the token as an opaque sealed
+ * claim (ADR-044/045), so a screen has nowhere else to read current values from
+ * — and the about-me writes whole, so opening blind would erase what was there.
+ * `null` on either field means unset.
+ */
+export interface UserSettingsResponse {
+  about_me: UserAboutMe | null;
+  movement_profile: MovementProfile | null;
+}
 
 export interface AuthUser {
   id: string;
   ai_enabled: boolean;
   plan?: PlanTier;
   movement_profile?: MovementProfile;
+  /** Stamped about-me claim; absent until the user sets one. */
+  about_me?: UserAboutMe;
   // Admin-granted curator role (ADR-121), carried claim-first in the token.
   // Absent on a pre-grant/pre-migration token → treated as not a curator.
   can_curate?: boolean;
@@ -478,6 +614,11 @@ export interface UserSettingsData {
   plan: PlanTier;
   ai_enabled: boolean;
   movement_profile: MovementProfile | null;
+  /**
+   * The user's about-me (kebi ADR-154). `null` until they write one — a row
+   * predating the field reads as null and forwards nothing.
+   */
+  about_me: UserAboutMe | null;
   // Admin-granted curator role (ADR-121 knowledge curation) — independent of the
   // billing plan, never self-asserted. Defaults false (fail closed); the gateway
   // forwards it as the X-Gateway-Can-Curate capability header.
@@ -493,6 +634,8 @@ export interface IdentityClaims {
   ai_enabled?: boolean;
   plan?: PlanTier;
   movement_profile?: MovementProfile;
+  /** Stamped from user_settings; absent until the user sets an about-me. */
+  about_me?: UserAboutMe;
   // Admin-granted curator role (ADR-121), stamped from user_settings.
   can_curate?: boolean;
   // Our stable internal user id, stamped into the signed token claim so the
@@ -521,40 +664,55 @@ export interface NormalizedIdentity {
 /**
  * The user's display profile, returned by the gateway-local `/user/profile`
  * endpoint to the client. `name`/`email` are Supabase-owned PII (read from the
- * JWT, written via the Admin API); `plan` mirrors the product claim. The
- * internal id is never exposed.
+ * JWT, written via the Admin API); `plan` and `can_curate` mirror product
+ * claims. The internal id is never exposed.
  */
 export interface UserProfile {
   name: string;
   email: string;
   plan: PlanTier;
+  /**
+   * Whether this account may curate (ADR-121). Lives here beside `plan` rather
+   * than on `UserSettingsResponse` because it is an account **capability**, not
+   * a preference the user edits — and it is granted by us, never self-served.
+   *
+   * The client needs it to decide what to render: the insider pill, the
+   * knowledge group, the area `•••`, the write row in the chat entity menu. It
+   * is a **display** signal only — every curation route is independently gated
+   * by `CuratorGuard` from the token claim and again by kebi, so a client that
+   * lies to itself gets a 403, not a write. Always present, defaulting `false`.
+   */
+  can_curate: boolean;
 }
 
-// Signal types — recommendation accept/reject only (kebi ADR-076/078).
-export type SignalType =
-  | "recommendation_accepted"
-  | "recommendation_rejected";
+// The accept/reject signal types retired with the recommendation card that fed
+// them (ADR-151): kebi deleted POST /v1/signal, so there is nothing to send.
+// Negative taste input now comes only from the Library pills.
+
+// Knowledge curation (/v1/knowledge/*) — ADR-121, entity anchors ADR-160.
+// Expert prose is structured by kebi into `curated_expert` claims. `place` is
+// only expressible on an **anchored** request: unanchored prose stays geo-scoped
+// (kebi ADR-160), so a venue note without an anchor silently becomes a city one.
+export type CurateScope = "place" | "country" | "city" | "neighborhood";
 
 /**
- * Behavioral signal body the gateway sends to kebi (POST /v1/signal).
- * `place_core_id` is kebi's `places.id` (ADR-077). Identity travels in the
- * `X-Gateway-User-Id` header, never the body.
+ * What a curated note is about. **Exactly one** of `place_id` / `area_id` — both
+ * or neither is a 422, so this is a union in spirit even though the wire shape is
+ * one object.
+ *
+ * The two kinds identify differently and are not interchangeable: `place_id` is
+ * the catalog id `kebi://venue/{id}` links carry, while `area_id` is the
+ * **encoded token** off a `kebi://area/{id}` link — an area's raw geo key is not
+ * a valid anchor. An unknown id of either kind is a 404 before any LLM runs.
  */
-export interface SignalRequest {
-  signal_type: SignalType;
-  recommendation_id: string;
-  place_core_id: string;
+export interface CurateAnchor {
+  place_id?: string;
+  area_id?: string;
 }
 
-export interface SignalResponse {
-  status: string;
-}
-
-// Knowledge curation (POST /v1/knowledge/curate) — ADR-121. Expert prose is
-// structured by kebi into geo-scoped `curated_expert` claims.
-export type CurateScope = "country" | "city" | "neighborhood";
-
+/** A claim as returned by the curate write. `id` is what DELETE takes. */
 export interface CurateClaim {
+  id: string;
   scope: CurateScope;
   entity_name: string;
   claim: string;
@@ -565,11 +723,66 @@ export interface CurateClaim {
  * kebi's response after structuring curated prose. `claims_written` counts only
  * NEW rows — dedup collapses re-submissions, and unkeyable/accessibility claims
  * are dropped, so it may be less than the prose implied. `claims` is empty when
- * nothing was stored.
+ * nothing was stored, and a deduped re-submission does not reappear in it:
+ * `GET /v1/knowledge/claims` is the source of truth for "what you've added".
  */
 export interface CurateKnowledgeResponse {
   claims_written: number;
   claims: CurateClaim[];
+}
+
+/**
+ * The anchor a listed claim carries back — renderable *and* openable. `type`
+ * says which id is populated; the other is `null`. `name` is the display label,
+ * so the client groups by anchor without a second lookup.
+ */
+export interface ClaimAnchor {
+  type: "place" | "area";
+  place_id: string | null;
+  area_id: string | null;
+  name: string;
+}
+
+/**
+ * One of the caller's own curated claims (`GET /v1/knowledge/claims`). Note the
+ * shape differs from {@link CurateClaim}: there is no `entity_name` (the anchor
+ * carries the name) and it adds `created_at` + `anchor`. Provenance, confidence
+ * and review internals never cross the wire.
+ */
+export interface KnowledgeClaim {
+  id: string;
+  scope: CurateScope;
+  claim: string;
+  tags: string[];
+  created_at: string;
+  anchor: ClaimAnchor;
+}
+
+/** Newest-first page of the caller's own claims. `next_cursor` is null on the last page. */
+export interface KnowledgeClaimsResponse {
+  claims: KnowledgeClaim[];
+  next_cursor: string | null;
+}
+
+/**
+ * One typeahead hit behind the anchor chip (`GET /v1/knowledge/entities`). The
+ * populated id field **is** the anchor payload — it goes into a curate `anchor`
+ * verbatim. `level` is set for areas only, `icon` is nullable (the client keeps
+ * its category fallback, ADR-146).
+ */
+export interface EntitySearchResult {
+  type: "place" | "area";
+  place_id: string | null;
+  area_id: string | null;
+  name: string;
+  level: string | null;
+  icon: string | null;
+  context: string;
+}
+
+/** Areas lead, then places in relevance order. No matches is `[]`, never an error. */
+export interface EntitySearchResponse {
+  results: EntitySearchResult[];
 }
 
 // User data deletion scope (DELETE /v1/user/data?scope=...)
@@ -599,15 +812,16 @@ export const FEEDBACK_CATEGORIES: readonly FeedbackCategory[] = [
 
 /**
  * One transcript turn attached to a `wrong_answer` report. Deliberately lean:
- * reasoning step titles and tool names only — never tool payloads (large,
- * PII-adjacent, and beyond what the in-app disclosure promises).
+ * turn text and reasoning step titles only — never tool payloads (large,
+ * PII-adjacent, and beyond what the in-app disclosure promises). Tool names
+ * left with them: the client no longer sees which tools ran (ADR-136), and the
+ * step titles say what happened in words a reader can act on.
  */
 export interface FeedbackTranscriptTurn {
   role: "you" | "kebi";
   text: string;
   at: string;
   step_titles?: string[];
-  tool_names?: string[];
 }
 
 /**

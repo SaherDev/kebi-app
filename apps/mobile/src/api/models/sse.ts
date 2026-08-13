@@ -1,12 +1,15 @@
 import { z } from 'zod';
 import type {
+  ChatEntity as ChatEntityContract,
   ReasoningStepStatus,
   SseDone as SseDoneContract,
   SseError as SseErrorContract,
   SseMessage as SseMessageContract,
+  SseMessageDelta as SseMessageDeltaContract,
+  SseReasoningDelta as SseReasoningDeltaContract,
   SseReasoningStep as SseReasoningStepContract,
-  SseToolResult as SseToolResultContract,
 } from '@kebi-app/shared';
+import { ChatEntitiesSchema } from './chat';
 
 /**
  * Runtime models for the `POST /v1/chat/stream` SSE frame payloads
@@ -55,36 +58,62 @@ export const SseReasoningStepSchema = z
   })
   .transform((p) => new SseReasoningStep(p));
 
-export class SseToolResult implements SseToolResultContract {
-  readonly tool: string | null;
-  readonly tool_call_id: string | null;
-  readonly payload: Record<string, unknown> | null;
+/**
+ * A `reasoning_delta` frame: a fragment of the agent's thinking, appended to the
+ * `active` row already on screen with the same `id`. The row's later `done`
+ * frame supersedes whatever typed out here.
+ */
+export class SseReasoningDelta implements SseReasoningDeltaContract {
+  readonly id: string;
+  readonly text: string;
 
-  constructor(p: SseToolResultContract) {
-    this.tool = p.tool;
-    this.tool_call_id = p.tool_call_id;
-    this.payload = p.payload;
+  constructor(p: SseReasoningDeltaContract) {
+    this.id = p.id;
+    this.text = p.text;
   }
 }
 
-export const SseToolResultSchema = z
-  .object({
-    tool: z.string().nullable(),
-    tool_call_id: z.string().nullable(),
-    payload: z.record(z.string(), z.unknown()).nullable(),
-  })
-  .transform((p) => new SseToolResult(p));
+export const SseReasoningDeltaSchema = z
+  .object({ id: z.string(), text: z.string() })
+  .transform((p) => new SseReasoningDelta(p));
 
+/**
+ * A `message_delta` frame: a fragment of the answer. `promote` marks the first
+ * delta of an answer that had been typing into a thinking row — it carries the
+ * full prefix, so the client seeds the bubble with it rather than appending.
+ * Plain prose only: never linkified client-side, and never markdown.
+ */
+export class SseMessageDelta implements SseMessageDeltaContract {
+  readonly text: string;
+  readonly promote?: boolean;
+
+  constructor(p: SseMessageDeltaContract) {
+    this.text = p.text;
+    if (p.promote !== undefined) this.promote = p.promote;
+  }
+}
+
+export const SseMessageDeltaSchema = z
+  .object({ text: z.string(), promote: z.boolean().optional() })
+  .transform((p) => new SseMessageDelta(p));
+
+/**
+ * The final `message` frame. `content` already carries the answer's entity
+ * names as markdown links to `kebi://{kind}/{key}`; `entities` resolves each
+ * link (ADR-136), in the order they appear.
+ */
 export class SseMessage implements SseMessageContract {
   readonly content: string;
+  readonly entities: ChatEntityContract[];
 
   constructor(p: SseMessageContract) {
     this.content = p.content;
+    this.entities = p.entities;
   }
 }
 
 export const SseMessageSchema = z
-  .object({ content: z.string() })
+  .object({ content: z.string(), entities: ChatEntitiesSchema })
   .transform((p) => new SseMessage(p));
 
 export class SseDone implements SseDoneContract {

@@ -15,26 +15,26 @@ function toTurn(turn: ChatTurn): FeedbackTranscriptTurn | null {
   if (turn.role === 'you') {
     return { role: 'you', text: clip(turn.text), at };
   }
-  const stepTitles = turn.steps
+  // Work titles only — the agent's talk is prose in `message`/segments, not a
+  // step, so it would read as a duplicate line in the report.
+  const stepTitles = turn.segments
+    .flatMap((segment) => (segment.kind === 'work' ? segment.steps : []))
     .map((s) => s.title)
     .filter((title): title is string => Boolean(title));
-  const toolNames = turn.toolResults
-    .map((r) => r.tool)
-    .filter((tool): tool is string => Boolean(tool));
-  if (!turn.message && stepTitles.length === 0 && toolNames.length === 0) return null;
+  if (!turn.message && stepTitles.length === 0) return null;
   return {
     role: 'kebi',
     text: clip(turn.message),
     at,
     ...(stepTitles.length ? { step_titles: stepTitles } : {}),
-    ...(toolNames.length ? { tool_names: toolNames } : {}),
   };
 }
 
 /**
  * Maps the in-memory chat transcript into the lean report attachment (ADR-051):
- * turn text, reasoning step titles, and tool names — never tool payloads.
- * Newest `MAX_TURNS` turns only; `undefined` when there's nothing to attach.
+ * turn text and reasoning step titles. Tool names are no longer available to
+ * the client (kebi ADR-136) — the step titles carry what ran. Newest
+ * `MAX_TURNS` turns only; `undefined` when there's nothing to attach.
  */
 export function toFeedbackTranscript(turns: ChatTurn[]): FeedbackTranscriptTurn[] | undefined {
   const mapped = turns.map(toTurn).filter((t): t is FeedbackTranscriptTurn => t !== null);

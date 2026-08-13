@@ -1,4 +1,4 @@
-import type { PlaceCore, SavedPlaceView } from "./types";
+import type { PlaceCore, PlaceView } from "./types";
 import type { PlaceTag, PriceTag, TagType } from "./place-taxonomy";
 import { CARD_FACETS, CATEGORY_GROUP } from "./card-facets";
 import { CATEGORY_EMOJI, CATEGORY_EMOJI_FALLBACK } from "./category-emoji";
@@ -115,10 +115,11 @@ const PRICE_TAGS: ReadonlySet<string> = new Set<PriceTag>([
 
 /**
  * Card title: the name the user saw in the source post (`source_label`,
- * ADR-081), falling back to the canonical catalog name.
+ * ADR-081), falling back to the canonical catalog name. An unsaved place has no
+ * source label to prefer, so it always shows the catalog name.
  */
-export function placeDisplayName(view: SavedPlaceView): string {
-  return view.user_data.source_label ?? view.place.place_name;
+export function placeDisplayName(view: PlaceView): string {
+  return view.user_data?.source_label ?? view.place.place_name;
 }
 
 /** The place's price tag, if it carries one. */

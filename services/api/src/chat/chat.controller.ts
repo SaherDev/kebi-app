@@ -1,10 +1,11 @@
 import { Controller, Post, Body, Res, Req, UseGuards } from '@nestjs/common';
 import { IncomingMessage } from 'http';
 import type { Response } from 'express';
-import type { AuthUser } from '@kebi-app/shared';
+import type { AuthUser, NormalizedIdentity } from '@kebi-app/shared';
 import { ChatService } from './chat.service';
 import { ChatRequestBodyDto } from './dto/chat-request.dto';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
+import { CurrentIdentity } from '../common/decorators/current-identity.decorator';
 import { RequiresAi } from '../common/decorators/requires-ai.decorator';
 import { RateLimitGuard } from '../common/guards/rate-limit.guard';
 
@@ -25,11 +26,12 @@ export class ChatController {
   @RequiresAi()
   @UseGuards(RateLimitGuard)
   async chat(
+    @CurrentIdentity() identity: NormalizedIdentity,
     @CurrentUser() user: AuthUser,
     @Body() dto: ChatRequestBodyDto,
     @Req() req: IncomingMessage,
     @Res() res: Response,
   ): Promise<void> {
-    await this.chatService.pipeStream(user, dto, req, res);
+    await this.chatService.pipeStream(identity, user, dto, req, res);
   }
 }

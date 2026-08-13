@@ -38,8 +38,9 @@ export function StashRow({ view }: StashRowProps) {
   const detail = formatDetailLine(place, t);
 
   const openPlace = () => {
+    // Seed so the screen paints instantly; `id` is what it refreshes from.
     placeDetail.set(view);
-    router.push('/place');
+    router.push({ pathname: '/place', params: { id: place.id ?? '' } });
   };
 
   return (

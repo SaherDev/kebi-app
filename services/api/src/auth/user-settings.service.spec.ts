@@ -52,6 +52,7 @@ describe('UserSettingsService.ensureForUser', () => {
       ai_enabled: false,
       can_curate: true,
       movement_profile: MOVEMENT,
+      about_me: null,
     });
     expect(settings.plan).toBe('explorer');
   });
@@ -62,6 +63,7 @@ describe('UserSettingsService.ensureForUser', () => {
       ai_enabled: true,
       can_curate: false,
       movement_profile: null,
+      about_me: null,
     };
     repo.findByUserId.mockResolvedValue(rowWith(existing));
 
@@ -78,6 +80,7 @@ describe('UserSettingsService.ensureForUser', () => {
         ai_enabled: true,
         can_curate: false,
         movement_profile: MOVEMENT,
+        about_me: null,
       };
       repo.findByUserId.mockResolvedValue(rowWith(existing));
       repo.update.mockImplementation((_userId: string, settings: UserSettingsData) =>
@@ -91,6 +94,7 @@ describe('UserSettingsService.ensureForUser', () => {
         ai_enabled: true,
         can_curate: false,
         movement_profile: MOVEMENT,
+        about_me: null,
       });
       expect(next.plan).toBe('explorer');
     });
@@ -103,6 +107,7 @@ describe('UserSettingsService.ensureForUser', () => {
         ai_enabled: true,
         can_curate: false,
         movement_profile: MOVEMENT,
+        about_me: null,
       };
       repo.findByUserId.mockResolvedValue(rowWith(existing));
       repo.update.mockImplementation((_userId: string, settings: UserSettingsData) =>
@@ -116,8 +121,88 @@ describe('UserSettingsService.ensureForUser', () => {
         ai_enabled: true,
         can_curate: true,
         movement_profile: MOVEMENT,
+        about_me: null,
       });
       expect(next.can_curate).toBe(true);
+    });
+  });
+
+  describe('updateAboutMe', () => {
+    const existing: UserSettingsData = {
+      plan: 'explorer',
+      ai_enabled: true,
+      can_curate: false,
+      movement_profile: MOVEMENT,
+      about_me: null,
+    };
+
+    beforeEach(() => {
+      repo.findByUserId.mockResolvedValue(rowWith(existing));
+      repo.update.mockImplementation((_userId: string, settings: UserSettingsData) =>
+        Promise.resolve(rowWith(settings)),
+      );
+    });
+
+    it('stores the block, preserving the other settings', async () => {
+      const aboutMe = { call_me: 'Saher', home_country: 'AE', about: 'I do not drink.' };
+
+      const next = await service.updateAboutMe('user_1', aboutMe);
+
+      expect(next).toEqual({ ...existing, about_me: aboutMe });
+    });
+
+    it('stores null when every field was cleared — an empty about-me is no about-me', async () => {
+      const next = await service.updateAboutMe('user_1', {
+        call_me: null,
+        home_country: null,
+        about: null,
+      });
+
+      expect(next.about_me).toBeNull();
+    });
+  });
+
+  describe('updateMovementProfile', () => {
+    const existing: UserSettingsData = {
+      plan: 'explorer',
+      ai_enabled: true,
+      can_curate: false,
+      movement_profile: { available_modes: ['walking', 'transit'], reach: 'normal', source: 'default' },
+      about_me: null,
+    };
+
+    beforeEach(() => {
+      repo.findByUserId.mockResolvedValue(rowWith(existing));
+      repo.update.mockImplementation((_userId: string, settings: UserSettingsData) =>
+        Promise.resolve(rowWith(settings)),
+      );
+    });
+
+    it("marks a written profile source: 'user' so kebi honours the modes (kebi ADR-155)", async () => {
+      const next = await service.updateMovementProfile('user_1', {
+        available_modes: ['driving', 'rideshare'],
+        reach: 'far',
+      });
+
+      expect(next.movement_profile).toEqual({
+        available_modes: ['driving', 'rideshare'],
+        reach: 'far',
+        source: 'user',
+      });
+    });
+
+    it('keeps the existing reach when the write carries only modes', async () => {
+      const next = await service.updateMovementProfile('user_1', { available_modes: ['driving'] });
+
+      expect(next.movement_profile?.reach).toBe('normal');
+    });
+
+    it('falls back to the config-seeded reach when there is no profile yet', async () => {
+      repo.findByUserId.mockResolvedValue(rowWith({ ...existing, movement_profile: null }));
+
+      const next = await service.updateMovementProfile('user_1', { available_modes: ['driving'] });
+
+      expect(next.movement_profile?.reach).toBe(MOVEMENT.reach);
     });
   });
 
@@ -127,6 +212,7 @@ describe('UserSettingsService.ensureForUser', () => {
       ai_enabled: true,
       can_curate: false,
       movement_profile: null,
+      about_me: null,
     };
     repo.findByUserId
       .mockResolvedValueOnce(null) // initial lookup

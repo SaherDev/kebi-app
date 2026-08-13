@@ -52,6 +52,32 @@ describe('AuthMiddleware', () => {
     expect(provider.verify).not.toHaveBeenCalled();
   });
 
+  it('attaches an identity on the dev bypass, not just a principal', async () => {
+    // Without it, every settings write 500s on the bypass path: the setters read
+    // externalId off the identity to re-stamp the token claims.
+    const mw = new AuthMiddleware(
+      makeConfig({
+        APP_DEV_BYPASS_ENABLED: 'true',
+        DEV_BYPASS_TOKEN: 'local-token',
+        DEV_BYPASS_USER_ID: 'user_local_1',
+      }),
+      provider,
+    );
+    const req = {
+      headers: { authorization: 'Bearer local-token' },
+      method: 'GET',
+      path: '/user/settings',
+    } as any;
+    const next = jest.fn();
+
+    await mw.use(req, {} as any, next);
+
+    expect(next).toHaveBeenCalled();
+    expect(req.user?.id).toBe('user_local_1');
+    expect(req.identity?.externalId).toBe('user_local_1');
+    expect(provider.verify).not.toHaveBeenCalled();
+  });
+
   it('throws when the Authorization header is missing', async () => {
     const req = { headers: {}, method: 'GET', path: '/test' } as any;
     const next = jest.fn();

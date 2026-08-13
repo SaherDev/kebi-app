@@ -1,11 +1,12 @@
 'use client';
 
-import { useEffect, type MutableRefObject } from 'react';
-import type { SignalTier, SseReasoningStep } from '@kebi-app/shared';
+import { useEffect, useMemo, type MutableRefObject } from 'react';
+import type { SignalTier } from '@kebi-app/shared';
 import { useChatStream } from '../../hooks/use-chat-stream';
 import { useChatStreamStore } from '../../store/chat-stream.store';
-import { EventRenderer } from './renderers/event-renderer';
-import { LiveReasoning } from './renderers/reasoning-step-renderer';
+import { foldChatStream } from '../../lib/fold-chat-stream';
+import { TurnProcess } from './turn-process';
+import { StreamProse } from './renderers/message-renderer';
 
 interface ChatStreamProps {
   streamingMessage: string | null;
@@ -31,18 +32,13 @@ export function ChatStream({ streamingMessage, signalTier, onComplete, onStop, s
   const events = useChatStreamStore((s) => s.events);
   const error = useChatStreamStore((s) => s.error);
 
+  // Re-derived per frame while streaming — memoized so a turn that is still
+  // typing doesn't re-fold its whole event log on every token.
+  const { segments, message, hasMessage } = useMemo(() => foldChatStream(events), [events]);
+
   if (!streamingMessage && phase === 'idle') return null;
 
   const isStreaming = phase === 'streaming' || phase === 'idle';
-  // During streaming: show all steps (including debug) for real-time progress.
-  // agent.tool_decision filtered because it duplicates the final message.
-  const reasoningSteps = events
-    .filter((e) => e.type === 'reasoning_step')
-    .map((e) => (e.type === 'reasoning_step' ? e.data : null))
-    .filter((s) => s!.step !== 'agent.tool_decision') as SseReasoningStep[];
-
-  const hasMessage = events.some((e) => e.type === 'message');
-  const nonReasoningEvents = events.filter((e) => e.type !== 'reasoning_step');
 
   return (
     <div className="flex flex-col gap-3">
@@ -54,11 +50,20 @@ export function ChatStream({ streamingMessage, signalTier, onComplete, onStop, s
         </div>
       )}
 
-      <LiveReasoning steps={reasoningSteps} isStreaming={isStreaming} writingResponse={isStreaming && !hasMessage} />
+      {/* The process: the agent's commentary and the work between it, playing
+          live while the turn streams (ADR-055). A promoted segment is empty —
+          its words are the answer below, in the same place, so nothing moves. */}
+      <TurnProcess segments={segments} settled={false} isStreaming={isStreaming} />
 
-      {nonReasoningEvents.map((event, i) => (
-        <EventRenderer key={i} event={event} />
-      ))}
+      {/* Plain prose while it streams; the final frame swaps in the same words
+          carrying `kebi://` links. Never linkified client-side. */}
+      {message && <StreamProse text={message} />}
+
+      {isStreaming && !hasMessage && segments.length > 0 && !message && (
+        <p className="text-sm italic leading-relaxed text-foreground/30 animate-pulse">
+          Writing response…
+        </p>
+      )}
 
       {phase === 'error' && error && (
         <p className="text-xs text-destructive">{error}</p>

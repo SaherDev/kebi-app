@@ -1,45 +1,37 @@
 import {
   AgentChatResponse,
   AgentResponseData,
+  ChatEntity,
   ChatResponseSchema,
-  ConsultCandidate,
-  ConsultResult,
   ErrorChatResponse,
   ReasoningStep,
-  ToolResult,
 } from './chat';
-import { PlaceCore } from './place-core';
 
-const PLACE = {
-  id: 'c0ffee00-1111-2222-3333-444455556666',
-  provider_id: null,
-  place_name: 'Nara Eatery',
-  place_name_aliases: [],
-  categories: ['restaurant'],
-  tags: [],
-  location: null,
-  created_at: null,
-  refreshed_at: null,
-};
-
-// An `agent` turn that ran one tool (shape per docs/api-contract.md → POST /v1/chat).
+// An `agent` turn that named one place (shape per docs/api-contract.md → POST
+// /v1/chat): prose with a `kebi://` link plus the entity resolving it.
 const AGENT_FIXTURE = {
   type: 'agent',
-  message: 'Here are three places nearby that fit…',
+  message: 'tonight is [Luigis](kebi://venue/c0ffee00) night',
   data: {
     reasoning_steps: [
       { step: 'find_saved.summary', title: 'searched your saved spots', summary: '2 spots' },
     ],
-    tool_results: [
+    entities: [
       {
-        tool: 'find_saved',
-        tool_call_id: 'call_1',
-        payload: {
-          candidates: [{ place: PLACE, source: 'saved', reason: null }],
-          recommendation_id: 'rec_1',
-        },
+        kind: 'venue',
+        key: 'c0ffee00',
+        name: 'Luigis',
+        uri: 'kebi://venue/c0ffee00',
+        icon: '🍕',
+      },
+      {
+        kind: 'area',
+        key: 'id/badung/canggu',
+        name: 'Canggu',
+        uri: 'kebi://area/id/badung/canggu',
       },
     ],
+    recommendation_id: 'rec_1',
   },
   tool_calls_used: 1,
 };
@@ -61,12 +53,58 @@ describe('ChatResponseSchema', () => {
     expect(data).toBeInstanceOf(AgentResponseData);
     expect(data?.reasoning_steps[0]).toBeInstanceOf(ReasoningStep);
 
-    const tool = data?.tool_results[0];
-    expect(tool).toBeInstanceOf(ToolResult);
-    expect(tool?.payload).toBeInstanceOf(ConsultResult);
-    expect(tool?.payload.candidates[0]).toBeInstanceOf(ConsultCandidate);
-    expect(tool?.payload.candidates[0].place).toBeInstanceOf(PlaceCore);
-    expect(tool?.payload.candidates[0].place.place_name).toBe('Nara Eatery');
+    expect(data?.recommendation_id).toBe('rec_1');
+    const entity = data?.entities[0];
+    expect(entity).toBeInstanceOf(ChatEntity);
+    expect(entity?.uri).toBe('kebi://venue/c0ffee00');
+    expect(entity?.icon).toBe('🍕');
+    // Nullable on both kinds (ADR-146) — an omitted icon reads as null, not
+    // undefined, so the client falls back to its own mapping.
+    expect(data?.entities[1].icon).toBeNull();
+  });
+
+  it('parses a web source entity — key is the page URL, name the domain (ADR-161)', () => {
+    const data = {
+      ...AGENT_FIXTURE.data,
+      entities: [
+        {
+          kind: 'web',
+          key: 'https://www.fifa.com/tournaments/mens/worldcup/schedule',
+          name: 'fifa.com',
+          uri: 'kebi://web/aHR0cHM6Ly93d3cuZmlmYS5jb20',
+          icon: '🌐',
+        },
+      ],
+    };
+
+    const res = ChatResponseSchema.parse({ ...AGENT_FIXTURE, data }) as AgentChatResponse;
+
+    const entity = res.data?.entities[0];
+    expect(entity).toBeInstanceOf(ChatEntity);
+    expect(entity?.kind).toBe('web');
+    expect(entity?.key).toBe('https://www.fifa.com/tournaments/mens/worldcup/schedule');
+  });
+
+  it('drops an entity of a future kind instead of failing the turn', () => {
+    const data = {
+      ...AGENT_FIXTURE.data,
+      entities: [
+        ...AGENT_FIXTURE.data.entities,
+        { kind: 'planet', key: 'x', name: 'X', uri: 'kebi://planet/x' },
+      ],
+    };
+
+    // The contract says an unknown kind degrades to plain prose, never crashes
+    // — the vocabulary can grow (ADR-161 grew it once already). The known
+    // entities in the same turn survive untouched.
+    const res = ChatResponseSchema.parse({ ...AGENT_FIXTURE, data }) as AgentChatResponse;
+    expect(res.data?.entities.map((e) => e.kind)).toEqual(['venue', 'area']);
+  });
+
+  it('still fails loudly on a malformed entity of a known kind', () => {
+    // Not a vocabulary gap — a contract break: `key` is required on venues.
+    const data = { ...AGENT_FIXTURE.data, entities: [{ kind: 'venue', name: 'X', uri: 'kebi://venue/x' }] };
+    expect(() => ChatResponseSchema.parse({ ...AGENT_FIXTURE, data })).toThrow();
   });
 
   it('parses the error arm into an ErrorChatResponse', () => {

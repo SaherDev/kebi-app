@@ -18,6 +18,7 @@ export type IconName =
   | 'close'
   | 'share-in'
   | 'book'
+  | 'bookmark'
   | 'gear'
   | 'search'
   | 'edit'
@@ -76,6 +77,9 @@ const ICONS: Record<IconName, ReactNode> = {
       <Path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z" />
     </>
   ),
+  // Bookmark — the place page's save action on an unsaved place
+  // (kebi-place-unsaved-options.html, option A).
+  bookmark: <Path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z" />,
   gear: (
     <>
       <Circle cx={12} cy={12} r={3} />

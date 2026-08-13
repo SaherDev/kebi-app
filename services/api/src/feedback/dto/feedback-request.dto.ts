@@ -60,12 +60,6 @@ export class FeedbackTranscriptTurnDto {
   @ArrayMaxSize(TITLES_MAX)
   @IsString({ each: true })
   step_titles?: string[];
-
-  @IsOptional()
-  @IsArray()
-  @ArrayMaxSize(TITLES_MAX)
-  @IsString({ each: true })
-  tool_names?: string[];
 }
 
 /**

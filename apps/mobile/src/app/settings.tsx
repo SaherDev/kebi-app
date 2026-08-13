@@ -12,26 +12,29 @@ import { SettingsRow } from '../components/settings-row';
 import { StatusPill } from '../components/status-pill';
 import { ProfileAvatar } from '../components/profile-avatar';
 import { SegmentedControl } from '../components/segmented-control';
-import { EditNameSheet } from '../components/edit-name-sheet';
 import { ConfirmSheet } from '../components/confirm-sheet';
 import { useProfile } from '../components/use-profile';
+import { useCurateSheet } from '../components/curate-sheet-context';
+import { Can } from '../capabilities';
 import { useThemePreference } from '../components/use-theme-preference';
 import { useToast } from '../components/toast-context';
 import { useApiClient } from '../api/hooks';
-import { updateProfile } from '../api/profile';
 import { deleteUserData } from '../api/user-data';
+import { getUserSettings } from '../api/user-settings';
+import type { UserSettings } from '../api/models/user-settings';
 import { useTranslation } from '../i18n/context';
 import { useAuth } from '../auth/auth-context';
-import { supabase } from '../lib/supabase';
 import type { ThemeChoice } from '../lib/theme-preference';
 
 /**
  * Settings — "you, basically" (kebi-settings-mockup.html). Profile (name/email/
  * plan), subscription, appearance (light/dark/system), data, and account. The
  * profile read comes from the gateway-local /user/profile (the client is
- * otherwise blind to identity); the name edit writes back through it. billing is
- * rendered but inert, export is intentionally absent, and there's no plan status
- * pill (no subscription-status data exists yet).
+ * otherwise blind to identity). The name is no longer edited here: it is
+ * `call_me` on the about-you screen, so there is one name with one editor
+ * (ADR-054) — the header falls back to the account name until one is set.
+ * billing is rendered but inert, export is intentionally absent, and there's no
+ * plan status pill (no subscription-status data exists yet).
  */
 
 const THEME_OPTIONS: { value: ThemeChoice; labelKey: string; icon: IconName }[] = [
@@ -44,10 +47,11 @@ export default function SettingsScreen() {
   const { t } = useTranslation();
   const router = useRouter();
   const { signOut } = useAuth();
-  const { profile, setLocalName, refetch } = useProfile();
+  const { profile, refetch } = useProfile();
+  const curateSheet = useCurateSheet();
+  const [settings, setSettings] = useState<UserSettings | null>(null);
   // Re-read the profile when settings regains focus (e.g. returning from the
-  // plans screen after a switch) so the plan row reflects the new tier. The
-  // in-screen name edit doesn't navigate, so this never races that flow.
+  // plans screen after a switch) so the plan row reflects the new tier.
   useFocusEffect(
     useCallback(() => {
       refetch();
@@ -57,30 +61,40 @@ export default function SettingsScreen() {
   const toast = useToast();
   const client = useApiClient();
 
-  const [editOpen, setEditOpen] = useState(false);
   const [nukeOpen, setNukeOpen] = useState(false);
   const [logoutOpen, setLogoutOpen] = useState(false);
-  const anySheetOpen = editOpen || nukeOpen || logoutOpen;
+  const anySheetOpen = nukeOpen || logoutOpen;
 
-  const name = profile?.name ?? '';
+  // The two "what kebi knows" rows summarise these; re-read on focus so a save
+  // on either screen is reflected the moment you come back.
+  useFocusEffect(
+    useCallback(() => {
+      let cancelled = false;
+      (async () => {
+        try {
+          const next = await getUserSettings(client);
+          if (!cancelled) setSettings(next);
+        } catch {
+          // Non-fatal: the rows fall back to "not set" rather than blocking
+          // the whole screen on a summary.
+          if (!cancelled) setSettings(null);
+        }
+      })();
+      return () => {
+        cancelled = true;
+      };
+    }, [client]),
+  );
+
+  // One name: what kebi calls you, falling back to the account name.
+  const name = settings?.about_me?.call_me ?? profile?.name ?? '';
   const email = profile?.email ?? '';
   const planMeta = profile ? PLAN_TIERS[profile.plan] : null;
+  const aboutMeSet = settings?.about_me != null && !settings.about_me.isEmpty;
+  // A seeded profile is not "set" — kebi ignores its modes until a human picks
+  // (kebi ADR-155), so the row would otherwise claim a choice nobody made.
+  const movementSet = settings?.movement_profile?.isChosen ?? false;
   const version = Constants.expoConfig?.version ?? '';
-
-  const handleSaveName = async (next: string) => {
-    setEditOpen(false);
-    const previous = name;
-    setLocalName(next); // optimistic — the JWT stays stale until refreshSession
-    try {
-      await updateProfile(client, next);
-      toast.show({ tone: 'success', icon: 'check', text: t('settings.toast.nameSaved') });
-      // Mint a fresh token so the next mount reads the new name, not the stale one.
-      await supabase.auth.refreshSession();
-    } catch {
-      setLocalName(previous); // roll back
-      toast.show({ tone: 'danger', icon: 'alert', text: t('settings.toast.nameFailed') });
-    }
-  };
 
   const handleNuke = async () => {
     setNukeOpen(false);
@@ -123,14 +137,87 @@ export default function SettingsScreen() {
         {/* Profile block */}
         <View className="flex-row items-center gap-3.5">
           <ProfileAvatar name={name} email={email} />
-          <View className="flex-1">
-            <Text className="text-subtitle font-bold text-text">
-              {name || t('settings.addName')}
-            </Text>
+          <View className="flex-1 gap-1">
+            <View className="flex-row flex-wrap items-center gap-2">
+              <Text className="text-subtitle font-bold text-text">
+                {name || t('settings.addName')}
+              </Text>
+              {/*
+                The whole "you're an insider" surface, said once. No explainer
+                line: every door already says "everyone will see it" at the
+                moment you're about to write, which is where that warning does
+                work. Identity here, consequence there.
+              */}
+              <Can do="curate">
+                <StatusPill variant="green">{t('settings.insider')}</StatusPill>
+              </Can>
+            </View>
             {email ? <Text className="text-small text-text-muted">{email}</Text> : null}
           </View>
-          <IconButton icon="edit" label={t('settings.editName')} onPress={() => setEditOpen(true)} />
         </View>
+
+        {/* What kebi knows — the two things it reasons with (ADR-054). */}
+        <Group eyebrow={t('settings.whatKebiKnows')}>
+          <SettingsRow
+            emoji="👋"
+            label={t('settings.aboutYou')}
+            sublabel={t('settings.aboutYouSub')}
+            onPress={() => router.push('/about-you')}
+            trailing={
+              <View className="flex-row items-center gap-2">
+                <Text className="text-small text-text-muted">
+                  {aboutMeSet ? t('settings.isSet') : t('settings.notSet')}
+                </Text>
+                <Icon name="chevron-right" size={14} className="text-text-soft" />
+              </View>
+            }
+          />
+          <SettingsRow
+            emoji="🛵"
+            label={t('settings.gettingAround')}
+            sublabel={t('settings.gettingAroundSub')}
+            onPress={() => router.push('/getting-around')}
+            trailing={
+              <View className="flex-row items-center gap-2">
+                <Text className="text-small text-text-muted">
+                  {movementSet ? t('settings.isSet') : t('settings.notSet')}
+                </Text>
+                <Icon name="chevron-right" size={14} className="text-text-soft" />
+              </View>
+            }
+          />
+        </Group>
+
+        {/*
+          Knowledge — insider-only (kebi-curate-options.html §1, door c). Sits
+          *below* "what kebi knows" so an insider's settings screen opens exactly
+          like everyone else's: the group is an addition, never a reordering.
+          The row opens the composer unanchored — the door for dumping a trip's
+          worth at once, where the subject is picked in the sheet.
+        */}
+        <Can do="curate">
+          <Group eyebrow={t('settings.knowledge')}>
+            <SettingsRow
+              emoji="✍️"
+              label={t('curate.menuLabel')}
+              sublabel={t('settings.addWhatYouKnowSub')}
+              onPress={() => curateSheet.open({ view: null })}
+              trailing={<Icon name="chevron-right" size={14} className="text-text-soft" />}
+            />
+            {/*
+              The ledger. Load-bearing rather than decorative: the write flow has
+              no receipt, so this is the only place an insider can see what their
+              prose became — or take a note back.
+            */}
+            <SettingsRow
+              emoji="📓"
+              label={t('settings.whatYouveAdded')}
+              sublabel={t('settings.whatYouveAddedSub')}
+              onPress={() => router.push('/my-notes')}
+              trailing={<Icon name="chevron-right" size={14} className="text-text-soft" />}
+            />
+          </Group>
+        </Can>
 
         {/* Subscription */}
         <Group eyebrow={t('settings.subscription')}>
@@ -219,12 +306,6 @@ export default function SettingsScreen() {
         </Text>
       </ScrollView>
 
-      <EditNameSheet
-        open={editOpen}
-        onClose={() => setEditOpen(false)}
-        onSubmit={handleSaveName}
-        initialName={name}
-      />
       <ConfirmSheet
         open={nukeOpen}
         title={t('settings.nukeTitle')}

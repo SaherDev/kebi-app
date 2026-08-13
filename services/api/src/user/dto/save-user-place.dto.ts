@@ -1,26 +1,17 @@
-import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { IsNotEmpty, IsString } from 'class-validator';
 
 /**
- * POST /v1/user/places body (api-contract.md). Save a place kebi recommended to
- * the caller's library — the consult card's "save it" action. Identity is the
- * verified X-Gateway-User-Id header, never a body field; `source` is
- * server-stamped (kebi).
+ * POST /v1/user/places body (api-contract.md) — the plain "save" on the place
+ * screen (ADR-151). The place id is the whole body: identity is the verified
+ * X-Gateway-User-Id header, `source` is server-stamped (kebi), and no
+ * attribution rides along, since holding a `places.id` at all means kebi
+ * surfaced the place.
+ *
+ * The retired card's `recommendation_id`/`reason` are gone — kebi rejects them
+ * as unknown keys (422), so forwarding them would fail every save.
  */
 export class SaveUserPlaceDto {
   @IsString()
   @IsNotEmpty()
   place_core_id!: string;
-
-  @IsString()
-  @IsNotEmpty()
-  recommendation_id!: string;
-
-  /**
-   * The pick's rationale the card is showing — the client supplies it since the
-   * reason isn't otherwise stored server-side. kebi writes it as a `kebi_message`
-   * claim on the place (ADR-127), not as `user_data.note`. Omit or `null` for none.
-   */
-  @IsOptional()
-  @IsString()
-  reason?: string | null;
 }

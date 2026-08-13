@@ -132,3 +132,13 @@
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
+
+/*
+  Save-sheet backgrounded status dot (kebi-save-sheet-background-mockup.html
+  `.pulse-dot`). Shrink-and-fade heartbeat while an extract keeps running behind
+  the sheet. Driven via the `animate-pulse-dot` utility (tailwind.config.js).
+*/
+@keyframes pulse-dot {
+  0%, 100% { transform: scale(1);   opacity: 1; }
+  50%      { transform: scale(0.6); opacity: 0.45; }
+}

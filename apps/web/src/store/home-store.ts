@@ -3,7 +3,6 @@
 import type {
   ChipItem,
   ClientIntent,
-  ConsultResponseData,
   ExtractPlaceItem,
   ReasoningStep,
   RecallResponseData,
@@ -28,6 +27,7 @@ import {
 import { FLOW_BY_CLIENT_INTENT } from "../flows/registry";
 import { classifyIntent } from "../lib/classify-intent";
 import { create } from "zustand";
+import { foldChatStream } from "../lib/fold-chat-stream";
 import { getSignalClient } from "../lib/signal-client";
 import { getUserClient } from "../lib/user-client";
 import { useChatStreamStore } from "./chat-stream.store";
@@ -52,13 +52,6 @@ export type ThreadEntry =
   | {
       id: string;
       role: "assistant";
-      type: "consult";
-      message: string;
-      data: ConsultResponseData;
-    }
-  | {
-      id: string;
-      role: "assistant";
       type: "save";
       item: ExtractPlaceItem;
       sourceUrl: string | null;
@@ -75,6 +68,19 @@ export type ThreadEntry =
       role: "assistant";
       type: "reasoning";
       steps: import("@kebi-app/shared").SseReasoningStep[];
+    }
+  | {
+      /**
+       * A settled turn's process (ADR-055) — the agent's commentary and the
+       * work chips between it, folded behind one "thought for Ns" header above
+       * the clean answer. Held whole so a reloaded turn renders exactly like the
+       * one that just finished streaming.
+       */
+      id: string;
+      role: "assistant";
+      type: "process";
+      segments: import("../lib/fold-chat-stream").StreamSegment[];
+      durationMs?: number;
     }
   | {
       id: string;
@@ -103,7 +109,6 @@ interface HomeState {
   // Query state
   query: string | null;
   streamingMessage: string | null;
-  result: ConsultResponseData | null;
   reasoningSteps: ReasoningStep[];
   error: {
     message: string;
@@ -223,7 +228,6 @@ export const useHomeStore = create<HomeState>()(
       getToken: null,
       query: null,
       streamingMessage: null,
-      result: null,
       reasoningSteps: [],
       error: null,
       hydrated: false,
@@ -356,7 +360,6 @@ export const useHomeStore = create<HomeState>()(
           activeFlowId: initialFlowId,
           query: message,
           streamingMessage: message,
-          result: null,
           reasoningSteps: [],
           error: null,
           clarificationMessage: null,
@@ -372,25 +375,27 @@ export const useHomeStore = create<HomeState>()(
 
         // Convert SSE events into persistent thread entries
         const newEntries: ThreadEntry[] = [];
-        const messageEvent = events.find(e => e.type === "message");
-        const messageText =
-          messageEvent?.type === "message" ? messageEvent.data.content : "";
-        const toolResults = events.filter(e => e.type === "tool_result");
         const errorEvent = events.find(e => e.type === "error");
-        const reasoningSteps = events
-          .filter(e => e.type === "reasoning_step")
-          .map(e => (e.type === "reasoning_step" ? e.data : null))
-          .filter(s => s!.visibility !== "debug")
-          .filter(
-            s => s!.step !== "agent.tool_decision",
-          ) as import("@kebi-app/shared").SseReasoningStep[];
+        // Same fold the live stream renders (ADR-055), so a turn looks identical
+        // the instant it settles: the agent's talk lands as prose entries, its
+        // work as chips between them, in the order they happened.
+        const { segments, message: messageText } = foldChatStream(events);
 
-        if (reasoningSteps.length > 0) {
+        // Settled, the whole process folds behind one header above the answer —
+        // so a reloaded turn reads exactly like the one that just streamed.
+        const hasProcess = segments.some(s =>
+          s.kind === "work" ? s.steps.length > 0 : s.text !== "",
+        );
+        if (hasProcess) {
+          const spent = segments
+            .flatMap(s => (s.kind === "work" ? s.steps : []))
+            .reduce((sum, step) => sum + (step.duration_ms ?? 0), 0);
           newEntries.push({
             id: nextId(),
             role: "assistant",
-            type: "reasoning",
-            steps: reasoningSteps,
+            type: "process",
+            segments,
+            ...(spent > 0 ? { durationMs: spent } : {}),
           });
         }
 
@@ -429,77 +434,15 @@ export const useHomeStore = create<HomeState>()(
               message: streamError,
             });
           }
-        } else {
-          const consultResult = toolResults.find(
-            e => e.type === "tool_result" && e.data.tool === "consult",
-          );
-          const recallResult = toolResults.find(
-            e => e.type === "tool_result" && e.data.tool === "recall",
-          );
-          const saveResult = toolResults.find(
-            e => e.type === "tool_result" && e.data.tool === "save",
-          );
-
-          if (
-            consultResult &&
-            consultResult.type === "tool_result" &&
-            consultResult.data.payload
-          ) {
-            newEntries.push({
-              id: nextId(),
-              role: "assistant",
-              type: "consult",
-              message: messageText,
-              data: consultResult.data
-                .payload as unknown as ConsultResponseData,
-            });
-          } else if (
-            recallResult &&
-            recallResult.type === "tool_result" &&
-            recallResult.data.payload
-          ) {
-            newEntries.push({
-              id: nextId(),
-              role: "assistant",
-              type: "recall",
-              message: messageText,
-              data: recallResult.data.payload as unknown as RecallResponseData,
-            });
-          } else if (
-            saveResult &&
-            saveResult.type === "tool_result" &&
-            saveResult.data.payload
-          ) {
-            const payload = saveResult.data.payload as unknown as {
-              results?: ExtractPlaceItem[];
-              raw_input?: string;
-            };
-            const items = payload.results ?? [];
-            for (const item of items) {
-              newEntries.push({
-                id: nextId(),
-                role: "assistant",
-                type: "save",
-                item,
-                sourceUrl: payload.raw_input ?? null,
-              });
-            }
-            if (messageText) {
-              newEntries.push({
-                id: nextId(),
-                role: "assistant",
-                type: "assistant",
-                message: messageText,
-              });
-            }
-          } else if (messageText) {
-            newEntries.push({
-              id: nextId(),
-              role: "assistant",
-              type: "assistant",
-              message: messageText,
-            });
-          }
+        } else if (messageText) {
+          // Tool payloads are gone from the wire (kebi ADR-136): a turn's answer
+          // is the prose, with places named as `kebi://` links inside it.
+          newEntries.push({
+            id: nextId(),
+            role: "assistant",
+            type: "assistant",
+            message: messageText,
+          });
         }
 
         useChatStreamStore.getState().reset();
@@ -534,7 +477,6 @@ export const useHomeStore = create<HomeState>()(
           activeFlowId: null,
           query: null,
           streamingMessage: null,
-          result: null,
           reasoningSteps: [],
           error: null,
           abortController: null,
@@ -565,7 +507,6 @@ export const useHomeStore = create<HomeState>()(
           phase: "idle",
           activeFlowId: null,
           query: null,
-          result: null,
           reasoningSteps: [],
           error: null,
           abortController: null,
@@ -600,7 +541,6 @@ export const useHomeStore = create<HomeState>()(
           phase,
           activeFlowId: null,
           query: null,
-          result: null,
           reasoningSteps: [],
           error: null,
           abortController: null,

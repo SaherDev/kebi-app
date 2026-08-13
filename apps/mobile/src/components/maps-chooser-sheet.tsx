@@ -7,12 +7,12 @@ import { buildMapsTargets } from '../lib/maps-links';
 import { useTranslation } from '../i18n/context';
 
 /**
- * "Open directions in …" chooser — design A (kebi-place-maps-chooser-options.html):
+ * "Show on …" chooser — design A (kebi-place-maps-chooser-options.html):
  * a grouped list on the shared {@link BottomSheet}, one row per available maps app
- * (text + chevron — no brand glyphs). Tapping a row opens that app's directions
- * deep link and dismisses. Only rows whose URL can be built are shown (Google is
- * the durable, exact one; Apple/Waze need coords). Triggered by the place page's
- * "directions" button.
+ * (text + chevron — no brand glyphs). Tapping a row shows the place in that app
+ * (a pin / place card, not directions) and dismisses. Only rows whose URL can be
+ * built are shown (Google is the durable, exact one; Apple/Waze need coords).
+ * Triggered by the place page's "map" button.
  */
 
 interface MapsChooserSheetProps {

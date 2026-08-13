@@ -18,12 +18,12 @@ import { RecallResultBubble } from '@/components/home/RecallResultBubble';
 import { PlaceCard } from '@/components/PlaceCard';
 import { ConsultError } from '@/components/home/ConsultError';
 import { SaveError } from '@/components/home/SaveError';
-import { ConsultResult } from '@/flows/consult/ConsultResult';
 import { TASTE_CHIP_BANK } from '@/constants/home-suggestions';
 import { Illustration } from '@/components/illustrations/Illustration';
 import { KebiCard } from '@kebi-app/ui';
 import { useHomeStore, type ThreadEntry } from '@/store/home-store';
 import { ChatStream } from '@/components/chat/chat-stream';
+import { TurnProcess } from '@/components/chat/turn-process';
 import { ReasoningCard } from '@/components/chat/renderers/reasoning-step-renderer';
 
 const LOADING_LINES = [
@@ -98,15 +98,6 @@ function ThreadEntryView({ entry }: { entry: ThreadEntry }) {
   if (entry.type === 'clarification' || entry.type === 'assistant') {
     return <AssistantBubble message={entry.message} type={entry.type} timestamp={timestampFromId(entry.id)} />;
   }
-  if (entry.type === 'consult') {
-    const intro = extractIntro(entry.message);
-    return (
-      <div className="flex flex-col gap-4">
-        {intro && <AssistantBubble message={intro} type="assistant" timestamp={timestampFromId(entry.id)} />}
-        <ConsultResult result={entry.data} />
-      </div>
-    );
-  }
   if (entry.type === 'save') {
     if (!entry.item.place) return null;
     const badge = entry.item.status === 'duplicate'
@@ -125,6 +116,11 @@ function ThreadEntryView({ entry }: { entry: ThreadEntry }) {
   }
   if (entry.type === 'reasoning') {
     return <ReasoningThreadEntry steps={entry.steps} />;
+  }
+  if (entry.type === 'process') {
+    // A settled turn: one "thought for Ns" line that expands to the full
+    // interleaved process (ADR-055).
+    return <TurnProcess segments={entry.segments} settled durationMs={entry.durationMs} />;
   }
   if (entry.type === 'error') {
     return null;

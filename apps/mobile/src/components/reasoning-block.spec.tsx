@@ -17,8 +17,8 @@ describe('ReasoningBlock', () => {
     expect(getByText('searched your stash')).toBeTruthy(); // bold action line
     expect(getByText('2 bars you liked')).toBeTruthy(); // muted detail line
     expect(getByText('ranked 9 candidates')).toBeTruthy();
-    expect(getByText('2 steps · 1.8s')).toBeTruthy();
-    expect(getByText('got it')).toBeTruthy(); // header switches to the done state
+    // Settled, the chip is one line — the work is behind the chevron.
+    expect(getByText('thought for 1.8s')).toBeTruthy();
   });
 
   it('shows "working on it" while running, with the active step title in the body', () => {
@@ -27,6 +27,18 @@ describe('ReasoningBlock', () => {
     expect(getByText('step 1 · streaming…')).toBeTruthy();
     expect(getByText('scanning late-night spots')).toBeTruthy(); // active step's bold line
     expect(getByText('post-club food, late night')).toBeTruthy();
+  });
+
+  it('reads "thought for" alone when the chip was never timed', () => {
+    const { getByText } = render(<ReasoningBlock steps={DONE} done />);
+    expect(getByText('thought for')).toBeTruthy();
+  });
+
+  it('shows the live step title while running, passed by the caller', () => {
+    // The chip's active label is the agent's current move ("thinking",
+    // "connecting the dots") — its varied titles are what label this state.
+    const { getByText } = render(<ReasoningBlock steps={RUNNING} runningLabel="connecting the dots" />);
+    expect(getByText('connecting the dots')).toBeTruthy();
   });
 
   it('toggles collapsed state from the header when uncontrolled', () => {
@@ -41,6 +53,12 @@ describe('ReasoningBlock', () => {
       <ReasoningBlock steps={[{ id: 'x', status: 'done', summary: 'just one' }]} done />,
     );
     expect(getByText('just one')).toBeTruthy();
-    expect(getByText('1 step')).toBeTruthy();
+  });
+
+  it('counts only the user-visible steps it was handed while streaming', () => {
+    // The store drops `debug` frames and routes the agent's talk to prose, so
+    // whatever reaches the chip is user-visible work and nothing else.
+    const { getByText } = render(<ReasoningBlock steps={RUNNING} />);
+    expect(getByText('step 1 · streaming…')).toBeTruthy();
   });
 });

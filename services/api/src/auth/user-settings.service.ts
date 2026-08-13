@@ -1,7 +1,14 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { DEFAULT_MOVEMENT_PROFILE } from '@kebi-app/shared';
-import type { MovementProfile, PlanTier, UserSettingsData } from '@kebi-app/shared';
+import type {
+  MovementMode,
+  MovementProfile,
+  PlanTier,
+  Reach,
+  UserAboutMe,
+  UserSettingsData,
+} from '@kebi-app/shared';
 import { UserSettingsRepository } from './user-settings.repository';
 
 /**
@@ -67,16 +74,70 @@ export class UserSettingsService {
     return next;
   }
 
+  /**
+   * Record the user's about-me (kebi ADR-154), preserving every other setting.
+   * It rides the token like `plan`, so the caller re-stamps from the returned
+   * document. A block with nothing in it is stored as `null` — an empty about-me
+   * is the absence of one, not an empty one to forward.
+   */
+  async updateAboutMe(userId: string, aboutMe: UserAboutMe): Promise<UserSettingsData> {
+    const current = await this.ensureForUser(userId);
+    const empty =
+      aboutMe.call_me === null && aboutMe.home_country === null && aboutMe.about === null;
+    const next: UserSettingsData = { ...current, about_me: empty ? null : aboutMe };
+    await this.settings.update(userId, next);
+    return next;
+  }
+
+  /**
+   * Record modes the user actually chose, preserving every other setting. The
+   * write is what makes them `source: 'user'` — the only path that may claim it
+   * (kebi ADR-155). kebi honours these modes verbatim; a seeded profile's are
+   * ignored in favour of its own wider fallback, which is the intended
+   * behaviour until a human picks.
+   */
+  async updateMovementProfile(
+    userId: string,
+    profile: { available_modes: MovementMode[]; reach?: Reach },
+  ): Promise<UserSettingsData> {
+    const current = await this.ensureForUser(userId);
+    const next: UserSettingsData = {
+      ...current,
+      movement_profile: {
+        available_modes: profile.available_modes,
+        // Reach is an independent axis — a modes-only write keeps whatever the
+        // user (or the seed) already had rather than resetting it.
+        reach:
+          profile.reach ?? current.movement_profile?.reach ?? this.defaultMovementProfile().reach,
+        source: 'user',
+      },
+    };
+    await this.settings.update(userId, next);
+    return next;
+  }
+
+  /**
+   * The config-seeded movement profile. Seeded, never chosen — kebi reads its
+   * `source: 'default'` and substitutes its own wider fallback rather than
+   * capping a user who may well drive (kebi ADR-155/156).
+   */
+  private defaultMovementProfile(): MovementProfile {
+    return this.configService.get<MovementProfile>(
+      'user_settings.defaults.movement_profile',
+      DEFAULT_MOVEMENT_PROFILE,
+    );
+  }
+
   /** Default settings for a new user, seeded from `user_settings.defaults` config. */
   private defaults(): UserSettingsData {
     return {
       plan: this.configService.get<PlanTier>('user_settings.defaults.plan', 'homebody'),
       ai_enabled: this.configService.get<boolean>('user_settings.defaults.ai_enabled', true),
       can_curate: this.configService.get<boolean>('user_settings.defaults.can_curate', false),
-      movement_profile: this.configService.get<MovementProfile>(
-        'user_settings.defaults.movement_profile',
-        DEFAULT_MOVEMENT_PROFILE,
-      ),
+      movement_profile: this.defaultMovementProfile(),
+      // Nobody has told us anything about themselves yet. Config seeds a
+      // capability we can guess at; it cannot seed a person.
+      about_me: null,
     };
   }
 }

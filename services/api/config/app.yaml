@@ -33,11 +33,15 @@ user_settings:
     ai_enabled: true
     # Curator role is admin-granted only (ADR-121) — new users start without it.
     can_curate: false
+    # Seeded, not chosen — `source: default` says so, and kebi ignores these
+    # modes in favour of its own wider fallback rather than capping a user who
+    # may well drive (kebi ADR-155/156). Only the movement setter writes `user`.
     movement_profile:
       available_modes:
         - walking
         - transit
       reach: normal
+      source: default
 
 rate_limits:
   plans:

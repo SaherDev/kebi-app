@@ -63,10 +63,14 @@
   },
   "place": {
     "empty": "no place to show",
+    "loadFailed": "couldn't open that place",
     "approve": "approve?",
     "addNote": "add a note",
+    "save": "save",
+    "saving": "saving…",
+    "bare": "kebi doesn't know much about this one yet",
     "actions": {
-      "directions": "directions",
+      "map": "show on map",
       "share": "share"
     },
     "meta": {
@@ -90,10 +94,27 @@
       "showLess": "show less"
     },
     "maps": {
-      "title": "open directions in",
+      "title": "show on",
       "google": "google maps",
       "apple": "apple maps",
       "waze": "waze"
+    }
+  },
+  "area": {
+    "empty": "no area to show",
+    "loadFailed": "couldn't open that area",
+    "saved": "{{count}} saved",
+    "bestFor": "best for",
+    "level": {
+      "country": "country",
+      "region": "region",
+      "city": "city",
+      "neighbourhood": "neighbourhood"
+    },
+    "sections": {
+      "saved": "where you've saved",
+      "savedPlaces": "your places here",
+      "worthKnowing": "worth knowing"
     }
   },
   "toast": {
@@ -102,7 +123,8 @@
     "saved": "saved {{name}}",
     "savedMany": "saved {{count}} places",
     "saveFailed": "couldn't save that — try again",
-    "unsupportedUrl": "that link isn't supported yet"
+    "unsupportedUrl": "that link isn't supported yet",
+    "tryAgain": "try again"
   },
   "library": {
     "eyebrow": "your stash",
@@ -184,8 +206,9 @@
     "copy": "copy",
     "copied": "copied",
     "thinking": "thinking",
-    "thought": "done",
+    "thought": "thought for",
     "interrupted": "interrupted",
+    "mentioned": "mentioned",
     "menu": {
       "thisChat": "this chat",
       "clear": "clear this chat",
@@ -193,26 +216,10 @@
       "cleared": "chat cleared",
       "undo": "undo"
     },
-    "placeCard": {
-      "savedByYou": "you saved this",
-      "goodPick": "good pick",
-      "saveIt": "save it",
-      "saved": "saved",
-      "notIt": "not for me",
-      "orSwapTo": "or swap to",
-      "noMatch": "couldn't find a match",
-      "noLocation": "turn on location so i can find places near you",
-      "toast": {
-        "goodPick": "good pick — noted",
-        "saved": "saved to your library",
-        "removed": "removed",
-        "notForMe": "noted",
-        "undo": "undo",
-        "retry": "retry",
-        "error": "couldn't do that — try again"
-      }
-    },
-    "help": "help"
+    "help": "help",
+    "entityMenu": {
+      "open": "open"
+    }
   },
   "save": {
     "eyebrow": "save",
@@ -220,22 +227,26 @@
     "placeholder": "paste a link or type a place name...",
     "cta": "save it",
     "saving": "saving",
+    "close": "close",
     "hint": "kebi figures out the rest. you can fix anything later.",
     "source": {
       "tiktok": "looks like a tiktok link",
       "instagram": "looks like an instagram link",
       "youtube": "looks like a youtube link",
       "google_maps_list": "looks like a maps list"
+    },
+    "hintBackground": "you'll get a ping when it's saved.",
+    "working": {
+      "tiktok": "still reading that tiktok — we'll finish in the background",
+      "instagram": "still reading that instagram — we'll finish in the background",
+      "youtube": "still reading that youtube — we'll finish in the background",
+      "google_maps_list": "still reading that maps list — we'll finish in the background",
+      "manual": "still on it — we'll finish in the background"
     }
   },
   "settings": {
     "eyebrow": "settings",
     "hero": "you, basically",
-    "addName": "add your name",
-    "namePlaceholder": "your name",
-    "editEyebrow": "you",
-    "editName": "edit name",
-    "saveName": "save",
     "subscription": "subscription",
     "yourPlan": "your plan",
     "planActive": "active",
@@ -262,14 +273,25 @@
     "footerVersion": "kebi v{{version}}",
     "error": "couldn't load your profile",
     "toast": {
-      "nameSaved": "name saved",
-      "nameFailed": "couldn't save that — try again",
       "nuked": "your data's gone",
       "nukeFailed": "couldn't nuke that — try again"
     },
     "help": "help",
     "rowHelp": "help",
-    "rowHelpSub": "weird answers, bugs, talk to us"
+    "rowHelpSub": "weird answers, bugs, talk to us",
+    "whatKebiKnows": "what kebi knows",
+    "aboutYou": "about you",
+    "aboutYouSub": "name, home country, the gist",
+    "gettingAround": "getting around",
+    "gettingAroundSub": "how far kebi looks for you",
+    "notSet": "not set",
+    "isSet": "set",
+    "addName": "add your name",
+    "knowledge": "knowledge",
+    "addWhatYouKnowSub": "a place, an area, anything",
+    "insider": "insider",
+    "whatYouveAdded": "what you've added",
+    "whatYouveAddedSub": "every note you wrote"
   },
   "plans": {
     "eyebrow": "plans",
@@ -410,5 +432,88 @@
     "sheetMessageNote": "goes straight to the team. replies go to your account email",
     "toastSent": "sent. this is how kebi gets better",
     "toastError": "couldn't send — try again"
+  },
+  "aboutYou": {
+    "eyebrow": "about you",
+    "hero": "so kebi gets you",
+    "lede": "kebi keeps none of this — it reads it at the start of every conversation and lets what you actually do outweigh it. except a hard rule, which stays a hard rule.",
+    "callMe": "call me",
+    "callMePlaceholder": "what should kebi call you?",
+    "callMeHint": "leave it empty and kebi uses your account name",
+    "homeCountry": "home country",
+    "countryPlaceholder": "pick your country",
+    "countryHint": "used for visa and entry answers, checked live every time",
+    "countryTitle": "where are you from?",
+    "countrySearch": "search countries",
+    "countryEmpty": "no country by that name",
+    "gist": "the gist",
+    "gistPlaceholder": "how you like to eat, drink, move",
+    "gistHint": "a hard rule here is treated as a hard rule",
+    "wholeBlock": "heads up — saving writes all three at once. clear a field and it's gone, not kept.",
+    "save": "save",
+    "saved": "kebi knows",
+    "saveFailed": "couldn't save that — try again",
+    "loadFailed": "couldn't load what kebi knows — try again"
+  },
+  "gettingAround": {
+    "eyebrow": "getting around",
+    "hero": "how you move",
+    "lede": "kebi pairs this with wherever you are to decide how far to look. tell it wrong and it either walks you too far or hides half the city.",
+    "modes": "what you can use",
+    "modesHint": "what you can use anywhere — not what's around today",
+    "mode": {
+      "walking": "walking",
+      "cycling": "cycling",
+      "motorbike": "scooter",
+      "driving": "driving",
+      "transit": "transit",
+      "rideshare": "rideshare"
+    },
+    "reach": "how far is too far",
+    "reachValue": {
+      "compact": "keep it close",
+      "normal": "normal",
+      "far": "i'll travel"
+    },
+    "reachHint": "nudges kebi wider or tighter than it would go on its own",
+    "guessing": "until you save this, kebi guesses wide on purpose — better a place you can reach than a short list you never see.",
+    "pickOne": "pick at least one way to get around",
+    "save": "save",
+    "saved": "kebi will search like that",
+    "saveFailed": "couldn't save that — try again",
+    "loadFailed": "couldn't load how you get around — try again"
+  },
+  "curate": {
+    "about": "about",
+    "unanchored": "a place or area",
+    "hero": "what do you know?",
+    "placeholder": "what's not obvious — when to go, where to sit, what to skip",
+    "hint": "write it how you'd say it. kebi splits it into notes.",
+    "hintPublic": "everyone sees them.",
+    "cta": "add to kebi",
+    "menuLabel": "add what you know",
+    "menuSub": "everyone will see it",
+    "change": "change",
+    "pick": "pick",
+    "searchPlaceholder": "a place or an area",
+    "searchEmpty": "nothing by that name",
+    "toast": {
+      "added": "added {{count}} notes",
+      "addedOne": "added 1 note",
+      "nothingNew": "kebi already knew that",
+      "failed": "couldn't send that — your text is still there"
+    },
+    "thisArea": "this area"
+  },
+  "myClaims": {
+    "hero": "what you've added",
+    "subtitle": "{{notes}} notes across {{places}} places",
+    "empty": "nothing yet — write something and it shows up here",
+    "loadFailed": "couldn't load your notes",
+    "remove": "remove this note",
+    "toast": {
+      "removed": "note removed",
+      "removeFailed": "couldn't remove that one"
+    }
   }
 }

@@ -14,14 +14,20 @@ import { Icon } from './icon';
 import { DURATION, STAGGER_MS } from '../theme/motion';
 
 /**
- * The reasoning block (kebi-chat-mockup.html `.reasoning`) — the thinking panel
- * above each agent answer in chat. Inline editor content, NOT a card: a header
- * (pulsing dot + label + meta + chevron) over a step list with a hairline rail.
+ * The work chip — "● thought for 2s ▸" — holding the tools the agent ran. Inline
+ * editor content, NOT a card: a header (pulsing dot + label + chevron) over a
+ * step list with a hairline rail, collapsed to one line once it settles.
  *
- * Driven entirely by the ADR-102 stream lifecycle the chat screen upserts by
- * `id`: a `done` step shows a filled check node + its narration; an `active`
- * step shows a ring + pulsing dot + shimmer skeleton (because its `summary` is
- * still `null`) — and an interrupted step left `active` simply stays a skeleton.
+ * It holds WORK ONLY. The agent's own talk is not a row here: it renders as
+ * message prose in the transcript body (ADR-055), because the same sentences
+ * arrive as `reasoning_delta` text and drawing them in both places would print
+ * each one twice. A turn interleaves several of these chips with the prose
+ * between them.
+ *
+ * Driven by the ADR-102 stream lifecycle the chat screen upserts by `id`: a
+ * `done` step shows a filled check node + its summary; an `active` step shows a
+ * ring + pulsing dot + shimmer skeleton (its `summary` is still `null`) — and an
+ * interrupted step left `active` simply stays a skeleton.
  * There are no pending rows and no "step N of M": the agent is dynamic, so the
  * contract carries no total (see api-contract.md). The run-level `done` flag
  * flips the header dot to success and is the cue to collapse on the next turn.
@@ -63,6 +69,13 @@ export interface ReasoningBlockProps {
   onToggle?: (next: boolean) => void;
   /** Max lines per step narration before truncating. Defaults to {@link SUMMARY_LINES}. */
   summaryLines?: number;
+  /**
+   * Rows only — no header, no collapse. Used inside an expanded turn process,
+   * where the turn's own "thought for 19.7s" header already owns the disclosure:
+   * a header per chip there stacks four dots and four chevrons inside something
+   * the user just opened, and times single tool calls at "0.1s".
+   */
+  bare?: boolean;
 }
 
 const ENTER_EASE = Easing.out(Easing.ease);
@@ -77,8 +90,8 @@ const SUMMARY_LINES = 2;
 
 /** Header label while the run is in flight. */
 const RUNNING_LABEL = 'working on it';
-/** Header label once the run has finished. */
-const DONE_LABEL = 'got it';
+/** Header label once the run has finished — suffixed with "2s" when timed. */
+const DONE_LABEL = 'thought for';
 /** Detail on a step that never completed (the run was stopped/interrupted). */
 const INTERRUPTED_LABEL = 'interrupted';
 
@@ -95,6 +108,7 @@ export function ReasoningBlock({
   defaultCollapsed = false,
   onToggle,
   summaryLines = SUMMARY_LINES,
+  bare = false,
 }: ReasoningBlockProps) {
   const isControlled = collapsed !== undefined;
   const [internal, setInternal] = useState(defaultCollapsed);
@@ -111,18 +125,37 @@ export function ReasoningBlock({
   // later fade in immediately as they arrive, not after a growing delay.
   const initialCount = useRef(steps.length).current;
 
-  // Header shows the state, not the per-step title: "working on it" while the run
-  // is in flight, "got it" once it's done. The step titles live in the body rows.
-  const headerLabel = label ?? (done ? doneLabel : runningLabel);
-
+  // Settled, the chip is one line — "thought for 2s" — and the work it did is
+  // behind the chevron. In flight it shows what the agent is doing right now
+  // (the caller passes the live step's title) plus a streaming tally.
   const doneCount = steps.filter((s) => s.status === 'done').length;
   const total = steps.length;
-  const tally = durationMs != null ? ` · ${(durationMs / 1000).toFixed(1)}s` : '';
-  const metaText =
-    meta ??
-    (done
-      ? `${total} ${total === 1 ? 'step' : 'steps'}${tally}`
-      : `step ${Math.max(doneCount, 1)} · streaming…`);
+  const seconds = durationMs != null ? `${Math.max(durationMs / 1000, 0.1).toFixed(1)}s` : '';
+  const headerLabel =
+    label ?? (done ? [doneLabel, seconds].filter(Boolean).join(' ') : runningLabel);
+  // Counts only what it was handed — the store drops `debug` steps and routes
+  // the agent's talk to prose, so this is user-visible work and nothing else.
+  const metaText = meta ?? (done ? '' : `step ${Math.max(doneCount, 1)} · streaming…`);
+
+  const rows =
+    total > 0 ? (
+      <View className="relative ms-[7px] gap-3.5">
+        {/* Hairline rail behind the nodes (inset 8px top/bottom). */}
+        <View className="absolute bottom-2 left-0 top-2 w-px bg-surface-2" />
+        {steps.map((step, i) => (
+          <StepRow
+            key={step.id}
+            step={step}
+            settled={done}
+            interruptedLabel={interruptedLabel}
+            enterDelay={i < initialCount ? i * STAGGER_MS : 0}
+            summaryLines={summaryLines}
+          />
+        ))}
+      </View>
+    ) : null;
+
+  if (bare) return rows;
 
   return (
     <View className="mb-3 gap-2">
@@ -130,7 +163,7 @@ export function ReasoningBlock({
         onPress={toggle}
         accessibilityRole="button"
         accessibilityState={{ expanded: !isCollapsed }}
-        accessibilityLabel={`${headerLabel}, ${metaText}`}
+        accessibilityLabel={[headerLabel, metaText].filter(Boolean).join(', ')}
         className="flex-row items-center justify-between gap-2.5"
       >
         <View className="min-w-0 flex-row items-center gap-2.5">
@@ -140,37 +173,22 @@ export function ReasoningBlock({
               {headerLabel}
             </Text>
           </View>
-          <Text numberOfLines={1} className="shrink text-[12px] text-text-soft">
-            {metaText}
-          </Text>
+          {metaText ? (
+            <Text numberOfLines={1} className="shrink text-[12px] text-text-soft">
+              {metaText}
+            </Text>
+          ) : null}
         </View>
         <Chevron expanded={!isCollapsed} />
       </Pressable>
 
-      <Collapsible collapsed={isCollapsed}>
-        {total > 0 ? (
-          <View className="relative ms-[7px] gap-3.5">
-            {/* Hairline rail behind the nodes (inset 8px top/bottom). */}
-            <View className="absolute bottom-2 left-0 top-2 w-px bg-surface-2" />
-            {steps.map((step, i) => (
-              <StepRow
-                key={step.id}
-                step={step}
-                settled={done}
-                interruptedLabel={interruptedLabel}
-                enterDelay={i < initialCount ? i * STAGGER_MS : 0}
-                summaryLines={summaryLines}
-              />
-            ))}
-          </View>
-        ) : null}
-      </Collapsible>
+      <Collapsible collapsed={isCollapsed}>{rows}</Collapsible>
     </View>
   );
 }
 
 /** 6px header dot: pulses while running (text tone), solid success when done. */
-function LiveDot({ done }: { done: boolean }) {
+export function LiveDot({ done }: { done: boolean }) {
   const s = useSharedValue(1);
   useEffect(() => {
     if (done) {
@@ -195,7 +213,7 @@ function LiveDot({ done }: { done: boolean }) {
 }
 
 /** Toggle chevron: points down when expanded, right when collapsed. */
-function Chevron({ expanded }: { expanded: boolean }) {
+export function Chevron({ expanded }: { expanded: boolean }) {
   const r = useSharedValue(expanded ? 1 : 0);
   useEffect(() => {
     r.value = withTiming(expanded ? 1 : 0, { duration: DURATION.stateChangeFast, easing: ENTER_EASE });
@@ -357,7 +375,7 @@ function Shimmer({ width }: { width: `${number}%` }) {
  * shrinking height during a collapse, trapping `measuredH` at a tiny value so a
  * re-expand never grows back (the collapse→reopen-empty bug).
  */
-function Collapsible({ collapsed, children }: { collapsed: boolean; children: React.ReactNode }) {
+export function Collapsible({ collapsed, children }: { collapsed: boolean; children: React.ReactNode }) {
   const progress = useSharedValue(collapsed ? 0 : 1);
   const measuredH = useSharedValue(0);
 

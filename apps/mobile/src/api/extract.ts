@@ -20,6 +20,15 @@ import { ExtractPlaceResponse, ExtractPlaceResponseSchema } from './models/extra
  */
 export const EXTRACT_TIMEOUT_MS = 90_000;
 
+/**
+ * How long the save sheet blocks on an extract before flipping to its
+ * backgrounded state (kebi-save-sheet-background-mockup.html): long enough that
+ * cache hits (~1–2 s) resolve in place, short enough that a cold video URL
+ * doesn't hold the user captive. The request itself keeps running to
+ * {@link EXTRACT_TIMEOUT_MS}.
+ */
+export const EXTRACT_GRACE_MS = 5_000;
+
 export async function extractPlace(
   client: HttpClient,
   rawInput: string,

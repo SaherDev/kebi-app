@@ -3,6 +3,7 @@ import { NormalizedIdentity, UserSettingsData } from '@kebi-app/shared';
 import { AuthService } from './auth.service';
 import { IdentityProvider } from './identity-provider.interface';
 import { IdentityMetadataWriter } from './identity-metadata.writer';
+import { ClaimStamper } from './claim-stamper';
 import { ProfileWriter } from './profile-writer.interface';
 import { UserIdentityService } from './user-identity.service';
 import { UserSettingsService } from './user-settings.service';
@@ -12,6 +13,7 @@ const DEFAULT_SETTINGS: UserSettingsData = {
   ai_enabled: true,
   can_curate: false,
   movement_profile: null,
+  about_me: null,
 };
 
 describe('AuthService.provision', () => {
@@ -30,7 +32,7 @@ describe('AuthService.provision', () => {
     userSettings = { ensureForUser: jest.fn().mockResolvedValue(settings) };
     service = new AuthService(
       provider,
-      metadataWriter as unknown as IdentityMetadataWriter,
+      new ClaimStamper(metadataWriter as unknown as IdentityMetadataWriter),
       profileWriter as unknown as ProfileWriter,
       userIdentity as unknown as UserIdentityService,
       userSettings as unknown as UserSettingsService,
@@ -94,6 +96,37 @@ describe('AuthService.provision', () => {
       'ext_1',
       expect.objectContaining({ movement_profile }),
     );
+  });
+
+  it('includes about_me in the stamp when settings carry one (kebi ADR-154)', async () => {
+    const about_me = { call_me: 'Saher', home_country: 'AE', about: 'I do not drink.' };
+    setup({ ...DEFAULT_SETTINGS, about_me });
+
+    await service.provision({ externalId: 'ext_1', claims: {} });
+
+    expect(metadataWriter.stamp).toHaveBeenCalledWith(
+      'ext_1',
+      expect.objectContaining({ about_me }),
+    );
+  });
+
+  it('re-stamps when only the about_me changed', async () => {
+    setup({
+      ...DEFAULT_SETTINGS,
+      about_me: { call_me: null, home_country: 'AE', about: null },
+    });
+
+    await service.provision({
+      externalId: 'ext_1',
+      claims: {
+        internal_id: 'user_internal_1',
+        plan: 'homebody',
+        ai_enabled: true,
+        can_curate: false,
+      },
+    });
+
+    expect(metadataWriter.stamp).toHaveBeenCalled();
   });
 
   describe('name seed', () => {

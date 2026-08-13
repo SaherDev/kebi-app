@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Kebi Chat — the `---` line (thematic break in the answer)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg:#FAFAF9; --surface:#F1F1EF; --surface-2:#E8E8E5;
+    --text:#1A1A1A; --text-muted:#8A8A87; --text-soft:#B5B5B1;
+  }
+  html,body{ background:#2A2A28; font-family:'Inter',system-ui,sans-serif;
+    -webkit-font-smoothing:antialiased; min-height:100vh; color:#EDEDEA; padding:40px 24px 64px; }
+  h1{ font-size:22px; font-weight:700; letter-spacing:-.01em; margin-bottom:6px; }
+  .lede{ font-size:14px; color:#B5B5B1; max-width:900px; line-height:1.55; margin-bottom:30px; }
+  .lede b{ color:#D9D9D5; font-weight:600; }
+  .lede code{ background:#3A3A37; padding:1px 5px; border-radius:5px; font-size:12.5px; }
+  .cols{ display:flex; gap:36px; align-items:flex-start; flex-wrap:wrap; }
+  .col{ width:360px; }
+  .cap{ font-size:13px; font-weight:600; color:#9A9A96; margin-bottom:4px; }
+  .cap b{ color:#D9D9D5; }
+  .subcap{ font-size:12px; color:#8A8A87; line-height:1.5; margin-bottom:12px; min-height:64px; }
+  .subcap code{ background:#3A3A37; padding:1px 5px; border-radius:5px; font-size:11.5px; }
+
+  .stage{ background:var(--bg); border-radius:24px; padding:16px; }
+
+  .reasoning{ background:var(--surface); border-radius:12px; padding:9px 11px; display:flex;
+    align-items:center; gap:8px; margin-bottom:10px; }
+  .reasoning .dot{ width:6px; height:6px; border-radius:50%; background:#5B8A4E; flex-shrink:0; }
+  .reasoning .lbl{ font-size:12.5px; font-weight:600; color:var(--text); }
+  .reasoning .meta{ font-size:12px; color:var(--text-soft); }
+  .reasoning .chev{ margin-left:auto; color:var(--text-soft); font-size:12px; }
+
+  /* answer body = full ink (§1 decision, kebi-chat-polish-options 1a) */
+  .prose{ font-size:16px; line-height:1.6; color:var(--text); letter-spacing:-.005em; }
+  .prose p + p, .prose p + .hr, .prose .hr + p, .prose p + .h, .prose .hr + .h{ margin-top:12px; }
+  .prose .strong{ font-weight:600; }
+
+  /* today: the raw dashes fall through as a paragraph */
+  .rawdash{ color:var(--text); }
+
+  /* option a: thematic break → hairline divider */
+  .hr{ border:0; border-top:1px solid var(--surface-2); margin:16px 0; }
+
+  /* bonus: section heading tier */
+  .h{ font-weight:700; font-size:16px; letter-spacing:-.01em; }
+
+  .bad{ display:inline-block; background:#7A3A3A; color:#F3E9E9; font-size:10px; font-weight:700;
+    text-transform:uppercase; letter-spacing:.08em; border-radius:5px; padding:2px 6px; margin-left:7px; }
+  .col.picked .stage{ box-shadow:0 0 0 3px #5B8A4E; }
+  .col.picked .cap b{ color:#8FBF7F; }
+  .col.dropped{ opacity:.42; }
+  .badge{ display:inline-block; background:#5B8A4E; color:#F3F8F0; font-size:10px; font-weight:700;
+    text-transform:uppercase; letter-spacing:.08em; border-radius:5px; padding:2px 6px; margin-left:7px; }
+</style>
+</head>
+<body>
+
+<h1>the <code style="background:#3A3A37;padding:2px 7px;border-radius:6px;">---</code> line — what the app should do with a thematic break</h1>
+<p class="lede">
+  kebi sections a long answer with markdown's horizontal rule, but <code>---</code> isn't in the light-markdown
+  contract <code>chat-answer.tsx</code> renders — so it falls through as literal dashes. all columns show the
+  <b>same real answer</b> from the 3-week trip session. detection in every option:
+  a line that is only <code>---</code> / <code>***</code> / <code>___</code> (3+ marks) becomes a <code>divider</code> block in <code>toBlocks</code>.
+</p>
+
+<div class="cols">
+
+  <!-- today -->
+  <div class="col">
+    <div class="cap"><b>today</b><span class="bad">broken</span></div>
+    <div class="subcap">the rule line falls through the parser as a paragraph — the user sees raw <code>---</code> in the middle of the answer.</div>
+    <div class="stage">
+      <div class="reasoning"><span class="dot"></span><span class="lbl">thought</span><span class="meta">44.3s</span><span class="chev">›</span></div>
+      <div class="prose">
+        <p>those are <span class="strong">san francisco</span> results, wrong location. i don't have verified lombok spots in the catalog right now, so i'll be straight with you on that part. here's the full 3 week plan with what i can verify:</p>
+        <p class="rawdash">---</p>
+        <p>week 1, bali (7 nights)</p>
+        <p>nothing saved yet, so these are my picks based on what you love: beaches, nightlife, food.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- a — divider -->
+  <div class="col picked">
+    <div class="cap"><b>a · render a divider</b><span class="badge">locked</span></div>
+    <div class="subcap">the break becomes a real hairline (<code>--surface-2</code>, 1px, breathing room above/below). keeps the structure the model meant — a long plan gets visible sections.</div>
+    <div class="stage">
+      <div class="reasoning"><span class="dot"></span><span class="lbl">thought</span><span class="meta">44.3s</span><span class="chev">›</span></div>
+      <div class="prose">
+        <p>those are <span class="strong">san francisco</span> results, wrong location. i don't have verified lombok spots in the catalog right now, so i'll be straight with you on that part. here's the full 3 week plan with what i can verify:</p>
+        <hr class="hr" />
+        <p>week 1, bali (7 nights)</p>
+        <p>nothing saved yet, so these are my picks based on what you love: beaches, nightlife, food.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- b — strip -->
+  <div class="col dropped">
+    <div class="cap"><b>b · strip it</b></div>
+    <div class="subcap">the break is detected and dropped — paragraph spacing is the only separator. nothing broken, smallest change, but a 3-week plan reads as one undifferentiated stream.</div>
+    <div class="stage">
+      <div class="reasoning"><span class="dot"></span><span class="lbl">thought</span><span class="meta">44.3s</span><span class="chev">›</span></div>
+      <div class="prose">
+        <p>those are <span class="strong">san francisco</span> results, wrong location. i don't have verified lombok spots in the catalog right now, so i'll be straight with you on that part. here's the full 3 week plan with what i can verify:</p>
+        <p>week 1, bali (7 nights)</p>
+        <p>nothing saved yet, so these are my picks based on what you love: beaches, nightlife, food.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- a+ — divider + heading -->
+  <div class="col dropped">
+    <div class="cap"><b>a+ · divider + week headings</b></div>
+    <div class="subcap">same divider, and the short line right after a break renders as a bold section heading. reads like a real itinerary — but it needs a heading rule in the prose contract (kebi repo prompt change), not just a client fix.</div>
+    <div class="stage">
+      <div class="reasoning"><span class="dot"></span><span class="lbl">thought</span><span class="meta">44.3s</span><span class="chev">›</span></div>
+      <div class="prose">
+        <p>those are <span class="strong">san francisco</span> results, wrong location. i don't have verified lombok spots in the catalog right now, so i'll be straight with you on that part. here's the full 3 week plan with what i can verify:</p>
+        <hr class="hr" />
+        <p class="h">week 1, bali (7 nights)</p>
+        <p>nothing saved yet, so these are my picks based on what you love: beaches, nightlife, food.</p>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

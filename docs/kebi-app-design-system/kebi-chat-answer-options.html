@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Kebi Chat — Agent Answer (ADR-136 linked prose)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg:#FAFAF9; --surface:#F1F1EF; --surface-2:#E8E8E5;
+    --text:#1A1A1A; --text-muted:#8A8A87; --text-soft:#B5B5B1;
+    --success:#5B8A4E; --pill-green:#E8F2E1;
+    --like:#C2632F;   --pill-warm:#FEE4D4;
+  }
+  html,body{ background:#2A2A28; font-family:'Inter',system-ui,sans-serif;
+    -webkit-font-smoothing:antialiased; min-height:100vh; color:#EDEDEA; padding:40px 24px 64px; }
+  h1{ font-size:22px; font-weight:700; letter-spacing:-.01em; margin-bottom:6px; }
+  .lede{ font-size:14px; color:#B5B5B1; max-width:900px; line-height:1.55; margin-bottom:30px; }
+  .lede b{ color:#D9D9D5; font-weight:600; }
+  .lede code{ background:#3A3A37; padding:1px 5px; border-radius:5px; font-size:12.5px; }
+  .cols{ display:flex; gap:36px; align-items:flex-start; flex-wrap:wrap; }
+  .col{ width:360px; }
+  .cap{ font-size:13px; font-weight:600; color:#9A9A96; margin-bottom:4px; }
+  .cap b{ color:#D9D9D5; }
+  .subcap{ font-size:12px; color:#8A8A87; line-height:1.5; margin-bottom:12px; min-height:36px; }
+
+  .stage{ background:var(--bg); border-radius:24px; padding:16px; }
+
+  /* ── turn chrome (matches chat-screen.tsx KebiTurnRow) ── */
+  .eyebrow{ display:flex; align-items:center; gap:8px; margin-bottom:6px; }
+  .eyebrow .who{ font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.08em; color:var(--text-soft); }
+  .eyebrow .time{ font-size:11px; color:var(--text-soft); }
+  .eyebrow .copy{ margin-left:auto; color:var(--text-soft); }
+  .eyebrow .copy svg{ width:13px; height:13px; stroke:currentColor; stroke-width:1.8; fill:none; }
+
+  .reasoning{ background:var(--surface); border-radius:12px; padding:9px 11px; display:flex;
+    align-items:center; gap:8px; margin-bottom:10px; }
+  .reasoning .dot{ width:6px; height:6px; border-radius:50%; background:var(--success); flex-shrink:0; }
+  .reasoning .lbl{ font-size:12.5px; font-weight:600; color:var(--text); }
+  .reasoning .meta{ font-size:12px; color:var(--text-soft); }
+  .reasoning .chev{ margin-left:auto; color:var(--text-soft); font-size:12px; }
+
+  /* ── shared prose block ── */
+  .prose{ font-size:16px; line-height:1.6; color:var(--text-muted); letter-spacing:-.005em; }
+  .prose p + p{ margin-top:12px; }
+  .prose .lead-in{ margin-bottom:6px; }
+  .bullets{ margin-top:10px; display:flex; flex-direction:column; gap:7px; }
+  .bul{ display:flex; gap:9px; }
+  .bul .mark{ color:var(--text-soft); flex-shrink:0; line-height:1.6; }
+  .closer{ margin-top:12px; }
+
+  /* ── A: quiet prose — link is weight + underline only ── */
+  .lnk-quiet{ color:var(--text); font-weight:600;
+    border-bottom:1px solid var(--surface-2); }
+
+  /* ── B: inline pill — link is a tappable inline chip ── */
+  .lnk-pill{ display:inline-flex; align-items:baseline; gap:4px; background:var(--surface);
+    border-radius:7px; padding:1px 7px; color:var(--text); font-weight:600; font-size:15px;
+    line-height:1.35; white-space:nowrap; }
+  .lnk-pill .em{ font-size:12px; }
+  .lnk-pill.area{ background:transparent; border:1px solid var(--surface-2); }
+
+  /* ── C: rail of mentioned places under the answer ── */
+  .rail-lbl{ font-size:11px; font-weight:600; color:var(--text-soft); text-transform:uppercase;
+    letter-spacing:.08em; margin:14px 0 8px; }
+  .rail{ display:flex; gap:8px; overflow:hidden; }
+  .chip{ display:flex; align-items:center; gap:7px; background:var(--surface); border-radius:11px;
+    padding:8px 11px 8px 8px; flex-shrink:0; }
+  .chip .cav{ width:26px; height:26px; border-radius:7px; background:var(--bg);
+    display:flex; align-items:center; justify-content:center; font-size:14px; }
+  .chip .cn{ font-size:13.5px; font-weight:600; color:var(--text); }
+  .chip.fade{ opacity:.5; }
+
+  /* ── D: mentioned list — mini library rows ── */
+  .list{ margin-top:14px; border-top:1px solid var(--surface-2); }
+  .row{ display:flex; align-items:center; gap:11px; padding:10px 0; }
+  .row + .row{ border-top:1px solid var(--surface-2); }
+  .row .rav{ width:28px; height:28px; border-radius:7px; background:var(--surface);
+    display:flex; align-items:center; justify-content:center; font-size:15px; flex-shrink:0; }
+  .row .rinfo{ flex:1; min-width:0; }
+  .row .rn{ font-size:14px; font-weight:600; color:var(--text); }
+  .row .rm{ font-size:12.5px; color:var(--text-muted); }
+  .row .rchev{ color:var(--text-soft); font-size:14px; }
+  .list-lbl{ font-size:11px; font-weight:600; color:var(--text-soft); text-transform:uppercase;
+    letter-spacing:.08em; margin:14px 0 2px; }
+
+  /* ── chosen-option marker ── */
+  .col.picked .stage{ box-shadow:0 0 0 3px #5B8A4E; }
+  .col.picked .cap b{ color:#8FBF7F; }
+  .badge{ display:inline-block; background:#5B8A4E; color:#F3F8F0; font-size:10px; font-weight:700;
+    text-transform:uppercase; letter-spacing:.08em; border-radius:5px; padding:2px 6px; margin-left:7px; }
+  .col.dropped{ opacity:.42; }
+
+  /* ── E: the place card comes back, hydrated by entity id ── */
+  .card{ background:var(--surface); border-radius:14px; padding:14px; margin-top:14px; }
+  .chead{ display:flex; align-items:center; gap:10px; }
+  .avatar{ width:30px; height:30px; border-radius:8px; background:var(--surface-2);
+    display:flex; align-items:center; justify-content:center; font-size:17px; flex-shrink:0; }
+  .name{ font-size:17px; font-weight:700; color:var(--text); letter-spacing:-.01em; flex:1; min-width:0;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .chev{ color:var(--text-soft); font-size:14px; }
+  .pills{ display:flex; flex-wrap:wrap; gap:6px; margin-top:10px; }
+  .pill{ display:inline-flex; align-items:center; gap:5px; padding:3px 9px; border-radius:999px;
+    font-size:11px; font-weight:600; }
+  .pill.warm{ background:var(--pill-warm); color:var(--like); }
+  .pill.green{ background:var(--pill-green); color:var(--success); }
+  .pill::before{ content:''; width:5px; height:5px; border-radius:50%; background:currentColor; }
+  .ico{ width:15px; color:var(--text-muted); flex-shrink:0; display:inline-flex; }
+  .ico svg{ width:15px; height:15px; stroke:currentColor; stroke-width:1.8; fill:none; }
+  .detail{ display:flex; align-items:center; gap:10px; font-size:14px; color:var(--text);
+    letter-spacing:-.005em; margin-top:10px; }
+  .actions{ display:flex; gap:8px; margin-top:14px; }
+  .btn{ flex:1; display:flex; align-items:center; justify-content:center; gap:7px; border-radius:12px;
+    font-size:13px; font-weight:600; padding:10px; border:1px solid var(--surface-2);
+    background:var(--bg); color:var(--text); }
+  .btn.primary{ background:var(--text); color:var(--bg); border-color:var(--text); }
+  .blocked{ margin-top:10px; font-size:11.5px; color:var(--like); background:var(--pill-warm);
+    border-radius:8px; padding:7px 9px; line-height:1.45; }
+</style>
+</head>
+<body>
+
+<h1>chat answer — five ways to render the linked prose</h1>
+<p class="lede">
+  kebi no longer sends place payloads to chat (<b>ADR-136</b>): the answer is prose with entity names wrapped as
+  <code>[Luigi's](kebi://venue/…)</code>, plus a flat <code>entities</code> list resolving each link. every option below renders the
+  <b>same real payload</b> — the monday-in-canggu answer — and all five fix the two things broken today:
+  <b>paragraph spacing</b> and <b>bullet lines</b>. they differ only in how loud a link is.
+  note the link label is what the answer said (<code>Luigi's</code>), while <code>entities[n].name</code> is canonical
+  (<code>Luigi's Hot Pizza Canggu</code>) — so a tap resolves by position, never by matching text.
+</p>
+
+<div class="cols">
+
+  <!-- ══ A — quiet prose ══ -->
+  <div class="col dropped">
+    <div class="cap"><b>a · quiet prose</b></div>
+    <div class="subcap">link = darker + semibold + hairline underline. the answer reads as one voice; nothing competes with the text.</div>
+    <div class="stage">
+      <div class="eyebrow">
+        <span class="who">kebi</span><span class="time">7:42 pm</span>
+        <span class="copy"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 012-2h10"/></svg></span>
+      </div>
+      <div class="reasoning">
+        <span class="dot"></span><span class="lbl">thought</span><span class="meta">3 steps · 7.5s</span><span class="chev">⌄</span>
+      </div>
+      <div class="prose">
+        <p>monday is actually a great night to be in <span class="lnk-quiet">canggu</span>, and your saves line up perfectly with it. here's how i'd play it:</p>
+        <p>start at <span class="lnk-quiet">Luigi's</span>. monday is literally their night, that's when they do their house and techno DJ set, pizza plus a proper dancefloor energy, and it's 7:30 now so the room is just starting to build.</p>
+        <p>from there, walk over to <span class="lnk-quiet">Old Man's</span> on batu bolong. classic beach bar backpacker energy, good for a drink between moves.</p>
+        <p>then end at <span class="lnk-quiet">Sand Bar</span>, also right there. they do afterparties every night, so it's the natural late move.</p>
+        <p class="lead-in">skip for tonight:</p>
+        <div class="bullets">
+          <div class="bul"><span class="mark">·</span><span><span class="lnk-quiet">Vault</span> is wednesday to saturday only, not tonight</span></div>
+          <div class="bul"><span class="mark">·</span><span><span class="lnk-quiet">The Mesa</span> is a friday spot</span></div>
+          <div class="bul"><span class="mark">·</span><span><span class="lnk-quiet">Motel Mexicola</span> is in your saves but tuesday is their big night, you're one day early</span></div>
+        </div>
+        <p class="closer">luigi's then old man's then sand bar, your monday is set.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ B — inline pills ══ -->
+  <div class="col dropped">
+    <div class="cap"><b>b · inline pills</b></div>
+    <div class="subcap">link = a small filled chip with its category emoji, inline in the sentence. obviously tappable, reads like the place is "in" the text.</div>
+    <div class="stage">
+      <div class="eyebrow">
+        <span class="who">kebi</span><span class="time">7:42 pm</span>
+        <span class="copy"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 012-2h10"/></svg></span>
+      </div>
+      <div class="reasoning">
+        <span class="dot"></span><span class="lbl">thought</span><span class="meta">3 steps · 7.5s</span><span class="chev">⌄</span>
+      </div>
+      <div class="prose">
+        <p>monday is actually a great night to be in <span class="lnk-pill area"><span class="em">📍</span>canggu</span>, and your saves line up perfectly with it. here's how i'd play it:</p>
+        <p>start at <span class="lnk-pill"><span class="em">🍕</span>Luigi's</span>. monday is literally their night, that's when they do their house and techno DJ set, pizza plus a proper dancefloor energy.</p>
+        <p>from there, walk over to <span class="lnk-pill"><span class="em">🏖️</span>Old Man's</span> on batu bolong. classic beach bar backpacker energy, good for a drink between moves.</p>
+        <p>then end at <span class="lnk-pill"><span class="em">🍸</span>Sand Bar</span>, also right there. they do afterparties every night.</p>
+        <p class="lead-in">skip for tonight:</p>
+        <div class="bullets">
+          <div class="bul"><span class="mark">·</span><span><span class="lnk-pill"><span class="em">🪩</span>Vault</span> is wednesday to saturday only</span></div>
+          <div class="bul"><span class="mark">·</span><span><span class="lnk-pill"><span class="em">🍽️</span>The Mesa</span> is a friday spot</span></div>
+          <div class="bul"><span class="mark">·</span><span><span class="lnk-pill"><span class="em">🌮</span>Motel Mexicola</span> is in your saves but tuesday is their big night</span></div>
+        </div>
+        <p class="closer">luigi's then old man's then sand bar, your monday is set.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ C — prose + rail ══ -->
+  <div class="col picked">
+    <div class="cap"><b>c · prose + rail</b><span class="badge">locked</span></div>
+    <div class="subcap">quiet links in the text, plus one horizontal rail of the venues from <code>entities</code>. big tap targets without breaking the reading flow.</div>
+    <div class="stage">
+      <div class="eyebrow">
+        <span class="who">kebi</span><span class="time">7:42 pm</span>
+        <span class="copy"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 012-2h10"/></svg></span>
+      </div>
+      <div class="reasoning">
+        <span class="dot"></span><span class="lbl">thought</span><span class="meta">3 steps · 7.5s</span><span class="chev">⌄</span>
+      </div>
+      <div class="prose">
+        <p>monday is actually a great night to be in <span class="lnk-quiet">canggu</span>, and your saves line up perfectly with it. here's how i'd play it:</p>
+        <p>start at <span class="lnk-quiet">Luigi's</span>. monday is literally their night, house and techno DJ set, pizza plus a proper dancefloor energy.</p>
+        <p>from there, walk over to <span class="lnk-quiet">Old Man's</span> on batu bolong, then end at <span class="lnk-quiet">Sand Bar</span> for the afterparty.</p>
+        <p class="lead-in">skip for tonight:</p>
+        <div class="bullets">
+          <div class="bul"><span class="mark">·</span><span><span class="lnk-quiet">Vault</span> is wednesday to saturday only</span></div>
+          <div class="bul"><span class="mark">·</span><span><span class="lnk-quiet">The Mesa</span> is a friday spot</span></div>
+        </div>
+        <p class="closer">luigi's then old man's then sand bar, your monday is set.</p>
+      </div>
+      <div class="rail-lbl">mentioned</div>
+      <div class="rail">
+        <div class="chip"><div class="cav">🍕</div><span class="cn">Luigi's</span></div>
+        <div class="chip"><div class="cav">🏖️</div><span class="cn">Old Man's</span></div>
+        <div class="chip fade"><div class="cav">🍸</div><span class="cn">Sand Bar</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ D — prose + list ══ -->
+  <div class="col dropped">
+    <div class="cap"><b>d · prose + list</b></div>
+    <div class="subcap">quiet links, then a compact list mirroring the library row (avatar · name · meta · chevron). closest thing to the old card, without inventing data.</div>
+    <div class="stage">
+      <div class="eyebrow">
+        <span class="who">kebi</span><span class="time">7:42 pm</span>
+        <span class="copy"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 012-2h10"/></svg></span>
+      </div>
+      <div class="reasoning">
+        <span class="dot"></span><span class="lbl">thought</span><span class="meta">3 steps · 7.5s</span><span class="chev">⌄</span>
+      </div>
+      <div class="prose">
+        <p>monday is actually a great night to be in <span class="lnk-quiet">canggu</span>, and your saves line up perfectly with it. here's how i'd play it:</p>
+        <p>start at <span class="lnk-quiet">Luigi's</span>. monday is literally their night, house and techno DJ set, pizza plus a proper dancefloor energy.</p>
+        <p>from there, walk over to <span class="lnk-quiet">Old Man's</span> on batu bolong, then end at <span class="lnk-quiet">Sand Bar</span> for the afterparty.</p>
+        <p class="closer">luigi's then old man's then sand bar, your monday is set.</p>
+      </div>
+      <div class="list-lbl">places in this answer</div>
+      <div class="list">
+        <div class="row"><div class="rav">🍕</div><div class="rinfo"><div class="rn">Luigi's Hot Pizza Canggu</div><div class="rm">venue · canggu</div></div><span class="rchev">›</span></div>
+        <div class="row"><div class="rav">🏖️</div><div class="rinfo"><div class="rn">Old Man's</div><div class="rm">venue · batu bolong</div></div><span class="rchev">›</span></div>
+        <div class="row"><div class="rav">🍸</div><div class="rinfo"><div class="rn">Sand Bar</div><div class="rm">venue · batu bolong</div></div><span class="rchev">›</span></div>
+        <div class="row"><div class="rav">📍</div><div class="rinfo"><div class="rn">Canggu</div><div class="rm">area · bali</div></div><span class="rchev">›</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ E — prose + hero card (the card comes back) ══ -->
+  <div class="col dropped">
+    <div class="cap"><b>e · prose + hero card</b></div>
+    <div class="subcap">the card returns for the answer's <b>anchor</b> venue — the first venue in <code>entities</code> — fetched by id. accept/save act on <code>recommendation_id</code>, exactly like before.</div>
+    <div class="stage">
+      <div class="eyebrow">
+        <span class="who">kebi</span><span class="time">7:42 pm</span>
+        <span class="copy"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 012-2h10"/></svg></span>
+      </div>
+      <div class="reasoning">
+        <span class="dot"></span><span class="lbl">thought</span><span class="meta">3 steps · 7.5s</span><span class="chev">⌄</span>
+      </div>
+      <div class="prose">
+        <p>monday is actually a great night to be in <span class="lnk-quiet">canggu</span>, and your saves line up perfectly with it. here's how i'd play it:</p>
+        <p>start at <span class="lnk-quiet">Luigi's</span>. monday is literally their night, house and techno DJ set, pizza plus a proper dancefloor energy.</p>
+        <p>from there, walk over to <span class="lnk-quiet">Old Man's</span> on batu bolong, then end at <span class="lnk-quiet">Sand Bar</span> for the afterparty.</p>
+      </div>
+      <div class="card">
+        <div class="chead">
+          <div class="avatar">🍕</div>
+          <span class="name">Luigi's Hot Pizza Canggu</span>
+          <span class="chev">⌄</span>
+        </div>
+        <div class="pills"><span class="pill green">saved</span><span class="pill warm">tonight</span></div>
+        <div class="detail"><span class="ico"><svg viewBox="0 0 24 24"><circle cx="12" cy="10" r="3"/><path d="M12 2a8 8 0 00-8 8c0 6 8 12 8 12s8-6 8-12a8 8 0 00-8-8z"/></svg></span>pizza · dj set · canggu</div>
+        <div class="actions">
+          <button class="btn primary">good pick</button>
+          <button class="btn">not it</button>
+        </div>
+      </div>
+      <div class="blocked">needs a place-by-id endpoint — the contract doesn't expose one yet, so this option is blocked on kebi, not on us.</div>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

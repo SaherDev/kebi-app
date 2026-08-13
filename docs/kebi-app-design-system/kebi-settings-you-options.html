@@ -1,0 +1,912 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Kebi Settings — about-me + movement options (ADR-054)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #FAFAF9;
+    --surface: #F1F1EF;
+    --surface-2: #E8E8E5;
+    --text: #1A1A1A;
+    --text-muted: #8A8A87;
+    --text-soft: #B5B5B1;
+    --success: #4A7C3A;
+    --like: #C2410C;
+    --warn: #B45309;
+    --danger: #D14343;
+    --pill-warm: #FBEDE4;
+  }
+
+  html, body {
+    background: #2A2A28;
+    font-family: 'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    padding: 40px 24px 64px;
+    color: #FAFAF9;
+  }
+
+  .page-head { max-width: 1360px; margin: 0 auto 32px; }
+  .page-head h1 { font-size: 22px; font-weight: 700; letter-spacing: -0.02em; }
+  .page-head p {
+    margin-top: 8px; font-size: 14px; line-height: 1.6; color: #B5B5B1;
+    max-width: 980px; letter-spacing: -0.005em;
+  }
+  .page-head code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 12.5px; background: #1A1A18; padding: 1px 5px; border-radius: 4px; color: #E8E8E5;
+  }
+
+  .row {
+    display: flex; gap: 32px; justify-content: center; align-items: flex-start;
+    flex-wrap: wrap; max-width: 1400px; margin: 0 auto;
+  }
+
+  .col { display: flex; flex-direction: column; gap: 14px; width: 390px; }
+
+  .cap { font-size: 13px; line-height: 1.55; color: #B5B5B1; letter-spacing: -0.005em; }
+  .cap b { color: #FAFAF9; font-weight: 600; }
+  .cap .verdict { color: #8FBF7A; font-weight: 600; }
+  .cap .against { color: #D98A6A; font-weight: 600; }
+  .cap code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 12px; background: #1A1A18; padding: 1px 5px; border-radius: 4px; color: #E8E8E5;
+  }
+
+  .phone {
+    width: 390px; height: 844px; background: var(--bg);
+    border-radius: 48px; overflow: hidden; position: relative;
+    box-shadow: 0 0 0 12px #111, 0 0 0 14px #2A2A28, 0 40px 80px rgba(0,0,0,0.5);
+    display: flex; flex-direction: column; color: var(--text);
+  }
+
+  .status-bar {
+    height: 50px; padding: 18px 32px 0; display: flex;
+    justify-content: space-between; align-items: center;
+    font-size: 15px; font-weight: 600; flex-shrink: 0;
+  }
+  .status-right { display: flex; gap: 6px; align-items: center; }
+
+  .top-bar {
+    padding: 12px 16px 8px; display: flex; justify-content: space-between;
+    align-items: center; flex-shrink: 0;
+  }
+
+  .icon-btn {
+    width: 40px; height: 40px; border-radius: 50%; background: var(--surface);
+    display: flex; align-items: center; justify-content: center; border: none; cursor: pointer;
+  }
+  .icon-btn svg { width: 18px; height: 18px; stroke: var(--text); stroke-width: 1.8; fill: none; }
+
+  .top-pill { display: flex; align-items: center; background: var(--surface); border-radius: 999px; padding: 0 4px; }
+  .top-pill button {
+    width: 40px; height: 40px; border-radius: 50%; background: transparent; border: none;
+    display: flex; align-items: center; justify-content: center; cursor: pointer;
+  }
+  .top-pill svg { width: 18px; height: 18px; stroke: var(--text); stroke-width: 1.8; fill: none; }
+
+  .scroll {
+    flex: 1; overflow-y: auto; padding: 8px 24px 24px;
+    display: flex; flex-direction: column; gap: 24px;
+  }
+  .scroll::-webkit-scrollbar { display: none; }
+
+  .turn { display: flex; flex-direction: column; gap: 8px; }
+  .turn-label {
+    font-size: 11px; font-weight: 600; color: var(--text-soft);
+    text-transform: uppercase; letter-spacing: 0.08em;
+  }
+  .hero {
+    font-size: 36px; font-weight: 700; color: var(--text);
+    letter-spacing: -0.03em; line-height: 1.05; margin-top: 4px;
+  }
+  .hero.sm { font-size: 30px; }
+
+  .lede {
+    font-size: 14px; line-height: 1.55; color: var(--text-muted);
+    letter-spacing: -0.005em; margin-top: 2px;
+  }
+
+  /* profile block */
+  .profile { display: flex; align-items: center; gap: 14px; padding: 4px 0; }
+  .profile-avatar {
+    width: 56px; height: 56px; border-radius: 14px; background: var(--surface);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px; font-weight: 700; letter-spacing: -0.02em; flex-shrink: 0;
+  }
+  .profile-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+  .profile-name { font-size: 18px; font-weight: 700; letter-spacing: -0.015em; }
+  .profile-email { font-size: 13px; color: var(--text-muted); letter-spacing: -0.005em; }
+  .profile-edit {
+    background: var(--surface); border: none; width: 36px; height: 36px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0;
+  }
+  .profile-edit svg { width: 14px; height: 14px; stroke: var(--text); stroke-width: 1.8; fill: none; }
+
+  .section-head {
+    font-size: 11px; font-weight: 600; color: var(--text-soft);
+    text-transform: uppercase; letter-spacing: 0.08em; padding: 0 4px 4px;
+  }
+
+  .group { background: var(--surface); border-radius: 14px; padding: 4px; }
+
+  .srow {
+    display: flex; align-items: center; gap: 12px; padding: 12px;
+    cursor: pointer; border-radius: 10px;
+  }
+  .srow + .srow { border-top: 1px solid var(--surface-2); }
+
+  .row-icon {
+    width: 32px; height: 32px; border-radius: 8px; background: var(--bg);
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .row-icon svg { width: 15px; height: 15px; stroke: var(--text); stroke-width: 1.8; fill: none; }
+  .row-icon.danger { background: #FCEEEE; }
+  .row-icon.danger svg { stroke: var(--danger); }
+
+  .row-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+  .row-label { font-size: 15px; font-weight: 500; letter-spacing: -0.005em; }
+  .row-label.danger { color: var(--danger); }
+  .row-sublabel { font-size: 12px; color: var(--text-muted); letter-spacing: -0.005em; }
+  .row-value { font-size: 13px; color: var(--text-muted); letter-spacing: -0.005em; flex-shrink: 0; }
+  .row-chevron { width: 14px; height: 14px; stroke: var(--text-soft); stroke-width: 2; fill: none; flex-shrink: 0; }
+
+  .unset { color: var(--text-soft); font-style: normal; }
+
+  /* form bits */
+  .field { display: flex; flex-direction: column; gap: 7px; }
+  .field-label {
+    font-size: 11px; font-weight: 600; color: var(--text-soft);
+    text-transform: uppercase; letter-spacing: 0.08em; padding: 0 4px;
+  }
+  .input {
+    background: var(--surface); border: none; border-radius: 12px;
+    padding: 14px 14px; font-family: inherit; font-size: 15px;
+    color: var(--text); letter-spacing: -0.005em; width: 100%;
+  }
+  .input::placeholder { color: var(--text-soft); }
+  .textarea {
+    background: var(--surface); border: none; border-radius: 12px;
+    padding: 14px; font-family: inherit; font-size: 15px; line-height: 1.5;
+    color: var(--text); letter-spacing: -0.005em; width: 100%;
+    min-height: 118px; resize: none;
+  }
+  .field-hint {
+    display: flex; justify-content: space-between; gap: 10px;
+    font-size: 12px; color: var(--text-muted); padding: 0 4px; letter-spacing: -0.005em;
+  }
+  .counter { color: var(--text-soft); font-variant-numeric: tabular-nums; }
+
+  .picker-row {
+    display: flex; align-items: center; gap: 12px; width: 100%;
+    background: var(--surface); border: none; border-radius: 12px;
+    padding: 13px 14px; cursor: pointer; font-family: inherit; text-align: left;
+  }
+  .picker-flag { font-size: 20px; line-height: 1; }
+  .picker-value { flex: 1; font-size: 15px; color: var(--text); letter-spacing: -0.005em; }
+  .picker-value.empty { color: var(--text-soft); }
+
+  /* mode chips */
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip {
+    display: inline-flex; align-items: center; gap: 7px;
+    padding: 9px 13px; border-radius: 999px;
+    background: var(--surface); border: 1px solid transparent;
+    font-family: inherit; font-size: 14px; font-weight: 500;
+    color: var(--text-muted); letter-spacing: -0.005em; cursor: pointer;
+  }
+  .chip .g { font-size: 15px; line-height: 1; }
+  .chip.on { background: var(--text); color: var(--bg); }
+  .chip.on .g { filter: none; }
+
+  .seg { display: flex; background: var(--surface); border-radius: 999px; padding: 3px; }
+  .seg-btn {
+    flex: 1; padding: 9px 10px; background: transparent; border: none; border-radius: 999px;
+    font-family: inherit; font-size: 13px; font-weight: 500; color: var(--text-muted);
+    letter-spacing: -0.005em; cursor: pointer; display: flex; align-items: center;
+    justify-content: center; gap: 6px;
+  }
+  .seg-btn.active { background: var(--text); color: var(--bg); }
+
+  .note {
+    background: var(--surface); border-radius: 12px; padding: 12px 14px;
+    font-size: 12.5px; line-height: 1.55; color: var(--text-muted); letter-spacing: -0.005em;
+  }
+  .note b { color: var(--text); font-weight: 600; }
+
+  .save-dock {
+    padding: 10px 24px 6px; flex-shrink: 0; background: var(--bg);
+    border-top: 1px solid var(--surface-2);
+  }
+  .save-btn {
+    width: 100%; padding: 14px; border: none; border-radius: 14px;
+    background: var(--text); color: var(--bg);
+    font-family: inherit; font-size: 15px; font-weight: 600; letter-spacing: -0.005em; cursor: pointer;
+  }
+  .save-btn.ghost { background: var(--surface); color: var(--text-soft); }
+
+  .status-line {
+    display: flex; align-items: center; gap: 7px; padding: 0 4px;
+    font-size: 12px; color: var(--text-muted); letter-spacing: -0.005em;
+  }
+  .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--warn); flex-shrink: 0; }
+  .dot.ok { background: var(--success); }
+
+  .disclosure {
+    background: var(--surface); border-radius: 14px; padding: 4px;
+  }
+  .disclosure-head {
+    display: flex; align-items: center; gap: 12px; padding: 12px; cursor: pointer; border-radius: 10px;
+  }
+  .disclosure-body {
+    padding: 4px 12px 12px; display: flex; flex-direction: column; gap: 12px;
+    border-top: 1px solid var(--surface-2); margin: 0 0 0 0;
+  }
+  .inline-input {
+    background: var(--bg); border: none; border-radius: 10px; padding: 11px 12px;
+    font-family: inherit; font-size: 14px; color: var(--text); width: 100%;
+  }
+  .inline-input::placeholder { color: var(--text-soft); }
+  .inline-textarea {
+    background: var(--bg); border: none; border-radius: 10px; padding: 11px 12px;
+    font-family: inherit; font-size: 14px; line-height: 1.5; color: var(--text);
+    width: 100%; min-height: 84px; resize: none;
+  }
+
+  .tab-bar { margin: 8px 16px 12px; display: flex; align-items: center; justify-content: flex-end; flex-shrink: 0; }
+  .kebi-ai-btn {
+    width: 56px; height: 56px; border-radius: 50%; background: white;
+    border: 1px solid var(--surface-2); display: flex; align-items: center; justify-content: center; cursor: pointer;
+  }
+  .home-indicator {
+    width: 134px; height: 5px; background: var(--text); border-radius: 3px;
+    margin: 4px auto 8px; flex-shrink: 0;
+  }
+
+  /* country picker sheet */
+  .sheet-overlay {
+    position: absolute; inset: 0; background: rgba(26,26,26,0.4);
+    display: flex; align-items: flex-end; z-index: 10;
+  }
+  .sheet {
+    width: 100%; background: var(--bg); border-radius: 24px 24px 0 0;
+    padding: 16px 20px 20px; display: flex; flex-direction: column; gap: 14px; max-height: 640px;
+  }
+  .sheet-handle { width: 36px; height: 4px; border-radius: 2px; background: var(--surface-2); margin: 0 auto; }
+  .sheet-title { font-size: 18px; font-weight: 700; letter-spacing: -0.015em; }
+  .sheet-search {
+    background: var(--surface); border: none; border-radius: 12px; padding: 12px 14px;
+    font-family: inherit; font-size: 15px; color: var(--text); width: 100%;
+  }
+  .sheet-search::placeholder { color: var(--text-soft); }
+  .country-list { display: flex; flex-direction: column; overflow-y: auto; }
+  .country-list::-webkit-scrollbar { display: none; }
+  .country {
+    display: flex; align-items: center; gap: 12px; padding: 12px 8px;
+    border-radius: 10px; cursor: pointer;
+  }
+  .country + .country { border-top: 1px solid var(--surface-2); }
+  .country .g { font-size: 20px; line-height: 1; }
+  .country .n { flex: 1; font-size: 15px; letter-spacing: -0.005em; }
+  .country .cc {
+    font-size: 12px; font-weight: 600; color: var(--text-soft);
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  .country.sel { background: var(--surface); }
+  .country.sel .cc { color: var(--text); }
+  .check { width: 15px; height: 15px; stroke: var(--text); stroke-width: 2.4; fill: none; }
+
+  .foot { max-width: 1180px; margin: 56px auto 0; }
+  .foot h2 { font-size: 17px; font-weight: 700; margin: 34px 0 12px; letter-spacing: -0.015em; }
+  .foot table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  .foot th, .foot td {
+    text-align: left; padding: 9px 12px; border-bottom: 1px solid #3A3A38;
+    vertical-align: top; line-height: 1.5;
+  }
+  .foot th { color: #FAFAF9; font-weight: 600; }
+  .foot td { color: #B5B5B1; }
+  .foot td:first-child { color: #8A8A87; white-space: nowrap; }
+  .foot ul { padding-left: 18px; }
+  .foot li { font-size: 13.5px; line-height: 1.65; color: #B5B5B1; margin-bottom: 8px; }
+  .foot li b { color: #FAFAF9; font-weight: 600; }
+  .foot code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 12.5px; background: #1A1A18; padding: 1px 5px; border-radius: 4px; color: #E8E8E5;
+  }
+</style>
+</head>
+<body>
+
+<div class="page-head">
+  <h1>Settings after ADR-054 — where the about-me and the movement modes live</h1>
+  <p>
+    The gateway now holds two things it never held before: an <b>about-me</b> (<code>call_me</code>,
+    <code>home_country</code>, <code>about</code>, stored whole in one field) and a <b>movement profile</b>
+    whose modes kebi ignores until a human picks them (<code>source: "user"</code>). Until a screen writes them,
+    every user is a seeded <code>default</code> — kebi guesses wide and nobody is capped, which is correct but
+    silent. Three readings of the same two payloads. <code>home_country</code> must be a picker, never a text
+    field: a country name is a 400 at the gateway edge.
+  </p>
+</div>
+
+<div class="row">
+
+  <!-- ══════════════════════════ OPTION A ══════════════════════════ -->
+  <div class="col">
+    <div class="cap"><b>A · two rows, two screens</b> — a "you" group on settings; each row pushes its own
+      screen. <span class="verdict">Most room</span>: 300 chars of prose and six mode chips each get a page.
+      <span class="against">Two taps deep</span>, and two saves to finish setting yourself up.</div>
+
+    <div class="phone">
+      <div class="status-bar">
+        <span>9:41</span>
+        <div class="status-right">
+          <svg width="17" height="11" viewBox="0 0 17 11" fill="currentColor"><path d="M1 7h2v3H1zM5 5h2v5H5zM9 3h2v7H9zM13 1h2v9h-2z"/></svg>
+          <svg width="24" height="11" viewBox="0 0 24 11" fill="none"><rect x="0.5" y="0.5" width="20" height="10" rx="2.5" stroke="currentColor"/><rect x="2" y="2" width="17" height="7" rx="1" fill="currentColor"/><rect x="21" y="3.5" width="1.5" height="4" rx="0.5" fill="currentColor"/></svg>
+        </div>
+      </div>
+
+      <div class="top-bar">
+        <button class="icon-btn" aria-label="Back"><svg viewBox="0 0 24 24"><polyline points="15 6 9 12 15 18"/></svg></button>
+        <div class="top-pill"><button aria-label="More"><svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.5" fill="currentColor"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/><circle cx="19" cy="12" r="1.5" fill="currentColor"/></svg></button></div>
+      </div>
+
+      <div class="scroll">
+        <div class="turn">
+          <div class="turn-label">settings</div>
+          <h1 class="hero">you, basically</h1>
+        </div>
+
+        <div class="profile">
+          <div class="profile-avatar">S</div>
+          <div class="profile-body">
+            <div class="profile-name">saher</div>
+            <div class="profile-email">saher@kebi.app</div>
+          </div>
+          <button class="profile-edit" aria-label="Edit"><svg viewBox="0 0 24 24"><path d="M12 20h9M16.5 3.5a2.12 2.12 0 113 3L7 19l-4 1 1-4z"/></svg></button>
+        </div>
+
+        <div>
+          <div class="section-head">what kebi knows</div>
+          <div class="group">
+            <div class="srow">
+              <div class="row-icon"><span style="font-size:16px;line-height:1;">👋</span></div>
+              <div class="row-body">
+                <div class="row-label">about you</div>
+                <div class="row-sublabel">name, home country, the gist</div>
+              </div>
+              <span class="row-value">🇦🇪 set</span>
+              <svg class="row-chevron" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>
+            </div>
+            <div class="srow">
+              <div class="row-icon"><span style="font-size:16px;line-height:1;">🛵</span></div>
+              <div class="row-body">
+                <div class="row-label">getting around</div>
+                <div class="row-sublabel">how far kebi looks for you</div>
+              </div>
+              <span class="row-value unset">not set</span>
+              <svg class="row-chevron" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="section-head">subscription</div>
+          <div class="group">
+            <div class="srow">
+              <div class="row-icon"><span style="font-size:16px;line-height:1;">🌟</span></div>
+              <div class="row-body">
+                <div class="row-label">your plan</div>
+                <div class="row-sublabel">local legend · $10/mo</div>
+              </div>
+              <svg class="row-chevron" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="section-head">your data</div>
+          <div class="group">
+            <div class="srow">
+              <div class="row-icon danger"><svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6M10 11v6M14 11v6"/></svg></div>
+              <div class="row-body">
+                <div class="row-label danger">nuke my data</div>
+                <div class="row-sublabel">wipes places, taste model, history</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="tab-bar">
+        <button class="kebi-ai-btn" aria-label="Ask Kebi">
+          <svg viewBox="0 0 64 64" width="34" height="34">
+            <ellipse cx="32" cy="38" rx="20" ry="20" fill="#D4B891"/><ellipse cx="32" cy="42" rx="13" ry="13" fill="#F5EBD3"/>
+            <ellipse cx="13" cy="34" rx="3.5" ry="6" fill="#A89070" transform="rotate(-25 13 34)"/>
+            <ellipse cx="51" cy="34" rx="3.5" ry="6" fill="#A89070" transform="rotate(25 51 34)"/>
+            <circle cx="25" cy="30" r="3.5" fill="white"/><circle cx="39" cy="30" r="3.5" fill="white"/>
+            <circle cx="25" cy="30" r="1.7" fill="#1A1A1A"/><circle cx="39" cy="30" r="1.7" fill="#1A1A1A"/>
+            <path d="M30 33 L34 33 L32 36 Z" fill="#C87A4A"/>
+          </svg>
+        </button>
+      </div>
+      <div class="home-indicator"></div>
+    </div>
+
+    <div class="cap">↓ the <b>about you</b> screen the first row pushes. One save writes the whole block —
+      an empty field is a cleared field, which is why the hint says so out loud.</div>
+
+    <div class="phone">
+      <div class="status-bar">
+        <span>9:41</span>
+        <div class="status-right">
+          <svg width="17" height="11" viewBox="0 0 17 11" fill="currentColor"><path d="M1 7h2v3H1zM5 5h2v5H5zM9 3h2v7H9zM13 1h2v9h-2z"/></svg>
+          <svg width="24" height="11" viewBox="0 0 24 11" fill="none"><rect x="0.5" y="0.5" width="20" height="10" rx="2.5" stroke="currentColor"/><rect x="2" y="2" width="17" height="7" rx="1" fill="currentColor"/><rect x="21" y="3.5" width="1.5" height="4" rx="0.5" fill="currentColor"/></svg>
+        </div>
+      </div>
+
+      <div class="top-bar">
+        <button class="icon-btn" aria-label="Back"><svg viewBox="0 0 24 24"><polyline points="15 6 9 12 15 18"/></svg></button>
+      </div>
+
+      <div class="scroll">
+        <div class="turn">
+          <div class="turn-label">about you</div>
+          <h1 class="hero sm">so kebi<br/>gets you</h1>
+          <p class="lede">kebi keeps none of this — it reads it at the start of every conversation and lets what
+            you actually do outweigh it. except a hard rule, which stays a hard rule.</p>
+        </div>
+
+        <div class="field">
+          <div class="field-label">call me</div>
+          <input class="input" value="Saher" />
+          <div class="field-hint"><span>leave it empty and kebi uses your account name</span><span class="counter">5/40</span></div>
+        </div>
+
+        <div class="field">
+          <div class="field-label">home country</div>
+          <button class="picker-row">
+            <span class="picker-flag">🇦🇪</span>
+            <span class="picker-value">United Arab Emirates</span>
+            <svg class="row-chevron" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>
+          </button>
+          <div class="field-hint"><span>used for visa and entry answers, checked live every time</span></div>
+        </div>
+
+        <div class="field">
+          <div class="field-label">the gist</div>
+          <textarea class="textarea">I'd rather eat where locals eat than anywhere with a queue. I don't drink.</textarea>
+          <div class="field-hint"><span>a hard rule here is treated as a hard rule</span><span class="counter">73/300</span></div>
+        </div>
+
+        <div class="note">
+          <b>heads up.</b> saving writes all three at once — clear a field and it's gone, not kept.
+        </div>
+      </div>
+
+      <div class="save-dock"><button class="save-btn">save</button></div>
+      <div class="home-indicator"></div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════ OPTION B ══════════════════════════ -->
+  <div class="col">
+    <div class="cap"><b>B · one row, one screen</b> — a single "about you" page holding both payloads,
+      sectioned. <span class="verdict">One trip, one save</span>, and the two things kebi reasons with sit
+      together. <span class="against">Two endpoints behind one button</span> — a partial failure has to be
+      explained.</div>
+
+    <div class="phone">
+      <div class="status-bar">
+        <span>9:41</span>
+        <div class="status-right">
+          <svg width="17" height="11" viewBox="0 0 17 11" fill="currentColor"><path d="M1 7h2v3H1zM5 5h2v5H5zM9 3h2v7H9zM13 1h2v9h-2z"/></svg>
+          <svg width="24" height="11" viewBox="0 0 24 11" fill="none"><rect x="0.5" y="0.5" width="20" height="10" rx="2.5" stroke="currentColor"/><rect x="2" y="2" width="17" height="7" rx="1" fill="currentColor"/><rect x="21" y="3.5" width="1.5" height="4" rx="0.5" fill="currentColor"/></svg>
+        </div>
+      </div>
+
+      <div class="top-bar">
+        <button class="icon-btn" aria-label="Back"><svg viewBox="0 0 24 24"><polyline points="15 6 9 12 15 18"/></svg></button>
+        <div class="top-pill"><button aria-label="More"><svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.5" fill="currentColor"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/><circle cx="19" cy="12" r="1.5" fill="currentColor"/></svg></button></div>
+      </div>
+
+      <div class="scroll">
+        <div class="turn">
+          <div class="turn-label">settings</div>
+          <h1 class="hero">you, basically</h1>
+        </div>
+
+        <div class="profile">
+          <div class="profile-avatar">S</div>
+          <div class="profile-body">
+            <div class="profile-name">saher</div>
+            <div class="profile-email">saher@kebi.app</div>
+          </div>
+          <button class="profile-edit" aria-label="Edit"><svg viewBox="0 0 24 24"><path d="M12 20h9M16.5 3.5a2.12 2.12 0 113 3L7 19l-4 1 1-4z"/></svg></button>
+        </div>
+
+        <div>
+          <div class="section-head">what kebi knows</div>
+          <div class="group">
+            <div class="srow">
+              <div class="row-icon"><span style="font-size:16px;line-height:1;">👋</span></div>
+              <div class="row-body">
+                <div class="row-label">about you</div>
+                <div class="row-sublabel">🇦🇪 · walks and rides · a line about you</div>
+              </div>
+              <svg class="row-chevron" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="section-head">subscription</div>
+          <div class="group">
+            <div class="srow">
+              <div class="row-icon"><span style="font-size:16px;line-height:1;">🌟</span></div>
+              <div class="row-body">
+                <div class="row-label">your plan</div>
+                <div class="row-sublabel">local legend · $10/mo</div>
+              </div>
+              <svg class="row-chevron" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="section-head">your data</div>
+          <div class="group">
+            <div class="srow">
+              <div class="row-icon danger"><svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6M10 11v6M14 11v6"/></svg></div>
+              <div class="row-body">
+                <div class="row-label danger">nuke my data</div>
+                <div class="row-sublabel">wipes places, taste model, history</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="tab-bar">
+        <button class="kebi-ai-btn" aria-label="Ask Kebi">
+          <svg viewBox="0 0 64 64" width="34" height="34">
+            <ellipse cx="32" cy="38" rx="20" ry="20" fill="#D4B891"/><ellipse cx="32" cy="42" rx="13" ry="13" fill="#F5EBD3"/>
+            <ellipse cx="13" cy="34" rx="3.5" ry="6" fill="#A89070" transform="rotate(-25 13 34)"/>
+            <ellipse cx="51" cy="34" rx="3.5" ry="6" fill="#A89070" transform="rotate(25 51 34)"/>
+            <circle cx="25" cy="30" r="3.5" fill="white"/><circle cx="39" cy="30" r="3.5" fill="white"/>
+            <circle cx="25" cy="30" r="1.7" fill="#1A1A1A"/><circle cx="39" cy="30" r="1.7" fill="#1A1A1A"/>
+            <path d="M30 33 L34 33 L32 36 Z" fill="#C87A4A"/>
+          </svg>
+        </button>
+      </div>
+      <div class="home-indicator"></div>
+    </div>
+
+    <div class="cap">↓ one screen, two sections, one save. The movement half leads with the consequence
+      (<b>how far kebi looks</b>) rather than the vehicle list.</div>
+
+    <div class="phone">
+      <div class="status-bar">
+        <span>9:41</span>
+        <div class="status-right">
+          <svg width="17" height="11" viewBox="0 0 17 11" fill="currentColor"><path d="M1 7h2v3H1zM5 5h2v5H5zM9 3h2v7H9zM13 1h2v9h-2z"/></svg>
+          <svg width="24" height="11" viewBox="0 0 24 11" fill="none"><rect x="0.5" y="0.5" width="20" height="10" rx="2.5" stroke="currentColor"/><rect x="2" y="2" width="17" height="7" rx="1" fill="currentColor"/><rect x="21" y="3.5" width="1.5" height="4" rx="0.5" fill="currentColor"/></svg>
+        </div>
+      </div>
+
+      <div class="top-bar">
+        <button class="icon-btn" aria-label="Back"><svg viewBox="0 0 24 24"><polyline points="15 6 9 12 15 18"/></svg></button>
+      </div>
+
+      <div class="scroll" style="gap:20px;">
+        <div class="turn">
+          <div class="turn-label">about you</div>
+          <h1 class="hero sm">so kebi<br/>gets you</h1>
+        </div>
+
+        <div class="field">
+          <div class="field-label">call me</div>
+          <input class="input" value="Saher" />
+        </div>
+
+        <div class="field">
+          <div class="field-label">home country</div>
+          <button class="picker-row">
+            <span class="picker-flag">🇦🇪</span>
+            <span class="picker-value">United Arab Emirates</span>
+            <svg class="row-chevron" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>
+          </button>
+        </div>
+
+        <div class="field">
+          <div class="field-label">the gist</div>
+          <textarea class="textarea" style="min-height:96px;">I'd rather eat where locals eat than anywhere with a queue. I don't drink.</textarea>
+          <div class="field-hint"><span>a hard rule here stays a hard rule</span><span class="counter">73/300</span></div>
+        </div>
+
+        <div class="field">
+          <div class="field-label">how you get around</div>
+          <div class="chips">
+            <button class="chip"><span class="g">🚶</span>walking</button>
+            <button class="chip on"><span class="g">🛵</span>scooter</button>
+            <button class="chip on"><span class="g">🚗</span>driving</button>
+            <button class="chip"><span class="g">🚲</span>cycling</button>
+            <button class="chip on"><span class="g">🚌</span>transit</button>
+            <button class="chip"><span class="g">🚕</span>rideshare</button>
+          </div>
+          <div class="field-hint"><span>what you <i>can</i> use anywhere — not what's around today</span></div>
+        </div>
+
+        <div class="field">
+          <div class="field-label">how far is too far</div>
+          <div class="seg">
+            <button class="seg-btn">keep it close</button>
+            <button class="seg-btn active">normal</button>
+            <button class="seg-btn">i'll travel</button>
+          </div>
+        </div>
+
+        <div class="note">
+          until you pick, kebi <b>guesses wide</b> on purpose — better a place you can reach than a
+          short list you never see.
+        </div>
+      </div>
+
+      <div class="save-dock"><button class="save-btn">save</button></div>
+      <div class="home-indicator"></div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════ OPTION C ══════════════════════════ -->
+  <div class="col">
+    <div class="cap"><b>C · inline, no new screen</b> — both live on settings itself: the about-me as an
+      expandable card, the modes as chips in a group. <span class="verdict">Zero depth</span>, and the unset
+      state is visible without a tap. <span class="against">Settings gets long</span>, and prose is cramped
+      in a card.</div>
+
+    <div class="phone">
+      <div class="status-bar">
+        <span>9:41</span>
+        <div class="status-right">
+          <svg width="17" height="11" viewBox="0 0 17 11" fill="currentColor"><path d="M1 7h2v3H1zM5 5h2v5H5zM9 3h2v7H9zM13 1h2v9h-2z"/></svg>
+          <svg width="24" height="11" viewBox="0 0 24 11" fill="none"><rect x="0.5" y="0.5" width="20" height="10" rx="2.5" stroke="currentColor"/><rect x="2" y="2" width="17" height="7" rx="1" fill="currentColor"/><rect x="21" y="3.5" width="1.5" height="4" rx="0.5" fill="currentColor"/></svg>
+        </div>
+      </div>
+
+      <div class="top-bar">
+        <button class="icon-btn" aria-label="Back"><svg viewBox="0 0 24 24"><polyline points="15 6 9 12 15 18"/></svg></button>
+        <div class="top-pill"><button aria-label="More"><svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.5" fill="currentColor"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/><circle cx="19" cy="12" r="1.5" fill="currentColor"/></svg></button></div>
+      </div>
+
+      <div class="scroll" style="gap:20px;">
+        <div class="turn">
+          <div class="turn-label">settings</div>
+          <h1 class="hero">you, basically</h1>
+        </div>
+
+        <div class="profile">
+          <div class="profile-avatar">S</div>
+          <div class="profile-body">
+            <div class="profile-name">saher</div>
+            <div class="profile-email">saher@kebi.app</div>
+          </div>
+          <button class="profile-edit" aria-label="Edit"><svg viewBox="0 0 24 24"><path d="M12 20h9M16.5 3.5a2.12 2.12 0 113 3L7 19l-4 1 1-4z"/></svg></button>
+        </div>
+
+        <div>
+          <div class="section-head">what kebi knows</div>
+          <div class="disclosure">
+            <div class="disclosure-head">
+              <div class="row-icon"><span style="font-size:16px;line-height:1;">👋</span></div>
+              <div class="row-body">
+                <div class="row-label">about you</div>
+                <div class="row-sublabel">read at the start of every chat</div>
+              </div>
+              <svg class="row-chevron" viewBox="0 0 24 24" style="transform:rotate(90deg);"><polyline points="9 6 15 12 9 18"/></svg>
+            </div>
+            <div class="disclosure-body">
+              <input class="inline-input" value="Saher" placeholder="what should kebi call you?" />
+              <button class="picker-row" style="background:var(--bg);padding:11px 12px;">
+                <span class="picker-flag">🇦🇪</span>
+                <span class="picker-value" style="font-size:14px;">United Arab Emirates</span>
+                <svg class="row-chevron" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>
+              </button>
+              <textarea class="inline-textarea" placeholder="the gist — how you like to eat, drink, move">I'd rather eat where locals eat than anywhere with a queue. I don't drink.</textarea>
+              <div class="field-hint" style="padding:0;">
+                <span class="status-line"><span class="dot"></span>unsaved</span>
+                <span class="counter">73/300</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="section-head">getting around</div>
+          <div class="group" style="padding:12px;">
+            <div style="display:flex;flex-direction:column;gap:12px;">
+              <div class="chips">
+                <button class="chip"><span class="g">🚶</span>walking</button>
+                <button class="chip on"><span class="g">🛵</span>scooter</button>
+                <button class="chip on"><span class="g">🚗</span>driving</button>
+                <button class="chip"><span class="g">🚲</span>cycling</button>
+                <button class="chip on"><span class="g">🚌</span>transit</button>
+                <button class="chip"><span class="g">🚕</span>rideshare</button>
+              </div>
+              <div class="seg" style="background:var(--bg);">
+                <button class="seg-btn">keep it close</button>
+                <button class="seg-btn active">normal</button>
+                <button class="seg-btn">i'll travel</button>
+              </div>
+              <div class="status-line"><span class="dot ok"></span>saved · kebi looks about 15 km out</div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="section-head">subscription</div>
+          <div class="group">
+            <div class="srow">
+              <div class="row-icon"><span style="font-size:16px;line-height:1;">🌟</span></div>
+              <div class="row-body">
+                <div class="row-label">your plan</div>
+                <div class="row-sublabel">local legend · $10/mo</div>
+              </div>
+              <svg class="row-chevron" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="save-dock"><button class="save-btn">save changes</button></div>
+      <div class="home-indicator"></div>
+    </div>
+
+    <div class="cap">↓ the <b>country picker</b> — the same sheet in all three options. It is not a
+      preference, it is the only way <code>home_country</code> can be alpha-2 by construction.</div>
+
+    <div class="phone">
+      <div class="status-bar">
+        <span>9:41</span>
+        <div class="status-right">
+          <svg width="17" height="11" viewBox="0 0 17 11" fill="currentColor"><path d="M1 7h2v3H1zM5 5h2v5H5zM9 3h2v7H9zM13 1h2v9h-2z"/></svg>
+          <svg width="24" height="11" viewBox="0 0 24 11" fill="none"><rect x="0.5" y="0.5" width="20" height="10" rx="2.5" stroke="currentColor"/><rect x="2" y="2" width="17" height="7" rx="1" fill="currentColor"/><rect x="21" y="3.5" width="1.5" height="4" rx="0.5" fill="currentColor"/></svg>
+        </div>
+      </div>
+
+      <div class="top-bar">
+        <button class="icon-btn" aria-label="Back"><svg viewBox="0 0 24 24"><polyline points="15 6 9 12 15 18"/></svg></button>
+      </div>
+
+      <div class="scroll" style="opacity:0.35;">
+        <div class="turn">
+          <div class="turn-label">about you</div>
+          <h1 class="hero sm">so kebi<br/>gets you</h1>
+        </div>
+        <div class="field">
+          <div class="field-label">call me</div>
+          <input class="input" value="Saher" />
+        </div>
+      </div>
+
+      <div class="sheet-overlay">
+        <div class="sheet">
+          <div class="sheet-handle"></div>
+          <div class="sheet-title">where are you from?</div>
+          <input class="sheet-search" placeholder="search countries" />
+          <div class="country-list">
+            <div class="country sel">
+              <span class="g">🇦🇪</span><span class="n">United Arab Emirates</span>
+              <svg class="check" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+            </div>
+            <div class="country"><span class="g">🇬🇧</span><span class="n">United Kingdom</span><span class="cc">GB</span></div>
+            <div class="country"><span class="g">🇺🇸</span><span class="n">United States</span><span class="cc">US</span></div>
+            <div class="country"><span class="g">🇮🇩</span><span class="n">Indonesia</span><span class="cc">ID</span></div>
+            <div class="country"><span class="g">🇹🇭</span><span class="n">Thailand</span><span class="cc">TH</span></div>
+            <div class="country"><span class="g">🇯🇴</span><span class="n">Jordan</span><span class="cc">JO</span></div>
+            <div class="country"><span class="g">🇩🇪</span><span class="n">Germany</span><span class="cc">DE</span></div>
+            <div class="country"><span class="g">🇫🇷</span><span class="n">France</span><span class="cc">FR</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="home-indicator"></div>
+    </div>
+  </div>
+
+</div>
+
+<div class="foot">
+
+  <h2>Same two payloads, three readings</h2>
+  <table>
+    <tr>
+      <th>&nbsp;</th>
+      <th>A · two rows, two screens</th>
+      <th>B · one row, one screen</th>
+      <th>C · inline on settings</th>
+    </tr>
+    <tr>
+      <td>taps to set yourself up</td>
+      <td>2 screens, 2 saves</td>
+      <td>1 screen, 1 save</td>
+      <td>0 screens, 1 save</td>
+    </tr>
+    <tr>
+      <td>unset state visible</td>
+      <td>as a row value ("not set")</td>
+      <td>as a summary sublabel</td>
+      <td>as the empty controls themselves</td>
+    </tr>
+    <tr>
+      <td>room for 300 chars</td>
+      <td>full page, comfortable</td>
+      <td>full page, shares it</td>
+      <td>cramped — ~4 lines in a card</td>
+    </tr>
+    <tr>
+      <td>endpoints per save</td>
+      <td>one each, cleanly</td>
+      <td>two behind one button</td>
+      <td>two, one per section</td>
+    </tr>
+    <tr>
+      <td>settings screen length</td>
+      <td>+2 rows</td>
+      <td>+1 row</td>
+      <td>+~260pt</td>
+    </tr>
+  </table>
+
+  <h2>Constant across all three</h2>
+  <ul>
+    <li><b>The country is a picker, never a field.</b> A free-text country is a 400 at the gateway
+      (<code>@IsISO31661Alpha2</code>) — the picker is what makes alpha-2 true by construction, not a nicety.</li>
+    <li><b>The about-me writes whole.</b> One <code>PATCH /user/about-me</code> carrying all three fields; an
+      omitted field is cleared, not preserved. Every option therefore has exactly one save for that block, and
+      says so where the user can see it.</li>
+    <li><b>Clearing is a real state.</b> Empty <code>call_me</code> falls back to the account name; empty
+      <code>about</code> stores <code>null</code>, so nothing the user erased comes back as prose they seem to
+      have written.</li>
+    <li><b>Modes are a capability, not a location.</b> The copy is "what you can use", never "what's available
+      here" — kebi pairs the capability with the city's density itself.</li>
+    <li><b>Saving is what makes it yours.</b> The write is the only thing that sets
+      <code>source: "user"</code>. Before it, kebi deliberately guesses wide; after it, it honours the modes
+      exactly — which is worth saying in the UI, since the change in behaviour is otherwise invisible.</li>
+    <li><b>Nothing is stored by kebi.</b> Worth one line of copy: this is read at the start of a conversation
+      and outweighed by what you actually do — except a stated restriction, which is a hard constraint.</li>
+  </ul>
+
+  <h2>Decided</h2>
+  <ul>
+    <li><b>A wins</b> — two rows, two screens, one endpoint each.</li>
+    <li><b>The pencil goes.</b> The profile block's edit button (and <code>EditNameSheet</code>) is removed:
+      it wrote the account display name, which would have put two name editors two rows apart writing to two
+      stores. "about you" owns the name now, and the profile header renders
+      <code>call_me ?? account name</code> — so editing <code>call_me</code> visibly renames you everywhere.
+      The account name keeps its signup seed and is no longer directly editable;
+      <code>PATCH /user/profile</code> stays but goes unused.</li>
+  </ul>
+
+  <h2>Open, and deliberately not answered here</h2>
+  <ul>
+    <li><b>The refresh lag.</b> Both blocks ride the token claim, so a save reaches kebi on the next token
+      refresh. The name edit already forces one (<code>supabase.auth.refreshSession()</code>) — these should
+      too, or the user sends a message and kebi hasn't heard the news.</li>
+    <li><b>Prompting the unset.</b> Nobody has movement set today, and nothing asks. A one-time nudge — after a
+      turn where distance mattered — would do more than any of these screens, and belongs in chat, not
+      settings.</li>
+    <li><b>The reach words.</b> "keep it close / normal / i'll travel" is one reading of
+      <code>compact|normal|far</code>. It could as easily be a distance in km, which is more honest and less
+      voice-y.</li>
+  </ul>
+
+</div>
+
+</body>
+</html>

@@ -8,7 +8,7 @@ import { KebiHttpClient } from './kebi-http.client';
  * Provides the shared signed-HTTP transport to kebi. Domain services inject
  * KebiHttpClient directly and call it with their own route + payload:
  *   constructor(private readonly kebi: KebiHttpClient) {}
- *   this.kebi.post('/v1/signal', userId, payload)
+ *   this.kebi.post('/v1/user/places', userId, payload)
  *
  * KebiHttpClient is internal infrastructure (a thin wrapper over HttpService),
  * not a swappable external dependency — so it is injected concretely, the same

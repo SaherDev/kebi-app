@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Kebi — Save Background State Options</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #FAFAF9;
+    --surface: #F1F1EF;
+    --surface-2: #E8E8E5;
+    --text: #1A1A1A;
+    --text-muted: #8A8A87;
+    --text-soft: #B5B5B1;
+    --success: #4A7C3A;
+    --warn: #B45309;
+    --toast-bg: #1A1A1A;
+    --toast-text: #F5F1EA;
+  }
+
+  html, body {
+    background: #2A2A28;
+    font-family: 'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+    padding: 40px 24px;
+  }
+
+  .page-title { font-size: 15px; font-weight: 600; color: #D9D9D5; margin-bottom: 4px; }
+  .page-sub { font-size: 12px; color: #8A8A87; line-height: 1.5; margin-bottom: 28px; max-width: 760px; }
+
+  .cols { display: flex; gap: 36px; align-items: flex-start; flex-wrap: wrap; }
+  .col { width: 390px; }
+  .cap { font-size: 13px; font-weight: 600; color: #9A9A96; margin-bottom: 4px; }
+  .cap b { color: #D9D9D5; }
+  .subcap { font-size: 12px; color: #8A8A87; line-height: 1.5; margin-bottom: 14px; min-height: 66px; }
+
+  /* compact stage: bottom half of the phone */
+  .stage {
+    width: 390px;
+    height: 560px;
+    background: var(--bg);
+    border-radius: 32px;
+    overflow: hidden;
+    position: relative;
+    box-shadow: 0 0 0 10px #111, 0 24px 56px rgba(0,0,0,0.45);
+  }
+
+  /* fake home content peeking behind the scrim */
+  .peek {
+    padding: 28px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+  }
+
+  .peek-hero {
+    font-size: 30px;
+    font-weight: 700;
+    color: var(--text);
+    letter-spacing: -0.03em;
+    line-height: 1.1;
+  }
+
+  .peek-line {
+    height: 12px;
+    border-radius: 6px;
+    background: var(--surface);
+  }
+  .peek-line.w70 { width: 70%; }
+  .peek-line.w50 { width: 50%; }
+  .peek-card {
+    height: 120px;
+    border-radius: 14px;
+    background: var(--surface);
+  }
+
+  .scrim {
+    position: absolute;
+    inset: 0;
+    background: rgba(15, 13, 10, 0.45);
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
+    z-index: 20;
+  }
+  .scrim.light { background: rgba(15, 13, 10, 0.18); backdrop-filter: none; -webkit-backdrop-filter: none; }
+  .scrim.none { display: none; }
+
+  .sheet {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: var(--bg);
+    border-radius: 24px 24px 0 0;
+    z-index: 21;
+    padding: 12px 20px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    box-shadow: 0 -16px 48px rgba(0, 0, 0, 0.16);
+  }
+
+  .sheet-handle {
+    width: 36px;
+    height: 4px;
+    border-radius: 2px;
+    background: var(--surface-2);
+    margin: 0 auto 4px;
+  }
+
+  .sheet-head { display: flex; flex-direction: column; gap: 4px; padding: 0 4px; }
+
+  .sheet-eyebrow {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-soft);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .sheet-title {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--text);
+    letter-spacing: -0.025em;
+    line-height: 1.1;
+  }
+
+  .sheet-input-wrap {
+    background: var(--surface);
+    border-radius: 14px;
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .sheet-input {
+    font-size: 16px;
+    color: var(--text);
+    letter-spacing: -0.005em;
+    line-height: 1.5;
+    min-height: 48px;
+    word-break: break-all;
+  }
+  .sheet-input.dimmed { color: var(--text-muted); }
+
+  .sheet-input-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    color: var(--text-muted);
+    letter-spacing: -0.005em;
+    padding-top: 8px;
+    border-top: 1px solid var(--surface-2);
+  }
+
+  .sheet-input-meta svg {
+    width: 12px;
+    height: 12px;
+    stroke: var(--text-muted);
+    stroke-width: 1.8;
+    fill: none;
+    flex-shrink: 0;
+  }
+
+  .sheet-cta {
+    width: 100%;
+    padding: 14px;
+    background: var(--text);
+    color: var(--bg);
+    border: none;
+    border-radius: 14px;
+    font-family: inherit;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    letter-spacing: -0.005em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+  }
+
+  .sheet-cta.secondary { background: var(--surface); color: var(--text); }
+
+  .sheet-hint {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--text-soft);
+    letter-spacing: -0.005em;
+  }
+
+  .sheet-hint svg {
+    width: 11px;
+    height: 11px;
+    stroke: var(--text-soft);
+    stroke-width: 1.8;
+    fill: none;
+  }
+
+  .pulse-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--warn);
+    animation: pulse 1.4s ease-in-out infinite;
+    flex-shrink: 0;
+  }
+
+  .pulse-dot.on-dark { background: #E8B894; }
+
+  @keyframes pulse {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(0.6); opacity: 0.45; }
+  }
+
+  /* option b: slim slip */
+  .slip {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: var(--bg);
+    border-radius: 24px 24px 0 0;
+    z-index: 21;
+    padding: 12px 20px 28px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    box-shadow: 0 -16px 48px rgba(0, 0, 0, 0.16);
+  }
+
+  .slip-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 4px 4px 0;
+  }
+
+  .slip-text {
+    flex: 1;
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--text);
+    letter-spacing: -0.01em;
+    line-height: 1.4;
+  }
+  .slip-text .muted { color: var(--text-muted); font-weight: 400; }
+
+  .slip-close {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: var(--surface);
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+
+  .slip-close svg {
+    width: 13px;
+    height: 13px;
+    stroke: var(--text-muted);
+    stroke-width: 2.2;
+    fill: none;
+  }
+
+  /* option d: toast handoff */
+  .toast-stack {
+    position: absolute;
+    bottom: 24px;
+    left: 16px;
+    right: 16px;
+    display: flex;
+    justify-content: center;
+    z-index: 50;
+  }
+
+  .toast {
+    background: var(--toast-bg);
+    color: var(--toast-text);
+    border-radius: 14px;
+    padding: 10px 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18), 0 2px 6px rgba(0, 0, 0, 0.12);
+    min-width: 200px;
+    max-width: 100%;
+  }
+
+  .toast-icon {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(245, 241, 234, 0.10);
+  }
+
+  .toast-text {
+    flex: 1;
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: -0.005em;
+    line-height: 1.4;
+  }
+  .toast-text strong { font-weight: 600; }
+</style>
+</head>
+<body>
+
+<div class="page-title">save sheet — backgrounded state at 5s · options</div>
+<div class="page-sub">
+  same mechanics in every option: 5s grace, fetch keeps running (90s ceiling), dismissal unlocked,
+  result lands as the final success / failure toast. only the moment the sheet "lets go" differs.
+  option 2 from the flow mockup (big status card + title change) is out.
+</div>
+
+<div class="cols">
+
+  <!-- ─────────── OPTION A ─────────── -->
+  <div class="col">
+    <div class="cap"><b>a — quiet CTA swap</b></div>
+    <div class="subcap">nothing new appears. the disabled spinner CTA becomes an enabled one: pulsing dot + "close — we'll keep working". title, input, layout untouched. the button is both the status and the exit. smallest possible change.</div>
+    <div class="stage">
+      <div class="peek">
+        <div class="peek-hero">it's late,<br>drunk food?</div>
+        <div class="peek-line w70"></div>
+        <div class="peek-line w50"></div>
+        <div class="peek-card"></div>
+      </div>
+      <div class="scrim"></div>
+      <div class="sheet">
+        <div class="sheet-handle"></div>
+        <div class="sheet-head">
+          <span class="sheet-eyebrow">save</span>
+          <h2 class="sheet-title">drop it in.</h2>
+        </div>
+        <div class="sheet-input-wrap">
+          <div class="sheet-input dimmed">https://www.tiktok.com/@bkkfoodscene/video/7341208</div>
+          <div class="sheet-input-meta">
+            <svg viewBox="0 0 24 24"><path d="M9 12a4 4 0 104 4V4c1 2 3 4 6 4"/></svg>
+            looks like a tiktok link
+          </div>
+        </div>
+        <button class="sheet-cta"><span class="pulse-dot on-dark"></span>close — we'll keep working</button>
+        <div class="sheet-hint">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          you'll get a ping when it's saved.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─────────── OPTION B ─────────── -->
+  <div class="col">
+    <div class="cap"><b>b — collapse to a slip</b></div>
+    <div class="subcap">at 5s the sheet shrinks to a slim strip: pulsing dot, one line, ×. the scrim lightens so home comes back — the app is already yours again, the slip just hangs on until you flick it away or the result lands in it.</div>
+    <div class="stage">
+      <div class="peek">
+        <div class="peek-hero">it's late,<br>drunk food?</div>
+        <div class="peek-line w70"></div>
+        <div class="peek-line w50"></div>
+        <div class="peek-card"></div>
+        <div class="peek-line w70"></div>
+        <div class="peek-line w50"></div>
+      </div>
+      <div class="scrim light"></div>
+      <div class="slip">
+        <div class="sheet-handle"></div>
+        <div class="slip-row">
+          <span class="pulse-dot"></span>
+          <div class="slip-text">kebi's on it <span class="muted">— we'll ping you when it's saved</span></div>
+          <button class="slip-close" aria-label="Close">
+            <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─────────── OPTION C ─────────── -->
+  <div class="col">
+    <div class="cap"><b>c — status line under the input</b></div>
+    <div class="subcap">the meta line under the input (where "looks like a tiktok link" lives) becomes the live status with the pulsing dot. CTA turns into a plain secondary "close". no new blocks, no title change — the sheet just relaxes.</div>
+    <div class="stage">
+      <div class="peek">
+        <div class="peek-hero">it's late,<br>drunk food?</div>
+        <div class="peek-line w70"></div>
+        <div class="peek-line w50"></div>
+        <div class="peek-card"></div>
+      </div>
+      <div class="scrim"></div>
+      <div class="sheet">
+        <div class="sheet-handle"></div>
+        <div class="sheet-head">
+          <span class="sheet-eyebrow">save</span>
+          <h2 class="sheet-title">drop it in.</h2>
+        </div>
+        <div class="sheet-input-wrap">
+          <div class="sheet-input dimmed">https://www.tiktok.com/@bkkfoodscene/video/7341208</div>
+          <div class="sheet-input-meta">
+            <span class="pulse-dot" style="width:6px;height:6px;"></span>
+            still reading that tiktok — we'll finish in the background
+          </div>
+        </div>
+        <button class="sheet-cta secondary">close</button>
+        <div class="sheet-hint">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          you'll get a ping when it's saved.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─────────── OPTION D ─────────── -->
+  <div class="col">
+    <div class="cap"><b>d — hand off to a toast</b> <span style="font-weight:400;">(revisits "stays open")</span></div>
+    <div class="subcap">at 5s the sheet slides away on its own and a neutral toast takes over: "kebi's on it — we'll ping you". it stays until the result replaces it with the final toast. cleanest exit, but the sheet moves without being asked.</div>
+    <div class="stage">
+      <div class="peek">
+        <div class="peek-hero">it's late,<br>drunk food?</div>
+        <div class="peek-line w70"></div>
+        <div class="peek-line w50"></div>
+        <div class="peek-card"></div>
+        <div class="peek-line w70"></div>
+        <div class="peek-line w50"></div>
+        <div class="peek-card"></div>
+      </div>
+      <div class="scrim none"></div>
+      <div class="toast-stack">
+        <div class="toast">
+          <div class="toast-icon"><span class="pulse-dot on-dark"></span></div>
+          <div class="toast-text">kebi's on it — we'll ping you when it's saved</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

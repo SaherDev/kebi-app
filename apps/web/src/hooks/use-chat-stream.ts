@@ -6,8 +6,9 @@ import type {
   SseError,
   SseEvent,
   SseMessage,
+  SseMessageDelta,
+  SseReasoningDelta,
   SseReasoningStep,
-  SseToolResult,
 } from "@kebi-app/shared";
 import { useCallback, useEffect, useRef } from "react";
 
@@ -173,8 +174,10 @@ function buildEvent(eventName: string, data: unknown): SseEvent | null {
   switch (eventName) {
     case "reasoning_step":
       return { type: "reasoning_step", data: d as unknown as SseReasoningStep };
-    case "tool_result":
-      return { type: "tool_result", data: d as unknown as SseToolResult };
+    case "reasoning_delta":
+      return { type: "reasoning_delta", data: d as unknown as SseReasoningDelta };
+    case "message_delta":
+      return { type: "message_delta", data: d as unknown as SseMessageDelta };
     case "message":
       return { type: "message", data: d as unknown as SseMessage };
     case "done":

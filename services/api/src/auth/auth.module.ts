@@ -20,6 +20,7 @@ import { UserIdentityRepository } from './user-identity.repository';
 import { UserIdentityService } from './user-identity.service';
 import { UserSettingsRepository } from './user-settings.repository';
 import { UserSettingsService } from './user-settings.service';
+import { ClaimStamper } from './claim-stamper';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 
@@ -45,6 +46,7 @@ const DEFAULT_PROVIDER = 'supabase';
     UserIdentityService,
     UserSettingsRepository,
     UserSettingsService,
+    ClaimStamper,
     AuthService,
     {
       provide: IDENTITY_PROVIDER,
@@ -99,6 +101,7 @@ const DEFAULT_PROVIDER = 'supabase';
     PROFILE_WRITER,
     UserIdentityService,
     UserSettingsService,
+    ClaimStamper,
   ],
 })
 export class AuthModule {}

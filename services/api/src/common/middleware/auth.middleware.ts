@@ -11,6 +11,7 @@ import { AuthUser, IdentityClaims, NormalizedIdentity } from '@kebi-app/shared';
 import { IDENTITY_PROVIDER } from '../../auth/identity-provider.interface';
 import type { IdentityProvider } from '../../auth/identity-provider.interface';
 import { AuthenticatedUser } from '../../auth/authenticated-user';
+import { TokenClaims } from '../../auth/token-claims';
 
 declare global {
   // eslint-disable-next-line @typescript-eslint/no-namespace
@@ -55,9 +56,10 @@ export class AuthMiddleware implements NestMiddleware {
 
     const token = this.bearerToken(req);
 
-    const bypassUser = this.devBypassUser(token);
-    if (bypassUser) {
-      req.user = bypassUser;
+    const bypass = this.devBypass(token);
+    if (bypass) {
+      req.user = bypass.user;
+      req.identity = bypass.identity;
       return next();
     }
 
@@ -105,9 +107,18 @@ export class AuthMiddleware implements NestMiddleware {
     return header.slice(BEARER_PREFIX.length);
   }
 
-  /** Local-only static-token bypass for testing — never active in production.
-   *  Returns the synthetic principal, or null when the bypass doesn't apply. */
-  private devBypassUser(token: string): AuthenticatedUser | null {
+  /**
+   * Local-only static-token bypass for testing — never active in production.
+   * Returns the synthetic principal **and identity**, or null when the bypass
+   * doesn't apply. The identity is not optional: every route that writes
+   * settings reads `externalId` off it to re-stamp the token claims, so a
+   * bypassed request without one 500s. The bypass has no provider subject, so
+   * the internal id stands in — stamping with it fails open (the writer logs and
+   * returns), which is exactly right for a local token nobody minted.
+   */
+  private devBypass(
+    token: string,
+  ): { user: AuthenticatedUser; identity: NormalizedIdentity } | null {
     const isProd = this.configService.get<string>('app.environment') === 'production';
     const enabled = this.configService.get<string>('APP_DEV_BYPASS_ENABLED') === 'true';
     const bypassToken = this.configService.get<string>('DEV_BYPASS_TOKEN');
@@ -116,7 +127,13 @@ export class AuthMiddleware implements NestMiddleware {
       return null;
     }
     this.logger.warn(`Dev bypass auth used for user ${bypassUserId} — never enable in production`);
-    return new AuthenticatedUser({ id: bypassUserId, ai_enabled: true });
+    return {
+      user: new AuthenticatedUser({ id: bypassUserId, ai_enabled: true }),
+      identity: {
+        externalId: bypassUserId,
+        claims: new TokenClaims({ internal_id: bypassUserId, ai_enabled: true }),
+      },
+    };
   }
 
   /** Verify the token via the provider, mapping any failure to a 401. */
@@ -143,6 +160,7 @@ export class AuthMiddleware implements NestMiddleware {
       ai_enabled: claims.ai_enabled,
       plan: claims.plan,
       movement_profile: claims.movement_profile,
+      about_me: claims.about_me,
       can_curate: claims.can_curate,
     });
   }
