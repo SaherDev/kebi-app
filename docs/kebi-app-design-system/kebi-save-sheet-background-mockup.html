@@ -1,0 +1,926 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Kebi — Save in Background Flow</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #FAFAF9;
+    --surface: #F1F1EF;
+    --surface-2: #E8E8E5;
+    --text: #1A1A1A;
+    --text-muted: #8A8A87;
+    --text-soft: #B5B5B1;
+    --success: #4A7C3A;
+    --like: #C2410C;
+    --warn: #B45309;
+    --warn-bg: #FEF3C7;
+    --new-bg: #FEE4D4;
+    --new-fg: #C2410C;
+    --toast-bg: #1A1A1A;
+    --toast-text: #F5F1EA;
+    --toast-muted: rgba(245, 241, 234, 0.6);
+  }
+
+  html, body {
+    background: #2A2A28;
+    font-family: 'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+    padding: 40px 24px;
+  }
+
+  .page-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: #D9D9D5;
+    margin-bottom: 4px;
+  }
+  .page-sub {
+    font-size: 12px;
+    color: #8A8A87;
+    line-height: 1.5;
+    margin-bottom: 28px;
+    max-width: 720px;
+  }
+
+  .cols { display: flex; gap: 36px; align-items: flex-start; flex-wrap: wrap; }
+  .col { width: 390px; }
+  .cap { font-size: 13px; font-weight: 600; color: #9A9A96; margin-bottom: 4px; }
+  .cap b { color: #D9D9D5; }
+  .subcap { font-size: 12px; color: #8A8A87; line-height: 1.5; margin-bottom: 14px; min-height: 54px; }
+
+  .phone {
+    width: 390px;
+    height: 844px;
+    background: var(--bg);
+    border-radius: 48px;
+    overflow: hidden;
+    position: relative;
+    box-shadow: 0 0 0 12px #111, 0 0 0 14px #2A2A28, 0 40px 80px rgba(0,0,0,0.5);
+    display: flex;
+    flex-direction: column;
+  }
+
+  .status-bar {
+    height: 50px;
+    padding: 18px 32px 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text);
+    flex-shrink: 0;
+  }
+
+  .status-right { display: flex; gap: 6px; align-items: center; }
+
+  .top-bar {
+    padding: 12px 16px 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-shrink: 0;
+  }
+
+  .location-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: var(--text-muted);
+    letter-spacing: -0.005em;
+  }
+
+  .location-row svg {
+    width: 13px;
+    height: 13px;
+    stroke: var(--text-muted);
+    stroke-width: 1.8;
+    fill: none;
+  }
+
+  .location-dot {
+    width: 3px;
+    height: 3px;
+    border-radius: 50%;
+    background: var(--text-soft);
+  }
+
+  .top-pill {
+    display: flex;
+    align-items: center;
+    background: var(--surface);
+    border-radius: 999px;
+    padding: 0 4px;
+  }
+
+  .top-pill button {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: transparent;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+  }
+
+  .top-pill svg {
+    width: 16px;
+    height: 16px;
+    stroke: var(--text);
+    stroke-width: 1.8;
+    fill: none;
+  }
+
+  .saved-count {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0 10px 0 8px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+    height: 36px;
+  }
+
+  .saved-count svg {
+    width: 14px;
+    height: 14px;
+    stroke: var(--text);
+    stroke-width: 1.8;
+    fill: none;
+  }
+
+  .scroll {
+    flex: 1;
+    overflow-y: hidden;
+    padding: 8px 24px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  .turn { display: flex; flex-direction: column; gap: 6px; }
+
+  .turn-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-soft);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .hero {
+    font-size: 38px;
+    font-weight: 700;
+    color: var(--text);
+    letter-spacing: -0.03em;
+    line-height: 1.05;
+    margin-top: 4px;
+  }
+
+  .quick-prompts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 16px;
+    margin-top: 4px;
+  }
+
+  .quick-prompt {
+    font-size: 17px;
+    color: var(--text);
+    letter-spacing: -0.01em;
+    background: transparent;
+    border: none;
+    padding: 0 0 1px;
+    text-align: left;
+    font-family: inherit;
+    cursor: pointer;
+    border-bottom: 1px dashed var(--text-soft);
+  }
+
+  .history-list { display: flex; flex-direction: column; gap: 18px; }
+  .history-entry { display: flex; flex-direction: column; gap: 2px; }
+
+  .history-query {
+    font-size: 17px;
+    color: var(--text);
+    letter-spacing: -0.01em;
+    line-height: 1.4;
+  }
+
+  .history-time {
+    font-size: 12px;
+    color: var(--text-soft);
+    letter-spacing: -0.005em;
+    margin-top: 2px;
+  }
+
+  .group {
+    background: var(--surface);
+    border-radius: 14px;
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .group-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 4px 4px 8px;
+  }
+
+  .group-header-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 14px;
+    color: var(--text);
+    font-weight: 500;
+    letter-spacing: -0.005em;
+  }
+
+  .group-count { color: var(--text-muted); font-weight: 400; }
+
+  .group-header-actions { display: flex; align-items: center; gap: 4px; }
+
+  .group-header-actions button {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    border: none;
+    background: transparent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+  }
+
+  .group-header-actions svg {
+    width: 14px;
+    height: 14px;
+    stroke: var(--text-muted);
+    stroke-width: 2;
+    fill: none;
+  }
+
+  .group-row {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    padding: 10px 4px;
+    cursor: pointer;
+  }
+
+  .group-row + .group-row { border-top: 1px solid var(--surface-2); }
+
+  .group-add {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 4px 4px;
+    font-size: 14px;
+    color: var(--text-muted);
+    cursor: pointer;
+    letter-spacing: -0.005em;
+  }
+
+  .group-add svg {
+    width: 16px;
+    height: 16px;
+    stroke: var(--text-muted);
+    stroke-width: 2;
+    fill: none;
+  }
+
+  .row-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    background: var(--bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-size: 18px;
+    line-height: 1;
+  }
+
+  .row-body {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  .row-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text);
+    letter-spacing: -0.01em;
+    line-height: 1.3;
+  }
+
+  .row-status-line { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+
+  .row-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 1px 7px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: -0.005em;
+  }
+
+  .row-pill::before {
+    content: '';
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+  }
+
+  .row-pill.green { background: #E8F2E1; color: var(--success); }
+  .row-pill.green::before { background: var(--success); }
+
+  .row-pill.warm { background: #FEE4D4; color: var(--like); }
+  .row-pill.warm::before { background: var(--like); }
+
+  .row-meta {
+    font-size: 13px;
+    color: var(--text-muted);
+    letter-spacing: -0.005em;
+    line-height: 1.4;
+  }
+
+  .row-chevron {
+    width: 16px;
+    height: 16px;
+    stroke: var(--text-soft);
+    stroke-width: 2;
+    fill: none;
+    margin-top: 6px;
+    flex-shrink: 0;
+  }
+
+  .tab-bar {
+    margin: 8px 16px 12px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    flex-shrink: 0;
+  }
+
+  .kebi-ai-btn {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: white;
+    border: 1px solid var(--surface-2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+  }
+
+  .home-indicator {
+    width: 134px;
+    height: 5px;
+    background: var(--text);
+    border-radius: 3px;
+    margin: 0 auto 8px;
+    flex-shrink: 0;
+  }
+
+  /* ============================================
+     SAVE SHEET
+     ============================================ */
+  .sheet-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(15, 13, 10, 0.45);
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
+    z-index: 20;
+  }
+
+  .sheet {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: var(--bg);
+    border-radius: 24px 24px 0 0;
+    z-index: 21;
+    padding: 12px 20px 28px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    box-shadow: 0 -16px 48px rgba(0, 0, 0, 0.16);
+  }
+
+  .sheet-handle {
+    width: 36px;
+    height: 4px;
+    border-radius: 2px;
+    background: var(--surface-2);
+    margin: 0 auto 4px;
+  }
+
+  .sheet-head {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 0 4px;
+  }
+
+  .sheet-eyebrow {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-soft);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .sheet-title {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--text);
+    letter-spacing: -0.025em;
+    line-height: 1.1;
+  }
+
+  .sheet-input-wrap {
+    background: var(--surface);
+    border-radius: 14px;
+    padding: 14px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .sheet-input {
+    width: 100%;
+    background: transparent;
+    border: none;
+    outline: none;
+    font-family: inherit;
+    font-size: 16px;
+    color: var(--text);
+    letter-spacing: -0.005em;
+    line-height: 1.5;
+    resize: none;
+    min-height: 56px;
+  }
+
+  .sheet-input.dimmed { color: var(--text-muted); }
+
+  .sheet-input-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    color: var(--text-muted);
+    letter-spacing: -0.005em;
+    padding-top: 8px;
+    border-top: 1px solid var(--surface-2);
+  }
+
+  .sheet-input-meta svg {
+    width: 12px;
+    height: 12px;
+    stroke: var(--text-muted);
+    stroke-width: 1.8;
+    fill: none;
+    flex-shrink: 0;
+  }
+
+  /* backgrounded state (locked option c): the meta line becomes the live status */
+  .pulse-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--warn);
+    animation: pulse 1.4s ease-in-out infinite;
+    flex-shrink: 0;
+  }
+
+  @keyframes pulse {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(0.6); opacity: 0.45; }
+  }
+
+  .sheet-cta {
+    width: 100%;
+    padding: 14px;
+    background: var(--text);
+    color: var(--bg);
+    border: none;
+    border-radius: 14px;
+    font-family: inherit;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    letter-spacing: -0.005em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: opacity 160ms;
+  }
+
+  .sheet-cta:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+  }
+
+  .sheet-cta.secondary {
+    background: var(--surface);
+    color: var(--text);
+  }
+
+  .sheet-cta-spinner {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    border: 1.6px solid rgba(250, 250, 249, 0.25);
+    border-top-color: var(--bg);
+    animation: spin 700ms linear infinite;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  .sheet-hint {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--text-soft);
+    letter-spacing: -0.005em;
+  }
+
+  .sheet-hint svg {
+    width: 11px;
+    height: 11px;
+    stroke: var(--text-soft);
+    stroke-width: 1.8;
+    fill: none;
+  }
+
+  /* ============================================
+     TOASTS (bottom stack, clears the FAB)
+     ============================================ */
+  .toast-stack {
+    position: absolute;
+    bottom: 92px;
+    left: 16px;
+    right: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    align-items: center;
+    pointer-events: none;
+    z-index: 50;
+  }
+
+  .toast {
+    background: var(--toast-bg);
+    color: var(--toast-text);
+    border-radius: 14px;
+    padding: 10px 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: inherit;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18), 0 2px 6px rgba(0, 0, 0, 0.12);
+    pointer-events: auto;
+    max-width: 100%;
+    min-width: 200px;
+  }
+
+  .toast-icon {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .toast-icon.success { background: #1F2E1A; }
+  .toast-icon.success svg { stroke: #A8C293; }
+
+  .toast-icon.danger { background: #3A1818; }
+  .toast-icon.danger svg { stroke: #E89090; }
+
+  .toast-icon svg {
+    width: 12px;
+    height: 12px;
+    stroke-width: 2.2;
+    fill: none;
+  }
+
+  .toast-text {
+    flex: 1;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--toast-text);
+    letter-spacing: -0.005em;
+    line-height: 1.4;
+    min-width: 0;
+  }
+
+  .toast-text strong { font-weight: 600; }
+
+  .toast-action {
+    background: transparent;
+    border: none;
+    color: var(--toast-text);
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 8px;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+</style>
+</head>
+<body>
+
+<div class="page-title">save in background — locked flow</div>
+<div class="page-sub">
+  8s grace window on /v1/extract. fast saves (cache hits) resolve exactly like today and never see states 2–4.
+  at 8s the sheet flips to a backgrounded state (locked: option c from kebi-save-sheet-background-options.html) —
+  dismissal unlocks, the fetch keeps running behind it (90s hard ceiling).
+  result lands as a toast whenever it arrives; failure toast carries a "try again" that reopens the sheet prefilled.
+  concurrent saves allowed — each resolves to its own toast.
+</div>
+
+<div class="cols">
+
+  <!-- ════════ 1. SAVING (unchanged) ════════ -->
+  <div class="col">
+    <div class="cap"><b>1 · 0–8s</b> — saving</div>
+    <div class="subcap">unchanged from today: spinner CTA, input locked, dismissal blocked. most saves resolve here and go straight to the success toast.</div>
+    <div class="phone">
+      <div data-home></div>
+      <div class="sheet-backdrop"></div>
+      <div class="sheet">
+        <div class="sheet-handle"></div>
+        <div class="sheet-head">
+          <span class="sheet-eyebrow">save</span>
+          <h2 class="sheet-title">drop it in.</h2>
+        </div>
+        <div class="sheet-input-wrap">
+          <textarea class="sheet-input" readonly>https://www.tiktok.com/@bkkfoodscene/video/7341208</textarea>
+          <div class="sheet-input-meta">
+            <svg viewBox="0 0 24 24"><path d="M9 12a4 4 0 104 4V4c1 2 3 4 6 4"/></svg>
+            looks like a tiktok link
+          </div>
+        </div>
+        <button class="sheet-cta" disabled><span class="sheet-cta-spinner"></span>saving</button>
+        <div class="sheet-hint">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          kebi figures out the rest. you can fix anything later.
+        </div>
+      </div>
+      <div class="home-indicator"></div>
+    </div>
+  </div>
+
+  <!-- ════════ 2. BACKGROUNDED ════════ -->
+  <div class="col">
+    <div class="cap"><b>2 · at 8s</b> — goes background, sheet stays open (locked option c)</div>
+    <div class="subcap">no new blocks, no title change — the sheet just relaxes. the meta line under the input becomes the live status with a pulsing dot; CTA becomes a plain "close". dismissal unlocks (drag + backdrop + close). if the result lands while the sheet is still open, it resolves in place like state 1.</div>
+    <div class="phone">
+      <div data-home></div>
+      <div class="sheet-backdrop"></div>
+      <div class="sheet">
+        <div class="sheet-handle"></div>
+        <div class="sheet-head">
+          <span class="sheet-eyebrow">save</span>
+          <h2 class="sheet-title">drop it in.</h2>
+        </div>
+        <div class="sheet-input-wrap">
+          <textarea class="sheet-input dimmed" readonly>https://www.tiktok.com/@bkkfoodscene/video/7341208</textarea>
+          <div class="sheet-input-meta">
+            <span class="pulse-dot"></span>
+            still reading that tiktok — we'll finish in the background
+          </div>
+        </div>
+        <button class="sheet-cta secondary">close</button>
+        <div class="sheet-hint">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          you'll get a ping when it's saved.
+        </div>
+      </div>
+      <div class="home-indicator"></div>
+    </div>
+  </div>
+
+  <!-- ════════ 3. SUCCESS TOAST ════════ -->
+  <div class="col">
+    <div class="cap"><b>3 · later</b> — it lands: success toast</div>
+    <div class="subcap">user is back on whatever screen they're on. existing saved toast fires from the pending promise. bottom-anchored, clears the FAB; auto-anchors top if another sheet is open.</div>
+    <div class="phone">
+      <div data-home></div>
+      <div class="toast-stack">
+        <div class="toast">
+          <div class="toast-icon success">
+            <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+          </div>
+          <div class="toast-text"><strong>Somtum Der</strong> saved</div>
+        </div>
+      </div>
+      <div class="home-indicator"></div>
+    </div>
+  </div>
+
+  <!-- ════════ 4. FAILURE TOAST ════════ -->
+  <div class="col">
+    <div class="cap"><b>4 · later</b> — it fails: danger toast + try again</div>
+    <div class="subcap">"try again" reopens the save sheet prefilled with the original text (kept by the pending closure / save history). specific failures keep their tones: save limit → upgrade toast, unsupported url → its own copy.</div>
+    <div class="phone">
+      <div data-home></div>
+      <div class="toast-stack">
+        <div class="toast">
+          <div class="toast-icon danger">
+            <svg viewBox="0 0 24 24"><line x1="12" y1="8" x2="12" y2="13"/><line x1="12" y1="16" x2="12.01" y2="16"/><circle cx="12" cy="12" r="10"/></svg>
+          </div>
+          <div class="toast-text">couldn't save that tiktok</div>
+          <button class="toast-action">try again</button>
+        </div>
+      </div>
+      <div class="home-indicator"></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- home screen background, cloned into each phone -->
+<template id="home-template">
+  <div class="status-bar">
+    <span>9:41</span>
+    <div class="status-right">
+      <svg width="17" height="11" viewBox="0 0 17 11" fill="currentColor"><path d="M1 7h2v3H1zM5 5h2v5H5zM9 3h2v7H9zM13 1h2v9h-2z"/></svg>
+      <svg width="15" height="11" viewBox="0 0 15 11" fill="currentColor"><path d="M7.5 2C9.7 2 11.7 2.8 13.3 4.2L14.5 3C12.6 1.2 10.1.2 7.5.2S2.4 1.2.5 3l1.2 1.2C3.3 2.8 5.3 2 7.5 2zM7.5 5.5c1.4 0 2.7.5 3.7 1.4l1.2-1.2c-1.4-1.3-3.2-2-5-2s-3.6.7-5 2l1.2 1.2c1-.9 2.3-1.4 3.7-1.4z"/></svg>
+      <svg width="24" height="11" viewBox="0 0 24 11" fill="none"><rect x="0.5" y="0.5" width="20" height="10" rx="2.5" stroke="currentColor"/><rect x="2" y="2" width="17" height="7" rx="1" fill="currentColor"/><rect x="21" y="3.5" width="1.5" height="4" rx="0.5" fill="currentColor"/></svg>
+    </div>
+  </div>
+
+  <div class="top-bar">
+    <div class="location-row">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="10" r="3"/><path d="M12 2a8 8 0 00-8 8c0 6 8 12 8 12s8-6 8-12a8 8 0 00-8-8z"/></svg>
+      <span>shimokitazawa</span>
+      <span class="location-dot"></span>
+      <span>17° · clear</span>
+    </div>
+    <div class="top-pill">
+      <span class="saved-count">
+        <svg viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/></svg>
+        7
+      </span>
+      <button aria-label="Settings">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <div class="scroll">
+    <div class="turn">
+      <div class="turn-label">kebi</div>
+      <h1 class="hero">it's late, drunk food?</h1>
+    </div>
+
+    <div class="quick-prompts">
+      <button class="quick-prompt">ramen, no line</button>
+      <button class="quick-prompt">drinks somewhere chill</button>
+      <button class="quick-prompt">dessert, walking distance</button>
+      <button class="quick-prompt">surprise me</button>
+    </div>
+
+    <div class="turn">
+      <div class="turn-label">what you wanted</div>
+      <div class="history-list">
+        <div class="history-entry">
+          <div class="history-query">"coffee, quiet, nowhere i've been"</div>
+          <div class="history-time">yesterday, 8:42</div>
+        </div>
+        <div class="history-entry">
+          <div class="history-query">"something with anya — not sushi"</div>
+          <div class="history-time">mon, 7:10 pm</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="group">
+      <div class="group-header">
+        <div class="group-header-left">
+          <span>your stash</span>
+          <span class="group-count">7</span>
+        </div>
+        <div class="group-header-actions">
+          <button aria-label="Add">
+            <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          </button>
+          <button aria-label="Collapse">
+            <svg viewBox="0 0 24 24"><polyline points="18 15 12 9 6 15"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="group-row">
+        <div class="row-avatar">🍜</div>
+        <div class="row-body">
+          <div class="row-title">Kamachiku</div>
+          <div class="row-status-line">
+            <span class="row-pill green">saved</span>
+            <span class="row-pill green">went</span>
+          </div>
+          <div class="row-meta">udon · ¥¥ · 14 min · nezu</div>
+        </div>
+        <svg class="row-chevron" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>
+      </div>
+
+      <div class="group-row">
+        <div class="row-avatar">🍷</div>
+        <div class="row-body">
+          <div class="row-title">Saint Jardim</div>
+          <div class="row-status-line">
+            <span class="row-pill warm">new to you</span>
+          </div>
+          <div class="row-meta">portuguese · ¥¥¥ · 8 min · shimokitazawa</div>
+        </div>
+        <svg class="row-chevron" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>
+      </div>
+
+      <div class="group-row">
+        <div class="row-avatar">☕</div>
+        <div class="row-body">
+          <div class="row-title">Fuglen</div>
+          <div class="row-status-line">
+            <span class="row-pill green">went</span>
+          </div>
+          <div class="row-meta">coffee + cocktails · ¥¥ · 22 min · tomigaya</div>
+        </div>
+        <svg class="row-chevron" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>
+      </div>
+
+      <div class="group-add">
+        <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        <span>save a place</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="tab-bar">
+    <button class="kebi-ai-btn" aria-label="Ask Kebi">
+      <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" width="36" height="36">
+        <ellipse cx="32" cy="38" rx="20" ry="20" fill="#D4B891"/>
+        <ellipse cx="32" cy="42" rx="13" ry="13" fill="#F5EBD3"/>
+        <ellipse cx="13" cy="34" rx="3.5" ry="6" fill="#A89070" transform="rotate(-25 13 34)"/>
+        <ellipse cx="51" cy="34" rx="3.5" ry="6" fill="#A89070" transform="rotate(25 51 34)"/>
+        <ellipse cx="22" cy="36" rx="3" ry="2" fill="#E8B894" opacity="0.6"/>
+        <ellipse cx="42" cy="36" rx="3" ry="2" fill="#E8B894" opacity="0.6"/>
+        <circle cx="25" cy="30" r="3.5" fill="white"/>
+        <circle cx="39" cy="30" r="3.5" fill="white"/>
+        <circle cx="25" cy="30" r="1.7" fill="#1A1A1A"/>
+        <circle cx="39" cy="30" r="1.7" fill="#1A1A1A"/>
+        <circle cx="25.6" cy="29.4" r="0.6" fill="white"/>
+        <circle cx="39.6" cy="29.4" r="0.6" fill="white"/>
+        <path d="M30 33 L34 33 L32 36 Z" fill="#C87A4A"/>
+        <path d="M30 14 Q32 10 34 14" stroke="#8B7355" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+      </svg>
+    </button>
+  </div>
+</template>
+
+<script>
+  const tpl = document.getElementById('home-template');
+  document.querySelectorAll('[data-home]').forEach((slot) => {
+    slot.replaceWith(tpl.content.cloneNode(true));
+  });
+</script>
+
+</body>
+</html>
