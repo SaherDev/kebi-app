@@ -21,6 +21,13 @@ import type { ChatEntity } from '@kebi-app/shared';
  * constantly, and underlining every one of them turns a paragraph into a field
  * of rules. The rail beneath the prose is where the affordance is spelled out;
  * inline, a place reads as part of the sentence and opens if you touch it.
+ *
+ * A `web` source link (ADR-161) lives **only** inline — option a of
+ * kebi-chat-web-source-options.html, locked: the prose already names the domain
+ * in context ("per the schedule on fifa.com"), so the citation is tappable
+ * right where the trust question occurs and never takes a rail slot. It carries
+ * a soft ` ↗` because its tap leaves the app for a browser — the one exit in a
+ * surface where every other tap pushes a screen.
  */
 
 /** A blank line (with any trailing spaces) separates blocks. */
@@ -175,6 +182,11 @@ export const ChatAnswer = memo(function ChatAnswer({
             accessibilityRole={entity ? 'link' : undefined}
           >
             {part.text}
+            {entity?.kind === 'web' ? (
+              // NBSP keeps the marker glued to the domain instead of wrapping
+              // onto its own line.
+              <Text className="text-[13px] text-text-soft">{'\u00A0↗'}</Text>
+            ) : null}
           </Text>
         );
       }

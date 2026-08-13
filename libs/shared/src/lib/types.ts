@@ -111,16 +111,22 @@ export interface PlaceCore {
 // failures are caught and returned as type="error" with HTTP 200 (see
 // api-contract.md).
 
-/** Which detail surface a chat link opens (kebi ADR-136). */
-export type ChatEntityKind = "venue" | "area";
+/**
+ * What a chat link opens (kebi ADR-136): a detail surface for `venue` and
+ * `area`, the page itself in a browser for `web` (ADR-161). The vocabulary can
+ * grow — an unknown kind must degrade to plain prose, never crash.
+ */
+export type ChatEntityKind = "venue" | "area" | "web";
 
 /**
  * One linkable entity in a chat answer — one per markdown link in `message`,
  * in the order the links appear. `kind` + `key` are `uri` pre-split so the
- * client's link handler never parses: `key` is `places.id` for a venue and the
- * slugged geo key (`{cc}[/{city}[/{neighborhood}]]`) for an area. `name` is the
- * canonical display name, which may differ from the text the answer used
- * ("Luigis" vs "Luigi's").
+ * client's link handler never parses: `key` is `places.id` for a venue, the
+ * slugged geo key (`{cc}[/{city}[/{neighborhood}]]`) for an area, and the raw
+ * page URL for a web source (ADR-161). `name` is the canonical display name,
+ * which may differ from the text the answer used ("Luigis" vs "Luigi's") — for
+ * `web` it is the source domain ("fifa.com"), and the wrapped text is the
+ * prose's own domain mention ("per the schedule on fifa.com").
  */
 export interface ChatEntity {
   kind: ChatEntityKind;
@@ -136,12 +142,13 @@ export interface ChatEntity {
    */
   uri: string;
   /**
-   * Single emoji drawn beside the name (ADR-146). A venue's comes off its
-   * catalog row, where an LLM already picked it (ADR-117); an area's is picked
-   * by the turn's location resolver. **Nullable on both kinds by design** — a
-   * path with no model behind it leaves it unset and the client falls back to
-   * its own mapping. An area's icon is a per-conversation choice, not a stored
-   * one, so the same neighbourhood may carry different emoji for two users.
+   * Single emoji drawn beside the name (ADR-146). Always the stored row's
+   * icon, re-read at answer time (ADR-162) — a chip never contradicts the
+   * screen its tap opens. A venue's comes off its catalog row, where an LLM
+   * already picked it (ADR-117); an area's off its area row (profiler-picked,
+   * ADR-153); a web source's is always 🌐. **Nullable by design** — a row with
+   * no icon yet (or an area not yet profiled) ships `null` and the client
+   * falls back to its own kind/category mapping.
    */
   icon: string | null;
 }

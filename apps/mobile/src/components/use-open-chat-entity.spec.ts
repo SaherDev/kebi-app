@@ -1,3 +1,4 @@
+import { Linking } from 'react-native';
 import { renderHook } from '@testing-library/react-native';
 import type { ChatEntity } from '@kebi-app/shared';
 import { useOpenChatEntity } from './use-open-chat-entity';
@@ -22,6 +23,15 @@ const CANGGU: ChatEntity = {
   name: 'Canggu',
   uri: 'kebi://area/aWQvYmFsaS9jYW5nZ3U',
   icon: '🏄',
+};
+
+/** A web source's `key` is the raw page URL (ADR-161) — no resolve endpoint. */
+const FIFA: ChatEntity = {
+  kind: 'web',
+  key: 'https://www.fifa.com/tournaments/mens/worldcup/schedule',
+  name: 'fifa.com',
+  uri: 'kebi://web/aHR0cHM6Ly93d3cuZmlmYS5jb20',
+  icon: '🌐',
 };
 
 describe('useOpenChatEntity', () => {
@@ -74,5 +84,21 @@ describe('useOpenChatEntity', () => {
     // Closing the conversation to navigate nowhere is the worst outcome.
     expect(mockPush).not.toHaveBeenCalled();
     expect(closeChat).not.toHaveBeenCalled();
+  });
+
+  it('opens a web source in the browser and keeps the conversation on screen', () => {
+    const openURL = jest.spyOn(Linking, 'openURL').mockResolvedValue(undefined as never);
+    const closeChat = jest.fn();
+
+    open(closeChat, FIFA);
+
+    // The page URL travels as `key` (ADR-161) — handed to the OS verbatim.
+    expect(openURL).toHaveBeenCalledWith(
+      'https://www.fifa.com/tournaments/mens/worldcup/schedule',
+    );
+    // The browser layers above the app, so chat must still be there on return
+    // — and nothing was pushed under it.
+    expect(closeChat).not.toHaveBeenCalled();
+    expect(mockPush).not.toHaveBeenCalled();
   });
 });

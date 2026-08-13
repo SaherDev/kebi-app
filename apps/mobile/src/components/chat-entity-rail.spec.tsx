@@ -50,6 +50,25 @@ describe('toRailEntities', () => {
     const collide = [venue('x', 'Ubud Bar'), { ...CANGGU, key: 'x' }];
     expect(toRailEntities(collide)).toHaveLength(2);
   });
+
+  it('never gives a web source a slot — a citation is inline-only (ADR-161)', () => {
+    const fifa: ChatEntity = {
+      kind: 'web',
+      key: 'https://www.fifa.com/schedule',
+      name: 'fifa.com',
+      uri: 'kebi://web/aHR0cHM6Ly9maWZhLmNvbQ',
+      icon: '🌐',
+    };
+
+    // Option a of kebi-chat-web-source-options.html, locked: the rail indexes
+    // places you can go; the source's tap lives on the inline domain mention.
+    expect(toRailEntities([fifa, ...ENTITIES]).map((e) => e.kind)).toEqual([
+      'area',
+      'venue',
+      'venue',
+      'venue',
+    ]);
+  });
 });
 
 describe('ChatEntityRail', () => {

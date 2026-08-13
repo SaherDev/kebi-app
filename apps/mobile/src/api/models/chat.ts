@@ -52,10 +52,13 @@ export const ReasoningStepSchema = z
   .transform((p) => new ReasoningStep(p));
 
 // ── ChatEntity ───────────────────────────────────────────────────────────────
-// One per `kebi://` link in the answer text (ADR-136). `kind` is a strict
-// literal union — an unknown kind is a link this build cannot open, so it must
-// fail validation rather than reach the link handler. `icon` is the emoji drawn
-// beside the name (ADR-146), nullable on both kinds.
+// One per `kebi://` link in the answer text (ADR-136). The kind vocabulary can
+// grow server-side (ADR-161 added `web`), and the contract requires an unknown
+// kind to degrade to plain prose, never crash — so an entity whose `kind` this
+// build doesn't recognise is dropped from the list (its inline link then
+// renders as plain text), while a malformed entity of a *known* kind still
+// fails loudly: that is a contract break, not a vocabulary gap. `icon` is the
+// emoji drawn beside the name (ADR-146), nullable on every kind.
 
 export class ChatEntity implements ChatEntityContract {
   readonly kind: ChatEntityKind;
@@ -73,16 +76,37 @@ export class ChatEntity implements ChatEntityContract {
   }
 }
 
+const ChatEntityKindSchema = z.enum(['venue', 'area', 'web']);
+
 export const ChatEntitySchema = z
   .object({
-    kind: z.enum(['venue', 'area']),
+    kind: ChatEntityKindSchema,
     key: z.string(),
     name: z.string(),
     uri: z.string(),
-    // Nullable on both kinds (ADR-146); absent on a pre-ADR-146 payload.
+    // Nullable on every kind (ADR-146/162); absent on a pre-ADR-146 payload.
     icon: z.string().nullable().default(null),
   })
   .transform((p) => new ChatEntity(p));
+
+/** An entry whose `kind` is a string this build doesn't know — a future kind. */
+const hasUnknownKind = (entry: unknown): boolean =>
+  typeof entry === 'object' &&
+  entry !== null &&
+  typeof (entry as { kind?: unknown }).kind === 'string' &&
+  !ChatEntityKindSchema.options.includes(
+    (entry as { kind: string }).kind as (typeof ChatEntityKindSchema.options)[number],
+  );
+
+/**
+ * The turn's `entities` list. Future kinds are filtered out *before* strict
+ * validation so one unopenable link degrades that one mention to plain text
+ * instead of failing the whole turn.
+ */
+export const ChatEntitiesSchema = z
+  .array(z.unknown())
+  .transform((entries) => entries.filter((entry) => !hasUnknownKind(entry)))
+  .pipe(z.array(ChatEntitySchema));
 
 // ── Response data arms ───────────────────────────────────────────────────────
 
@@ -101,7 +125,7 @@ export class AgentResponseData implements AgentResponseDataContract {
 export const AgentResponseDataSchema = z
   .object({
     reasoning_steps: z.array(ReasoningStepSchema),
-    entities: z.array(ChatEntitySchema),
+    entities: ChatEntitiesSchema,
     recommendation_id: z.string().nullable(),
   })
   .transform((p) => new AgentResponseData(p));

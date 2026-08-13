@@ -9,7 +9,7 @@ import type {
   SseReasoningDelta as SseReasoningDeltaContract,
   SseReasoningStep as SseReasoningStepContract,
 } from '@kebi-app/shared';
-import { ChatEntitySchema } from './chat';
+import { ChatEntitiesSchema } from './chat';
 
 /**
  * Runtime models for the `POST /v1/chat/stream` SSE frame payloads
@@ -113,7 +113,7 @@ export class SseMessage implements SseMessageContract {
 }
 
 export const SseMessageSchema = z
-  .object({ content: z.string(), entities: z.array(ChatEntitySchema) })
+  .object({ content: z.string(), entities: ChatEntitiesSchema })
   .transform((p) => new SseMessage(p));
 
 export class SseDone implements SseDoneContract {

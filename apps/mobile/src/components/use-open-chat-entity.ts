@@ -1,18 +1,20 @@
 import { useCallback } from 'react';
+import { Linking } from 'react-native';
 import { useRouter } from 'expo-router';
 import type { ChatEntity, ChatEntityKind } from '@kebi-app/shared';
 import { areaIdFromUri } from '../lib/area-link';
 
 /**
- * Opens the screen behind a chat entity — the tap handler for both the inline
+ * Opens what is behind a chat entity — the tap handler for both the inline
  * `kebi://` links and the {@link ChatEntityRail} chips.
  *
- * Both kinds are destinations now (kebi ADR-153): a venue opens the place
- * screen, an area opens the area screen. Which one is a lookup in
- * {@link OPEN_ROUTE}, not a branch, so a third kind is a new entry rather than
- * another `if` in a handler.
+ * Every kind is a destination: a venue opens the place screen, an area opens
+ * the area screen (kebi ADR-153), and a web source opens its page in the
+ * browser (ADR-161 — `key` is the raw page URL, and no in-app screen exists
+ * for it). Which one is a lookup in {@link OPEN_ROUTE}, not a branch, so a new
+ * kind is a new entry rather than another `if` in a handler.
  *
- * The two kinds identify differently and that is the whole subtlety here. A
+ * The in-app kinds identify differently and that is the whole subtlety here. A
  * venue's `key` **is** `places.id`, so it can be routed straight. An area's
  * request id is the opaque token on its `uri` — its `key` is the raw geo key,
  * which no endpoint takes (ADR-153). Reading the wrong one 404s every area tap.
@@ -22,6 +24,8 @@ import { areaIdFromUri } from '../lib/area-link';
  * behind it and the tap looks like it did nothing. Closing first is the same
  * order the `?` help button uses — and it only happens when there is somewhere
  * to go, so a link this build can't resolve leaves the conversation on screen.
+ * A web tap **never** closes the chat: the browser layers above the whole app,
+ * so the conversation should still be there when the user comes back.
  */
 
 /**
@@ -36,19 +40,29 @@ import { areaIdFromUri } from '../lib/area-link';
 export const PLACE_ORIGIN_CHAT = 'chat';
 
 /** Where a tapped entity goes, and what identifies it once it gets there. */
-interface EntityRoute {
-  pathname: string;
-  /** The request id for this kind, or `null` when the entity carries none. */
-  id: (entity: ChatEntity) => string | null;
-}
+type EntityRoute =
+  | {
+      open: 'screen';
+      pathname: string;
+      /** The request id for this kind, or `null` when the entity carries none. */
+      id: (entity: ChatEntity) => string | null;
+    }
+  | {
+      open: 'browser';
+      /** The page to hand the OS, or `null` when the entity carries none. */
+      url: (entity: ChatEntity) => string | null;
+    };
 
 const OPEN_ROUTE: Record<ChatEntityKind, EntityRoute> = {
   // `key` is `places.id`, and GET /v1/places/{id} opens any place kebi has
   // surfaced — saved or not (ADR-151).
-  venue: { pathname: '/place', id: (entity) => entity.key },
+  venue: { open: 'screen', pathname: '/place', id: (entity) => entity.key },
   // The token off the URI, never `key`: the raw geo key is a slash path that no
   // endpoint accepts (ADR-153).
-  area: { pathname: '/area', id: (entity) => areaIdFromUri(entity.uri) },
+  area: { open: 'screen', pathname: '/area', id: (entity) => areaIdFromUri(entity.uri) },
+  // `key` is the raw page URL (ADR-161) — no resolve endpoint exists, the
+  // client hands it to the OS as-is.
+  web: { open: 'browser', url: (entity) => entity.key || null },
 };
 
 export function useOpenChatEntity(closeChat: () => void): (entity: ChatEntity) => void {
@@ -58,6 +72,13 @@ export function useOpenChatEntity(closeChat: () => void): (entity: ChatEntity) =
     (entity: ChatEntity) => {
       const route = OPEN_ROUTE[entity.kind];
       if (!route) return;
+
+      if (route.open === 'browser') {
+        const url = route.url(entity);
+        if (url) Linking.openURL(url);
+        return;
+      }
+
       const id = route.id(entity);
       if (!id) return;
 
