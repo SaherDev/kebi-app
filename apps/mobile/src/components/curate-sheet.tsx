@@ -64,6 +64,8 @@ const CLOSE_VELOCITY = 800;
 const PAN_ACTIVATE_Y = 10;
 /** Fraction of the screen the sheet occupies — tall, because the keyboard is up. */
 const SHEET_HEIGHT_RATIO = 0.72;
+/** Breathing room kept between the sheet top and the top safe-area inset. */
+const SHEET_TOP_MARGIN = 12;
 
 export function CurateSheet({
   open,
@@ -144,8 +146,17 @@ export function CurateSheet({
   }, [open, mounted, scrim, translateY, height]);
 
   const scrimStyle = useAnimatedStyle(() => ({ opacity: scrim.value }));
+  // The sheet rides above the keyboard (translate), but a 72%-tall sheet plus a
+  // full keyboard overshoots the screen top — so the height gives back whatever
+  // the keyboard takes, capped so the header always clears the top safe area.
+  // (Keyboard height is 0 in the simulator with a hardware keyboard, which is
+  // how the fixed height ever looked right.)
   const sheetStyle = useAnimatedStyle(() => ({
     transform: [{ translateY: translateY.value - keyboard.height.value }],
+    height: Math.min(
+      height * SHEET_HEIGHT_RATIO,
+      height - keyboard.height.value - insets.top - SHEET_TOP_MARGIN,
+    ),
   }));
 
   const pan = Gesture.Pan()
@@ -186,7 +197,7 @@ export function CurateSheet({
           style={[
             styles.sheet,
             sheetStyle,
-            { paddingBottom: insets.bottom + 12, height: height * SHEET_HEIGHT_RATIO },
+            { paddingBottom: insets.bottom + 12 },
           ]}
           className="bg-bg"
         >
