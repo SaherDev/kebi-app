@@ -27,7 +27,7 @@ export const EXTRACT_TIMEOUT_MS = 90_000;
  * doesn't hold the user captive. The request itself keeps running to
  * {@link EXTRACT_TIMEOUT_MS}.
  */
-export const EXTRACT_GRACE_MS = 8_000;
+export const EXTRACT_GRACE_MS = 5_000;
 
 export async function extractPlace(
   client: HttpClient,

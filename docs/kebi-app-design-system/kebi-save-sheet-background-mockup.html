@@ -669,8 +669,8 @@
 
 <div class="page-title">save in background — locked flow</div>
 <div class="page-sub">
-  8s grace window on /v1/extract. fast saves (cache hits) resolve exactly like today and never see states 2–4.
-  at 8s the sheet flips to a backgrounded state (locked: option c from kebi-save-sheet-background-options.html) —
+  5s grace window on /v1/extract. fast saves (cache hits) resolve exactly like today and never see states 2–4.
+  at 5s the sheet flips to a backgrounded state (locked: option c from kebi-save-sheet-background-options.html) —
   dismissal unlocks, the fetch keeps running behind it (90s hard ceiling).
   result lands as a toast whenever it arrives; failure toast carries a "try again" that reopens the sheet prefilled.
   concurrent saves allowed — each resolves to its own toast.
@@ -680,7 +680,7 @@
 
   <!-- ════════ 1. SAVING (unchanged) ════════ -->
   <div class="col">
-    <div class="cap"><b>1 · 0–8s</b> — saving</div>
+    <div class="cap"><b>1 · 0–5s</b> — saving</div>
     <div class="subcap">unchanged from today: spinner CTA, input locked, dismissal blocked. most saves resolve here and go straight to the success toast.</div>
     <div class="phone">
       <div data-home></div>
@@ -710,7 +710,7 @@
 
   <!-- ════════ 2. BACKGROUNDED ════════ -->
   <div class="col">
-    <div class="cap"><b>2 · at 8s</b> — goes background, sheet stays open (locked option c)</div>
+    <div class="cap"><b>2 · at 5s</b> — goes background, sheet stays open (locked option c)</div>
     <div class="subcap">no new blocks, no title change — the sheet just relaxes. the meta line under the input becomes the live status with a pulsing dot; CTA becomes a plain "close". dismissal unlocks (drag + backdrop + close). if the result lands while the sheet is still open, it resolves in place like state 1.</div>
     <div class="phone">
       <div data-home></div>

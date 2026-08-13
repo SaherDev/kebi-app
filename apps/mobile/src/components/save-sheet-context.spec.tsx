@@ -8,7 +8,7 @@ const mockExtractPlace = jest.fn();
 jest.mock('../api/extract', () => ({
   extractPlace: (...args: unknown[]) => mockExtractPlace(...args),
   EXTRACT_TIMEOUT_MS: 90_000,
-  EXTRACT_GRACE_MS: 8_000,
+  EXTRACT_GRACE_MS: 5_000,
 }));
 
 // The HTTP client is irrelevant once extractPlace is mocked (and this also keeps
@@ -195,7 +195,7 @@ describe('SaveSheetProvider background flow', () => {
     expect(mockSheet.props.status).toBe('saving');
 
     act(() => {
-      jest.advanceTimersByTime(8_000);
+      jest.advanceTimersByTime(5_000);
     });
     expect(mockSheet.props.status).toBe('backgrounded');
     expect(mockSheet.props.open).toBe(true);
@@ -207,7 +207,7 @@ describe('SaveSheetProvider background flow', () => {
     fireEvent.press(getByLabelText('open'));
     submitPending();
     act(() => {
-      jest.advanceTimersByTime(8_000);
+      jest.advanceTimersByTime(5_000);
     });
 
     await act(async () => {
@@ -230,7 +230,7 @@ describe('SaveSheetProvider background flow', () => {
     fireEvent.press(getByLabelText('open'));
     submitPending();
     act(() => {
-      jest.advanceTimersByTime(8_000);
+      jest.advanceTimersByTime(5_000);
     });
     closeSheet();
     expect(mockSheet.props.open).toBe(false);
@@ -256,7 +256,7 @@ describe('SaveSheetProvider background flow', () => {
     fireEvent.press(getByLabelText('open'));
     submitPending();
     act(() => {
-      jest.advanceTimersByTime(8_000);
+      jest.advanceTimersByTime(5_000);
     });
     closeSheet();
 
@@ -281,7 +281,7 @@ describe('SaveSheetProvider background flow', () => {
     fireEvent.press(getByLabelText('open'));
     submitPending();
     act(() => {
-      jest.advanceTimersByTime(8_000);
+      jest.advanceTimersByTime(5_000);
     });
     closeSheet();
 
