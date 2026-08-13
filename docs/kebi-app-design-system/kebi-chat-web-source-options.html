@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Kebi Chat — Web Source Citations (ADR-161 kebi://web entities)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg:#FAFAF9; --surface:#F1F1EF; --surface-2:#E8E8E5;
+    --text:#1A1A1A; --text-muted:#8A8A87; --text-soft:#B5B5B1;
+    --success:#5B8A4E; --pill-green:#E8F2E1;
+  }
+  html,body{ background:#2A2A28; font-family:'Inter',system-ui,sans-serif;
+    -webkit-font-smoothing:antialiased; min-height:100vh; color:#EDEDEA; padding:40px 24px 64px; }
+  h1{ font-size:22px; font-weight:700; letter-spacing:-.01em; margin-bottom:6px; }
+  .lede{ font-size:14px; color:#B5B5B1; max-width:940px; line-height:1.55; margin-bottom:30px; }
+  .lede b{ color:#D9D9D5; font-weight:600; }
+  .lede code{ background:#3A3A37; padding:1px 5px; border-radius:5px; font-size:12.5px; }
+  .cols{ display:flex; gap:36px; align-items:flex-start; flex-wrap:wrap; }
+  .col{ width:360px; }
+  .cap{ font-size:13px; font-weight:600; color:#9A9A96; margin-bottom:4px; }
+  .cap b{ color:#D9D9D5; }
+  .subcap{ font-size:12px; color:#8A8A87; line-height:1.5; margin-bottom:12px; min-height:52px; }
+
+  .stage{ background:var(--bg); border-radius:24px; padding:16px; }
+
+  /* ── turn chrome (matches chat-screen.tsx KebiTurnRow) ── */
+  .eyebrow{ display:flex; align-items:center; gap:8px; margin-bottom:6px; }
+  .eyebrow .who{ font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.08em; color:var(--text-soft); }
+  .eyebrow .time{ font-size:11px; color:var(--text-soft); }
+  .eyebrow .copy{ margin-left:auto; color:var(--text-soft); }
+  .eyebrow .copy svg{ width:13px; height:13px; stroke:currentColor; stroke-width:1.8; fill:none; }
+
+  .reasoning{ background:var(--surface); border-radius:12px; padding:9px 11px; display:flex;
+    align-items:center; gap:8px; margin-bottom:10px; }
+  .reasoning .dot{ width:6px; height:6px; border-radius:50%; background:var(--success); flex-shrink:0; }
+  .reasoning .lbl{ font-size:12.5px; font-weight:600; color:var(--text); }
+  .reasoning .meta{ font-size:12px; color:var(--text-soft); }
+  .reasoning .chev{ margin-left:auto; color:var(--text-soft); font-size:12px; }
+
+  /* ── prose (locked option c) ── */
+  .prose{ font-size:16px; line-height:1.6; color:var(--text-muted); letter-spacing:-.005em; }
+  .prose p + p{ margin-top:12px; }
+  .prose .lead-in{ margin-bottom:6px; }
+  .bullets{ margin-top:10px; display:flex; flex-direction:column; gap:7px; }
+  .bul{ display:flex; gap:9px; }
+  .bul .mark{ color:var(--text-soft); flex-shrink:0; line-height:1.6; }
+  .closer{ margin-top:12px; }
+
+  .lnk-quiet{ color:var(--text); font-weight:600;
+    border-bottom:1px solid var(--surface-2); }
+
+  /* web link inline: same quiet treatment + external marker */
+  .lnk-web{ color:var(--text); font-weight:600; border-bottom:1px solid var(--surface-2); white-space:nowrap; }
+  .lnk-web .ext{ font-size:11px; color:var(--text-soft); }
+  /* option d: the domain mention stays plain */
+  .dom-plain{ white-space:nowrap; }
+
+  /* ── mentioned rail (locked option c) ── */
+  .rail-lbl{ font-size:11px; font-weight:600; color:var(--text-soft); text-transform:uppercase;
+    letter-spacing:.08em; margin:14px 0 8px; }
+  .rail{ display:flex; gap:8px; overflow:hidden; }
+  .chip{ display:flex; align-items:center; gap:7px; background:var(--surface); border-radius:11px;
+    padding:8px 11px 8px 8px; flex-shrink:0; }
+  .chip .cav{ width:26px; height:26px; border-radius:7px; background:var(--bg);
+    display:flex; align-items:center; justify-content:center; font-size:14px; }
+  .chip .cn{ font-size:13.5px; font-weight:600; color:var(--text); }
+  .chip .ext{ font-size:11px; color:var(--text-soft); margin-left:-2px; }
+  /* b variant: web chip is outlined, not filled — same silhouette, different substance */
+  .chip.web{ background:transparent; border:1px solid var(--surface-2); padding:7px 10px 7px 7px; }
+  .chip.web .cav{ background:var(--surface); }
+
+  /* ── c: sources line ── */
+  .sources{ display:flex; align-items:center; gap:14px; margin-top:12px; padding-top:10px;
+    border-top:1px solid var(--surface-2); flex-wrap:wrap; }
+  .src-lbl{ font-size:11px; font-weight:600; color:var(--text-soft); text-transform:uppercase; letter-spacing:.08em; }
+  .src{ display:inline-flex; align-items:center; gap:5px; font-size:12.5px; font-weight:600; color:var(--text-muted); }
+  .src .g{ font-size:12px; }
+  .src .ext{ font-size:10px; color:var(--text-soft); }
+
+  /* ── d: freshness caption ── */
+  .checked{ display:flex; align-items:center; gap:7px; margin-top:12px; }
+  .checked .g{ font-size:12px; }
+  .checked .t{ font-size:12.5px; color:var(--text-soft); }
+  .checked .t b{ color:var(--text-muted); font-weight:600; }
+  .checked .ext{ font-size:10px; color:var(--text-soft); }
+
+  .note{ margin-top:10px; font-size:11.5px; color:#8A8A87; line-height:1.5; }
+
+  /* ── chosen-option marker ── */
+  .col.picked .stage{ box-shadow:0 0 0 3px #5B8A4E; }
+  .col.picked .cap b{ color:#8FBF7F; }
+  .badge{ display:inline-block; background:#5B8A4E; color:#F3F8F0; font-size:10px; font-weight:700;
+    text-transform:uppercase; letter-spacing:.08em; border-radius:5px; padding:2px 6px; margin-left:7px; }
+  .col.dropped{ opacity:.42; }
+</style>
+</head>
+<body>
+
+<h1>web source citations — four ways to surface <code>kebi://web</code></h1>
+<p class="lede">
+  when <code>web_search</code> fires, the answer now cites its source (<b>ADR-161</b>): the prose names the domain
+  ("per the schedule on <b>fifa.com</b>"), that domain mention arrives wrapped as
+  <code>[fifa.com](kebi://web/…)</code>, and one entity per domain lands in <code>entities</code> with
+  <code>kind:"web"</code>, <code>name</code> = domain, <code>key</code> = the page url, icon always 🌐.
+  a tap <b>leaves the app</b> — it opens the page in a browser, unlike venue/area taps which push a screen —
+  so every option has to answer two questions: does the citation earn a rail slot next to places, and how do we
+  signal "this exits kebi". all four keep the locked prose + rail (option c) and render the same payload:
+  a where-to-watch-the-final answer with two venues and one fifa.com source.
+</p>
+
+<div class="cols">
+
+  <!-- ══ A — quiet inline only ══ -->
+  <div class="col picked">
+    <div class="cap"><b>a · inline only</b><span class="badge">locked</span></div>
+    <div class="subcap">the domain is a quiet link with an ↗ marker, tappable in place. the rail stays places-only — a citation is provenance, not a destination, so it never takes a slot.</div>
+    <div class="stage">
+      <div class="eyebrow">
+        <span class="who">kebi</span><span class="time">8:15 pm</span>
+        <span class="copy"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 012-2h10"/></svg></span>
+      </div>
+      <div class="reasoning">
+        <span class="dot"></span><span class="lbl">thought</span><span class="meta">4 steps · 9.2s</span><span class="chev">⌄</span>
+      </div>
+      <div class="prose">
+        <p>the final kicks off sunday at 10pm bali time, per the schedule on <span class="lnk-web">fifa.com<span class="ext"> ↗</span></span>. two of your saves are showing it:</p>
+        <div class="bullets">
+          <div class="bul"><span class="mark">·</span><span><span class="lnk-quiet">Old Man's</span> puts the big screen on the sand — loudest room in canggu for it</span></div>
+          <div class="bul"><span class="mark">·</span><span><span class="lnk-quiet">Luigi's</span> runs a projector over the dancefloor, pizza through the whole match</span></div>
+        </div>
+        <p class="closer">old man's for the atmosphere, luigi's if you want to actually sit.</p>
+      </div>
+      <div class="rail-lbl">mentioned</div>
+      <div class="rail">
+        <div class="chip"><div class="cav">🏖️</div><span class="cn">Old Man's</span></div>
+        <div class="chip"><div class="cav">🍕</div><span class="cn">Luigi's</span></div>
+      </div>
+    </div>
+    <p class="note">cheapest to build: only the inline link handler learns the web kind. downside — the source is easy to miss once it scrolls into a long answer, and the ↗ is the only exit signal.</p>
+  </div>
+
+  <!-- ══ B — full citizen chip ══ -->
+  <div class="col dropped">
+    <div class="cap"><b>b · rail chip, outlined</b></div>
+    <div class="subcap">the source takes a rail slot like everything else — but the chip is outlined where place chips are filled, and carries the ↗. one system, visibly different substance.</div>
+    <div class="stage">
+      <div class="eyebrow">
+        <span class="who">kebi</span><span class="time">8:15 pm</span>
+        <span class="copy"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 012-2h10"/></svg></span>
+      </div>
+      <div class="reasoning">
+        <span class="dot"></span><span class="lbl">thought</span><span class="meta">4 steps · 9.2s</span><span class="chev">⌄</span>
+      </div>
+      <div class="prose">
+        <p>the final kicks off sunday at 10pm bali time, per the schedule on <span class="lnk-web">fifa.com<span class="ext"> ↗</span></span>. two of your saves are showing it:</p>
+        <div class="bullets">
+          <div class="bul"><span class="mark">·</span><span><span class="lnk-quiet">Old Man's</span> puts the big screen on the sand — loudest room in canggu for it</span></div>
+          <div class="bul"><span class="mark">·</span><span><span class="lnk-quiet">Luigi's</span> runs a projector over the dancefloor, pizza through the whole match</span></div>
+        </div>
+        <p class="closer">old man's for the atmosphere, luigi's if you want to actually sit.</p>
+      </div>
+      <div class="rail-lbl">mentioned</div>
+      <div class="rail">
+        <div class="chip"><div class="cav">🏖️</div><span class="cn">Old Man's</span></div>
+        <div class="chip"><div class="cav">🍕</div><span class="cn">Luigi's</span></div>
+        <div class="chip web"><div class="cav">🌐</div><span class="cn">fifa.com</span><span class="ext">↗</span></div>
+      </div>
+    </div>
+    <p class="note">biggest tap target, and the rail honestly lists everything tappable in the answer. downside — a citation sits shoulder-to-shoulder with places you can go, and rail slots are scarce on narrow screens.</p>
+  </div>
+
+  <!-- ══ C — sources line ══ -->
+  <div class="col dropped">
+    <div class="cap"><b>c · sources line</b></div>
+    <div class="subcap">quiet inline link, plus a separate hairline-ruled "sources" row under the rail — places and provenance never mix. scales to several domains without eating rail slots.</div>
+    <div class="stage">
+      <div class="eyebrow">
+        <span class="who">kebi</span><span class="time">8:15 pm</span>
+        <span class="copy"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 012-2h10"/></svg></span>
+      </div>
+      <div class="reasoning">
+        <span class="dot"></span><span class="lbl">thought</span><span class="meta">4 steps · 9.2s</span><span class="chev">⌄</span>
+      </div>
+      <div class="prose">
+        <p>the final kicks off sunday at 10pm bali time, per the schedule on <span class="lnk-web">fifa.com<span class="ext"> ↗</span></span>. two of your saves are showing it:</p>
+        <div class="bullets">
+          <div class="bul"><span class="mark">·</span><span><span class="lnk-quiet">Old Man's</span> puts the big screen on the sand — loudest room in canggu for it</span></div>
+          <div class="bul"><span class="mark">·</span><span><span class="lnk-quiet">Luigi's</span> runs a projector over the dancefloor, pizza through the whole match</span></div>
+        </div>
+        <p class="closer">old man's for the atmosphere, luigi's if you want to actually sit.</p>
+      </div>
+      <div class="rail-lbl">mentioned</div>
+      <div class="rail">
+        <div class="chip"><div class="cav">🏖️</div><span class="cn">Old Man's</span></div>
+        <div class="chip"><div class="cav">🍕</div><span class="cn">Luigi's</span></div>
+      </div>
+      <div class="sources">
+        <span class="src-lbl">sources</span>
+        <span class="src"><span class="g">🌐</span>fifa.com<span class="ext"> ↗</span></span>
+      </div>
+    </div>
+    <p class="note">the perplexity-shaped answer: places to go up top, receipts below, each in its own register. downside — a second labeled band under every web-searched answer adds vertical chrome.</p>
+  </div>
+
+  <!-- ══ D — freshness caption ══ -->
+  <div class="col dropped">
+    <div class="cap"><b>d · checked-just-now caption</b></div>
+    <div class="subcap">the inline mention stays plain text; the citation lives in one muted caption that doubles as a freshness signal — "this answer used the live web", with the domain as the tap.</div>
+    <div class="stage">
+      <div class="eyebrow">
+        <span class="who">kebi</span><span class="time">8:15 pm</span>
+        <span class="copy"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 012-2h10"/></svg></span>
+      </div>
+      <div class="reasoning">
+        <span class="dot"></span><span class="lbl">thought</span><span class="meta">4 steps · 9.2s</span><span class="chev">⌄</span>
+      </div>
+      <div class="prose">
+        <p>the final kicks off sunday at 10pm bali time, per the schedule on <span class="dom-plain">fifa.com</span>. two of your saves are showing it:</p>
+        <div class="bullets">
+          <div class="bul"><span class="mark">·</span><span><span class="lnk-quiet">Old Man's</span> puts the big screen on the sand — loudest room in canggu for it</span></div>
+          <div class="bul"><span class="mark">·</span><span><span class="lnk-quiet">Luigi's</span> runs a projector over the dancefloor, pizza through the whole match</span></div>
+        </div>
+        <p class="closer">old man's for the atmosphere, luigi's if you want to actually sit.</p>
+      </div>
+      <div class="rail-lbl">mentioned</div>
+      <div class="rail">
+        <div class="chip"><div class="cav">🏖️</div><span class="cn">Old Man's</span></div>
+        <div class="chip"><div class="cav">🍕</div><span class="cn">Luigi's</span></div>
+      </div>
+      <div class="checked">
+        <span class="g">🌐</span>
+        <span class="t">checked <b>fifa.com</b> for this answer<span class="ext"> ↗</span></span>
+      </div>
+    </div>
+    <p class="note">sells the capability, not just the citation — the caption is the "live data" badge chat never had. downside — it un-links the inline mention the server already wrapped, and reads odd if several domains fired.</p>
+  </div>
+
+</div>
+
+</body>
+</html>
