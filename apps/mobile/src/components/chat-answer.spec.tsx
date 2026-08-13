@@ -152,4 +152,34 @@ describe('ChatAnswer', () => {
     const { getAllByText } = renderAnswer();
     expect(getAllByText('·')).toHaveLength(2);
   });
+
+  it('marks a web source link with ↗ — the one tap that leaves the app (ADR-161)', () => {
+    const fifa = {
+      kind: 'web' as const,
+      key: 'https://www.fifa.com/schedule',
+      name: 'fifa.com',
+      uri: 'kebi://web/aHR0cHM6Ly9maWZhLmNvbQ',
+      icon: '🌐',
+    };
+    const onOpen = jest.fn();
+    const { getByText, getAllByText } = render(
+      <ChatAnswer
+        message="kicks off sunday, per the schedule on [fifa.com](kebi://web/aHR0cHM6Ly9maWZhLmNvbQ)"
+        entities={[fifa]}
+        onOpen={onOpen}
+      />,
+    );
+
+    // Option a (kebi-chat-web-source-options.html, locked): quiet link plus a
+    // soft exit marker, no rail chip — and a place link stays marker-free.
+    expect(getAllByText(/↗/).length).toBeGreaterThan(0);
+
+    fireEvent.press(getByText(/fifa\.com/));
+    expect(onOpen).toHaveBeenCalledWith(fifa);
+  });
+
+  it('keeps a place link marker-free — only a web tap exits the app', () => {
+    const { queryByText } = renderAnswer();
+    expect(queryByText(/↗/)).toBeNull();
+  });
 });

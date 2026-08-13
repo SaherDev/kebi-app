@@ -46,12 +46,13 @@ export const ABOUT_ME_MAX_LENGTH = 300;
 
 /**
  * Glyph drawn on a chat entity whose `icon` came back `null` — nullable by
- * design on both kinds (api-contract.md → ChatEntity), so every surface that
+ * design on every kind (api-contract.md → ChatEntity), so every surface that
  * draws an entity needs the same fallback rather than an empty avatar. Keyed by
  * `kind` because that is all the client knows when the server picked nothing:
- * a venue is a place on a map, an area is a region.
+ * a venue is a place on a map, an area is a region, a web source is the web.
  */
 export const CHAT_ENTITY_FALLBACK_ICON: Record<ChatEntityKind, string> = {
   venue: '📍',
   area: '🗺️',
+  web: '🌐',
 };

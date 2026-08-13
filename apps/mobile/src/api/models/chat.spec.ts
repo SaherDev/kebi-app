@@ -63,8 +63,47 @@ describe('ChatResponseSchema', () => {
     expect(data?.entities[1].icon).toBeNull();
   });
 
-  it('rejects an entity kind this build cannot open', () => {
-    const data = { ...AGENT_FIXTURE.data, entities: [{ kind: 'planet', key: 'x', name: 'X', uri: 'kebi://planet/x' }] };
+  it('parses a web source entity — key is the page URL, name the domain (ADR-161)', () => {
+    const data = {
+      ...AGENT_FIXTURE.data,
+      entities: [
+        {
+          kind: 'web',
+          key: 'https://www.fifa.com/tournaments/mens/worldcup/schedule',
+          name: 'fifa.com',
+          uri: 'kebi://web/aHR0cHM6Ly93d3cuZmlmYS5jb20',
+          icon: '🌐',
+        },
+      ],
+    };
+
+    const res = ChatResponseSchema.parse({ ...AGENT_FIXTURE, data }) as AgentChatResponse;
+
+    const entity = res.data?.entities[0];
+    expect(entity).toBeInstanceOf(ChatEntity);
+    expect(entity?.kind).toBe('web');
+    expect(entity?.key).toBe('https://www.fifa.com/tournaments/mens/worldcup/schedule');
+  });
+
+  it('drops an entity of a future kind instead of failing the turn', () => {
+    const data = {
+      ...AGENT_FIXTURE.data,
+      entities: [
+        ...AGENT_FIXTURE.data.entities,
+        { kind: 'planet', key: 'x', name: 'X', uri: 'kebi://planet/x' },
+      ],
+    };
+
+    // The contract says an unknown kind degrades to plain prose, never crashes
+    // — the vocabulary can grow (ADR-161 grew it once already). The known
+    // entities in the same turn survive untouched.
+    const res = ChatResponseSchema.parse({ ...AGENT_FIXTURE, data }) as AgentChatResponse;
+    expect(res.data?.entities.map((e) => e.kind)).toEqual(['venue', 'area']);
+  });
+
+  it('still fails loudly on a malformed entity of a known kind', () => {
+    // Not a vocabulary gap — a contract break: `key` is required on venues.
+    const data = { ...AGENT_FIXTURE.data, entities: [{ kind: 'venue', name: 'X', uri: 'kebi://venue/x' }] };
     expect(() => ChatResponseSchema.parse({ ...AGENT_FIXTURE, data })).toThrow();
   });
 

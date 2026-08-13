@@ -11,7 +11,12 @@ import { useChatEntityMenuItems } from './use-chat-entity-menu-items';
  * order the answer mentions them, with a tap target bigger than a word in a
  * sentence.
  *
- * **Both kinds take a slot.** Areas were excluded while an area link had
+ * **Both place kinds take a slot; a web citation never does** (ADR-161 —
+ * kebi-chat-web-source-options.html option a, locked). The rail indexes places
+ * you can go; a source is provenance, not a destination, and its tap already
+ * lives on the inline domain mention where the trust question occurs.
+ *
+ * Areas were excluded while an area link had
  * nowhere to land; ADR-153 gave them a screen, so the rail now indexes every
  * destination in the turn rather than only the venues. They are drawn with the
  * *same chip* — no outline, no pill, no size of their own
@@ -27,11 +32,13 @@ import { useChatEntityMenuItems } from './use-chat-entity-menu-items';
  * would contradict the sentence the rail is indexing.
  */
 
-/** One chip per distinct entity, in first-mention order. */
+/** One chip per distinct place entity, in first-mention order. */
 export function toRailEntities(entities: ChatEntity[]): ChatEntity[] {
   const seen = new Set<string>();
   return entities.filter((e) => {
-    // Keyed by kind as well as key: the two kinds are separate id spaces, so
+    // A web source stays inline-only (option a, locked) — see the header note.
+    if (e.kind === 'web') return false;
+    // Keyed by kind as well as key: the kinds are separate id spaces, so
     // identity is the pair, never the key alone.
     const id = `${e.kind}:${e.key}`;
     if (seen.has(id)) return false;
