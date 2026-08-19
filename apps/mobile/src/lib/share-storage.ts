@@ -223,8 +223,76 @@ export function dismissPendingShares(): boolean {
 
 /** Write the pending list back — after recording an outcome, or after dismissal. */
 export function writePendingShares(items: PendingShare[]): boolean {
-  if (items.length === 0) return removeSharedItem(SHARE_KEYS.pending);
-  return setSharedItem(SHARE_KEYS.pending, JSON.stringify(items));
+  const wrote =
+    items.length === 0
+      ? removeSharedItem(SHARE_KEYS.pending)
+      : setSharedItem(SHARE_KEYS.pending, JSON.stringify(items));
+  notify();
+  return wrote;
+}
+
+/**
+ * Watchers of this list. The card used to re-read only on mount and on
+ * foreground, which was enough while the extension was the only writer — the
+ * app was by definition not running when a share arrived. Now the save sheet
+ * writes too, from a screen the user is looking at, so the row has to appear
+ * and resolve without a trip through the background.
+ */
+const listeners = new Set<() => void>();
+
+/** Subscribe to writes; returns the unsubscribe. */
+export function onShareStoreChange(listener: () => void): () => void {
+  listeners.add(listener);
+  return () => {
+    listeners.delete(listener);
+  };
+}
+
+function notify(): void {
+  for (const listener of listeners) listener();
+}
+
+/**
+ * Put a save made *inside* the app into the same list the extension feeds.
+ *
+ * A save from the sheet and a link shared from TikTok are the same event — you
+ * handed kebi something and it went and found places — so they belong on one
+ * surface. Nothing else about the sheet changes: it still waits out its grace
+ * window, still relaxes, still fires its toast. This only gives the result
+ * somewhere durable to land as well, which matters most when it fails: today
+ * that is a toast you may already have walked away from.
+ *
+ * Returns the id to record the outcome against, or null if shared storage is
+ * unavailable — the caller carries on regardless, since the toast is still the
+ * primary receipt.
+ */
+export function recordLocalSave(rawInput: string, title?: string): string | null {
+  if (!isAppGroupAvailable()) return null;
+  const existing = readPendingShares();
+  const id = `app-${Date.now()}-${existing.length}`;
+  const wrote = writePendingShares([
+    ...existing,
+    { id, raw_input: rawInput, title, shared_at: Date.now() },
+  ]);
+  return wrote ? id : null;
+}
+
+/**
+ * The slice of a saved place a row needs. Shared by both writers — the queue
+ * drain and the save sheet — so a row drawn from either is the same row.
+ */
+export function toSharePlace(place: {
+  id?: string | null;
+  place_name: string;
+  icon: string | null;
+  categories: string[];
+}): SharePlace {
+  return {
+    id: place.id ?? null,
+    name: place.place_name,
+    icon: place.icon,
+    categories: place.categories,
+  };
 }
 
 /**

@@ -67,6 +67,9 @@ export function ShareRow({
   const { t } = useTranslation();
   const router = useRouter();
   const { row, place } = entry;
+  // A typed place is its own name — "kayu cafe canggu" over "kayu cafe canggu"
+  // says nothing twice. Only a link earns the second line.
+  const detail = row.label === row.rawInput ? null : displayInput(row.rawInput);
 
   if (row.state === 'working') {
     return (
@@ -80,9 +83,11 @@ export function ShareRow({
           <Text className="text-body font-semibold text-text" numberOfLines={1}>
             {row.label}
           </Text>
-          <Text className="mt-0.5 text-small text-text-soft" numberOfLines={1}>
-            {displayInput(row.rawInput)}
-          </Text>
+          {detail ? (
+            <Text className="mt-0.5 text-small text-text-soft" numberOfLines={1}>
+              {detail}
+            </Text>
+          ) : null}
           <View className="mt-2">
             <Shimmer width="46%" />
           </View>
@@ -103,9 +108,11 @@ export function ShareRow({
           <Text className="text-body font-semibold text-text" numberOfLines={1}>
             {row.label}
           </Text>
-          <Text className="mt-0.5 text-small text-text-soft" numberOfLines={1}>
-            {displayInput(row.rawInput)}
-          </Text>
+          {detail ? (
+            <Text className="mt-0.5 text-small text-text-soft" numberOfLines={1}>
+              {detail}
+            </Text>
+          ) : null}
           {/* Plain danger text, not a status pill: nothing here has a status. */}
           <Text className="mt-1 text-small font-medium text-danger">
             {failureText(t, row.failureReason)}

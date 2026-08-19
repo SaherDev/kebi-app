@@ -72,7 +72,7 @@ export default function SharesScreen() {
         contentContainerClassName="gap-4 px-6 pb-28 pt-2"
       >
         <View className="gap-1">
-          <Text className="font-bold text-hero text-text">{t('share.whileYouWereAway')}</Text>
+          <Text className="font-bold text-hero text-text">{t('share.recentActivity')}</Text>
           {ordered.length > 0 ? (
             <Text className="text-small text-text-muted">
               {t('share.historySubtitle', { links: ordered.length, places })}

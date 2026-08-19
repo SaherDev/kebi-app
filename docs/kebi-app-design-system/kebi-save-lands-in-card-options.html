@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Kebi — in-app saves in the card</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #FAFAF9; --surface: #F1F1EF; --surface-2: #E8E8E5;
+    --text: #1A1A1A; --text-muted: #8A8A87; --text-soft: #B5B5B1;
+    --success: #4A7C3A; --danger: #D14343;
+    --tag-rec: #A7C7A0; --tag: #D4B891; --tag-no: #D9A3A3;
+  }
+  body.dark {
+    --bg: #13110F; --surface: #1C1A17; --surface-2: #26231F;
+    --text: #F5F1EA; --text-muted: #9A938A; --text-soft: #6E6862;
+    --success: #A8C293; --danger: #E89090;
+  }
+  html, body { background: var(--bg); color: var(--text); font-family: 'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased; min-height: 100vh; }
+  body.dark { background: #0A0908; }
+  .page { max-width: 1500px; margin: 0 auto; padding: 52px 32px 96px; }
+
+  .header { display: flex; align-items: flex-start; justify-content: space-between;
+    padding-bottom: 28px; border-bottom: 1px solid var(--surface-2); margin-bottom: 34px; }
+  h1 { font-size: 25px; font-weight: 700; letter-spacing: -0.028em; }
+  .meta { font-size: 12px; color: var(--text-muted); margin-top: 5px; }
+  .lede { font-size: 14px; color: var(--text-muted); line-height: 1.65; max-width: 820px; margin-top: 14px; }
+  .lede b { color: var(--text); font-weight: 600; }
+  .keep { margin-top: 14px; font-size: 12.5px; color: var(--text-muted); background: var(--surface);
+    border-radius: 12px; padding: 12px 15px; max-width: 820px; line-height: 1.6; }
+  .keep b { color: var(--text); font-weight: 600; }
+  .theme-toggle { display: flex; background: var(--surface); border-radius: 999px; padding: 3px; flex-shrink: 0; }
+  .theme-toggle button { padding: 6px 14px; background: transparent; border: none; border-radius: 999px;
+    font-family: inherit; font-size: 12px; font-weight: 500; color: var(--text-muted); cursor: pointer; }
+  .theme-toggle button.active { background: var(--text); color: var(--bg); }
+
+  .section-head { display: flex; align-items: baseline; justify-content: space-between;
+    margin: 46px 0 12px; padding-bottom: 12px; border-bottom: 1px solid var(--surface-2); }
+  .section-title { font-size: 11px; font-weight: 600; color: var(--text-soft);
+    text-transform: uppercase; letter-spacing: 0.08em; }
+  .section-count { font-size: 12px; color: var(--text-soft); }
+  .section-desc { font-size: 14px; color: var(--text-muted); line-height: 1.6; max-width: 820px; margin-bottom: 24px; }
+  .section-desc b { color: var(--text); font-weight: 600; }
+
+  .crops { display: flex; flex-wrap: wrap; gap: 30px; align-items: flex-start; }
+  .col { width: 336px; display: flex; flex-direction: column; gap: 10px; }
+  .col h2 { font-size: 15px; font-weight: 700; letter-spacing: -0.02em; }
+  .note { font-size: 11.5px; color: var(--text-muted); line-height: 1.55; }
+  .note b { color: var(--text); font-weight: 600; }
+  .tag { display: inline-block; align-self: flex-start; font-size: 10px; font-weight: 700;
+    letter-spacing: .08em; text-transform: uppercase; color: #1A1A1A; background: var(--tag);
+    border-radius: 999px; padding: 3px 10px; }
+  .tag.rec { background: var(--tag-rec); } .tag.no { background: var(--tag-no); }
+
+  .stage { background: var(--bg); border: 1px dashed var(--surface-2); border-radius: 12px; padding: 14px 12px; }
+  .eyebrow { display: flex; align-items: center; gap: 8px; padding: 0 4px 10px; }
+  .eyebrow .lb { font-size: 11px; font-weight: 600; color: var(--text-soft);
+    text-transform: uppercase; letter-spacing: 0.08em; }
+  .eyebrow .btn { width: 20px; height: 20px; border-radius: 50%; display: flex;
+    align-items: center; justify-content: center; background: var(--surface);
+    font-size: 10px; color: var(--text-muted); flex-shrink: 0; }
+  .eyebrow .btn:first-of-type { margin-left: auto; }
+  .eyebrow .btn svg { width: 9px; height: 9px; stroke: var(--text-muted); stroke-width: 2.6; fill: none; }
+  .group { background: var(--surface); border-radius: 14px; padding: 4px 12px; }
+  .rule { height: 1px; background: var(--surface-2); }
+
+  .row { display: flex; align-items: flex-start; gap: 10px; padding: 10px 4px; }
+  .av { width: 34px; height: 34px; border-radius: 9px; background: var(--bg);
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 16px; }
+  .av svg { width: 15px; height: 15px; stroke: var(--text-soft); stroke-width: 1.9; fill: none; }
+  .body { flex: 1; min-width: 0; }
+  .nm { font-size: 14px; font-weight: 600; color: var(--text); letter-spacing: -0.01em;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .sub { font-size: 11.5px; color: var(--text-soft); margin-top: 2px;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .fail { font-size: 11.5px; color: var(--danger); font-weight: 500; margin-top: 4px; }
+  .chev { width: 11px; height: 11px; stroke: var(--text-soft); stroke-width: 2.2; fill: none;
+    margin-top: 11px; flex-shrink: 0; }
+  .refresh { align-self: center; flex-shrink: 0; width: 30px; height: 30px; display: flex;
+    align-items: center; justify-content: center; }
+  .refresh svg { width: 15px; height: 15px; stroke: var(--text-muted); stroke-width: 2; fill: none; }
+  .sk { height: 9px; border-radius: 3px; background: var(--surface-2); animation: pulse 1.4s ease-in-out infinite; }
+  @keyframes pulse { 0%,100% { opacity: 1 } 50% { opacity: .45 } }
+  .foot { display: flex; align-items: center; padding: 9px 4px 6px; }
+  .foot .t { font-size: 14px; font-weight: 500; color: var(--text); }
+  .foot .chev { margin: 0 0 0 auto; }
+
+  .verdict { margin-top: 42px; border: 1px solid var(--surface-2); border-radius: 16px;
+    padding: 22px 24px; background: var(--surface); max-width: 900px; }
+  .verdict h3 { font-size: 14px; font-weight: 700; margin-bottom: 10px; }
+  .verdict p { font-size: 13px; color: var(--text-muted); line-height: 1.68; }
+  .verdict p + p { margin-top: 10px; }
+  .verdict b { color: var(--text); font-weight: 600; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="header">
+    <div>
+      <h1>in-app saves, same card</h1>
+      <div class="meta">kebi-app · the save sheet writes a row too — and nothing else changes</div>
+      <p class="lede">
+        You hit <b>save it</b> in the app and the result lands in the same card a shared link does.
+        That is the whole change. What is left to decide is small: <b>what the section is called</b>
+        now that half its rows did not happen while you were away, and <b>what a typed place looks
+        like</b> as a row, since it has no link and no app to name.
+      </p>
+      <div class="keep">
+        <b>Not changing:</b> the save sheet still waits its grace window and still relaxes to
+        "we'll finish in the background"; the success and failure <b>toasts stay exactly as they
+        are</b>; saved places still appear in your stash the moment they resolve. The card gains a
+        row, nothing loses anything.
+      </div>
+    </div>
+    <div class="theme-toggle">
+      <button class="active" data-theme="light">light</button>
+      <button data-theme="dark">dark</button>
+    </div>
+  </div>
+
+  <!-- ═══ 1. the rows ═════════════════════════════════════════════════════ -->
+  <div class="section-head">
+    <span class="section-title">1 · what an in-app save looks like</span>
+    <span class="section-count">two kinds of input</span>
+  </div>
+  <p class="section-desc">
+    A pasted link already has everything a shared row has, so it <b>is</b> a shared row. A typed
+    place name is the new shape: no url, and <code>manual</code> as its source.
+  </p>
+
+  <div class="crops">
+
+    <div class="col">
+      <span class="tag rec">a · a pasted link</span>
+      <h2>identical to a shared one</h2>
+      <div class="stage">
+        <div class="eyebrow"><span class="lb">just saved</span><span class="btn">✕</span></div>
+        <div class="group">
+          <div class="row"><div class="av">
+            <svg viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></div>
+            <div class="body">
+              <div class="nm">tiktok · just now</div>
+              <div class="sub">vt.tiktok.com/ZSVSnKYxm/</div>
+              <div style="margin-top:8px"><div class="sk" style="width:46%"></div></div>
+            </div></div>
+          <div class="rule"></div>
+          <div class="row"><div class="av">☕</div><div class="body"><div class="nm">Kayu Cafe and Restaurant</div></div>
+            <svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></div>
+        </div>
+      </div>
+      <div class="note">
+        nothing new to design — pasting a tiktok link into the sheet and sharing one from tiktok
+        produce <b>the same row</b>, because they are the same thing. No badge saying which; the
+        user knows what they just did.
+      </div>
+    </div>
+
+    <div class="col">
+      <span class="tag rec">b · a typed place</span>
+      <h2>the pencil, and your own words</h2>
+      <div class="stage">
+        <div class="eyebrow"><span class="lb">just saved</span><span class="btn">✕</span></div>
+        <div class="group">
+          <div class="row"><div class="av">
+            <svg viewBox="0 0 24 24"><path d="M12 20h9M16.5 3.5a2.12 2.12 0 113 3L7 19l-4 1 1-4z"/></svg></div>
+            <div class="body">
+              <div class="nm">kayu cafe canggu</div>
+              <div style="margin-top:8px"><div class="sk" style="width:40%"></div></div>
+            </div></div>
+          <div class="rule"></div>
+          <div class="row"><div class="av">☕</div><div class="body"><div class="nm">Kayu Cafe and Restaurant</div></div>
+            <svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></div>
+        </div>
+      </div>
+      <div class="note">
+        the <b>edit pencil</b> is already the app's mark for <code>manual</code> — the library uses
+        it on every hand-added place, so nothing is invented. The name line is <b>what you typed</b>,
+        and there is no second line: repeating your own words under themselves says nothing.
+      </div>
+    </div>
+
+    <div class="col">
+      <span class="tag">c · a typed place that failed</span>
+      <h2>same treatment as a link</h2>
+      <div class="stage">
+        <div class="eyebrow"><span class="lb">just saved</span><span class="btn">✕</span></div>
+        <div class="group">
+          <div class="row"><div class="av">
+            <svg viewBox="0 0 24 24"><path d="M12 20h9M16.5 3.5a2.12 2.12 0 113 3L7 19l-4 1 1-4z"/></svg></div>
+            <div class="body">
+              <div class="nm">that place near the rice fields</div>
+              <div class="fail">no place found</div>
+            </div>
+            <div class="refresh"><svg viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.5 15a9 9 0 1 1-2.1-9.4L23 10"/></svg></div></div>
+        </div>
+      </div>
+      <div class="note">
+        the real reason to do any of this: today that failure is <b>a toast you may already have
+        missed</b>. Here it waits, with the words you typed still attached and a retry that resends
+        them.
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ═══ 2. the name ═════════════════════════════════════════════════════ -->
+  <div class="section-head">
+    <span class="section-title">2 · what to call the section</span>
+    <span class="section-count">the one string that has to change</span>
+  </div>
+  <p class="section-desc">
+    "while you were away" was true when every row came from somewhere else. A save you made ten
+    seconds ago, in the app, was not made while you were away.
+  </p>
+
+  <div class="crops">
+
+    <div class="col">
+      <span class="tag rec">a</span>
+      <h2>just saved</h2>
+      <div class="stage">
+        <div class="eyebrow"><span class="lb">just saved</span><span class="btn">✕</span></div>
+        <div class="group">
+          <div class="row"><div class="av">☕</div><div class="body"><div class="nm">Kayu Cafe and Restaurant</div></div>
+            <svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></div>
+          <div class="rule"></div>
+          <div class="row"><div class="av">🏝️</div><div class="body"><div class="nm">Melasti Beach</div></div>
+            <svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></div>
+          <div class="foot"><span class="t">show all 8</span>
+            <svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></div>
+        </div>
+      </div>
+      <div class="note">
+        true of both sources, and it reads as a <b>receipt</b> — which is what the card is. Strains
+        a little on a row that is still loading (not saved <i>yet</i>) and on a two-day-old share
+        you never dismissed.
+      </div>
+    </div>
+
+    <div class="col">
+      <span class="tag">b</span>
+      <h2>what landed</h2>
+      <div class="stage">
+        <div class="eyebrow"><span class="lb">what landed</span><span class="btn">✕</span></div>
+        <div class="group">
+          <div class="row"><div class="av">☕</div><div class="body"><div class="nm">Kayu Cafe and Restaurant</div></div>
+            <svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></div>
+          <div class="rule"></div>
+          <div class="row"><div class="av">🏝️</div><div class="body"><div class="nm">Melasti Beach</div></div>
+            <svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></div>
+          <div class="foot"><span class="t">show all 8</span>
+            <svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></div>
+        </div>
+      </div>
+      <div class="note">
+        kebi's own voice, and it covers failures honestly — things land badly too. Matches
+        <b>"what you wanted"</b> further down home. Vaguer: it never says landed from where.
+      </div>
+    </div>
+
+    <div class="col">
+      <span class="tag">c</span>
+      <h2>recent saves</h2>
+      <div class="stage">
+        <div class="eyebrow"><span class="lb">recent saves</span><span class="btn">✕</span></div>
+        <div class="group">
+          <div class="row"><div class="av">☕</div><div class="body"><div class="nm">Kayu Cafe and Restaurant</div></div>
+            <svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></div>
+          <div class="rule"></div>
+          <div class="row"><div class="av">🏝️</div><div class="body"><div class="nm">Melasti Beach</div></div>
+            <svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></div>
+          <div class="foot"><span class="t">show all 8</span>
+            <svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></div>
+        </div>
+      </div>
+      <div class="note">
+        ages best — still correct on a three-day-old row, and it is the one name that also works as
+        the <b>title of the /shares screen</b>. But it reads like a list you browse, and it sits
+        right above "your stash", inviting <i>aren't those the same?</i>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="verdict">
+    <h3>what I would do</h3>
+    <p>
+      <b>1 · a and b as drawn.</b> A pasted link is already a shared row, so it just is one — no
+      badge distinguishing "saved in app" from "shared in", because the user knows which they did.
+      A typed place gets the pencil it already has elsewhere in the app, its own words as the name,
+      and no second line.
+    </p>
+    <p>
+      <b>2 · a — "just saved"</b> on the card. It is the only one that reads as a receipt rather
+      than a catalogue, and it cannot be mistaken for the stash sitting under it.
+    </p>
+    <p>
+      <b>The one wrinkle:</b> the <code>/shares</code> screen behind "show all" is a week of
+      history, so "just saved" is the wrong title <i>there</i> — I would call that screen
+      <b>"recent saves"</b> and leave the card as "just saved". Two phrases, each true where it
+      sits. If you would rather have one word everywhere, that word is <b>c</b>.
+    </p>
+  </div>
+
+</div>
+<script>
+document.querySelectorAll('.theme-toggle button').forEach(function (b) {
+  b.addEventListener('click', function () {
+    document.querySelectorAll('.theme-toggle button').forEach(function (x) { x.classList.remove('active'); });
+    b.classList.add('active');
+    document.body.classList.toggle('dark', b.dataset.theme === 'dark');
+  });
+});
+</script>
+</body>
+</html>

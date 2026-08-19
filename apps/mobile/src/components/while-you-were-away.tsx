@@ -61,7 +61,7 @@ export function WhileYouWereAway() {
     <View>
       <View className="flex-row items-center gap-2 px-1 pb-2.5">
         <Text className="text-eyebrow font-semibold uppercase text-text-soft">
-          {t('share.whileYouWereAway')}
+          {t('share.recentActivity')}
         </Text>
         <Pressable
           onPress={toggleFold}

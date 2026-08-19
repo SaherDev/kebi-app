@@ -4,7 +4,11 @@ import {
   clearShareHistory,
   clearShareToken,
   dismissPendingShares,
+  onShareStoreChange,
   readPendingShares,
+  recordLocalSave,
+  recordShareOutcome,
+  toSharePlace,
   writePendingShares,
   readShareQueue,
   storeShareToken,
@@ -157,5 +161,52 @@ describe('share history', () => {
     clearShareHistory();
 
     expect(readPendingShares().map((s) => s.id)).toEqual(['live']);
+  });
+});
+
+describe('in-app saves', () => {
+  it('writes a save made in the app into the same list the extension feeds', () => {
+    // One surface for both: a save from the sheet and a link shared from TikTok
+    // are the same event.
+    const id = recordLocalSave('https://vt.tiktok.com/ZSVSnKYxm/');
+
+    expect(id).not.toBeNull();
+    expect(readPendingShares()).toHaveLength(1);
+    expect(readPendingShares()[0].outcome).toBeUndefined();
+  });
+
+  it('keeps the typed words as the row name when there is no link', () => {
+    const id = recordLocalSave('kayu cafe canggu', 'kayu cafe canggu');
+
+    expect(readPendingShares()[0].title).toBe('kayu cafe canggu');
+    expect(id).not.toBeNull();
+  });
+
+  it('resolves the row it wrote', () => {
+    const id = recordLocalSave('https://vt.tiktok.com/x');
+
+    recordShareOutcome(id as string, {
+      status: 'completed',
+      places: [toSharePlace({ id: 'p1', place_name: 'Kayu', icon: null, categories: [] })],
+    });
+
+    expect(readPendingShares()[0].outcome?.places[0]).toEqual({
+      id: 'p1',
+      name: 'Kayu',
+      icon: null,
+      categories: [],
+    });
+  });
+
+  it('tells watchers about a write, so a card on screen resolves in place', () => {
+    // The extension could only ever write while the app was backgrounded; the
+    // save sheet writes while the user is looking at the card.
+    const seen = jest.fn();
+    const unsubscribe = onShareStoreChange(seen);
+
+    recordLocalSave('https://vt.tiktok.com/x');
+
+    expect(seen).toHaveBeenCalled();
+    unsubscribe();
   });
 });

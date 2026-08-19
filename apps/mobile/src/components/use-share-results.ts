@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AppState } from 'react-native';
 import { useApiClient } from '../api/hooks';
-import { useSavedPlaces } from './saved-places-context';
 import { detectSource } from '../lib/detect-source';
 import { formatRelativeTime } from '../lib/format-relative-time';
 import { extractPlace } from '../api/extract';
@@ -9,9 +8,11 @@ import {
   canShareInBackground,
   clearShareHistory,
   dismissPendingShares,
+  onShareStoreChange,
   readPendingShares,
   readShareQueue,
   recordShareOutcome,
+  toSharePlace,
   writePendingShares,
   writeShareQueue,
   type PendingShare,
@@ -89,13 +90,6 @@ export function useShareResults({ includeDismissed = false }: ShareResultsOption
   const clientRef = useRef(client);
   clientRef.current = client;
 
-  // A drained share is a save, so it lands in the same session store the save
-  // sheet feeds — without this, a place saved from a share is missing from the
-  // library and the consult card's saved-state until the next server read.
-  const { add } = useSavedPlaces();
-  const addRef = useRef(add);
-  addRef.current = add;
-
   const [rows, setRows] = useState<ShareResultRow[]>([]);
   const draining = useRef(false);
 
@@ -134,13 +128,10 @@ export function useShareResults({ includeDismissed = false }: ShareResultsOption
         adopted.map(async (item) => {
           try {
             const res = await extractPlace(clientRef.current, item.raw_input);
-            if (res.status === 'completed' && res.results.length > 0) {
-              addRef.current(res.results.map((r) => r.place));
-            }
             recordShareOutcome(
               item.id,
               res.status === 'completed' && res.results.length > 0
-                ? { status: 'completed', places: res.results.map(toSharePlace) }
+                ? { status: 'completed', places: res.results.map((r) => toSharePlace(r.place)) }
                 : {
                     status: 'failed',
                     places: [],
@@ -172,8 +163,14 @@ export function useShareResults({ includeDismissed = false }: ShareResultsOption
     const sub = AppState.addEventListener('change', (state) => {
       if (state === 'active') refresh();
     });
-    return () => sub.remove();
-  }, [refresh]);
+    // And a write from anywhere else in this process — the save sheet posts its
+    // own row now, from a screen the user is watching.
+    const unsubscribe = onShareStoreChange(read);
+    return () => {
+      sub.remove();
+      unsubscribe();
+    };
+  }, [refresh, read]);
 
   const dismiss = useCallback(() => {
     dismissPendingShares();
@@ -211,13 +208,10 @@ export function useShareResults({ includeDismissed = false }: ShareResultsOption
       void (async () => {
         try {
           const res = await extractPlace(clientRef.current, target.raw_input);
-          if (res.status === 'completed' && res.results.length > 0) {
-            addRef.current(res.results.map((r) => r.place));
-          }
           recordShareOutcome(
             id,
             res.status === 'completed' && res.results.length > 0
-              ? { status: 'completed', places: res.results.map(toSharePlace) }
+              ? { status: 'completed', places: res.results.map((r) => toSharePlace(r.place)) }
               : {
                   status: 'failed',
                   places: [],
@@ -241,18 +235,6 @@ export function useShareResults({ includeDismissed = false }: ShareResultsOption
  * gave one; otherwise the source and the moment, because "the tiktok I shared
  * at 10:28" is a memory and a shortlink is not.
  */
-/** Keep only what a row draws and opens — the response carries far more. */
-function toSharePlace(result: {
-  place: { id?: string | null; place_name: string; icon: string | null; categories: string[] };
-}): SharePlace {
-  return {
-    id: result.place.id ?? null,
-    name: result.place.place_name,
-    icon: result.place.icon,
-    categories: result.place.categories,
-  };
-}
-
 function labelFor(share: PendingShare): string {
   if (share.title) return share.title;
   const source = detectSource(share.raw_input);
