@@ -1,6 +1,7 @@
 import { SHARE_HISTORY_MS } from './share-config';
 import {
   SHARE_KEYS,
+  clearAllShareState,
   clearShareHistory,
   clearShareToken,
   dismissPendingShares,
@@ -11,6 +12,7 @@ import {
   toSharePlace,
   writePendingShares,
   readShareQueue,
+  storeApiBaseUrl,
   storeShareToken,
   storedShareTokenExpiry,
   writeShareQueue,
@@ -208,5 +210,36 @@ describe('in-app saves', () => {
 
     expect(seen).toHaveBeenCalled();
     unsubscribe();
+  });
+});
+
+describe('signing out', () => {
+  it('leaves nothing behind for the next account on this phone', () => {
+    // None of this storage is scoped to a user — the client is blind to
+    // identity — so whoever signs in next must not inherit any of it.
+    storeShareToken('kst_abc', Date.now() + 1000);
+    writeShareQueue([{ raw_input: 'https://vt.tiktok.com/x', shared_at: Date.now() }]);
+    writePendingShares([
+      {
+        id: 'a',
+        raw_input: 'https://vt.tiktok.com/y',
+        shared_at: Date.now(),
+        outcome: { status: 'completed', places: [] },
+      },
+    ]);
+
+    clearAllShareState();
+
+    expect(storedShareTokenExpiry()).toBeNull();
+    expect(readShareQueue()).toEqual([]);
+    expect(readPendingShares()).toEqual([]);
+  });
+
+  it('keeps the base url, which describes the build and not the person', () => {
+    storeApiBaseUrl('https://api.example.com');
+
+    clearAllShareState();
+
+    expect(mockStore.get(SHARE_KEYS.apiBaseUrl)).toBe('https://api.example.com');
   });
 });

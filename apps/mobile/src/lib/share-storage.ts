@@ -150,6 +150,27 @@ export function clearShareToken(): void {
 }
 
 /**
+ * Wipe everything this device knows about shares. Called the moment the app is
+ * no longer signed in.
+ *
+ * The App Group belongs to the device, not to an account — nothing in it is
+ * scoped to a user, and the client is deliberately blind to identity (ADR-044)
+ * so it could not scope them even if it wanted to. Left alone, the next person
+ * to sign in on this phone would read the previous one's recent activity, and
+ * the queue would drain their links into a stranger's library. Both are worse
+ * than losing a link.
+ *
+ * The base URL survives: it describes the build, not the person, and is
+ * rewritten on the next sign-in anyway.
+ */
+export function clearAllShareState(): void {
+  clearShareToken();
+  removeSharedItem(SHARE_KEYS.queue);
+  removeSharedItem(SHARE_KEYS.pending);
+  notify();
+}
+
+/**
  * Read the links the extension could not send. Returns an empty array on absent
  * or unparseable content — a corrupt queue must not block the app from starting.
  */

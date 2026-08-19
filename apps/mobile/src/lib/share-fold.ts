@@ -19,6 +19,18 @@ export async function getShareFolded(): Promise<boolean> {
   }
 }
 
+/**
+ * Forget the fold, on sign-out. Small, but it is still one person's choice
+ * about their own card — the next account starts with the card open.
+ */
+export async function clearShareFolded(): Promise<void> {
+  try {
+    await AsyncStorage.removeItem(FOLD_KEY);
+  } catch {
+    // Non-fatal.
+  }
+}
+
 /** Persist the choice. Best-effort — a storage failure only costs this session. */
 export async function setShareFolded(folded: boolean): Promise<void> {
   try {
