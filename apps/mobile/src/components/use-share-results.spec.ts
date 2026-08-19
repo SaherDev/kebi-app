@@ -91,14 +91,21 @@ describe('useShareResults', () => {
         id: 'a',
         raw_input: 'https://tiktok.com/x',
         shared_at: 1,
-        outcome: { status: 'completed', place_names: ['Warung Bu Mi'] },
+        outcome: {
+          status: 'completed',
+          places: [
+            { id: 'p1', name: 'Warung Bu Mi', icon: null, categories: ['restaurant'] },
+          ],
+        },
       },
     ];
 
     const { result } = renderHook(() => useShareResults());
 
     await waitFor(() => expect(result.current.rows[0].state).toBe('landed'));
-    expect(result.current.rows[0].placeNames).toEqual(['Warung Bu Mi']);
+    expect(result.current.rows[0].places).toEqual([
+      { id: 'p1', name: 'Warung Bu Mi', icon: null, categories: ['restaurant'] },
+    ]);
   });
 
   it('reports a delivered failure, carrying the reason', async () => {
@@ -107,7 +114,7 @@ describe('useShareResults', () => {
         id: 'a',
         raw_input: 'https://instagram.com/reel/x',
         shared_at: 1,
-        outcome: { status: 'failed', place_names: [], failure_reason: 'unsupported_url' },
+        outcome: { status: 'failed', places: [], failure_reason: 'unsupported_url' },
       },
     ];
 
@@ -119,7 +126,7 @@ describe('useShareResults', () => {
 
   it('treats a completed response with no results as a failure, not a success', async () => {
     mockStore.pending = [
-      { id: 'a', raw_input: 'x', shared_at: 1, outcome: { status: 'completed', place_names: [] } },
+      { id: 'a', raw_input: 'x', shared_at: 1, outcome: { status: 'completed', places: [] } },
     ];
 
     const { result } = renderHook(() => useShareResults());
@@ -132,14 +139,21 @@ describe('useShareResults', () => {
       mockStore.queue = [{ raw_input: 'https://tiktok.com/x', shared_at: 5 }];
       mockExtract.mockResolvedValue({
         status: 'completed',
-        results: [{ place: { place_name: 'Secret Spot' } }],
+        results: [
+          { place: { id: 'p2', place_name: 'Secret Spot', icon: null, categories: ['cafe'] } },
+        ],
         failure_reason: null,
       });
 
       const { result } = renderHook(() => useShareResults());
 
       await waitFor(() => expect(result.current.rows[0]?.state).toBe('landed'));
-      expect(result.current.rows[0].placeNames).toEqual(['Secret Spot']);
+      expect(result.current.rows[0].places[0]).toEqual({
+        id: 'p2',
+        name: 'Secret Spot',
+        icon: null,
+        categories: ['cafe'],
+      });
       // Emptied, so a relaunch cannot send it a second time.
       expect(mockStore.queue).toEqual([]);
     });

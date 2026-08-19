@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { Pressable, Text, View } from 'react-native';
+import { useRouter } from 'expo-router';
 import Animated, {
   Easing,
   cancelAnimation,
@@ -10,6 +11,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { Icon } from './icon';
 import { SOURCE_ICON } from './source-icon';
+import { PlaceAvatar } from './place-avatar';
 import { useShareResults, type ShareResultRow } from './use-share-results';
 import { useTranslation } from '../i18n/context';
 import { PRESS } from '../theme/motion';
@@ -34,7 +36,15 @@ export function WhileYouWereAway() {
   const { t } = useTranslation();
   const { rows, dismiss, retry } = useShareResults();
 
-  if (rows.length === 0) return null;
+  // A share that saved four places is four rows, not one with "and 3 more" —
+  // this is the surface whose whole job is saying what landed.
+  const entries = rows.flatMap<ShareEntry>((row) =>
+    row.state === 'landed'
+      ? row.places.map((place, i) => ({ key: `${row.id}:${i}`, row, place }))
+      : [{ key: row.id, row, place: null }],
+  );
+
+  if (entries.length === 0) return null;
 
   return (
     <View>
@@ -53,14 +63,14 @@ export function WhileYouWereAway() {
         </Pressable>
       </View>
 
-      {rows.length === 1 ? (
-        <ShareRow row={rows[0]} onRetry={retry} />
+      {entries.length === 1 ? (
+        <ShareRow entry={entries[0]} onRetry={retry} />
       ) : (
         <View className="rounded-large bg-surface px-3">
-          {rows.map((row, i) => (
-            <View key={row.id}>
+          {entries.map((entry, i) => (
+            <View key={entry.key}>
               {i > 0 ? <View className="h-px bg-surface-2" /> : null}
-              <ShareRow row={row} onRetry={retry} />
+              <ShareRow entry={entry} onRetry={retry} />
             </View>
           ))}
         </View>
@@ -75,8 +85,17 @@ export function WhileYouWereAway() {
  * carries the source glyph from the first frame, so a slow video URL still says
  * *which* share is taking its time.
  */
-function ShareRow({ row, onRetry }: { row: ShareResultRow; onRetry: (id: string) => void }) {
+/** One rendered line: a share in progress or failed, or one place it saved. */
+interface ShareEntry {
+  key: string;
+  row: ShareResultRow;
+  place: ShareResultRow['places'][number] | null;
+}
+
+function ShareRow({ entry, onRetry }: { entry: ShareEntry; onRetry: (id: string) => void }) {
   const { t } = useTranslation();
+  const router = useRouter();
+  const { row, place } = entry;
 
   if (row.state === 'working') {
     return (
@@ -85,10 +104,13 @@ function ShareRow({ row, onRetry }: { row: ShareResultRow; onRetry: (id: string)
           <Icon name={SOURCE_ICON[row.source]} size={15} className="text-text-soft" />
         </View>
         <View className="flex-1">
-          {/* Known since the share happened, so not a skeleton — only the place
-              name is genuinely unknown, and only that shimmers. */}
-          <Text className="text-body font-semibold text-text" numberOfLines={2}>
+          {/* Both known since the share happened, so neither is a skeleton. Only
+              the place name is genuinely unknown, and only that shimmers. */}
+          <Text className="text-body font-semibold text-text" numberOfLines={1}>
             {row.label}
+          </Text>
+          <Text className="mt-0.5 text-small text-text-soft" numberOfLines={1}>
+            {displayInput(row.rawInput)}
           </Text>
           <View className="mt-2">
             <Shimmer width="46%" />
@@ -101,51 +123,69 @@ function ShareRow({ row, onRetry }: { row: ShareResultRow; onRetry: (id: string)
   if (row.state === 'failed') {
     return (
       <View className="flex-row items-start gap-2.5 px-1 py-2.5">
+        {/* Same source mark as every other state — the generic link glyph here
+            was a leftover, not a decision. */}
         <View className="size-[34px] items-center justify-center rounded-small bg-bg">
-          <Icon name="link" size={15} className="text-text-soft" />
+          <Icon name={SOURCE_ICON[row.source]} size={15} className="text-text-soft" />
         </View>
         <View className="flex-1">
-          {/* No place exists, so the url is the name — and the failure is plain
-              danger text, not a status pill: nothing here has a status. */}
           <Text className="text-body font-semibold text-text" numberOfLines={1}>
             {row.label}
           </Text>
           <Text className="mt-0.5 text-small text-text-soft" numberOfLines={1}>
             {displayInput(row.rawInput)}
           </Text>
+          {/* Plain danger text, not a status pill: nothing here has a status. */}
           <Text className="mt-1 text-small font-medium text-danger">
             {failureText(t, row.failureReason)}
           </Text>
         </View>
+        {/* The app's existing action language (kebi-toasts-mockup .toast-action):
+            borderless, no background. A bordered pill competed with the row
+            divider and sat where every other row shows a chevron. */}
         <Pressable
           onPress={() => onRetry(row.id)}
           accessibilityRole="button"
           accessibilityLabel={t('share.tryAgain')}
-          className={`self-center rounded-full border border-surface-2 px-3.5 py-1.5 ${PRESS}`}
+          hitSlop={10}
+          className={`size-[30px] self-center items-center justify-center ${PRESS}`}
         >
-          <Text className="text-small font-semibold text-text">{t('share.tryAgain')}</Text>
+          <Icon name="refresh" size={15} className="text-text-muted" />
         </Pressable>
       </View>
     );
   }
 
+  if (!place) return null;
+
+  // A landed share is a place, so it behaves like one: same avatar as the stash,
+  // same chevron, same destination.
+  const openPlace = () => {
+    if (!place.id) return;
+    router.push({ pathname: '/place', params: { id: place.id } });
+  };
+
   return (
-    <View className="flex-row items-start gap-2.5 px-1 py-2.5">
-      <View className="size-[34px] items-center justify-center rounded-small bg-bg">
-        <Text className="text-[17px]">📍</Text>
-      </View>
+    <Pressable
+      onPress={openPlace}
+      disabled={!place.id}
+      accessibilityRole="button"
+      accessibilityLabel={place.name}
+      className={`flex-row items-center gap-2.5 px-1 py-2.5 ${PRESS}`}
+    >
+      <PlaceAvatar
+        categories={place.categories as never}
+        icon={place.icon}
+        size="row"
+        label={place.name}
+      />
       <View className="flex-1">
         <Text className="text-body font-semibold tracking-tight text-text" numberOfLines={1}>
-          {row.placeNames[0]}
+          {place.name}
         </Text>
-        {row.placeNames.length > 1 ? (
-          <Text className="mt-1 text-small text-text-muted">
-            {t('share.andMore', { count: row.placeNames.length - 1 })}
-          </Text>
-        ) : null}
       </View>
-      <Icon name="chevron-right" size={11} className="mt-2.5 text-text-soft" />
-    </View>
+      <Icon name="chevron-right" size={11} className="text-text-soft" />
+    </Pressable>
   );
 }
 

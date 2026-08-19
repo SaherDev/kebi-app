@@ -12,6 +12,7 @@ import {
   writePendingShares,
   writeShareQueue,
   type PendingShare,
+  type SharePlace,
 } from '../lib/share-storage';
 
 /**
@@ -37,7 +38,8 @@ export interface ShareResultRow {
   source: ReturnType<typeof detectSource>;
   sharedAt: number;
   state: 'working' | 'landed' | 'failed';
-  placeNames: string[];
+  /** Every place this share saved — one row each. Empty unless landed. */
+  places: SharePlace[];
   failureReason?: string;
 }
 
@@ -107,10 +109,10 @@ export function useShareResults(): UseShareResults {
             recordShareOutcome(
               item.id,
               res.status === 'completed' && res.results.length > 0
-                ? { status: 'completed', place_names: res.results.map((r) => r.place.place_name) }
+                ? { status: 'completed', places: res.results.map(toSharePlace) }
                 : {
                     status: 'failed',
-                    place_names: [],
+                    places: [],
                     failure_reason: res.failure_reason ?? res.status,
                   },
             );
@@ -175,10 +177,10 @@ export function useShareResults(): UseShareResults {
           recordShareOutcome(
             id,
             res.status === 'completed' && res.results.length > 0
-              ? { status: 'completed', place_names: res.results.map((r) => r.place.place_name) }
+              ? { status: 'completed', places: res.results.map(toSharePlace) }
               : {
                   status: 'failed',
-                  place_names: [],
+                  places: [],
                   failure_reason: res.failure_reason ?? res.status,
                 },
           );
@@ -199,6 +201,18 @@ export function useShareResults(): UseShareResults {
  * gave one; otherwise the source and the moment, because "the tiktok I shared
  * at 10:28" is a memory and a shortlink is not.
  */
+/** Keep only what a row draws and opens — the response carries far more. */
+function toSharePlace(result: {
+  place: { id?: string | null; place_name: string; icon: string | null; categories: string[] };
+}): SharePlace {
+  return {
+    id: result.place.id ?? null,
+    name: result.place.place_name,
+    icon: result.place.icon,
+    categories: result.place.categories,
+  };
+}
+
 function labelFor(share: PendingShare): string {
   if (share.title) return share.title;
   const source = detectSource(share.raw_input);
@@ -215,10 +229,11 @@ function toRow(share: PendingShare): ShareResultRow {
       source: detectSource(share.raw_input),
       sharedAt: share.shared_at,
       state: 'working',
-      placeNames: [],
+      places: [],
     };
   }
-  const landed = share.outcome.status === 'completed' && share.outcome.place_names.length > 0;
+  const places = share.outcome.places ?? [];
+  const landed = share.outcome.status === 'completed' && places.length > 0;
   return {
     id: share.id,
     rawInput: share.raw_input,
@@ -226,7 +241,7 @@ function toRow(share: PendingShare): ShareResultRow {
     source: detectSource(share.raw_input),
     sharedAt: share.shared_at,
     state: landed ? 'landed' : 'failed',
-    placeNames: share.outcome.place_names,
+    places,
     failureReason: share.outcome.failure_reason,
   };
 }

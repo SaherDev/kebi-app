@@ -49,6 +49,7 @@ export type IconName =
   | 'mic'
   | 'send'
   | 'stop'
+  | 'refresh'
   | 'globe'
   | 'sun'
   | 'moon'
@@ -231,6 +232,14 @@ const ICONS: Record<IconName, ReactNode> = {
     </>
   ),
   stop: <Rect x={6} y={6} width={12} height={12} rx={3} />,
+  // Retry on a share that failed while nobody was watching — the arrow returns
+  // to where it started, which is what "send it again" looks like.
+  refresh: (
+    <>
+      <Polyline points="23 4 23 10 17 10" />
+      <Path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
+    </>
+  ),
   // Category/price meta row on the place card (kebi-chat-mockup `.group-row`).
   globe: (
     <>

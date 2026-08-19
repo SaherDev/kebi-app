@@ -60,10 +60,28 @@ export interface PendingShare {
 
 export interface PendingOutcome {
   status: 'completed' | 'failed';
-  /** Place names saved, for the card's rows. Empty on failure. */
-  place_names: string[];
+  /**
+   * Every place this share saved — one row each, nothing hidden behind "and N
+   * more" on the one surface whose job is saying what landed. Empty on failure.
+   */
+  places: SharePlace[];
   /** kebi's failure_reason when it failed — drives which message the row shows. */
   failure_reason?: string;
+}
+
+/**
+ * The slice of a saved place a share row needs: enough to draw it like any
+ * other place row, and to open it. A name alone forces a generic pin and a
+ * chevron that goes nowhere.
+ */
+export interface SharePlace {
+  /** `PlaceCore.id` — what `/place` opens, same as a stash row pushes. */
+  id: string | null;
+  name: string;
+  /** `PlaceCore.icon`, feeding PlaceAvatar. */
+  icon: string | null;
+  /** `PlaceCore.categories`, most-specific first — drives the emoji. */
+  categories: string[];
 }
 
 /** One link the extension took but could not deliver. */
