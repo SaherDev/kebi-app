@@ -144,6 +144,7 @@ export default function LibraryScreen() {
             <LibraryAreaHeader
               group={section.group}
               tappable={section.tappable}
+              here={section.here}
               label={section.group.key === ELSEWHERE_KEY ? t('library.elsewhere') : undefined}
             />
           </View>

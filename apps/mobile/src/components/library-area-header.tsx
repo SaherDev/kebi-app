@@ -3,6 +3,7 @@ import { useRouter } from 'expo-router';
 import { CHAT_ENTITY_FALLBACK_ICON } from '@kebi-app/shared';
 import { areaIdFromUri } from '../lib/area-link';
 import { Icon } from './icon';
+import { useTranslation } from '../i18n/context';
 import { PRESS } from '../theme/motion';
 import type { LibraryGroup } from '../lib/library-groups';
 
@@ -25,13 +26,21 @@ import type { LibraryGroup } from '../lib/library-groups';
 interface LibraryAreaHeaderProps {
   group: LibraryGroup;
   tappable: boolean;
+  /** The area the device is in — badged, so the order explains itself. */
+  here?: boolean;
   /** Rendered for the `elsewhere` bucket, which has no area name of its own. */
   label?: string;
 }
 
-export function LibraryAreaHeader({ group, tappable, label }: LibraryAreaHeaderProps) {
+export function LibraryAreaHeader({ group, tappable, here, label }: LibraryAreaHeaderProps) {
+  const { t } = useTranslation();
   const router = useRouter();
   const name = label ?? group.name;
+  // A folded group can land on an ancestor kebi sent no handle for, so there is
+  // no pre-composed `uri` and nothing to open. Never rebuild one from the key
+  // (ADR-153) — just stop claiming the row is a link.
+  const areaId = group.uri ? areaIdFromUri(group.uri) : null;
+  const opens = tappable && areaId !== null;
 
   const body = (
     <View className="flex-row items-center gap-2 border-b border-surface-2 px-1 pb-1.5 pt-1">
@@ -47,7 +56,12 @@ export function LibraryAreaHeader({ group, tappable, label }: LibraryAreaHeaderP
         {name}
       </Text>
       <Text className="text-small text-text-soft">{group.count}</Text>
-      {tappable ? (
+      {here ? (
+        <View className="rounded-full bg-pill-green-bg px-2 py-0.5">
+          <Text className="text-eyebrow font-semibold text-success">{t('library.here')}</Text>
+        </View>
+      ) : null}
+      {opens ? (
         <View className="ms-auto">
           <Icon name="chevron-right" size={11} className="text-text-soft" />
         </View>
@@ -55,17 +69,11 @@ export function LibraryAreaHeader({ group, tappable, label }: LibraryAreaHeaderP
     </View>
   );
 
-  if (!tappable) return body;
-
-  const areaId = areaIdFromUri(group.uri);
+  if (!opens) return body;
 
   return (
     <Pressable
-      onPress={() => {
-        // A URI this build can't read has nothing to open — leave the header inert
-        // rather than pushing a screen that would 404.
-        if (areaId) router.push({ pathname: '/area', params: { id: areaId } });
-      }}
+      onPress={() => router.push({ pathname: '/area', params: { id: areaId } })}
       accessibilityRole="link"
       accessibilityLabel={name}
       className={PRESS}

@@ -170,7 +170,8 @@
       "removeFailed": "couldn't remove that one"
     },
     "matchCount": "{{count}} of {{total}}",
-    "elsewhere": "elsewhere"
+    "elsewhere": "elsewhere",
+    "here": "you're here"
   },
   "chat": {
     "greeting": "what's the move?",

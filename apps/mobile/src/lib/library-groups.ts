@@ -1,4 +1,5 @@
 import type { AreaHandle, LibraryAreaCount } from '@kebi-app/shared';
+import { LIBRARY_MIN_GROUP_SIZE } from './library-config';
 
 /**
  * Turning kebi's area distribution into the Library's section list (ADR-165).
@@ -8,14 +9,9 @@ import type { AreaHandle, LibraryAreaCount } from '@kebi-app/shared';
  * deliberate (pre-summing would make the leaf histogram unavailable), so the
  * rollup below is the client's job.
  *
- * Geo keys are `{cc}/{city}[/{neighborhood}]`. An entry is therefore
- * city-level (2 segments) or neighbourhood-level (3). Anything coarser has no
- * handle at all and is absent from the distribution — that shortfall is the
- * "elsewhere" bucket, see {@link elsewhereCount}.
+ * Geo keys are `{cc}/{city}[/{neighborhood}]`, so folding a group into its
+ * parent is one segment off the end.
  */
-
-/** Segments in a city-level geo key (`id/bali`). */
-const CITY_KEY_SEGMENTS = 2;
 
 /** One section on the Library screen. */
 export interface LibraryGroup {
@@ -25,60 +21,168 @@ export interface LibraryGroup {
   icon: string | null;
   /** The area screen this header opens. */
   uri: string;
-  /** Exact count across the whole library, rolled up where the rule applies. */
+  /** Exact count across the whole library, folded where the rule applies. */
   count: number;
+  /** Every distribution key that folded into this group — the row lookup. */
+  memberKeys: string[];
 }
 
-/** The `{cc}/{city}` prefix of any key — the key itself when already that coarse. */
-function cityKeyOf(key: string): string {
-  const segments = key.split('/');
-  return segments.length > CITY_KEY_SEGMENTS
-    ? segments.slice(0, CITY_KEY_SEGMENTS).join('/')
-    : key;
+/** The `{cc}` head of a geo key — the country the area sits in. */
+function countryOf(key: string): string {
+  return key.split('/')[0];
 }
 
-function toGroup(area: AreaHandle, count: number): LibraryGroup {
-  return { key: area.key, name: area.name, icon: area.icon, uri: area.uri, count };
+/** One level up, or `null` at country level. */
+function parentKeyOf(key: string): string | null {
+  const cut = key.lastIndexOf('/');
+  return cut === -1 ? null : key.slice(0, cut);
 }
 
 /**
- * Build the ordered section list from the area distribution.
+ * A display name for a geo key kebi never sent a handle for.
  *
- * **The rollup rule:** group by the most-specific key, *except* that a city
- * with saves which resolve only to city level collapses into a single
- * city-level group. Without it, Bangkok renders as `Thonglor`, `Ari`, and a
- * sibling `Bangkok` meaning "Bangkok, unspecified" — which reads as a bug.
- * With it, Bangkok is one group while Bali, where every save resolves deeper,
- * keeps `Canggu` / `Ubud` / `Uluwatu` apart.
- *
- * A rolled-up group keys on the city, and `?area=` matches by prefix, so it
- * still fetches every nested row.
- *
- * Groups are ordered **largest first** — the cities you actually pick from
- * lead — with name as a stable tie-break.
+ * Folding can land on an ancestor no save keyed to directly — most often the
+ * country, since `parent` is only populated one level up from each entry. A
+ * bare `th` is a heading nobody recognises, and the ISO code already carries
+ * the answer, so the platform resolves it rather than the app shipping a
+ * country table. Anything else (or a runtime without `Intl.DisplayNames`)
+ * falls back to the key itself, which is at least honest.
  */
-export function buildLibraryGroups(areas: LibraryAreaCount[]): LibraryGroup[] {
-  const byCity = new Map<string, LibraryAreaCount[]>();
-  for (const entry of areas) {
-    const cityKey = cityKeyOf(entry.area.key);
-    const bucket = byCity.get(cityKey);
-    if (bucket) bucket.push(entry);
-    else byCity.set(cityKey, [entry]);
+function countryName(key: string): string | null {
+  if (key.includes('/')) return null;
+  try {
+    const display = new Intl.DisplayNames(undefined, { type: 'region' });
+    const resolved = display.of(key.toUpperCase());
+    // `of` echoes the input back when it doesn't recognise the code.
+    return resolved && resolved.toLowerCase() !== key.toLowerCase() ? resolved : null;
+  } catch {
+    return null;
   }
+}
 
-  const groups: LibraryGroup[] = [];
-  for (const [cityKey, entries] of byCity) {
-    // The "city, unspecified" entry — saves that resolved no deeper than the city.
-    const cityEntry = entries.find((entry) => entry.area.key === cityKey);
-    if (cityEntry && entries.length > 1) {
-      const count = entries.reduce((sum, entry) => sum + entry.count, 0);
-      groups.push(toGroup(cityEntry.area, count));
-    } else {
-      for (const entry of entries) groups.push(toGroup(entry.area, entry.count));
+/**
+ * Build the section list from the area distribution.
+ *
+ * **The rollup rule: an area needs {@link LIBRARY_MIN_GROUP_SIZE} saves to earn
+ * its own heading.** Anything thinner folds into its parent, repeatedly, until
+ * it is big enough or it reaches the country. Countries always stand.
+ *
+ * kebi keys as deep as it can, which fragments a library badly: 37 real saves
+ * produced fifteen headings, most of them `1` — `Bang Pu Mai 1`, `Sam Phran 1`,
+ * `Dong Lakhon 1`. Those are eight separate tiny municipalities around Bangkok,
+ * not neighbourhoods of one city, so folding has to continue past the city or
+ * nothing merges. Folded, they become one Thailand group, while `Canggu` and
+ * `Uluwatu` keep their own names — they are big enough to deserve them.
+ *
+ * A folded group keys on the ancestor and `?area=` matches by prefix, so it
+ * still fetches every row beneath it.
+ *
+ * `memberKeys` records which distribution keys landed in each group, so a row
+ * can be filed under the same heading its count was.
+ */
+export function buildLibraryGroups(
+  areas: LibraryAreaCount[],
+  homeCountry?: string | null,
+): LibraryGroup[] {
+  // Every handle we've seen, by key — an entry's own, and its parent's. A fold
+  // target is usually named by one of these rather than needing invention.
+  const handles = new Map<string, AreaHandle>();
+  for (const { area } of areas) {
+    handles.set(area.key, area);
+    if (area.parent && !handles.has(area.parent.key)) {
+      handles.set(area.parent.key, { ...area.parent, parent: null });
     }
   }
 
-  return groups.sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
+  let buckets = areas.map(({ area, count }) => ({
+    key: area.key,
+    count,
+    memberKeys: [area.key],
+  }));
+
+  // Fold upward until every group is big enough or has run out of ancestors,
+  // **one depth at a time, deepest first**. Order matters: a neighbourhood has
+  // to land in its city before the city decides whether it is big enough to
+  // stand, or a thin city folds to its country and takes its children with it.
+  const depthOf = (key: string) => key.split('/').length;
+  for (;;) {
+    const foldable = buckets.filter(
+      (bucket) => bucket.count < LIBRARY_MIN_GROUP_SIZE && parentKeyOf(bucket.key) !== null,
+    );
+    if (foldable.length === 0) break;
+    const deepest = Math.max(...foldable.map((bucket) => depthOf(bucket.key)));
+
+    const merged = new Map<string, { key: string; count: number; memberKeys: string[] }>();
+    for (const bucket of buckets) {
+      const parent = parentKeyOf(bucket.key);
+      const target =
+        bucket.count < LIBRARY_MIN_GROUP_SIZE && parent && depthOf(bucket.key) === deepest
+          ? parent
+          : bucket.key;
+
+      const existing = merged.get(target);
+      if (existing) {
+        existing.count += bucket.count;
+        existing.memberKeys.push(...bucket.memberKeys);
+      } else {
+        merged.set(target, { key: target, count: bucket.count, memberKeys: [...bucket.memberKeys] });
+      }
+    }
+    buckets = [...merged.values()];
+  }
+
+  const groups = buckets.map((bucket) => {
+    const handle = handles.get(bucket.key);
+    return {
+      key: bucket.key,
+      // A country reads by its name, not its code — and the code is all kebi
+      // has to give at that level, so the platform resolves it here.
+      name: countryName(bucket.key) ?? handle?.name ?? bucket.key,
+      icon: handle?.icon ?? null,
+      uri: handle?.uri ?? '',
+      count: bucket.count,
+      memberKeys: bucket.memberKeys,
+    };
+  });
+
+  return orderLibraryGroups(groups, homeCountry);
+}
+
+/**
+ * Order groups for display: `homeCountry` first, largest within each side, name
+ * as a stable tie-break. Split out from {@link buildLibraryGroups} because the
+ * device's country resolves *after* the first paint — the list re-orders when
+ * it arrives without refetching anything.
+ *
+ * Size alone reads wrong on the road: in Bali with saves in Canggu (5), Da Nang
+ * (4) and Uluwatu (3), biggest-first splits the two Bali areas apart with a
+ * Vietnamese city nobody standing in Canggu wants between them. Matching is on
+ * the key's `{cc}` head, never on a name.
+ *
+ * Returns a new array; the input is not mutated.
+ */
+export function orderLibraryGroups(
+  groups: LibraryGroup[],
+  homeCountry?: string | null,
+): LibraryGroup[] {
+  const home = homeCountry?.toLowerCase() ?? null;
+  const isHome = (group: LibraryGroup) => (home !== null && countryOf(group.key) === home ? 0 : 1);
+
+  return [...groups].sort(
+    (a, b) => isHome(a) - isHome(b) || b.count - a.count || a.name.localeCompare(b.name),
+  );
+}
+
+/**
+ * Which group each distribution key belongs to, so a loaded row can be filed
+ * under the same heading its count was counted into.
+ */
+export function groupKeyByAreaKey(groups: LibraryGroup[]): Map<string, string> {
+  const lookup = new Map<string, string>();
+  for (const group of groups) {
+    for (const member of group.memberKeys) lookup.set(member, group.key);
+  }
+  return lookup;
 }
 
 /**
