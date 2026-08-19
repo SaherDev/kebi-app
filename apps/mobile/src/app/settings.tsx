@@ -189,6 +189,22 @@ export default function SettingsScreen() {
         </Group>
 
         {/*
+          The permanent door to the share history. The home card carries one
+          too, but the card is dismissible and the ✕ used to leave the history
+          with no way in at all — the log outlives the notice, so its entrance
+          has to as well.
+        */}
+        <Group eyebrow={t('settings.sharing')}>
+          <SettingsRow
+            emoji="📥"
+            label={t('settings.sharedLinks')}
+            sublabel={t('settings.sharedLinksSub')}
+            onPress={() => router.push('/shares')}
+            trailing={<Icon name="chevron-right" size={14} className="text-text-soft" />}
+          />
+        </Group>
+
+        {/*
           Knowledge — insider-only (kebi-curate-options.html §1, door c). Sits
           *below* "what kebi knows" so an insider's settings screen opens exactly
           like everyone else's: the group is an addition, never a reordering.
