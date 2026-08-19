@@ -16,11 +16,13 @@ import { PRESS } from '../theme/motion';
  */
 interface StashSectionProps {
   views: SavedPlaceView[];
+  /** The area these rows came from — badged, so "why these three" is answered. */
+  areaName?: string | null;
   /** Grand total of the user's saves; falls back to the loaded count. */
   total: number | null;
 }
 
-export function StashSection({ views, total }: StashSectionProps) {
+export function StashSection({ views, areaName, total }: StashSectionProps) {
   const { t } = useTranslation();
   const router = useRouter();
   if (views.length === 0) return null;
@@ -31,6 +33,13 @@ export function StashSection({ views, total }: StashSectionProps) {
       <View className="flex-row items-center gap-2.5 px-1 pb-2">
         <Text className="text-body font-medium text-text">{t('home.yourStash')}</Text>
         <Text className="text-body text-text-muted">{count}</Text>
+        {areaName ? (
+          <View className="ms-auto rounded-full bg-pill-green-bg px-2 py-0.5">
+            <Text className="text-eyebrow font-semibold text-success" numberOfLines={1}>
+              {areaName}
+            </Text>
+          </View>
+        ) : null}
       </View>
 
       {views.map((view, i) => (

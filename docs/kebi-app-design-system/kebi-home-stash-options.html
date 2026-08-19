@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Kebi — Home stash card options</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #FAFAF9;
+    --surface: #F1F1EF;
+    --surface-2: #E8E8E5;
+    --text: #1A1A1A;
+    --text-muted: #8A8A87;
+    --text-soft: #B5B5B1;
+    --success: #4A7C3A;
+    --like: #C2632F;
+    --warn: #B45309;
+    --danger: #D14343;
+    --pill-green: #E8F2E1;
+    --pill-warm: #FEE4D4;
+    --pill-amber: #FEF3C7;
+    --tag-rec: #A7C7A0;
+    --tag: #D4B891;
+    --tag-no: #D9A3A3;
+  }
+
+  body.dark {
+    --bg: #13110F;
+    --surface: #1C1A17;
+    --surface-2: #26231F;
+    --text: #F5F1EA;
+    --text-muted: #9A938A;
+    --text-soft: #6E6862;
+    --success: #A8C293;
+    --like: #E0A176;
+    --warn: #D9B36B;
+    --danger: #E89090;
+    --pill-green: #1F2A18;
+    --pill-warm: #3A2418;
+    --pill-amber: #33280F;
+  }
+
+  html, body {
+    background: var(--bg); color: var(--text);
+    font-family: 'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased; min-height: 100vh;
+  }
+  body.dark { background: #0A0908; }
+
+  .page { max-width: 1500px; margin: 0 auto; padding: 56px 32px 96px; }
+
+  .header {
+    display: flex; align-items: flex-start; justify-content: space-between;
+    padding-bottom: 32px; border-bottom: 1px solid var(--surface-2); margin-bottom: 40px;
+  }
+  .header h1 { font-size: 24px; font-weight: 700; letter-spacing: -0.025em; }
+  .header-meta { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+  .lede { font-size: 14px; color: var(--text-muted); line-height: 1.6; max-width: 840px; margin-top: 14px; }
+  .lede b { color: var(--text); font-weight: 600; }
+  .lede code { font-size: 12px; background: var(--surface-2); border-radius: 5px; padding: 1px 6px; }
+
+  .theme-toggle { display: flex; background: var(--surface); border-radius: 999px; padding: 3px; flex-shrink: 0; }
+  .theme-toggle button {
+    padding: 6px 14px; background: transparent; border: none; border-radius: 999px;
+    font-family: inherit; font-size: 12px; font-weight: 500; color: var(--text-muted); cursor: pointer;
+  }
+  .theme-toggle button.active { background: var(--text); color: var(--bg); }
+
+  .section { margin-bottom: 64px; }
+  .section-head {
+    display: flex; align-items: baseline; justify-content: space-between;
+    margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid var(--surface-2);
+  }
+  .section-title { font-size: 11px; font-weight: 600; color: var(--text-soft); text-transform: uppercase; letter-spacing: 0.08em; }
+  .section-count { font-size: 12px; color: var(--text-soft); }
+  .section-h2 { font-size: 26px; font-weight: 700; letter-spacing: -0.025em; margin-bottom: 8px; }
+  .section-desc { font-size: 14px; color: var(--text-muted); line-height: 1.6; max-width: 840px; margin-bottom: 28px; }
+  .section-desc b { color: var(--text); font-weight: 600; }
+  .section-desc code { font-size: 12px; background: var(--surface-2); border-radius: 5px; padding: 1px 6px; }
+
+  .crops { display: flex; flex-wrap: wrap; gap: 30px; align-items: flex-start; }
+  .crop-wrap { width: 330px; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+  .crop-wrap .card { align-self: stretch; }
+  .phone-label { font-size: 13px; font-weight: 600; letter-spacing: -0.01em; }
+  .crop-note { font-size: 11.5px; color: var(--text-muted); line-height: 1.55; }
+  .crop-note b { color: var(--text); font-weight: 600; }
+  .opt-tag {
+    display: inline-block; font-size: 10px; font-weight: 700; letter-spacing: .08em;
+    text-transform: uppercase; color: #1A1A1A; background: var(--tag);
+    border-radius: 999px; padding: 3px 10px;
+  }
+  .opt-tag.rec { background: var(--tag-rec); }
+  .opt-tag.no  { background: var(--tag-no); }
+
+  /* ── the card, as it really renders ── */
+  .card {
+    background: var(--surface); border: 1px solid var(--surface-2);
+    border-radius: 18px; padding: 12px;
+  }
+  .card-head { display: flex; align-items: center; gap: 9px; padding: 0 4px 8px; }
+  .card-head .t { font-size: 14px; font-weight: 500; color: var(--text); }
+  .card-head .n { font-size: 14px; color: var(--text-muted); }
+  .card-head .here {
+    margin-left: auto; display: inline-flex; align-items: center; gap: 4px;
+    font-size: 9.5px; font-weight: 700; letter-spacing: .04em;
+    color: var(--success); background: var(--pill-green); border-radius: 999px; padding: 2px 8px;
+  }
+  .rule { height: 1px; background: var(--surface-2); }
+
+  .row { display: flex; align-items: flex-start; gap: 10px; padding: 9px 4px; }
+  .av {
+    width: 34px; height: 34px; border-radius: 9px; background: var(--bg);
+    display: flex; align-items: center; justify-content: center; font-size: 17px; flex-shrink: 0;
+  }
+  .row .body { flex: 1; min-width: 0; }
+  .row .nm { font-size: 14px; font-weight: 600; color: var(--text); letter-spacing: -0.01em; }
+  .pills { display: flex; gap: 5px; margin-top: 4px; flex-wrap: wrap; }
+  .pill {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 1.5px 7px; border-radius: 999px; font-size: 9.5px; font-weight: 600;
+  }
+  .pill::before { content: ''; width: 4px; height: 4px; border-radius: 50%; }
+  .pill.warm { background: var(--pill-warm); color: var(--like); }
+  .pill.warm::before { background: var(--like); }
+  .pill.amber { background: var(--pill-amber); color: var(--warn); }
+  .pill.amber::before { background: var(--warn); }
+  .pill.green { background: var(--pill-green); color: var(--success); }
+  .pill.green::before { background: var(--success); }
+  .meta { font-size: 11.5px; color: var(--text-muted); margin-top: 4px; }
+  .chev { width: 11px; height: 11px; stroke: var(--text-soft); stroke-width: 2.2; fill: none; flex-shrink: 0; margin-top: 10px; }
+
+  /* area row (option C) */
+  .arow { display: flex; align-items: center; gap: 10px; padding: 10px 4px; }
+  .arow .glyph { font-size: 17px; line-height: 1; width: 34px; text-align: center; flex-shrink: 0; }
+  .arow .nm { font-size: 14px; font-weight: 600; color: var(--text); letter-spacing: -0.01em; }
+  .arow .n { font-size: 12px; color: var(--text-soft); }
+  .arow .sub { font-size: 11.5px; color: var(--text-muted); margin-top: 2px; }
+  .arow .chev { margin-top: 0; }
+
+  .foot { display: flex; align-items: center; padding: 9px 4px 2px; }
+  .foot .t { font-size: 14px; color: var(--text); }
+  .foot .chev { margin: 0 0 0 auto; }
+
+  .verdict {
+    margin-top: 34px; border: 1px solid var(--surface-2); border-radius: 16px;
+    padding: 22px 24px; background: var(--surface); max-width: 900px;
+  }
+  .verdict h3 { font-size: 14px; font-weight: 700; margin-bottom: 10px; }
+  .verdict p { font-size: 13px; color: var(--text-muted); line-height: 1.65; }
+  .verdict p + p { margin-top: 10px; }
+  .verdict b { color: var(--text); font-weight: 600; }
+  .verdict code { font-size: 11.5px; background: var(--bg); border-radius: 5px; padding: 1px 6px; }
+</style>
+</head>
+<body>
+
+<div class="page">
+
+  <div class="header">
+    <div>
+      <h1>home — "your stash" card</h1>
+      <div class="header-meta">kebi-app · apps/mobile/src/components/stash-section.tsx · options, nothing locked</div>
+      <p class="lede">
+        the Library now groups by area and leads with the country you're in. the home card
+        still shows your <b>three newest saves, flat</b> — so standing in Canggu it offers three
+        lakes in Kyrgyzstan, and the two surfaces disagree about what "your stash" is.
+        <br><br>
+        the card is also <b>richer than a Library row</b>: status pills and a
+        <code>type · tag · area</code> line, where the Library shows icon, name and a meta line.
+        that difference is worth keeping or losing <i>on purpose</i>, not by accident.
+      </p>
+    </div>
+    <div class="theme-toggle">
+      <button class="active" data-theme="light">light</button>
+      <button data-theme="dark">dark</button>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-head">
+      <span class="section-title">the card</span>
+      <span class="section-count">today + 3 options</span>
+    </div>
+    <h2 class="section-h2">what "your stash" shows on home</h2>
+    <p class="section-desc">
+      real-size crops. the question underneath all of them: is this card a
+      <b>recap of what you saved</b>, or a <b>shortcut to what you'd pick right now</b>? the
+      Library answers "right now". if home answers "recently", they will keep drifting apart.
+    </p>
+
+    <div class="crops">
+
+      <!-- TODAY -->
+      <div class="crop-wrap">
+        <span class="opt-tag no">today</span>
+        <div class="phone-label">three newest, anywhere</div>
+        <div class="card">
+          <div class="card-head"><span class="t">your stash</span><span class="n">37</span></div>
+          <div class="row">
+            <div class="av">🏔️</div>
+            <div class="body">
+              <div class="nm">Kel Suu Lake</div>
+              <div class="pills"><span class="pill warm">not visited</span><span class="pill amber">needs review</span></div>
+              <div class="meta">lake · adventure · At-Bashi District</div>
+            </div>
+            <svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>
+          </div>
+          <div class="rule"></div>
+          <div class="row">
+            <div class="av">💧</div>
+            <div class="body">
+              <div class="nm">Song Kul Lake</div>
+              <div class="pills"><span class="pill warm">not visited</span><span class="pill amber">needs review</span></div>
+              <div class="meta">lake · scenic view · Naryn Region</div>
+            </div>
+            <svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>
+          </div>
+          <div class="rule"></div>
+          <div class="row">
+            <div class="av">🛖</div>
+            <div class="body">
+              <div class="nm">Tash Rabat</div>
+              <div class="pills"><span class="pill warm">not visited</span><span class="pill amber">needs review</span></div>
+              <div class="meta">landmark · historical · At-Bashi District</div>
+            </div>
+            <svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>
+          </div>
+          <div class="foot"><span class="t">show all</span>
+            <svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>
+          </div>
+        </div>
+        <div class="crop-note">
+          newest-first, ignoring where you are. in Bali it offers <b>three lakes in
+          Kyrgyzstan</b> — a recap of a trip you already took, on the screen that asks
+          "where to next?".
+        </div>
+      </div>
+
+      <!-- OPTION A -->
+      <div class="crop-wrap">
+        <span class="opt-tag rec">a · recommended</span>
+        <div class="phone-label">what's near you</div>
+        <div class="card">
+          <div class="card-head">
+            <span class="t">your stash</span><span class="n">37</span>
+            <span class="here">◎ canggu</span>
+          </div>
+          <div class="row">
+            <div class="av">🍸</div>
+            <div class="body">
+              <div class="nm">Miss Fish Bali</div>
+              <div class="pills"><span class="pill warm">not visited</span></div>
+              <div class="meta">seafood · $$ · Canggu</div>
+            </div>
+            <svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>
+          </div>
+          <div class="rule"></div>
+          <div class="row">
+            <div class="av">🍕</div>
+            <div class="body">
+              <div class="nm">Luigi's Hot Pizza Canggu</div>
+              <div class="pills"><span class="pill green">went</span></div>
+              <div class="meta">pizza · $ · Canggu</div>
+            </div>
+            <svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>
+          </div>
+          <div class="rule"></div>
+          <div class="row">
+            <div class="av">🏝️</div>
+            <div class="body">
+              <div class="nm">Old Man's</div>
+              <div class="pills"><span class="pill warm">not visited</span></div>
+              <div class="meta">bar · $$ · Canggu</div>
+            </div>
+            <svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>
+          </div>
+          <div class="foot"><span class="t">show all 37</span>
+            <svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>
+          </div>
+        </div>
+        <div class="crop-note">
+          same card, filtered to the area you're standing in — <code>?area=</code> already does
+          this. the badge says <b>why these three</b>. matches the Library's promise, and on the
+          screen that asks "where to next?" it finally answers with places you could walk to.
+          <b>falls back to newest</b> when you have nothing saved nearby.
+        </div>
+      </div>
+
+      <!-- OPTION B -->
+      <div class="crop-wrap">
+        <span class="opt-tag">b · areas, not places</span>
+        <div class="phone-label">a digest of where your saves are</div>
+        <div class="card">
+          <div class="card-head"><span class="t">your stash</span><span class="n">37</span></div>
+          <div class="arow">
+            <span class="glyph">🏄</span>
+            <div class="body">
+              <div class="nm">Canggu</div>
+              <div class="sub">5 saved · you're here</div>
+            </div>
+            <svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>
+          </div>
+          <div class="rule"></div>
+          <div class="arow">
+            <span class="glyph">🏙️</span>
+            <div class="body">
+              <div class="nm">Bangkok</div>
+              <div class="sub">10 saved</div>
+            </div>
+            <svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>
+          </div>
+          <div class="rule"></div>
+          <div class="arow">
+            <span class="glyph">🏖️</span>
+            <div class="body">
+              <div class="nm">Da Nang</div>
+              <div class="sub">4 saved</div>
+            </div>
+            <svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>
+          </div>
+          <div class="foot"><span class="t">show all</span>
+            <svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>
+          </div>
+        </div>
+        <div class="crop-note">
+          the card becomes a <b>map of your library</b>, mirroring the Library's own structure —
+          one tap into an area screen. orients you across trips, but home now shows
+          <b>no actual places</b>, and it duplicates what the Library already does one tap away.
+        </div>
+      </div>
+
+      <!-- OPTION C -->
+      <div class="crop-wrap">
+        <span class="opt-tag">c · nearest first</span>
+        <div class="phone-label">closest saves, wherever they are</div>
+        <div class="card">
+          <div class="card-head">
+            <span class="t">your stash</span><span class="n">37</span>
+            <span class="here">◎ nearest</span>
+          </div>
+          <div class="row">
+            <div class="av">🍕</div>
+            <div class="body">
+              <div class="nm">Luigi's Hot Pizza Canggu</div>
+              <div class="pills"><span class="pill green">went</span></div>
+              <div class="meta">pizza · $ · 4 min away</div>
+            </div>
+            <svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>
+          </div>
+          <div class="rule"></div>
+          <div class="row">
+            <div class="av">🏝️</div>
+            <div class="body">
+              <div class="nm">Old Man's</div>
+              <div class="pills"><span class="pill warm">not visited</span></div>
+              <div class="meta">bar · $$ · 9 min away</div>
+            </div>
+            <svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>
+          </div>
+          <div class="rule"></div>
+          <div class="row">
+            <div class="av">🍷</div>
+            <div class="body">
+              <div class="nm">Ulu Cliffhouse</div>
+              <div class="pills"><span class="pill warm">not visited</span></div>
+              <div class="meta">bar · $$$ · 48 min away</div>
+            </div>
+            <svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>
+          </div>
+          <div class="foot"><span class="t">show all 37</span>
+            <svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>
+          </div>
+        </div>
+        <div class="crop-note">
+          sorted by real distance, ignoring area boundaries — the meta line trades
+          <code>area</code> for <b>time away</b>. the sharpest answer to "where to next?",
+          and the most expensive: kebi <b>declined a distance sort</b> (the cursor would have to
+          carry the origin), so this needs new backend work.
+        </div>
+      </div>
+
+    </div>
+
+    <div class="verdict">
+      <h3>what each costs</h3>
+      <p>
+        <b>a</b> is the only one buildable today: <code>?area=</code> already exists, and the
+        Library hook already resolves the device's area. It also keeps the card's shape, so it is
+        a change of <i>which rows</i>, not a redesign.
+      </p>
+      <p>
+        <b>b</b> needs nothing new either — the distribution endpoint is already fetched — but it
+        makes home a second Library rather than a shortcut into it.
+        <b>c</b> needs a distance sort kebi has explicitly declined for now.
+      </p>
+      <p>
+        <b>one caveat for a and b:</b> matching "where you are" to an area is unreliable by name —
+        the device reports <code>Kuta Utara</code> where the saves say <code>Canggu</code>. The
+        Library already orders by <b>country code</b> for exactly this reason; a badge that names
+        the area needs kebi to resolve coordinates to an area key, which is the parked
+        "you're here" request.
+      </p>
+    </div>
+  </div>
+
+</div>
+
+<script>
+(function () {
+  document.querySelectorAll('.theme-toggle button').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      document.querySelectorAll('.theme-toggle button').forEach(function (b) { b.classList.remove('active'); });
+      btn.classList.add('active');
+      document.body.classList.toggle('dark', btn.dataset.theme === 'dark');
+    });
+  });
+})();
+</script>
+
+</body>
+</html>
