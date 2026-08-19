@@ -15,6 +15,17 @@ auth:
     stamp_dedupe_ttl_ms: 3600000 # re-stamp a user at most once per window (≈ token TTL)
     # Admin-API user_metadata.name write (SupabaseProfileWriter).
     profile_timeout_ms: 5000 # admin PUT request timeout
+  # Credential the iOS share extension uses to save while the app is dormant
+  # (share-and-forget). Long-lived by necessity — the extension authenticates
+  # days after the app was last opened, and cannot refresh a Supabase session
+  # without racing its refresh-token rotation. Secret: SHARE_TOKEN_SECRET.
+  share_token:
+    ttl_days: 90
+    # The only routes a share token may reach. It is a long-lived credential
+    # held by an extension, so it opens exactly one door — saving a place — and
+    # never the session's. Anything else requires a real Supabase token.
+    paths:
+      - /extract
   public_paths:
     - /health
   # Verified but not-yet-provisioned tokens (no internal_id) may hit only these —

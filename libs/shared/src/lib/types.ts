@@ -662,6 +662,18 @@ export interface UserSettingsResponse {
   movement_profile: MovementProfile | null;
 }
 
+/**
+ * The credential the iOS share extension saves with while the app is dormant
+ * (`POST /auth/share-token`, share-and-forget). Minted from a live session and
+ * handed to the extension via the App Group; the client stores it, never reads
+ * it — it is opaque, like every other credential in this app (ADR-044).
+ */
+export interface ShareTokenResponse {
+  token: string;
+  /** Expiry, epoch milliseconds, so the app can re-mint before it lapses. */
+  expires_at: number;
+}
+
 export interface AuthUser {
   id: string;
   ai_enabled: boolean;

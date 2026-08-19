@@ -34,6 +34,13 @@
     },
     "plugins": [
       [
+        "./plugins/with-silent-share",
+        {
+          "appGroup": "group.app.kebi",
+          "extensionName": "SavetoKebi"
+        }
+      ],
+      [
         "expo-splash-screen",
         {
           "image": "./assets/images/splash-icon.png",
