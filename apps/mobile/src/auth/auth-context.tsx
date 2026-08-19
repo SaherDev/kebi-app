@@ -14,6 +14,7 @@ import { supabase } from '../lib/supabase';
 import { createApiClient } from '../api/client';
 import { API_ROUTES } from '../api/routes';
 import { detectChannel } from './detect-channel';
+import { ensureShareToken, revokeShareToken } from '../lib/share-credential';
 import { AUTH } from './constants';
 
 // Finish any auth session left dangling in the system browser (no-op normally).
@@ -130,9 +131,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // is fetched only as the Bearer credential. refreshSession emits
       // TOKEN_REFRESHED (not SIGNED_IN/INITIAL_SESSION), so this never loops.
       if (session && (event === 'SIGNED_IN' || event === 'INITIAL_SESSION')) {
-        createApiClient(getAccessToken)
+        const client = createApiClient(getAccessToken);
+        client
           .post(API_ROUTES.login, {})
           .then(() => supabase.auth.refreshSession())
+          // Top the share extension's credential up while we're here — it must
+          // be able to save days from now, with the app not running
+          // (share-and-forget). No-ops when the stored token is still good, and
+          // never rejects: a missing share token degrades to the extension
+          // queueing links locally, not to a broken sign-in.
+          .then(() => ensureShareToken(client))
           .catch(() => undefined);
       }
     });
@@ -223,6 +231,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signOut = useCallback(async () => {
+    // Before the session goes: the share token is stateless and stays valid
+    // server-side until it expires, so dropping the extension's only copy is
+    // what actually stops it saving into a signed-out account.
+    revokeShareToken();
     await supabase.auth.signOut();
     setPendingOtp(null);
   }, []);
