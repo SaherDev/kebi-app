@@ -1,4 +1,5 @@
 import ExpoModulesCore
+import os.log
 
 /**
  * Receives the results of shares the extension handed to iOS.
@@ -32,6 +33,10 @@ public class KebiShareSessionSubscriber: ExpoAppDelegateSubscriber, URLSessionDa
   /// or the system counts it against us.
   private var completionHandler: (() -> Void)?
 
+  /// Diagnostics for a path that cannot be tested from a unit test and fails
+  /// silently when it fails: `log stream --predicate 'subsystem == "app.kebi"'`.
+  private static let log = OSLog(subsystem: "app.kebi", category: "share")
+
   private lazy var session: URLSession = {
     let config = URLSessionConfiguration.background(
       withIdentifier: KebiShareSessionSubscriber.sessionIdentifier
@@ -47,6 +52,7 @@ public class KebiShareSessionSubscriber: ExpoAppDelegateSubscriber, URLSessionDa
     // Touch the session on every launch: re-attaching is what makes iOS hand
     // over results it has been holding since the app was last killed.
     _ = session
+    NSLog("[kebi-share] subscriber: didFinishLaunching, session attached")
     return true
   }
 
@@ -58,6 +64,7 @@ public class KebiShareSessionSubscriber: ExpoAppDelegateSubscriber, URLSessionDa
     handleEventsForBackgroundURLSession identifier: String,
     completionHandler: @escaping () -> Void
   ) {
+    NSLog("[kebi-share] subscriber: handleEvents for %@", identifier)
     guard identifier == KebiShareSessionSubscriber.sessionIdentifier else {
       completionHandler()
       return
@@ -75,6 +82,11 @@ public class KebiShareSessionSubscriber: ExpoAppDelegateSubscriber, URLSessionDa
     task: URLSessionTask,
     didCompleteWithError error: Error?
   ) {
+    let status = (task.response as? HTTPURLResponse)?.statusCode ?? -1
+    NSLog(
+      "[kebi-share] subscriber: task complete status=%d error=%@",
+      status, error?.localizedDescription ?? "none"
+    )
     let body = buffers.removeValue(forKey: task.taskIdentifier)
     // The id rides the request, so it survives the process that created it.
     guard let id = task.originalRequest?.value(forHTTPHeaderField: KebiShareSessionSubscriber.shareIdHeader) else {
@@ -90,7 +102,6 @@ public class KebiShareSessionSubscriber: ExpoAppDelegateSubscriber, URLSessionDa
       return
     }
 
-    let status = (task.response as? HTTPURLResponse)?.statusCode ?? 0
     guard (200..<300).contains(status) else {
       // 5xx from kebi, 401 from an expired share token, anything else. The row
       // can offer "try again", which is useless if the row never resolves.
@@ -169,7 +180,11 @@ public class KebiShareSessionSubscriber: ExpoAppDelegateSubscriber, URLSessionDa
       items[index]["outcome"] = outcome
       changed = true
     }
-    guard changed else { return }
+    guard changed else {
+      NSLog("[kebi-share] subscriber: no pending record for %@", id)
+      return
+    }
+    NSLog("[kebi-share] subscriber: recorded outcome for %@", id)
 
     guard let encoded = try? JSONSerialization.data(withJSONObject: items),
           let json = String(data: encoded, encoding: .utf8) else { return }

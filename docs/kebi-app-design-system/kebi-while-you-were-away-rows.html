@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Kebi — while you were away, rows</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #FAFAF9;
+    --surface: #F1F1EF;
+    --surface-2: #E8E8E5;
+    --text: #1A1A1A;
+    --text-muted: #8A8A87;
+    --text-soft: #B5B5B1;
+    --success: #4A7C3A;
+    --like: #C2632F;
+    --danger: #D14343;
+    --pill-warm: #FEE4D4;
+    --tag-rec: #A7C7A0;
+    --tag: #D4B891;
+    --tag-no: #D9A3A3;
+  }
+  body.dark {
+    --bg: #13110F; --surface: #1C1A17; --surface-2: #26231F;
+    --text: #F5F1EA; --text-muted: #9A938A; --text-soft: #6E6862;
+    --success: #A8C293; --like: #E0A176; --danger: #E89090; --pill-warm: #3A2418;
+  }
+
+  html, body {
+    background: var(--bg); color: var(--text);
+    font-family: 'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased; min-height: 100vh;
+  }
+  body.dark { background: #0A0908; }
+  .page { max-width: 1400px; margin: 0 auto; padding: 56px 32px 96px; }
+
+  .header { display: flex; align-items: flex-start; justify-content: space-between;
+    padding-bottom: 30px; border-bottom: 1px solid var(--surface-2); margin-bottom: 36px; }
+  h1 { font-size: 25px; font-weight: 700; letter-spacing: -0.028em; }
+  .meta { font-size: 12px; color: var(--text-muted); margin-top: 5px; }
+  .lede { font-size: 14px; color: var(--text-muted); line-height: 1.65; max-width: 820px; margin-top: 14px; }
+  .lede b { color: var(--text); font-weight: 600; }
+  .lede code { font-size: 12px; background: var(--surface-2); border-radius: 5px; padding: 1px 6px; }
+
+  .theme-toggle { display: flex; background: var(--surface); border-radius: 999px; padding: 3px; flex-shrink: 0; }
+  .theme-toggle button { padding: 6px 14px; background: transparent; border: none; border-radius: 999px;
+    font-family: inherit; font-size: 12px; font-weight: 500; color: var(--text-muted); cursor: pointer; }
+  .theme-toggle button.active { background: var(--text); color: var(--bg); }
+
+  .section-head { display: flex; align-items: baseline; justify-content: space-between;
+    margin: 40px 0 12px; padding-bottom: 12px; border-bottom: 1px solid var(--surface-2); }
+  .section-title { font-size: 11px; font-weight: 600; color: var(--text-soft);
+    text-transform: uppercase; letter-spacing: 0.08em; }
+  .section-count { font-size: 12px; color: var(--text-soft); }
+  .section-desc { font-size: 14px; color: var(--text-muted); line-height: 1.6; max-width: 820px; margin-bottom: 26px; }
+  .section-desc b { color: var(--text); font-weight: 600; }
+
+  .crops { display: flex; flex-wrap: wrap; gap: 30px; align-items: flex-start; }
+  .col { width: 330px; display: flex; flex-direction: column; gap: 10px; }
+  .col h2 { font-size: 15px; font-weight: 700; letter-spacing: -0.02em; }
+  .note { font-size: 11.5px; color: var(--text-muted); line-height: 1.55; }
+  .note b { color: var(--text); font-weight: 600; }
+  .tag { display: inline-block; align-self: flex-start; font-size: 10px; font-weight: 700;
+    letter-spacing: .08em; text-transform: uppercase; color: #1A1A1A; background: var(--tag);
+    border-radius: 999px; padding: 3px 10px; }
+  .tag.rec { background: var(--tag-rec); }
+  .tag.no { background: var(--tag-no); }
+
+  .stage { background: var(--bg); border: 1px dashed var(--surface-2); border-radius: 12px; padding: 14px 12px; }
+  .eyebrow { display: flex; align-items: center; gap: 8px; padding: 0 4px 10px; }
+  .eyebrow .lb { font-size: 11px; font-weight: 600; color: var(--text-soft);
+    text-transform: uppercase; letter-spacing: 0.08em; }
+  .eyebrow .x { margin-left: auto; width: 20px; height: 20px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center; background: var(--surface); }
+  .eyebrow .x svg { width: 9px; height: 9px; stroke: var(--text-muted); stroke-width: 2.6; fill: none; }
+
+  .group { background: var(--surface); border-radius: 14px; padding: 4px 12px; }
+  .rule { height: 1px; background: var(--surface-2); }
+
+  .row { display: flex; align-items: flex-start; gap: 10px; padding: 10px 4px; }
+  .av { width: 34px; height: 34px; border-radius: 9px; background: var(--surface);
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 15px; }
+  .group .av { background: var(--bg); }
+  .body { flex: 1; min-width: 0; }
+  .nm { font-size: 14px; font-weight: 600; color: var(--text); letter-spacing: -0.01em;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .link { font-size: 11.5px; color: var(--text-soft); margin-top: 2px;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .meta-line { font-size: 11.5px; color: var(--text-muted); margin-top: 4px; }
+  .fail { font-size: 11.5px; color: var(--danger); font-weight: 500; margin-top: 4px; }
+  .pills { display: flex; gap: 5px; margin-top: 4px; }
+  .pill { display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px;
+    border-radius: 999px; font-size: 11px; font-weight: 600; background: var(--pill-warm); color: var(--like); }
+  .pill::before { content: ''; width: 5px; height: 5px; border-radius: 50%; background: var(--like); }
+  .chev { width: 11px; height: 11px; stroke: var(--text-soft); stroke-width: 2.2; fill: none; margin-top: 11px; flex-shrink: 0; }
+  .retry { align-self: center; flex-shrink: 0; font-size: 11px; font-weight: 600; color: var(--text);
+    background: var(--bg); border: 1px solid var(--surface-2); border-radius: 999px; padding: 5px 12px; }
+
+  .sk { height: 9px; border-radius: 3px; background: var(--surface-2); animation: pulse 1.4s ease-in-out infinite; }
+  @keyframes pulse { 0%,100% { opacity: 1 } 50% { opacity: .45 } }
+
+  .verdict { margin-top: 38px; border: 1px solid var(--surface-2); border-radius: 16px;
+    padding: 22px 24px; background: var(--surface); max-width: 900px; }
+  .verdict h3 { font-size: 14px; font-weight: 700; margin-bottom: 10px; }
+  .verdict p { font-size: 13px; color: var(--text-muted); line-height: 1.68; }
+  .verdict p + p { margin-top: 10px; }
+  .verdict b { color: var(--text); font-weight: 600; }
+  .verdict code { font-size: 11.5px; background: var(--bg); border-radius: 5px; padding: 1px 6px; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="header">
+    <div>
+      <h1>while you were away — the row</h1>
+      <div class="meta">kebi-app · apps/mobile · updated to what the share sheet actually gives us</div>
+      <p class="lede">
+        The locked mockup assumed a pending row could be named by its place, and drew the rest as
+        a skeleton. Reality is narrower: <b>TikTok hands over a link and nothing else</b> — no
+        caption, no title, no thumbnail. So until kebi answers, the only true things we have are
+        <b>where it came from</b>, <b>when</b>, and <b>the link</b>.
+      </p>
+    </div>
+    <div class="theme-toggle">
+      <button class="active" data-theme="light">light</button>
+      <button data-theme="dark">dark</button>
+    </div>
+  </div>
+
+  <div class="section-head">
+    <span class="section-title">naming a share before kebi answers</span>
+    <span class="section-count">2 options</span>
+  </div>
+  <p class="section-desc">
+    Both carry <b>source + time</b> as the name. The question is whether the link earns its line.
+  </p>
+
+  <div class="crops">
+
+    <div class="col">
+      <span class="tag rec">a · in the build now</span>
+      <h2>name + link</h2>
+      <div class="stage">
+        <div class="eyebrow">
+          <span class="lb">while you were away</span>
+          <span class="x"><svg viewBox="0 0 24 24"><line x1="5" y1="5" x2="19" y2="19"/><line x1="19" y1="5" x2="5" y2="19"/></svg></span>
+        </div>
+        <div class="group">
+          <div class="row">
+            <div class="av">♪</div>
+            <div class="body">
+              <div class="nm">tiktok · today, 10:28 pm</div>
+              <div class="link">vt.tiktok.com/ZSVSgEWX3/</div>
+              <div style="margin-top:8px"><div class="sk" style="width:46%"></div></div>
+            </div>
+          </div>
+          <div class="rule"></div>
+          <div class="row">
+            <div class="av">♪</div>
+            <div class="body">
+              <div class="nm">tiktok · today, 10:32 pm</div>
+              <div class="link">vt.tiktok.com/ZSVSg9cNp/</div>
+              <div style="margin-top:8px"><div class="sk" style="width:46%"></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="note">
+        three lines per pending row. The link is <b>belt-and-braces</b>: the timestamp already
+        separates two shares unless they happened in the same minute. It earns its place only when
+        you want to check <i>which</i> link, which is rare.
+      </div>
+    </div>
+
+    <div class="col">
+      <span class="tag">b · name only</span>
+      <h2>drop the link</h2>
+      <div class="stage">
+        <div class="eyebrow">
+          <span class="lb">while you were away</span>
+          <span class="x"><svg viewBox="0 0 24 24"><line x1="5" y1="5" x2="19" y2="19"/><line x1="19" y1="5" x2="5" y2="19"/></svg></span>
+        </div>
+        <div class="group">
+          <div class="row">
+            <div class="av">♪</div>
+            <div class="body">
+              <div class="nm">tiktok · today, 10:28 pm</div>
+              <div style="margin-top:8px"><div class="sk" style="width:46%"></div></div>
+            </div>
+          </div>
+          <div class="rule"></div>
+          <div class="row">
+            <div class="av">♪</div>
+            <div class="body">
+              <div class="nm">tiktok · today, 10:32 pm</div>
+              <div style="margin-top:8px"><div class="sk" style="width:46%"></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="note">
+        calmer, and honest about the fact that <b>a shortlink tells you nothing</b> — showing
+        <code>ZSVSgEWX3</code> is showing noise. Costs you the ability to tell two shares apart if
+        they land in the same minute.
+      </div>
+    </div>
+
+  </div>
+
+  <div class="section-head">
+    <span class="section-title">the three states</span>
+    <span class="section-count">one card</span>
+  </div>
+  <p class="section-desc">
+    A row is born working and becomes a place or a failure <b>without moving</b>. The name only
+    matters while it is not yet a place — which is why kebi answering quickly matters more than
+    any naming we do here.
+  </p>
+
+  <div class="crops">
+    <div class="col">
+      <span class="tag">all three</span>
+      <h2>working → landed → failed</h2>
+      <div class="stage">
+        <div class="eyebrow">
+          <span class="lb">while you were away</span>
+          <span class="x"><svg viewBox="0 0 24 24"><line x1="5" y1="5" x2="19" y2="19"/><line x1="19" y1="5" x2="5" y2="19"/></svg></span>
+        </div>
+        <div class="group">
+          <div class="row">
+            <div class="av">♪</div>
+            <div class="body">
+              <div class="nm">tiktok · today, 10:28 pm</div>
+              <div class="link">vt.tiktok.com/ZSVSgEWX3/</div>
+              <div style="margin-top:8px"><div class="sk" style="width:46%"></div></div>
+            </div>
+          </div>
+          <div class="rule"></div>
+          <div class="row">
+            <div class="av">🍜</div>
+            <div class="body">
+              <div class="nm">Warung Bu Mi</div>
+              <div class="pills"><span class="pill">not visited</span></div>
+            </div>
+            <svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>
+          </div>
+          <div class="rule"></div>
+          <div class="row">
+            <div class="av">♪</div>
+            <div class="body">
+              <div class="nm">tiktok · today, 10:32 pm</div>
+              <div class="link">vt.tiktok.com/ZSVSg9cNp/</div>
+              <div class="fail">couldn't save that one</div>
+            </div>
+            <button class="retry">try again</button>
+          </div>
+        </div>
+      </div>
+      <div class="note">
+        once kebi answers, the row becomes <b>the place</b> — which is the real name, and the one
+        anybody actually recognises. A landed row drops the link entirely: the place name has
+        replaced it.
+      </div>
+    </div>
+  </div>
+
+  <div class="verdict">
+    <h3>the honest position</h3>
+    <p>
+      <b>We cannot name a pending share well, and that is a platform limit.</b> TikTok's share
+      sheet passes a link only — no caption in <code>attributedContentText</code>, verified on
+      device. Instagram may differ; the code already prefers a caption when one is offered.
+    </p>
+    <p>
+      <b>So the naming question is smaller than it looks.</b> A row is only nameless while it is
+      pending. Once kebi answers it is a place, and if kebi answers in seconds — which it does
+      when the link is one it can read — almost nobody ever sees the pending name.
+    </p>
+    <p>
+      <b>a or b is a taste call</b>, not a correctness one. a is defensive; b is calmer and
+      arguably more honest, since <code>ZSVSgEWX3</code> is noise a human cannot use.
+    </p>
+  </div>
+
+</div>
+<script>
+document.querySelectorAll('.theme-toggle button').forEach(function (btn) {
+  btn.addEventListener('click', function () {
+    document.querySelectorAll('.theme-toggle button').forEach(function (b) { b.classList.remove('active'); });
+    btn.classList.add('active');
+    document.body.classList.toggle('dark', btn.dataset.theme === 'dark');
+  });
+});
+</script>
+</body>
+</html>

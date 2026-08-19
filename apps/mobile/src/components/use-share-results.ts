@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AppState } from 'react-native';
 import { useApiClient } from '../api/hooks';
+import { detectSource } from '../lib/detect-source';
+import { formatRelativeTime } from '../lib/format-relative-time';
 import { extractPlace } from '../api/extract';
 import {
   canShareInBackground,
@@ -25,13 +27,14 @@ export interface ShareResultRow {
   id: string;
   rawInput: string;
   /**
-   * What to call this share before a place name exists — the caption the host
-   * app supplied, falling back to the url. Nobody recognises
-   * `vt.tiktok.com/ZSVSVQqHe`; they recognise what the video said.
+   * What to call this share before a place name exists. The host app's caption
+   * when there is one; otherwise where and when it came from — TikTok supplies
+   * no caption, and `vt.tiktok.com/ZSVSgEWX3` is not something anyone
+   * recognises, whereas "tiktok · 10:28 pm" is the share you just made.
    */
   label: string;
-  /** True when {@link label} is the url itself, so it can be styled as one. */
-  labelIsUrl: boolean;
+  /** Which app it came from — drives the row's glyph. */
+  source: ReturnType<typeof detectSource>;
   sharedAt: number;
   state: 'working' | 'landed' | 'failed';
   placeNames: string[];
@@ -191,13 +194,25 @@ export function useShareResults(): UseShareResults {
   return { rows, dismiss, retry };
 }
 
+/**
+ * Name a share the way a person would recall it. The caption if the host app
+ * gave one; otherwise the source and the moment, because "the tiktok I shared
+ * at 10:28" is a memory and a shortlink is not.
+ */
+function labelFor(share: PendingShare): string {
+  if (share.title) return share.title;
+  const source = detectSource(share.raw_input);
+  const when = formatRelativeTime(new Date(share.shared_at).toISOString());
+  return when ? `${source} · ${when}` : source;
+}
+
 function toRow(share: PendingShare): ShareResultRow {
   if (!share.outcome) {
     return {
       id: share.id,
       rawInput: share.raw_input,
-      label: share.title ?? share.raw_input,
-      labelIsUrl: !share.title,
+      label: labelFor(share),
+      source: detectSource(share.raw_input),
       sharedAt: share.shared_at,
       state: 'working',
       placeNames: [],
@@ -207,8 +222,8 @@ function toRow(share: PendingShare): ShareResultRow {
   return {
     id: share.id,
     rawInput: share.raw_input,
-    label: share.title ?? share.raw_input,
-    labelIsUrl: !share.title,
+    label: labelFor(share),
+    source: detectSource(share.raw_input),
     sharedAt: share.shared_at,
     state: landed ? 'landed' : 'failed',
     placeNames: share.outcome.place_names,

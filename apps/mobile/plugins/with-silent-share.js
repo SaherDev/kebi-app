@@ -85,6 +85,7 @@ function shareViewController(appGroup) {
   return `import UIKit
 import Social
 import UniformTypeIdentifiers
+import os.log
 
 /// Share-and-forget: take the link, hand it to iOS, disappear.
 ///
@@ -100,6 +101,10 @@ class ShareViewController: UIViewController {
   private let apiBaseUrlKey = "kebi.share.api_base_url"
   private let pendingKey = "kebi.share.pending"
   private let queueKey = "kebi.share.queue"
+
+  /// See KebiShareSessionSubscriber — same subsystem, so one predicate follows
+  /// a share across both processes.
+  private static let log = OSLog(subsystem: "app.kebi", category: "share")
 
   /// How long the card stays up. iOS blacks out the host app for this whole
   /// window — it will not let an extension's window go transparent — so this is
@@ -245,6 +250,7 @@ class ShareViewController: UIViewController {
           let baseUrl = defaults.string(forKey: apiBaseUrlKey),
           let url = URL(string: baseUrl + "/extract"),
           let body = try? JSONSerialization.data(withJSONObject: ["raw_input": rawInput]) else {
+      NSLog("[kebi-share] extension: no token or base url, queued")
       enqueue(rawInput, caption: caption, defaults: defaults)
       return
     }
@@ -287,6 +293,7 @@ class ShareViewController: UIViewController {
       return
     }
     session.uploadTask(with: request, fromFile: bodyFile).resume()
+    NSLog("[kebi-share] extension: upload started id=%@", id)
   }
 
   /// Background uploads read their body from disk, so the payload has to land

@@ -9,6 +9,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { Icon } from './icon';
+import { SOURCE_ICON } from './source-icon';
 import { useShareResults, type ShareResultRow } from './use-share-results';
 import { useTranslation } from '../i18n/context';
 import { PRESS } from '../theme/motion';
@@ -81,24 +82,14 @@ function ShareRow({ row, onRetry }: { row: ShareResultRow; onRetry: (id: string)
     return (
       <View className="flex-row items-start gap-2.5 px-1 py-2.5">
         <View className="size-[34px] items-center justify-center rounded-small bg-bg">
-          <Icon name="link" size={15} className="text-text-soft" />
+          <Icon name={SOURCE_ICON[row.source]} size={15} className="text-text-soft" />
         </View>
         <View className="flex-1">
-          {/* Known since the moment it was shared, so not a skeleton. The
-              caption leads when the host app gave us one — nobody recognises a
-              shortlink, they recognise what the video said. Only the place name
-              is genuinely unknown, so only that shimmers. */}
-          <Text
-            className={`text-body ${row.labelIsUrl ? 'font-medium text-text-muted' : 'font-semibold text-text'}`}
-            numberOfLines={2}
-          >
-            {displayInput(row.label)}
+          {/* Known since the share happened, so not a skeleton — only the place
+              name is genuinely unknown, and only that shimmers. */}
+          <Text className="text-body font-semibold text-text" numberOfLines={2}>
+            {row.label}
           </Text>
-          {!row.labelIsUrl ? (
-            <Text className="mt-0.5 text-small text-text-soft" numberOfLines={1}>
-              {displayInput(row.rawInput)}
-            </Text>
-          ) : null}
           <View className="mt-2">
             <Shimmer width="46%" />
           </View>
@@ -116,11 +107,11 @@ function ShareRow({ row, onRetry }: { row: ShareResultRow; onRetry: (id: string)
         <View className="flex-1">
           {/* No place exists, so the url is the name — and the failure is plain
               danger text, not a status pill: nothing here has a status. */}
-          <Text
-            className={`text-body ${row.labelIsUrl ? 'font-medium text-text-muted' : 'font-semibold text-text'}`}
-            numberOfLines={2}
-          >
-            {displayInput(row.label)}
+          <Text className="text-body font-semibold text-text" numberOfLines={1}>
+            {row.label}
+          </Text>
+          <Text className="mt-0.5 text-small text-text-soft" numberOfLines={1}>
+            {displayInput(row.rawInput)}
           </Text>
           <Text className="mt-1 text-small font-medium text-danger">
             {failureText(t, row.failureReason)}
