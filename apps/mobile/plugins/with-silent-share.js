@@ -75,9 +75,10 @@ class ShareViewController: UIViewController {
   private let pendingKey = "kebi.share.pending"
   private let queueKey = "kebi.share.queue"
 
-  /// How long the card stays up. Long enough to read four words, short enough
-  /// that it never feels like a step (kebi-share-extension-options.html §a).
-  private let visibleDuration: TimeInterval = 0.9
+  /// How long the card stays up. iOS blacks out the host app for this whole
+  /// window — it will not let an extension's window go transparent — so this is
+  /// as short as it can be while still being readable.
+  private let visibleDuration: TimeInterval = 0.6
 
   private let cardTitle = UILabel()
   private let cardSubtitle = UILabel()
@@ -88,36 +89,30 @@ class ShareViewController: UIViewController {
     // panel over the host app *is* that presentation. It cannot be skipped, so
     // it gets filled instead: the surrounding area stays clear and one card
     // carries the message.
-    view.backgroundColor = .clear
-    view.isOpaque = false
+    // iOS presents this full-screen and opaque, and will not be talked out of
+    // it (tried: clearing the view, its superview, and the host window). So the
+    // space is owned rather than fought: Kebi's own dark surface, one card
+    // centred in it, gone in well under a second.
+    view.backgroundColor = UIColor(red: 0.075, green: 0.067, blue: 0.059, alpha: 1)
     buildCard()
     // viewDidLoad, not viewDidAppear: the latter fires only after the
     // presentation animation, which is exactly the window the blank box showed.
     handleShare()
   }
 
-  /// The card, built in code — a share extension has no access to the app's
-  /// NativeWind styles, so these values mirror the design tokens by hand:
-  /// --surface #1C1A17, --text #F5F1EA, --text-muted #9A938A, --pill-green.
+  /// The moment, built in code — a share extension has no access to the app's
+  /// NativeWind styles, so these mirror the design tokens by hand: --bg
+  /// #13110F, --text #F5F1EA, --text-muted #9A938A.
+  ///
+  /// Composed for a full screen rather than squeezed into a card, because iOS
+  /// gives us a full screen whether we want one or not. A small row floating in
+  /// a black void reads as a mistake; this reads as a beat Kebi meant to have —
+  /// and it is the only time Kebi appears in the entire share flow.
   private func buildCard() {
-    let card = UIView()
-    card.backgroundColor = UIColor(red: 0.110, green: 0.102, blue: 0.090, alpha: 1)
-    card.layer.cornerRadius = 20
-    card.layer.shadowColor = UIColor.black.cgColor
-    card.layer.shadowOpacity = 0.4
-    card.layer.shadowRadius = 30
-    card.layer.shadowOffset = CGSize(width: 0, height: 10)
-    card.translatesAutoresizingMaskIntoConstraints = false
-    view.addSubview(card)
-
-    let mark = UILabel()
-    mark.text = "\u{1F426}"
-    mark.font = .systemFont(ofSize: 17)
-    mark.textAlignment = .center
-    mark.backgroundColor = UIColor(red: 0.122, green: 0.165, blue: 0.094, alpha: 1)
-    mark.layer.cornerRadius = 10
-    mark.clipsToBounds = true
-    mark.translatesAutoresizingMaskIntoConstraints = false
+    let mascot = UILabel()
+    mascot.text = "\u{1F426}"
+    mascot.font = .systemFont(ofSize: 46)
+    mascot.textAlignment = .center
 
     // Present continuous, and the ellipsis is doing real work: at this instant
     // we hold a link and nothing more. "saved" would be a claim we may have to
@@ -125,36 +120,31 @@ class ShareViewController: UIViewController {
     // believed. "saving this…" is still true when the link turns out to be
     // unsupported.
     cardTitle.text = "saving this\u{2026}"
-    cardTitle.font = .systemFont(ofSize: 14.5, weight: .semibold)
+    cardTitle.font = .systemFont(ofSize: 19, weight: .bold)
     cardTitle.textColor = UIColor(red: 0.961, green: 0.945, blue: 0.918, alpha: 1)
+    cardTitle.textAlignment = .center
 
-    // The url is what makes this a receipt rather than a reassurance — it shows
-    // Kebi caught the video you meant, which you cannot check again later.
-    cardSubtitle.font = .systemFont(ofSize: 11.5)
+    // The url is the only thing in the whole flow that shows Kebi caught the
+    // video you meant — everything after this is invisible until you next open
+    // the app. Subordinate to the message, but present.
+    cardSubtitle.font = .systemFont(ofSize: 12)
     cardSubtitle.textColor = UIColor(red: 0.604, green: 0.576, blue: 0.541, alpha: 1)
+    cardSubtitle.textAlignment = .center
     cardSubtitle.lineBreakMode = .byTruncatingTail
 
-    let text = UIStackView(arrangedSubviews: [cardTitle, cardSubtitle])
-    text.axis = .vertical
-    text.spacing = 3
-
-    let row = UIStackView(arrangedSubviews: [mark, text])
-    row.axis = .horizontal
-    row.spacing = 12
-    row.alignment = .center
-    row.translatesAutoresizingMaskIntoConstraints = false
-    card.addSubview(row)
+    let stack = UIStackView(arrangedSubviews: [mascot, cardTitle, cardSubtitle])
+    stack.axis = .vertical
+    stack.alignment = .center
+    stack.spacing = 14
+    stack.setCustomSpacing(8, after: cardTitle)
+    stack.translatesAutoresizingMaskIntoConstraints = false
+    view.addSubview(stack)
 
     NSLayoutConstraint.activate([
-      card.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 10),
-      card.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -10),
-      card.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -14),
-      mark.widthAnchor.constraint(equalToConstant: 34),
-      mark.heightAnchor.constraint(equalToConstant: 34),
-      row.leadingAnchor.constraint(equalTo: card.leadingAnchor, constant: 16),
-      row.trailingAnchor.constraint(equalTo: card.trailingAnchor, constant: -16),
-      row.topAnchor.constraint(equalTo: card.topAnchor, constant: 15),
-      row.bottomAnchor.constraint(equalTo: card.bottomAnchor, constant: -15),
+      stack.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+      stack.centerYAnchor.constraint(equalTo: view.centerYAnchor),
+      stack.leadingAnchor.constraint(greaterThanOrEqualTo: view.leadingAnchor, constant: 28),
+      stack.trailingAnchor.constraint(lessThanOrEqualTo: view.trailingAnchor, constant: -28),
     ])
   }
 

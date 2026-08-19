@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Kebi — share extension moment</title>
+<title>Kebi — the share extension second</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -17,15 +17,18 @@
     --text: #1A1A1A;
     --text-muted: #8A8A87;
     --text-soft: #B5B5B1;
-    --success: #4A7C3A;
+    --danger: #D14343;
     --pill-green: #E8F2E1;
     --tag-rec: #A7C7A0;
     --tag: #D4B891;
     --tag-no: #D9A3A3;
-    /* the extension always renders over someone else's app, in their theme */
+    /* the extension's own dark surface — it never inherits a host theme */
+    --ext-bg: #13110F;
     --ext-surface: #1C1A17;
     --ext-text: #F5F1EA;
     --ext-muted: #9A938A;
+    --ext-soft: #6E6862;
+    --ext-pill: #1F2A18;
   }
 
   html, body {
@@ -38,7 +41,7 @@
 
   .header {
     display: flex; align-items: flex-start; justify-content: space-between;
-    padding-bottom: 32px; border-bottom: 1px solid var(--surface-2); margin-bottom: 40px;
+    padding-bottom: 32px; border-bottom: 1px solid var(--surface-2); margin-bottom: 36px;
   }
   .header h1 { font-size: 24px; font-weight: 700; letter-spacing: -0.025em; }
   .header-meta { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
@@ -46,9 +49,18 @@
   .lede b { color: var(--text); font-weight: 600; }
   .lede code { font-size: 12px; background: var(--surface-2); border-radius: 5px; padding: 1px 6px; }
 
+  .callout {
+    border: 1px solid var(--surface-2); border-left: 3px solid var(--danger);
+    background: var(--surface); border-radius: 10px; padding: 16px 18px;
+    max-width: 880px; margin: 22px 0 8px;
+  }
+  .callout h3 { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: var(--danger); margin-bottom: 8px; }
+  .callout p { font-size: 13px; color: var(--text-muted); line-height: 1.65; }
+  .callout b { color: var(--text); font-weight: 600; }
+
   .section-head {
     display: flex; align-items: baseline; justify-content: space-between;
-    margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid var(--surface-2);
+    margin: 44px 0 12px; padding-bottom: 12px; border-bottom: 1px solid var(--surface-2);
   }
   .section-title { font-size: 11px; font-weight: 600; color: var(--text-soft); text-transform: uppercase; letter-spacing: 0.08em; }
   .section-count { font-size: 12px; color: var(--text-soft); }
@@ -57,8 +69,9 @@
   .section-desc b { color: var(--text); font-weight: 600; }
 
   .crops { display: flex; flex-wrap: wrap; gap: 34px; align-items: flex-start; }
-  .crop-wrap { width: 300px; display: flex; flex-direction: column; gap: 10px; }
+  .crop-wrap { width: 268px; display: flex; flex-direction: column; gap: 10px; }
   .phone-label { font-size: 13px; font-weight: 600; letter-spacing: -0.01em; }
+  .dur { font-size: 11px; color: var(--text-soft); font-variant-numeric: tabular-nums; }
   .crop-note { font-size: 11.5px; color: var(--text-muted); line-height: 1.55; }
   .crop-note b { color: var(--text); font-weight: 600; }
   .opt-tag {
@@ -69,65 +82,45 @@
   .opt-tag.rec { background: var(--tag-rec); }
   .opt-tag.no  { background: var(--tag-no); }
 
-  /* ── the host app underneath (a TikTok-ish frame) ── */
   .phone {
-    width: 300px; height: 600px; border-radius: 34px; overflow: hidden; position: relative;
-    background: linear-gradient(160deg, #2f6f86, #3fa3b8 45%, #2a5f74);
-    box-shadow: 0 0 0 8px #111, 0 18px 40px rgba(0,0,0,.35);
-    display: flex; flex-direction: column; justify-content: flex-end;
+    width: 268px; height: 540px; border-radius: 32px; overflow: hidden; position: relative;
+    background: var(--ext-bg); box-shadow: 0 0 0 8px #111, 0 18px 40px rgba(0,0,0,.35);
+    display: flex; align-items: center; justify-content: center;
   }
-  .phone::before {
-    content: ''; position: absolute; inset: 0;
-    background:
-      radial-gradient(circle at 30% 35%, rgba(255,255,255,.18), transparent 45%),
-      radial-gradient(circle at 70% 60%, rgba(0,0,0,.25), transparent 50%);
+  /* the sliver of host app iOS leaves at the very top */
+  .phone .host-sliver {
+    position: absolute; top: 0; left: 0; right: 0; height: 26px;
+    background: linear-gradient(160deg, #2f6f86, #3fa3b8);
   }
-  .host-caption {
-    position: absolute; left: 0; right: 56px; top: 46%;
-    text-align: center; color: rgba(255,255,255,.92);
-    font-size: 13px; font-weight: 600; line-height: 1.4; padding: 0 18px;
-    text-shadow: 0 1px 3px rgba(0,0,0,.4);
-  }
-  .host-rail {
-    position: absolute; right: 12px; bottom: 90px;
-    display: flex; flex-direction: column; gap: 16px; align-items: center;
-    color: #fff; font-size: 9px; font-weight: 600;
-  }
-  .host-rail .glyph { font-size: 19px; }
-  .dim { position: absolute; inset: 0; background: rgba(0,0,0,.35); }
 
-  /* ── what the extension actually presents ── */
-  .sheet {
-    position: relative; margin: 0 10px 14px; border-radius: 20px;
-    background: var(--ext-surface); color: var(--ext-text);
+  .card {
+    background: var(--ext-surface); border-radius: 20px;
     padding: 15px 16px; display: flex; align-items: center; gap: 12px;
-    box-shadow: 0 10px 30px rgba(0,0,0,.4);
+    margin: 0 14px; box-shadow: 0 12px 34px rgba(0,0,0,.45);
   }
-  .sheet .mark {
-    width: 34px; height: 34px; border-radius: 10px; flex-shrink: 0;
-    background: var(--pill-green); display: flex; align-items: center; justify-content: center;
-    font-size: 17px;
+  .card .mark {
+    width: 34px; height: 34px; border-radius: 10px; flex-shrink: 0; background: var(--ext-pill);
+    display: flex; align-items: center; justify-content: center; font-size: 17px;
   }
-  .sheet .t { font-size: 14.5px; font-weight: 600; letter-spacing: -0.01em; }
-  .sheet .u { font-size: 11.5px; color: var(--ext-muted); margin-top: 3px;
-    overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 190px; }
+  .card .t { font-size: 14.5px; font-weight: 600; color: var(--ext-text); letter-spacing: -0.01em; }
+  .card .u { font-size: 11.5px; color: var(--ext-muted); margin-top: 3px;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 160px; }
 
-  /* option: the empty box we have today */
-  .sheet.blank { min-height: 190px; }
+  /* b — a branded beat */
+  .beat { display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 0 24px; text-align: center; }
+  .beat .mascot { font-size: 46px; }
+  .beat .t { font-size: 19px; font-weight: 700; color: var(--ext-text); letter-spacing: -0.02em; }
+  .beat .u { font-size: 12px; color: var(--ext-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 200px; }
 
-  /* option: full-height sheet */
-  .sheet.tall { min-height: 150px; flex-direction: column; justify-content: center; gap: 10px; text-align: center; }
-  .sheet.tall .mark { width: 44px; height: 44px; border-radius: 13px; font-size: 22px; }
+  /* c — a flash */
+  .flash { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+  .flash .mascot { font-size: 34px; }
+  .flash .t { font-size: 13px; font-weight: 600; color: var(--ext-muted); letter-spacing: .02em; }
 
-  /* option: compact pill */
-  .pill-toast {
-    position: relative; align-self: center; margin: 0 auto 26px;
-    border-radius: 999px; background: var(--ext-surface); color: var(--ext-text);
-    padding: 10px 16px; display: inline-flex; align-items: center; gap: 8px;
-    box-shadow: 0 8px 24px rgba(0,0,0,.4); font-size: 13.5px; font-weight: 600;
-  }
-  .pill-toast .dot { width: 16px; height: 16px; border-radius: 5px; background: var(--pill-green);
-    display: flex; align-items: center; justify-content: center; font-size: 9px; }
+  /* d — the url is the subject */
+  .subject { padding: 0 26px; text-align: center; display: flex; flex-direction: column; gap: 12px; align-items: center; }
+  .subject .eyebrow { font-size: 11px; font-weight: 600; letter-spacing: .09em; text-transform: uppercase; color: var(--ext-soft); }
+  .subject .u { font-size: 16px; font-weight: 600; color: var(--ext-text); line-height: 1.35; word-break: break-all; }
 
   .verdict {
     margin-top: 38px; border: 1px solid var(--surface-2); border-radius: 16px;
@@ -146,139 +139,152 @@
 
   <div class="header">
     <div>
-      <h1>the share extension moment</h1>
-      <div class="header-meta">kebi-app · ios SavetoKebi · what shows over TikTok for ~1s</div>
+      <h1>the share extension second</h1>
+      <div class="header-meta">kebi-app · ios SavetoKebi · <b>supersedes</b> the earlier version of this page</div>
       <p class="lede">
-        iOS presents the share extension's view controller <b>whether or not it draws anything</b> —
-        that is the black box on the device right now. It is not a bug and it cannot be skipped;
-        the only question is what fills it between "tapped Save to Kebi" and
-        <code>completeRequest</code>.
-        <br><br>
-        This reopens a decision we already made. We rejected a confirmation because it would
-        <b>cost the user time</b> — but that presentation happens regardless, so the time is
-        already spent. A blank box spends it and says nothing.
-        <br><br>
-        <b>Wording is the constraint.</b> At this instant nothing is saved: we hold a link and
-        have handed it to iOS. Anything claiming success is a lie we may have to take back in the
-        "while you were away" card, which is the one surface that must stay trustworthy.
+        Tapping <b>Save to Kebi</b> in TikTok hands the link to iOS in about 50&nbsp;ms. Everything
+        on this page is about the <b>second after that</b> — which iOS spends showing the
+        extension's own screen, whether we want it or not.
       </p>
+
+      <div class="callout">
+        <h3>what changed since the last version of this page</h3>
+        <p>
+          The earlier design drew a small card <b>over a visible TikTok</b>. That is not
+          achievable. iOS presents a share extension full-screen in its own window and
+          <b>will not let it be transparent</b> — verified on iOS&nbsp;26.6, after clearing the
+          view, its superview, and the host window. The host app is blacked out for the whole
+          duration regardless of what we draw.
+          <br><br>
+          So the real choice was never "card or nothing". It is <b>what fills an unavoidable
+          full-screen second</b>, and <b>how short we can make it</b>.
+        </p>
+      </div>
     </div>
   </div>
 
   <div class="section-head">
-    <span class="section-title">over the host app</span>
-    <span class="section-count">today + 3 options</span>
+    <span class="section-title">the unavoidable second</span>
+    <span class="section-count">4 options</span>
   </div>
-  <h2 class="section-h2">what fills the box</h2>
+  <h2 class="section-h2">what fills it</h2>
   <p class="section-desc">
-    Real proportions, shown over a video feed — the extension always renders on top of
-    <b>someone else's app</b>, so it carries its own dark surface rather than inheriting a theme.
-    Nothing here is tappable: it dismisses itself.
+    Real proportions. The thin strip at the top is the sliver of the host app iOS leaves visible —
+    the only reminder you never actually left TikTok. Nothing here is tappable; it dismisses
+    itself. <b>Duration is part of each design</b>, not a setting applied afterwards.
   </p>
 
   <div class="crops">
 
-    <!-- TODAY -->
+    <!-- A -->
     <div class="crop-wrap">
-      <span class="opt-tag no">today</span>
-      <div class="phone-label">the empty box</div>
+      <span class="opt-tag">a · on the phone now</span>
+      <div class="phone-label">the card, centred</div>
+      <div class="dur">0.6s</div>
       <div class="phone">
-        <div class="host-caption">I can't explain why but partying in Uluwatu hits different</div>
-        <div class="host-rail"><span class="glyph">🤍</span><span>43.6K</span><span class="glyph">💬</span><span>169</span></div>
-        <div class="dim"></div>
-        <div class="sheet blank"></div>
-      </div>
-      <div class="crop-note">
-        the storyboard's default view with nothing in it. It reads as a <b>glitch</b> — a panel
-        opened and closed and told you nothing. Worst of both: it costs the full presentation and
-        buys no trust.
-      </div>
-    </div>
-
-    <!-- OPTION A -->
-    <div class="crop-wrap">
-      <span class="opt-tag rec">a · recommended</span>
-      <div class="phone-label">one honest line</div>
-      <div class="phone">
-        <div class="host-caption">I can't explain why but partying in Uluwatu hits different</div>
-        <div class="host-rail"><span class="glyph">🤍</span><span>43.6K</span><span class="glyph">💬</span><span>169</span></div>
-        <div class="dim"></div>
-        <div class="sheet">
+        <div class="host-sliver"></div>
+        <div class="card">
           <div class="mark">🐦</div>
           <div style="min-width:0">
-            <div class="t">kebi's got it</div>
-            <div class="u">tiktok.com/@lolauluwatu/video…</div>
+            <div class="t">saving this…</div>
+            <div class="u">vt.tiktok.com/ZSVSQcfSm/</div>
           </div>
         </div>
       </div>
       <div class="crop-note">
-        the same box, filled. <b>"got it"</b>, not "saved" — true at this instant, and it survives
-        the link turning out to be unsupported. The url is the receipt: you can see it caught the
-        <i>right</i> thing. Kebi's only appearance in the whole flow.
+        the option-A card from the old page, moved to the middle since there is no longer a
+        TikTok to sit above. Honest and specific — but it is a <b>row floating in a void</b>,
+        designed for a context that turned out not to exist.
       </div>
     </div>
 
-    <!-- OPTION B -->
+    <!-- B -->
     <div class="crop-wrap">
-      <span class="opt-tag">b · centred</span>
-      <div class="phone-label">a moment, not a row</div>
+      <span class="opt-tag rec">b · recommended</span>
+      <div class="phone-label">a beat that owns the space</div>
+      <div class="dur">0.6s</div>
       <div class="phone">
-        <div class="host-caption">I can't explain why but partying in Uluwatu hits different</div>
-        <div class="host-rail"><span class="glyph">🤍</span><span>43.6K</span><span class="glyph">💬</span><span>169</span></div>
-        <div class="dim"></div>
-        <div class="sheet tall">
-          <div class="mark">🐦</div>
-          <div class="t">kebi's got it</div>
-          <div class="u">back to your scroll</div>
+        <div class="host-sliver"></div>
+        <div class="beat">
+          <div class="mascot">🐦</div>
+          <div class="t">saving this…</div>
+          <div class="u">vt.tiktok.com/ZSVSQcfSm/</div>
         </div>
       </div>
       <div class="crop-note">
-        more presence, more brand. But it fills a third of the screen to say four words, and the
-        second line is <b>filler</b> — it exists because the layout looked empty, which is a bad
-        reason for copy to exist.
+        same words, same duration, composed <b>for a full screen</b> instead of squeezed into a
+        card. Reads as <b>a moment Kebi meant to have</b> rather than an accident — and it is the
+        only time Kebi appears in the entire flow, so a moment is defensible. Keeps the url, which
+        is the part that proves it caught the right video.
       </div>
     </div>
 
-    <!-- OPTION C -->
+    <!-- C -->
     <div class="crop-wrap">
-      <span class="opt-tag">c · pill</span>
-      <div class="phone-label">smallest possible</div>
+      <span class="opt-tag">c · shortest</span>
+      <div class="phone-label">a flash</div>
+      <div class="dur">0.35s</div>
       <div class="phone">
-        <div class="host-caption">I can't explain why but partying in Uluwatu hits different</div>
-        <div class="host-rail"><span class="glyph">🤍</span><span>43.6K</span><span class="glyph">💬</span><span>169</span></div>
-        <div class="pill-toast"><span class="dot">✓</span> kebi's got it</div>
+        <div class="host-sliver"></div>
+        <div class="flash">
+          <div class="mascot">🐦</div>
+          <div class="t">saving…</div>
+        </div>
       </div>
       <div class="crop-note">
-        no dimming, no panel — a floating pill, closest to <b>feeling like nothing happened</b>.
-        Matches the app's toast language. But it drops the url, so you lose the "it caught the
-        right thing" evidence, and a transparent backdrop over an arbitrary app is the fiddliest
-        to get right.
+        minimum footprint: barely long enough to register, closest to the original
+        "sharing costs nothing" promise. But at 0.35s the url is <b>unreadable</b>, so it is a
+        reassurance rather than a receipt — and a flash that fast can read as a <b>glitch</b>,
+        which is the problem we started with.
+      </div>
+    </div>
+
+    <!-- D -->
+    <div class="crop-wrap">
+      <span class="opt-tag">d · url is the subject</span>
+      <div class="phone-label">show what you caught</div>
+      <div class="dur">0.6s</div>
+      <div class="phone">
+        <div class="host-sliver"></div>
+        <div class="subject">
+          <div class="eyebrow">saving</div>
+          <div class="u">vt.tiktok.com/ZSVSQcfSm/</div>
+        </div>
+      </div>
+      <div class="crop-note">
+        inverts the hierarchy — the link is the message, "saving" is the label. Strongest
+        <b>proof</b> of the four. But a raw url as hero type is <b>ugly</b>, and TikTok's
+        shortlinks (<code>vt.tiktok.com/ZSVSQcfSm</code>) say nothing a human recognises, so the
+        proof is weaker than it looks.
       </div>
     </div>
 
   </div>
 
   <div class="verdict">
-    <h3>why a</h3>
+    <h3>what I think</h3>
     <p>
-      <b>The box is not optional, so the only real choice is what it says.</b> a fills the exact
-      space iOS already reserves, at the exact duration it already takes — the cost is zero
-      because it is already being paid.
+      <b>b.</b> The second is not negotiable, so the only question is whether it looks deliberate.
+      a is the old design surviving into a context it was not drawn for — a small card marooned in
+      a full black screen reads as a mistake, because it <i>is</i> one: it was designed to sit over
+      something.
     </p>
     <p>
-      <b>a is also the only option that carries the url.</b> That line is what makes this a
-      receipt rather than a reassurance: you can see Kebi took the video you meant, which is the
-      one thing you cannot check later without opening the app.
+      <b>Shorter is not automatically better.</b> c chases the original promise, but a screen that
+      appears and vanishes in a third of a second is exactly what you flagged as "weird" at the
+      start. Below roughly half a second this stops reading as feedback and starts reading as a
+      flicker.
     </p>
     <p>
-      <b>"kebi's got it" is load-bearing.</b> A checkmark and "saved to kebi" would be a claim we
-      cannot back — the link may still turn out to be unsupported, and the failure surfaces in
-      "while you were away". Promising success here and retracting it there is exactly how that
-      card stops being believed.
+      <b>Keep the url.</b> It is the only thing in the whole flow that shows Kebi caught the video
+      you meant — everything after this point is invisible until you next open the app. d is right
+      that it matters, but wrong to make it the hero: a shortlink is not a place name.
     </p>
     <p>
-      c stays worth revisiting if the panel ever feels heavy in daily use — it is the same copy in
-      a lighter frame, and the url is the only thing lost.
+      <b>The copy stays honest either way.</b> <code>saving this…</code>, never "saved" — at this
+      instant we hold a link and have handed it to iOS. A claim here has to be retracted in "while
+      you were away" when a link turns out unsupported, and that card is the only trust a silent
+      flow has.
     </p>
   </div>
 
