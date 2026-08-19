@@ -9,7 +9,14 @@ import {
 } from './share-storage';
 
 /**
- * Keeps the share extension holding a usable credential (share-and-forget).
+ * Keeps a share token minted and stored for the extension.
+ *
+ * **Currently unused on device.** The extension no longer sends anything — it
+ * writes the link to the App Group and the app drains it with its own session,
+ * so nothing reads this token today. It is kept because the moment `/extract`
+ * can answer with `pending` in a second or two, the extension can post for
+ * itself again and will need exactly this; deleting it would mean rebuilding
+ * the gateway route, the middleware scope and this client to get back here.
  *
  * Called on every sign-in and restored session, alongside provisioning. Cheap
  * and idempotent by design: a token that is still comfortably valid costs one

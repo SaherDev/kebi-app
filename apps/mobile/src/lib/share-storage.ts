@@ -25,21 +25,23 @@ export const SHARE_KEYS = {
    * point at whatever the app itself is pointing at.
    */
   apiBaseUrl: 'kebi.share.api_base_url',
-  /** Links the extension could not send, as a JSON array. Drained by the app. */
+  /**
+   * Links the extension wrote down, as a JSON array. The extension's only
+   * output; the app drains it on open.
+   */
   queue: 'kebi.share.queue',
-  /** Shares the extension handed to iOS, as a JSON array. See {@link PendingShare}. */
+  /**
+   * Shares the app has taken off the queue and is working through, as a JSON
+   * array. Written only by the app — it survives here rather than in component
+   * state so a row keeps its place across a relaunch mid-drain.
+   */
   pending: 'kebi.share.pending',
 } as const;
 
 /**
- * A share the extension handed to iOS to upload. The extension writes it before
- * posting and never touches it again — it is dead by the time an answer exists.
- * The app fills in `outcome` when the background session delivers the response,
- * which may be seconds later or on the next launch entirely.
- *
- * `id` is generated client-side because the extension cannot learn a server-side
- * request id: it dies before any response arrives. It is also what makes a
- * background-session retry safe to recognise.
+ * A share the app has adopted off the queue and is extracting. `outcome` is
+ * filled in when the call returns; absent means still working, which is the
+ * honest default.
  */
 export interface PendingShare {
   id: string;
