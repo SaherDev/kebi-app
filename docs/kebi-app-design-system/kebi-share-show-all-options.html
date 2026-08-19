@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Kebi — while you were away: cap, fold, show all</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #FAFAF9; --surface: #F1F1EF; --surface-2: #E8E8E5;
+    --text: #1A1A1A; --text-muted: #8A8A87; --text-soft: #B5B5B1;
+    --success: #4A7C3A; --like: #C2632F; --danger: #D14343;
+    --tag-rec: #A7C7A0; --tag: #D4B891; --tag-no: #D9A3A3;
+  }
+  body.dark {
+    --bg: #13110F; --surface: #1C1A17; --surface-2: #26231F;
+    --text: #F5F1EA; --text-muted: #9A938A; --text-soft: #6E6862;
+    --success: #A8C293; --like: #E0A176; --danger: #E89090;
+  }
+  html, body { background: var(--bg); color: var(--text); font-family: 'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased; min-height: 100vh; }
+  body.dark { background: #0A0908; }
+  .page { max-width: 1500px; margin: 0 auto; padding: 52px 32px 96px; }
+
+  .header { display: flex; align-items: flex-start; justify-content: space-between;
+    padding-bottom: 28px; border-bottom: 1px solid var(--surface-2); margin-bottom: 34px; }
+  h1 { font-size: 25px; font-weight: 700; letter-spacing: -0.028em; }
+  .meta { font-size: 12px; color: var(--text-muted); margin-top: 5px; }
+  .lede { font-size: 14px; color: var(--text-muted); line-height: 1.65; max-width: 820px; margin-top: 14px; }
+  .lede b { color: var(--text); font-weight: 600; }
+  .theme-toggle { display: flex; background: var(--surface); border-radius: 999px; padding: 3px; flex-shrink: 0; }
+  .theme-toggle button { padding: 6px 14px; background: transparent; border: none; border-radius: 999px;
+    font-family: inherit; font-size: 12px; font-weight: 500; color: var(--text-muted); cursor: pointer; }
+  .theme-toggle button.active { background: var(--text); color: var(--bg); }
+
+  .section-head { display: flex; align-items: baseline; justify-content: space-between;
+    margin: 44px 0 12px; padding-bottom: 12px; border-bottom: 1px solid var(--surface-2); }
+  .section-title { font-size: 11px; font-weight: 600; color: var(--text-soft);
+    text-transform: uppercase; letter-spacing: 0.08em; }
+  .section-count { font-size: 12px; color: var(--text-soft); }
+  .section-desc { font-size: 14px; color: var(--text-muted); line-height: 1.6; max-width: 820px; margin-bottom: 24px; }
+  .section-desc b { color: var(--text); font-weight: 600; }
+
+  .crops { display: flex; flex-wrap: wrap; gap: 30px; align-items: flex-start; }
+  .col { width: 336px; display: flex; flex-direction: column; gap: 10px; }
+  .col.wide { width: 390px; }
+  .col h2 { font-size: 15px; font-weight: 700; letter-spacing: -0.02em; }
+  .note { font-size: 11.5px; color: var(--text-muted); line-height: 1.55; }
+  .note b { color: var(--text); font-weight: 600; }
+  .tag { display: inline-block; align-self: flex-start; font-size: 10px; font-weight: 700;
+    letter-spacing: .08em; text-transform: uppercase; color: #1A1A1A; background: var(--tag);
+    border-radius: 999px; padding: 3px 10px; }
+  .tag.rec { background: var(--tag-rec); } .tag.no { background: var(--tag-no); }
+
+  /* ── the card, as it sits on home ─────────────────────────────────────── */
+  .stage { background: var(--bg); border: 1px dashed var(--surface-2); border-radius: 12px; padding: 14px 12px; }
+  .eyebrow { display: flex; align-items: center; gap: 8px; padding: 0 4px 10px; }
+  .eyebrow .lb { font-size: 11px; font-weight: 600; color: var(--text-soft);
+    text-transform: uppercase; letter-spacing: 0.08em; }
+  .eyebrow .n { font-size: 11px; font-weight: 500; color: var(--text-soft); }
+  .eyebrow .btn { width: 20px; height: 20px; border-radius: 50%; display: flex;
+    align-items: center; justify-content: center; background: var(--surface);
+    font-size: 10px; color: var(--text-muted); flex-shrink: 0; }
+  .eyebrow .btn:first-of-type { margin-left: auto; }
+  .eyebrow .btn svg { width: 9px; height: 9px; stroke: var(--text-muted); stroke-width: 2.6; fill: none; }
+  .group { background: var(--surface); border-radius: 14px; padding: 4px 12px; }
+  .rule { height: 1px; background: var(--surface-2); }
+
+  .row { display: flex; align-items: flex-start; gap: 10px; padding: 10px 4px; }
+  .av { width: 34px; height: 34px; border-radius: 9px; background: var(--bg);
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 16px; }
+  .body { flex: 1; min-width: 0; }
+  .nm { font-size: 14px; font-weight: 600; color: var(--text); letter-spacing: -0.01em;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .sub { font-size: 11.5px; color: var(--text-soft); margin-top: 2px;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .fail { font-size: 11.5px; color: var(--danger); font-weight: 500; margin-top: 4px; }
+  .chev { width: 11px; height: 11px; stroke: var(--text-soft); stroke-width: 2.2; fill: none;
+    margin-top: 11px; flex-shrink: 0; }
+  .refresh { align-self: center; flex-shrink: 0; width: 30px; height: 30px; display: flex;
+    align-items: center; justify-content: center; }
+  .refresh svg { width: 15px; height: 15px; stroke: var(--text-muted); stroke-width: 2; fill: none; }
+  .sk { height: 9px; border-radius: 3px; background: var(--surface-2); animation: pulse 1.4s ease-in-out infinite; }
+  @keyframes pulse { 0%,100% { opacity: 1 } 50% { opacity: .45 } }
+
+  /* the stash's own footer language: text + chevron, inside the group */
+  .foot { display: flex; align-items: center; padding: 9px 4px 6px; }
+  .foot .t { font-size: 14px; font-weight: 500; color: var(--text); }
+  .foot .chev { margin: 0 0 0 auto; }
+
+  .folded { display: flex; align-items: center; gap: 8px; background: var(--surface);
+    border-radius: 14px; padding: 11px 12px; }
+  .folded .t { font-size: 13px; font-weight: 500; color: var(--text); }
+  .folded .s { font-size: 12px; color: var(--text-muted); }
+
+  .tall { max-height: 470px; overflow: hidden; position: relative; }
+  .tall::after { content: ''; position: absolute; inset: auto 0 0 0; height: 70px;
+    background: linear-gradient(to bottom, transparent, var(--bg)); }
+
+  /* ── the screen ───────────────────────────────────────────────────────── */
+  .phone { width: 390px; height: 720px; background: var(--bg); border-radius: 44px;
+    overflow: hidden; position: relative; box-shadow: 0 0 0 10px #111, 0 22px 50px rgba(0,0,0,0.35);
+    display: flex; flex-direction: column; color: var(--text); }
+  .status-bar { height: 46px; padding: 16px 30px 0; display: flex; justify-content: space-between;
+    align-items: center; font-size: 14px; font-weight: 600; flex-shrink: 0; }
+  .top-bar { padding: 10px 14px; display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+  .icon-btn { width: 36px; height: 36px; border-radius: 50%; background: var(--surface);
+    display: flex; align-items: center; justify-content: center; border: none; flex-shrink: 0; }
+  .icon-btn svg { width: 16px; height: 16px; stroke: var(--text); stroke-width: 2; fill: none; }
+  .top-bar .clear { margin-left: auto; font-size: 13px; font-weight: 500; color: var(--text-muted); }
+  .scroll { flex: 1; overflow-y: auto; padding: 4px 20px 20px; }
+  .scroll::-webkit-scrollbar { display: none; }
+  .screen-title { font-size: 26px; font-weight: 700; letter-spacing: -0.025em; margin-bottom: 4px; }
+  .screen-sub { font-size: 13px; color: var(--text-muted); margin-bottom: 18px; }
+  .day { font-size: 11px; font-weight: 600; color: var(--text-soft); text-transform: uppercase;
+    letter-spacing: 0.08em; margin: 18px 0 8px; }
+  .day:first-of-type { margin-top: 0; }
+  .shead { display: flex; align-items: center; gap: 8px; padding: 0 4px 6px; }
+  .shead .m { width: 22px; height: 22px; border-radius: 7px; background: var(--surface);
+    display: flex; align-items: center; justify-content: center; font-size: 11px; flex-shrink: 0; }
+  .shead .t { font-size: 12px; color: var(--text-muted); overflow: hidden;
+    text-overflow: ellipsis; white-space: nowrap; }
+  .home-indicator { width: 120px; height: 4px; background: var(--text); border-radius: 3px;
+    margin: 6px auto 8px; flex-shrink: 0; opacity: .85; }
+
+  .verdict { margin-top: 40px; border: 1px solid var(--surface-2); border-radius: 16px;
+    padding: 22px 24px; background: var(--surface); max-width: 900px; }
+  .verdict h3 { font-size: 14px; font-weight: 700; margin-bottom: 10px; }
+  .verdict p { font-size: 13px; color: var(--text-muted); line-height: 1.68; }
+  .verdict p + p { margin-top: 10px; }
+  .verdict b { color: var(--text); font-weight: 600; }
+  .verdict code { font-family: ui-monospace, Menlo, monospace; font-size: 12px;
+    background: var(--bg); padding: 1px 5px; border-radius: 4px; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="header">
+    <div>
+      <h1>three lines, a fold, and a door</h1>
+      <div class="meta">kebi-app · while you were away · capping the card and where "show all" goes</div>
+      <p class="lede">
+        Every place its own row was right, and it made the card <b>grow without a ceiling</b> — six shares
+        is fifteen rows sitting on top of home. Three things to decide, one at a time:
+        <b>what the three visible rows are</b>, <b>how the card folds</b>, and <b>what the screen behind
+        "show all" is</b>.
+      </p>
+    </div>
+    <div class="theme-toggle">
+      <button class="active" data-theme="light">light</button>
+      <button data-theme="dark">dark</button>
+    </div>
+  </div>
+
+  <!-- ═══ 1. the cap ══════════════════════════════════════════════════════ -->
+  <div class="section-head">
+    <span class="section-title">1 · the cap</span>
+    <span class="section-count">now vs three lines</span>
+  </div>
+  <p class="section-desc">
+    The footer is not a new invention — it is the stash's own <b>"show all" + chevron</b>, the same row
+    that opens the library from home. What is genuinely open is <b>which three rows survive the cap</b>.
+  </p>
+
+  <div class="crops">
+
+    <div class="col">
+      <span class="tag no">on your phone now</span>
+      <h2>no ceiling</h2>
+      <div class="stage tall">
+        <div class="eyebrow"><span class="lb">while you were away</span><span class="btn">✕</span></div>
+        <div class="group">
+          <div class="row"><div class="av">♪</div><div class="body">
+            <div class="nm">tiktok · today, 11:20 pm</div><div class="sub">vt.tiktok.com/ZSVSnKYxm/</div>
+            <div class="fail">no place found</div></div>
+            <div class="refresh"><svg viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.5 15a9 9 0 1 1-2.1-9.4L23 10"/></svg></div></div>
+          <div class="rule"></div>
+          <div class="row"><div class="av">🌅</div><div class="body"><div class="nm">Aston Movie Night Best Sunset</div></div>
+            <svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></div>
+          <div class="rule"></div>
+          <div class="row"><div class="av">☕</div><div class="body"><div class="nm">Kayu Cafe and Restaurant</div></div>
+            <svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></div>
+          <div class="rule"></div>
+          <div class="row"><div class="av">🍸</div><div class="body"><div class="nm">Sunset Point Bar</div></div>
+            <svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></div>
+          <div class="rule"></div>
+          <div class="row"><div class="av">🏝️</div><div class="body"><div class="nm">Melasti Beach</div></div>
+            <svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></div>
+          <div class="rule"></div>
+          <div class="row"><div class="av">🍜</div><div class="body"><div class="nm">Warung Bu Mi</div></div>
+            <svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></div>
+          <div class="rule"></div>
+          <div class="row"><div class="av">♪</div><div class="body">
+            <div class="nm">tiktok · today, 11:23 pm</div><div class="sub">vt.tiktok.com/ZSVSqMp3h/</div>
+            <div style="margin-top:8px"><div class="sk" style="width:46%"></div></div></div></div>
+        </div>
+      </div>
+      <div class="note">
+        it keeps going. Home's own content — stash, prompts — is pushed off the first screen by
+        something the user has <b>already been told</b> once.
+      </div>
+    </div>
+
+    <div class="col">
+      <span class="tag">a · newest three</span>
+      <h2>strict chronology</h2>
+      <div class="stage">
+        <div class="eyebrow"><span class="lb">while you were away</span><span class="btn">✕</span></div>
+        <div class="group">
+          <div class="row"><div class="av">♪</div><div class="body">
+            <div class="nm">tiktok · today, 11:23 pm</div><div class="sub">vt.tiktok.com/ZSVSqMp3h/</div>
+            <div style="margin-top:8px"><div class="sk" style="width:46%"></div></div></div></div>
+          <div class="rule"></div>
+          <div class="row"><div class="av">🍜</div><div class="body"><div class="nm">Warung Bu Mi</div></div>
+            <svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></div>
+          <div class="rule"></div>
+          <div class="row"><div class="av">🏝️</div><div class="body"><div class="nm">Melasti Beach</div></div>
+            <svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></div>
+          <div class="foot"><span class="t">show all 8</span>
+            <svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></div>
+        </div>
+      </div>
+      <div class="note">
+        one rule, no surprises: the three most recent lines. But <b>a failure can fall off the card</b>
+        — the one row that wanted something from you is the one you never see.
+      </div>
+    </div>
+
+    <div class="col">
+      <span class="tag rec">b · unfinished first</span>
+      <h2>what needs you, then what landed</h2>
+      <div class="stage">
+        <div class="eyebrow"><span class="lb">while you were away</span><span class="btn">✕</span></div>
+        <div class="group">
+          <div class="row"><div class="av">♪</div><div class="body">
+            <div class="nm">tiktok · today, 11:23 pm</div><div class="sub">vt.tiktok.com/ZSVSqMp3h/</div>
+            <div style="margin-top:8px"><div class="sk" style="width:46%"></div></div></div></div>
+          <div class="rule"></div>
+          <div class="row"><div class="av">♪</div><div class="body">
+            <div class="nm">tiktok · today, 11:20 pm</div><div class="sub">vt.tiktok.com/ZSVSnKYxm/</div>
+            <div class="fail">no place found</div></div>
+            <div class="refresh"><svg viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.5 15a9 9 0 1 1-2.1-9.4L23 10"/></svg></div></div>
+          <div class="rule"></div>
+          <div class="row"><div class="av">🍜</div><div class="body"><div class="nm">Warung Bu Mi</div></div>
+            <svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></div>
+          <div class="foot"><span class="t">show all 8</span>
+            <svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></div>
+        </div>
+      </div>
+      <div class="note">
+        still loading and still failed are <b>pinned</b>; saved places fill whatever is left, newest
+        first. The card becomes a to-do rather than a feed — and the places are all one tap away
+        anyway, in the stash as well as behind <b>show all</b>.
+      </div>
+    </div>
+
+    <div class="col">
+      <span class="tag">c · summary + three</span>
+      <h2>a count line above the rows</h2>
+      <div class="stage">
+        <div class="eyebrow"><span class="lb">while you were away</span>
+          <span class="n">6 saved · 1 failed</span><span class="btn">✕</span></div>
+        <div class="group">
+          <div class="row"><div class="av">♪</div><div class="body">
+            <div class="nm">tiktok · today, 11:23 pm</div><div class="sub">vt.tiktok.com/ZSVSqMp3h/</div>
+            <div style="margin-top:8px"><div class="sk" style="width:46%"></div></div></div></div>
+          <div class="rule"></div>
+          <div class="row"><div class="av">♪</div><div class="body">
+            <div class="nm">tiktok · today, 11:20 pm</div><div class="sub">vt.tiktok.com/ZSVSnKYxm/</div>
+            <div class="fail">no place found</div></div>
+            <div class="refresh"><svg viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.5 15a9 9 0 1 1-2.1-9.4L23 10"/></svg></div></div>
+          <div class="rule"></div>
+          <div class="row"><div class="av">🍜</div><div class="body"><div class="nm">Warung Bu Mi</div></div>
+            <svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></div>
+          <div class="foot"><span class="t">show all 8</span>
+            <svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></div>
+        </div>
+      </div>
+      <div class="note">
+        b, plus the eyebrow says the totals so the hidden rows are <b>accounted for</b> before you open
+        anything. Costs a crowded eyebrow — label, counts and ✕ on one 11px line.
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ═══ 2. the fold ═════════════════════════════════════════════════════ -->
+  <div class="section-head">
+    <span class="section-title">2 · the fold</span>
+    <span class="section-count">three ways to put it away</span>
+  </div>
+  <p class="section-desc">
+    ✕ throws the card away for good. A fold is the softer move — <b>not now, but keep it</b>. The
+    question is what remains on screen once folded, and whether the fold survives leaving home.
+  </p>
+
+  <div class="crops">
+
+    <div class="col">
+      <span class="tag">a · chevron beside the ✕</span>
+      <h2>eyebrow keeps both</h2>
+      <div class="stage">
+        <div class="eyebrow"><span class="lb">while you were away</span>
+          <span class="btn"><svg viewBox="0 0 24 24"><polyline points="6 15 12 9 18 15"/></svg></span>
+          <span class="btn">✕</span></div>
+        <div class="group">
+          <div class="row"><div class="av">♪</div><div class="body">
+            <div class="nm">tiktok · today, 11:23 pm</div><div class="sub">vt.tiktok.com/ZSVSqMp3h/</div>
+            <div style="margin-top:8px"><div class="sk" style="width:46%"></div></div></div></div>
+          <div class="rule"></div>
+          <div class="row"><div class="av">🍜</div><div class="body"><div class="nm">Warung Bu Mi</div></div>
+            <svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></div>
+          <div class="foot"><span class="t">show all 8</span>
+            <svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></div>
+        </div>
+      </div>
+      <div class="note" style="margin-top:2px">folded, it is the eyebrow alone:</div>
+      <div class="stage">
+        <div class="eyebrow" style="padding-bottom:0"><span class="lb">while you were away</span>
+          <span class="n">8</span>
+          <span class="btn"><svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg></span>
+          <span class="btn">✕</span></div>
+      </div>
+      <div class="note">
+        the whole card collapses to <b>one 11px line</b> — about as close to gone as it gets while
+        still being there. Two round buttons 20px apart is the risk; they are small targets.
+      </div>
+    </div>
+
+    <div class="col">
+      <span class="tag rec">b · fold to a single row</span>
+      <h2>a row, not a whisper</h2>
+      <div class="stage">
+        <div class="eyebrow"><span class="lb">while you were away</span>
+          <span class="btn"><svg viewBox="0 0 24 24"><polyline points="6 15 12 9 18 15"/></svg></span>
+          <span class="btn">✕</span></div>
+        <div class="group">
+          <div class="row"><div class="av">♪</div><div class="body">
+            <div class="nm">tiktok · today, 11:23 pm</div><div class="sub">vt.tiktok.com/ZSVSqMp3h/</div>
+            <div style="margin-top:8px"><div class="sk" style="width:46%"></div></div></div></div>
+          <div class="rule"></div>
+          <div class="row"><div class="av">🍜</div><div class="body"><div class="nm">Warung Bu Mi</div></div>
+            <svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></div>
+          <div class="foot"><span class="t">show all 8</span>
+            <svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></div>
+        </div>
+      </div>
+      <div class="note" style="margin-top:2px">folded, the surface stays and says what is in it:</div>
+      <div class="stage">
+        <div class="eyebrow"><span class="lb">while you were away</span><span class="btn">✕</span></div>
+        <div class="folded">
+          <span class="t">6 saved</span><span class="s">· 1 didn't</span>
+          <svg class="chev" style="margin:0 0 0 auto" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>
+        </div>
+      </div>
+      <div class="note">
+        one tappable row, <b>full width</b>, that opens the screen instead of unfolding. Folding and
+        "show all" stop being two ideas: fold it and the card <i>becomes</i> the door.
+      </div>
+    </div>
+
+    <div class="col">
+      <span class="tag">c · no fold, just ✕</span>
+      <h2>three lines is already small</h2>
+      <div class="stage">
+        <div class="eyebrow"><span class="lb">while you were away</span><span class="btn">✕</span></div>
+        <div class="group">
+          <div class="row"><div class="av">♪</div><div class="body">
+            <div class="nm">tiktok · today, 11:23 pm</div><div class="sub">vt.tiktok.com/ZSVSqMp3h/</div>
+            <div style="margin-top:8px"><div class="sk" style="width:46%"></div></div></div></div>
+          <div class="rule"></div>
+          <div class="row"><div class="av">♪</div><div class="body">
+            <div class="nm">tiktok · today, 11:20 pm</div><div class="sub">vt.tiktok.com/ZSVSnKYxm/</div>
+            <div class="fail">no place found</div></div>
+            <div class="refresh"><svg viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.5 15a9 9 0 1 1-2.1-9.4L23 10"/></svg></div></div>
+          <div class="rule"></div>
+          <div class="row"><div class="av">🍜</div><div class="body"><div class="nm">Warung Bu Mi</div></div>
+            <svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></div>
+          <div class="foot"><span class="t">show all 8</span>
+            <svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></div>
+        </div>
+      </div>
+      <div class="note">
+        the honest counter-argument: once capped at three the card is <b>~190pt</b>, and a fold is a
+        control for a problem the cap already solved. Every extra affordance is one more thing to
+        learn on a surface you see for five seconds.
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ═══ 3. the screen ═══════════════════════════════════════════════════ -->
+  <div class="section-head">
+    <span class="section-title">3 · the screen</span>
+    <span class="section-count">what "show all" opens</span>
+  </div>
+  <p class="section-desc">
+    Same rows, no ceiling — the difference is whether it is <b>a flat list of results</b> or
+    <b>a list of shares</b>. It is the same data either way; only the grouping changes.
+  </p>
+
+  <div class="crops">
+
+    <div class="col wide">
+      <span class="tag">a · flat, newest first</span>
+      <h2>the card, uncapped</h2>
+      <div class="phone">
+        <div class="status-bar"><span>9:41</span><span>􀛨</span></div>
+        <div class="top-bar">
+          <button class="icon-btn"><svg viewBox="0 0 24 24"><polyline points="15 6 9 12 15 18"/></svg></button>
+          <span class="clear">clear</span>
+        </div>
+        <div class="scroll">
+          <div class="screen-title">while you were away</div>
+          <div class="screen-sub">8 links you shared into kebi</div>
+          <div class="group">
+            <div class="row"><div class="av">♪</div><div class="body">
+              <div class="nm">tiktok · today, 11:23 pm</div><div class="sub">vt.tiktok.com/ZSVSqMp3h/</div>
+              <div style="margin-top:8px"><div class="sk" style="width:46%"></div></div></div></div>
+            <div class="rule"></div>
+            <div class="row"><div class="av">♪</div><div class="body">
+              <div class="nm">tiktok · today, 11:20 pm</div><div class="sub">vt.tiktok.com/ZSVSnKYxm/</div>
+              <div class="fail">no place found</div></div>
+              <div class="refresh"><svg viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.5 15a9 9 0 1 1-2.1-9.4L23 10"/></svg></div></div>
+            <div class="rule"></div>
+            <div class="row"><div class="av">🍜</div><div class="body"><div class="nm">Warung Bu Mi</div></div>
+              <svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></div>
+            <div class="rule"></div>
+            <div class="row"><div class="av">🏝️</div><div class="body"><div class="nm">Melasti Beach</div></div>
+              <svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></div>
+            <div class="rule"></div>
+            <div class="row"><div class="av">🍸</div><div class="body"><div class="nm">Sunset Point Bar</div></div>
+              <svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></div>
+            <div class="rule"></div>
+            <div class="row"><div class="av">☕</div><div class="body"><div class="nm">Kayu Cafe and Restaurant</div></div>
+              <svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></div>
+            <div class="rule"></div>
+            <div class="row"><div class="av">🌅</div><div class="body"><div class="nm">Aston Movie Night Best Sunset</div></div>
+              <svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></div>
+            <div class="rule"></div>
+            <div class="row"><div class="av">🥐</div><div class="body"><div class="nm">Bungalow Living</div></div>
+              <svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></div>
+          </div>
+        </div>
+        <div class="home-indicator"></div>
+      </div>
+      <div class="note">
+        <b>nothing new to build</b> — the same row component, the cap lifted. But five places in a row
+        with no context: you cannot tell which video any of them came from.
+      </div>
+    </div>
+
+    <div class="col wide">
+      <span class="tag rec">b · grouped by share</span>
+      <h2>one link, then what it gave you</h2>
+      <div class="phone">
+        <div class="status-bar"><span>9:41</span><span>􀛨</span></div>
+        <div class="top-bar">
+          <button class="icon-btn"><svg viewBox="0 0 24 24"><polyline points="15 6 9 12 15 18"/></svg></button>
+          <span class="clear">clear</span>
+        </div>
+        <div class="scroll">
+          <div class="screen-title">while you were away</div>
+          <div class="screen-sub">3 links · 6 places saved</div>
+
+          <div class="day">today</div>
+
+          <div class="shead"><span class="m">♪</span><span class="t">11:23 pm · vt.tiktok.com/ZSVSqMp3h/</span></div>
+          <div class="group" style="margin-bottom:14px">
+            <div class="row"><div class="av">♪</div><div class="body">
+              <div style="margin-top:6px"><div class="sk" style="width:52%"></div></div>
+              <div style="margin-top:8px"><div class="sk" style="width:34%"></div></div></div></div>
+          </div>
+
+          <div class="shead"><span class="m">♪</span><span class="t">11:20 pm · vt.tiktok.com/ZSVSnKYxm/</span></div>
+          <div class="group" style="margin-bottom:14px">
+            <div class="row"><div class="av">♪</div><div class="body">
+              <div class="nm">nothing saved</div>
+              <div class="fail" style="margin-top:2px">no place found</div></div>
+              <div class="refresh"><svg viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.5 15a9 9 0 1 1-2.1-9.4L23 10"/></svg></div></div>
+          </div>
+
+          <div class="shead"><span class="m">♪</span><span class="t">10:58 pm · best warungs in canggu</span></div>
+          <div class="group">
+            <div class="row"><div class="av">🍜</div><div class="body"><div class="nm">Warung Bu Mi</div></div>
+              <svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></div>
+            <div class="rule"></div>
+            <div class="row"><div class="av">🏝️</div><div class="body"><div class="nm">Melasti Beach</div></div>
+              <svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></div>
+            <div class="rule"></div>
+            <div class="row"><div class="av">🍸</div><div class="body"><div class="nm">Sunset Point Bar</div></div>
+              <svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></div>
+            <div class="rule"></div>
+            <div class="row"><div class="av">☕</div><div class="body"><div class="nm">Kayu Cafe and Restaurant</div></div>
+              <svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></div>
+          </div>
+        </div>
+        <div class="home-indicator"></div>
+      </div>
+      <div class="note">
+        the link is the heading, the places are what it produced — so <b>four places read as one video's
+        haul</b> rather than four unrelated saves. A caption, where the host app sends one, replaces the
+        url. Failure becomes a whole empty group, which is exactly what it is.
+      </div>
+    </div>
+
+  </div>
+
+  <div class="verdict">
+    <h3>what I would do</h3>
+    <p>
+      <b>1 · b.</b> Unfinished pinned, saved rows fill the rest. A failed row that scrolls off is the
+      only row on this card that can actually be lost — every landed place is also in the stash.
+      (<b>c</b> if you want the totals visible; it is b plus one line.)
+    </p>
+    <p>
+      <b>2 · b.</b> Fold to a single "6 saved · 1 didn't" row that opens the screen. It gives you the
+      fold you asked for without inventing a second control — folded, the card is one row tall and
+      still does something.
+    </p>
+    <p>
+      <b>3 · b.</b> Grouped by share. It is the only version that answers "what did that video give
+      me", and it is the shape the data already has — one queue entry, N places.
+    </p>
+    <p>
+      <b>One thing I need from you either way:</b> today ✕ deletes these records, so the screen can
+      only ever show what has not been dismissed. If <b>show all</b> should be a history that survives
+      dismissal, the records need to stop being deleted and start aging out — a small change here in
+      the app, <code>share-storage.ts</code>, no backend work.
+    </p>
+  </div>
+
+</div>
+<script>
+document.querySelectorAll('.theme-toggle button').forEach(function (b) {
+  b.addEventListener('click', function () {
+    document.querySelectorAll('.theme-toggle button').forEach(function (x) { x.classList.remove('active'); });
+    b.classList.add('active');
+    document.body.classList.toggle('dark', b.dataset.theme === 'dark');
+  });
+});
+</script>
+</body>
+</html>

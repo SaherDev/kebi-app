@@ -7,6 +7,8 @@ import { useToast } from './toast-context';
 import { useUpgradeToast } from './use-upgrade-toast';
 import { useSavedPlaces } from './saved-places-context';
 import { recordSaveAttempt } from '../lib/save-history';
+import { detectSource, isLinkSource } from '../lib/detect-source';
+import { recordLocalSave, recordShareOutcome, toSharePlace } from '../lib/share-storage';
 
 /**
  * Save-sheet host. A `SaveSheetProvider` mounts the sheet once and exposes
@@ -30,6 +32,14 @@ import { recordSaveAttempt } from '../lib/save-history';
  * once the user dismisses (or a newer submit takes over) it is toast-only.
  * Backgrounding is best-effort by design: if the app is quit mid-save the fetch
  * dies with it, but the server finishes and the place appears on next launch.
+ *
+ * Every submit also writes a row into "recent activity" (lib/share-storage), the
+ * same list the share extension feeds. A save made here and a link shared from
+ * TikTok are the same event, so they belong on one surface — and this is the
+ * path a link shared *into* the app takes too (ShareIntentReceiver only
+ * prefills this sheet). The toast is unchanged and still the primary receipt;
+ * the row is what survives it, which matters most on a failure the user has
+ * already walked away from.
  */
 interface SaveSheetContextValue {
   /** Raise the save sheet. `prefill` seeds the draft (iOS share flow); omit for an empty draft. */
@@ -80,6 +90,14 @@ export function SaveSheetProvider({ children }: { children: ReactNode }) {
       attachedSubmit.current = id;
       setStatus('saving');
 
+      // A pasted link is identified by its url, exactly like a shared one; a
+      // typed place has no url to show, so the words the user wrote become the
+      // row's name (see `title` on PendingShare).
+      const activityId = recordLocalSave(text, isLinkSource(detectSource(text)) ? undefined : text);
+      const land = (outcome: Parameters<typeof recordShareOutcome>[1]) => {
+        if (activityId) recordShareOutcome(activityId, outcome);
+      };
+
       // Still attached ⇒ this submit owns the visible sheet; may touch its state.
       const attached = () => attachedSubmit.current === id;
       // After the sheet is gone, failure toasts carry "try again" to bring it back.
@@ -99,6 +117,7 @@ export function SaveSheetProvider({ children }: { children: ReactNode }) {
           const places = res.results.map((r) => r.place);
           // Feed the help page's "a save went wrong" report (lib/save-history).
           recordSaveAttempt(text, `saved: ${places.map((p) => p.place_name).join(', ')}`);
+          land({ status: 'completed', places: places.map(toSharePlace) });
           add(places);
           toast.show({
             tone: 'success',
@@ -114,6 +133,7 @@ export function SaveSheetProvider({ children }: { children: ReactNode }) {
         // Domain failure (failed / pending / empty) — sheet still up: stays open
         // with the draft to retry; already dismissed: the toast carries the retry.
         recordSaveAttempt(text, `failed: ${res.failure_reason ?? res.status}`);
+        land({ status: 'failed', places: [], failure_reason: res.failure_reason ?? res.status });
         if (res.failure_reason === 'save_limit_reached') {
           // Library is full on the free tier (ADR-112) — point to plans.
           showUpgrade(t('plans.limitReached.save'));
@@ -135,6 +155,7 @@ export function SaveSheetProvider({ children }: { children: ReactNode }) {
       } catch {
         // Transport error, schema drift, or timeout abort.
         recordSaveAttempt(text, 'failed: network or timeout');
+        land({ status: 'failed', places: [] });
         toast.show({
           tone: 'danger',
           icon: 'alert',

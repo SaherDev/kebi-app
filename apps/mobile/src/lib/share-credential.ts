@@ -1,15 +1,23 @@
 import type { HttpClient } from '../api/types';
 import { mintShareToken, SHARE_TOKEN_RENEW_WITHIN_MS } from '../api/share-token';
+import { clearShareFolded } from './share-fold';
 import {
   canShareInBackground,
-  clearShareToken,
+  clearAllShareState,
   storeApiBaseUrl,
   storeShareToken,
   storedShareTokenExpiry,
 } from './share-storage';
 
 /**
- * Keeps the share extension holding a usable credential (share-and-forget).
+ * Keeps a share token minted and stored for the extension.
+ *
+ * **Currently unused on device.** The extension no longer sends anything — it
+ * writes the link to the App Group and the app drains it with its own session,
+ * so nothing reads this token today. It is kept because the moment `/extract`
+ * can answer with `pending` in a second or two, the extension can post for
+ * itself again and will need exactly this; deleting it would mean rebuilding
+ * the gateway route, the middleware scope and this client to get back here.
  *
  * Called on every sign-in and restored session, alongside provisioning. Cheap
  * and idempotent by design: a token that is still comfortably valid costs one
@@ -44,12 +52,22 @@ export async function ensureShareToken(client: HttpClient): Promise<void> {
 }
 
 /**
- * Revoke the extension's ability to save, on sign-out. The token stays valid on
- * the server until it expires — it is stateless — so removing the only copy the
- * extension can reach is what actually stops it saving into an account nobody is
- * signed into any more.
+ * Hand the device back, on sign-out: revoke the extension's credential and wipe
+ * the shares themselves.
+ *
+ * The token half is what stops a save — it is stateless and stays valid on the
+ * server until it expires, so removing the only copy the extension can reach is
+ * the real revocation. The rest is because none of this storage is scoped to an
+ * account: whoever signs in next would otherwise read the last person's recent
+ * activity, and their queued links would drain into the new account's library.
+ *
+ * Driven by the auth *status* rather than the sign-out button, so a session that
+ * simply expires cleans up too. A link shared while nobody is signed in is
+ * written after this runs and survives on purpose — that is the person holding
+ * the phone, saving before they log in.
  */
-export function revokeShareToken(): void {
+export function clearShareState(): void {
   if (!canShareInBackground()) return;
-  clearShareToken();
+  clearAllShareState();
+  void clearShareFolded();
 }

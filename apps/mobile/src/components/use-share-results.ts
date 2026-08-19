@@ -1,15 +1,22 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AppState } from 'react-native';
 import { useApiClient } from '../api/hooks';
+import { detectSource } from '../lib/detect-source';
+import { formatRelativeTime } from '../lib/format-relative-time';
 import { extractPlace } from '../api/extract';
 import {
   canShareInBackground,
+  clearShareHistory,
+  dismissPendingShares,
+  onShareStoreChange,
   readPendingShares,
   readShareQueue,
   recordShareOutcome,
+  toSharePlace,
   writePendingShares,
   writeShareQueue,
   type PendingShare,
+  type SharePlace,
 } from '../lib/share-storage';
 
 /**
@@ -24,18 +31,45 @@ import {
 export interface ShareResultRow {
   id: string;
   rawInput: string;
+  /**
+   * What to call this share before a place name exists. The host app's caption
+   * when there is one; otherwise where and when it came from — TikTok supplies
+   * no caption, and `vt.tiktok.com/ZSVSgEWX3` is not something anyone
+   * recognises, whereas "tiktok · 10:28 pm" is the share you just made.
+   */
+  label: string;
+  /**
+   * The host app's own caption, when it sent one. The screen's group heading
+   * prefers it over the link — a caption is what the share was *about*.
+   */
+  title?: string;
+  /** Which app it came from — drives the row's glyph. */
+  source: ReturnType<typeof detectSource>;
   sharedAt: number;
   state: 'working' | 'landed' | 'failed';
-  placeNames: string[];
+  /** Every place this share saved — one row each. Empty unless landed. */
+  places: SharePlace[];
   failureReason?: string;
+  /** Taken off home by ✕. Still history, so the screen keeps showing it. */
+  dismissed: boolean;
 }
 
 export interface UseShareResults {
   rows: ShareResultRow[];
-  /** Clear the surface for good. Only the ✕ calls this. */
+  /** Take the card off home. Keeps the records — the screen still has them. */
   dismiss: () => void;
+  /** Delete the history outright. Only the screen offers this. */
+  clear: () => void;
   /** Send a failed link again — the row's "try again". */
   retry: (id: string) => void;
+}
+
+export interface ShareResultsOptions {
+  /**
+   * Include shares the user has already cleared off home. The card wants the
+   * live set; the screen behind "show all" is a history and wants everything.
+   */
+  includeDismissed?: boolean;
 }
 
 /**
@@ -51,7 +85,7 @@ export interface UseShareResults {
  * Runs on mount and on every foreground, one code path — whether the user was
  * gone five seconds or two days is not a distinction worth making.
  */
-export function useShareResults(): UseShareResults {
+export function useShareResults({ includeDismissed = false }: ShareResultsOptions = {}): UseShareResults {
   const client = useApiClient();
   const clientRef = useRef(client);
   clientRef.current = client;
@@ -61,8 +95,9 @@ export function useShareResults(): UseShareResults {
 
   const read = useCallback(() => {
     if (!canShareInBackground()) return;
-    setRows(readPendingShares().map(toRow));
-  }, []);
+    const all = readPendingShares().map(toRow);
+    setRows(includeDismissed ? all : all.filter((row) => !row.dismissed));
+  }, [includeDismissed]);
 
   const drain = useCallback(async () => {
     if (!canShareInBackground() || draining.current) return;
@@ -77,6 +112,7 @@ export function useShareResults(): UseShareResults {
       const adopted: PendingShare[] = queued.map((item, index) => ({
         id: `local-${item.shared_at}-${index}`,
         raw_input: item.raw_input,
+        title: item.title,
         shared_at: item.shared_at,
       }));
       writePendingShares([...readPendingShares(), ...adopted]);
@@ -95,10 +131,10 @@ export function useShareResults(): UseShareResults {
             recordShareOutcome(
               item.id,
               res.status === 'completed' && res.results.length > 0
-                ? { status: 'completed', place_names: res.results.map((r) => r.place.place_name) }
+                ? { status: 'completed', places: res.results.map((r) => toSharePlace(r.place)) }
                 : {
                     status: 'failed',
-                    place_names: [],
+                    places: [],
                     failure_reason: res.failure_reason ?? res.status,
                   },
             );
@@ -127,13 +163,24 @@ export function useShareResults(): UseShareResults {
     const sub = AppState.addEventListener('change', (state) => {
       if (state === 'active') refresh();
     });
-    return () => sub.remove();
-  }, [refresh]);
+    // And a write from anywhere else in this process — the save sheet posts its
+    // own row now, from a screen the user is watching.
+    const unsubscribe = onShareStoreChange(read);
+    return () => {
+      sub.remove();
+      unsubscribe();
+    };
+  }, [refresh, read]);
 
   const dismiss = useCallback(() => {
-    writePendingShares([]);
-    setRows([]);
-  }, []);
+    dismissPendingShares();
+    read();
+  }, [read]);
+
+  const clear = useCallback(() => {
+    clearShareHistory();
+    read();
+  }, [read]);
 
   const retry = useCallback(
     (id: string) => {
@@ -142,10 +189,18 @@ export function useShareResults(): UseShareResults {
 
       // Drop the outcome first so the row goes back to working immediately —
       // the send takes up to a minute, and a button that looks inert for that
-      // long reads as broken.
+      // long reads as broken. The dismissal goes with it: a retry is a live
+      // share again, and belongs back on home where its result can be seen.
       writePendingShares(
         readPendingShares().map((share) =>
-          share.id === id ? { id: share.id, raw_input: share.raw_input, shared_at: share.shared_at } : share,
+          share.id === id
+          ? {
+              id: share.id,
+              raw_input: share.raw_input,
+              title: share.title,
+              shared_at: share.shared_at,
+            }
+          : share,
         ),
       );
       read();
@@ -156,10 +211,10 @@ export function useShareResults(): UseShareResults {
           recordShareOutcome(
             id,
             res.status === 'completed' && res.results.length > 0
-              ? { status: 'completed', place_names: res.results.map((r) => r.place.place_name) }
+              ? { status: 'completed', places: res.results.map((r) => toSharePlace(r.place)) }
               : {
                   status: 'failed',
-                  place_names: [],
+                  places: [],
                   failure_reason: res.failure_reason ?? res.status,
                 },
           );
@@ -172,7 +227,19 @@ export function useShareResults(): UseShareResults {
     [read],
   );
 
-  return { rows, dismiss, retry };
+  return { rows, dismiss, clear, retry };
+}
+
+/**
+ * Name a share the way a person would recall it. The caption if the host app
+ * gave one; otherwise the source and the moment, because "the tiktok I shared
+ * at 10:28" is a memory and a shortlink is not.
+ */
+function labelFor(share: PendingShare): string {
+  if (share.title) return share.title;
+  const source = detectSource(share.raw_input);
+  const when = formatRelativeTime(new Date(share.shared_at).toISOString());
+  return when ? `${source} · ${when}` : source;
 }
 
 function toRow(share: PendingShare): ShareResultRow {
@@ -180,18 +247,27 @@ function toRow(share: PendingShare): ShareResultRow {
     return {
       id: share.id,
       rawInput: share.raw_input,
+      label: labelFor(share),
+      title: share.title,
+      source: detectSource(share.raw_input),
       sharedAt: share.shared_at,
       state: 'working',
-      placeNames: [],
+      places: [],
+      dismissed: false,
     };
   }
-  const landed = share.outcome.status === 'completed' && share.outcome.place_names.length > 0;
+  const places = share.outcome.places ?? [];
+  const landed = share.outcome.status === 'completed' && places.length > 0;
   return {
     id: share.id,
     rawInput: share.raw_input,
+    label: labelFor(share),
+    title: share.title,
+    source: detectSource(share.raw_input),
     sharedAt: share.shared_at,
     state: landed ? 'landed' : 'failed',
-    placeNames: share.outcome.place_names,
+    places,
     failureReason: share.outcome.failure_reason,
+    dismissed: share.dismissed_at !== undefined,
   };
 }

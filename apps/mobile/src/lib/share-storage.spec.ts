@@ -1,7 +1,18 @@
+import { SHARE_HISTORY_MS } from './share-config';
 import {
   SHARE_KEYS,
+  clearAllShareState,
+  clearShareHistory,
   clearShareToken,
+  dismissPendingShares,
+  onShareStoreChange,
+  readPendingShares,
+  recordLocalSave,
+  recordShareOutcome,
+  toSharePlace,
+  writePendingShares,
   readShareQueue,
+  storeApiBaseUrl,
   storeShareToken,
   storedShareTokenExpiry,
   writeShareQueue,
@@ -99,5 +110,136 @@ describe('share queue', () => {
     writeShareQueue(readShareQueue().filter((q) => q.raw_input !== item.raw_input));
 
     expect(readShareQueue()).toEqual([later]);
+  });
+});
+
+describe('share history', () => {
+  const finished = (id: string, sharedAt: number) => ({
+    id,
+    raw_input: `https://vt.tiktok.com/${id}`,
+    shared_at: sharedAt,
+    outcome: { status: 'completed' as const, places: [] },
+  });
+
+  it('marks dismissed shares rather than deleting them', () => {
+    writePendingShares([finished('a', Date.now())]);
+
+    dismissPendingShares();
+
+    expect(readPendingShares()).toHaveLength(1);
+    expect(readPendingShares()[0].dismissed_at).toEqual(expect.any(Number));
+  });
+
+  it('leaves a still-working share alone on dismissal', () => {
+    // No outcome yet: clearing it would strand the result of a live share.
+    writePendingShares([{ id: 'a', raw_input: 'https://x', shared_at: Date.now() }]);
+
+    dismissPendingShares();
+
+    expect(readPendingShares()[0].dismissed_at).toBeUndefined();
+  });
+
+  it('forgets finished shares once they age past the history window', () => {
+    const old = Date.now() - SHARE_HISTORY_MS - 1;
+    writePendingShares([finished('old', old), finished('new', Date.now())]);
+
+    expect(readPendingShares().map((s) => s.id)).toEqual(['new']);
+  });
+
+  it('never ages out a share that is still working', () => {
+    // However old it is, an undelivered outcome is unfinished business.
+    const old = Date.now() - SHARE_HISTORY_MS * 3;
+    writePendingShares([{ id: 'a', raw_input: 'https://x', shared_at: old }]);
+
+    expect(readPendingShares()).toHaveLength(1);
+  });
+
+  it('clears the history but keeps what is still in flight', () => {
+    writePendingShares([
+      finished('done', Date.now()),
+      { id: 'live', raw_input: 'https://x', shared_at: Date.now() },
+    ]);
+
+    clearShareHistory();
+
+    expect(readPendingShares().map((s) => s.id)).toEqual(['live']);
+  });
+});
+
+describe('in-app saves', () => {
+  it('writes a save made in the app into the same list the extension feeds', () => {
+    // One surface for both: a save from the sheet and a link shared from TikTok
+    // are the same event.
+    const id = recordLocalSave('https://vt.tiktok.com/ZSVSnKYxm/');
+
+    expect(id).not.toBeNull();
+    expect(readPendingShares()).toHaveLength(1);
+    expect(readPendingShares()[0].outcome).toBeUndefined();
+  });
+
+  it('keeps the typed words as the row name when there is no link', () => {
+    const id = recordLocalSave('kayu cafe canggu', 'kayu cafe canggu');
+
+    expect(readPendingShares()[0].title).toBe('kayu cafe canggu');
+    expect(id).not.toBeNull();
+  });
+
+  it('resolves the row it wrote', () => {
+    const id = recordLocalSave('https://vt.tiktok.com/x');
+
+    recordShareOutcome(id as string, {
+      status: 'completed',
+      places: [toSharePlace({ id: 'p1', place_name: 'Kayu', icon: null, categories: [] })],
+    });
+
+    expect(readPendingShares()[0].outcome?.places[0]).toEqual({
+      id: 'p1',
+      name: 'Kayu',
+      icon: null,
+      categories: [],
+    });
+  });
+
+  it('tells watchers about a write, so a card on screen resolves in place', () => {
+    // The extension could only ever write while the app was backgrounded; the
+    // save sheet writes while the user is looking at the card.
+    const seen = jest.fn();
+    const unsubscribe = onShareStoreChange(seen);
+
+    recordLocalSave('https://vt.tiktok.com/x');
+
+    expect(seen).toHaveBeenCalled();
+    unsubscribe();
+  });
+});
+
+describe('signing out', () => {
+  it('leaves nothing behind for the next account on this phone', () => {
+    // None of this storage is scoped to a user — the client is blind to
+    // identity — so whoever signs in next must not inherit any of it.
+    storeShareToken('kst_abc', Date.now() + 1000);
+    writeShareQueue([{ raw_input: 'https://vt.tiktok.com/x', shared_at: Date.now() }]);
+    writePendingShares([
+      {
+        id: 'a',
+        raw_input: 'https://vt.tiktok.com/y',
+        shared_at: Date.now(),
+        outcome: { status: 'completed', places: [] },
+      },
+    ]);
+
+    clearAllShareState();
+
+    expect(storedShareTokenExpiry()).toBeNull();
+    expect(readShareQueue()).toEqual([]);
+    expect(readPendingShares()).toEqual([]);
+  });
+
+  it('keeps the base url, which describes the build and not the person', () => {
+    storeApiBaseUrl('https://api.example.com');
+
+    clearAllShareState();
+
+    expect(mockStore.get(SHARE_KEYS.apiBaseUrl)).toBe('https://api.example.com');
   });
 });

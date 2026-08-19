@@ -14,7 +14,7 @@ import { supabase } from '../lib/supabase';
 import { createApiClient } from '../api/client';
 import { API_ROUTES } from '../api/routes';
 import { detectChannel } from './detect-channel';
-import { ensureShareToken, revokeShareToken } from '../lib/share-credential';
+import { clearShareState, ensureShareToken } from '../lib/share-credential';
 import { AUTH } from './constants';
 
 // Finish any auth session left dangling in the system browser (no-op normally).
@@ -122,6 +122,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
       setStatus(session ? 'authenticated' : 'unauthenticated');
+      // No session means this device belongs to nobody right now. None of the
+      // share storage is scoped to an account — the client is blind to identity
+      // (ADR-044) — so the next person to sign in would read the last one's
+      // recent activity and drain their queued links into their own library.
+      // Driven off the status, not the sign-out button, so an expired session
+      // cleans up too.
+      if (!session) clearShareState();
       // Provision the product user: POST /auth/login makes the gateway ensure our
       // internal User row exists and stamp internal_id into the token;
       // refreshSession then pulls the new claim. Fires on a fresh sign-in and on a
@@ -233,8 +240,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signOut = useCallback(async () => {
     // Before the session goes: the share token is stateless and stays valid
     // server-side until it expires, so dropping the extension's only copy is
-    // what actually stops it saving into a signed-out account.
-    revokeShareToken();
+    // what actually stops it saving into a signed-out account — and the shares
+    // themselves go with it, so the next account starts clean. The auth-state
+    // listener does this too; doing it here as well means it has happened
+    // before the sign-out request is even sent.
+    clearShareState();
     await supabase.auth.signOut();
     setPendingOtp(null);
   }, []);

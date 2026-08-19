@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Kebi — landed share rows</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #FAFAF9; --surface: #F1F1EF; --surface-2: #E8E8E5;
+    --text: #1A1A1A; --text-muted: #8A8A87; --text-soft: #B5B5B1;
+    --success: #4A7C3A; --like: #C2632F; --danger: #D14343;
+    --pill-warm: #FEE4D4; --tag-rec: #A7C7A0; --tag: #D4B891; --tag-no: #D9A3A3;
+  }
+  body.dark {
+    --bg: #13110F; --surface: #1C1A17; --surface-2: #26231F;
+    --text: #F5F1EA; --text-muted: #9A938A; --text-soft: #6E6862;
+    --success: #A8C293; --like: #E0A176; --danger: #E89090; --pill-warm: #3A2418;
+  }
+  html, body { background: var(--bg); color: var(--text); font-family: 'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased; min-height: 100vh; }
+  body.dark { background: #0A0908; }
+  .page { max-width: 1400px; margin: 0 auto; padding: 52px 32px 96px; }
+
+  .header { display: flex; align-items: flex-start; justify-content: space-between;
+    padding-bottom: 28px; border-bottom: 1px solid var(--surface-2); margin-bottom: 34px; }
+  h1 { font-size: 25px; font-weight: 700; letter-spacing: -0.028em; }
+  .meta { font-size: 12px; color: var(--text-muted); margin-top: 5px; }
+  .lede { font-size: 14px; color: var(--text-muted); line-height: 1.65; max-width: 800px; margin-top: 14px; }
+  .lede b { color: var(--text); font-weight: 600; }
+  .theme-toggle { display: flex; background: var(--surface); border-radius: 999px; padding: 3px; flex-shrink: 0; }
+  .theme-toggle button { padding: 6px 14px; background: transparent; border: none; border-radius: 999px;
+    font-family: inherit; font-size: 12px; font-weight: 500; color: var(--text-muted); cursor: pointer; }
+  .theme-toggle button.active { background: var(--text); color: var(--bg); }
+
+  .section-head { display: flex; align-items: baseline; justify-content: space-between;
+    margin: 38px 0 12px; padding-bottom: 12px; border-bottom: 1px solid var(--surface-2); }
+  .section-title { font-size: 11px; font-weight: 600; color: var(--text-soft);
+    text-transform: uppercase; letter-spacing: 0.08em; }
+  .section-count { font-size: 12px; color: var(--text-soft); }
+  .section-desc { font-size: 14px; color: var(--text-muted); line-height: 1.6; max-width: 800px; margin-bottom: 24px; }
+  .section-desc b { color: var(--text); font-weight: 600; }
+
+  .crops { display: flex; flex-wrap: wrap; gap: 30px; align-items: flex-start; }
+  .col { width: 336px; display: flex; flex-direction: column; gap: 10px; }
+  .col h2 { font-size: 15px; font-weight: 700; letter-spacing: -0.02em; }
+  .note { font-size: 11.5px; color: var(--text-muted); line-height: 1.55; }
+  .note b { color: var(--text); font-weight: 600; }
+  .tag { display: inline-block; align-self: flex-start; font-size: 10px; font-weight: 700;
+    letter-spacing: .08em; text-transform: uppercase; color: #1A1A1A; background: var(--tag);
+    border-radius: 999px; padding: 3px 10px; }
+  .tag.rec { background: var(--tag-rec); } .tag.no { background: var(--tag-no); }
+
+  .stage { background: var(--bg); border: 1px dashed var(--surface-2); border-radius: 12px; padding: 14px 12px; }
+  .eyebrow { display: flex; align-items: center; gap: 8px; padding: 0 4px 10px; }
+  .eyebrow .lb { font-size: 11px; font-weight: 600; color: var(--text-soft);
+    text-transform: uppercase; letter-spacing: 0.08em; }
+  .eyebrow .x { margin-left: auto; width: 20px; height: 20px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center; background: var(--surface); font-size: 10px; color: var(--text-muted); }
+  .group { background: var(--surface); border-radius: 14px; padding: 4px 12px; }
+  .rule { height: 1px; background: var(--surface-2); }
+
+  .row { display: flex; align-items: flex-start; gap: 10px; padding: 10px 4px; }
+  .av { width: 34px; height: 34px; border-radius: 9px; background: var(--bg);
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 16px; }
+  .body { flex: 1; min-width: 0; }
+  .nm { font-size: 14px; font-weight: 600; color: var(--text); letter-spacing: -0.01em;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .sub { font-size: 11.5px; color: var(--text-soft); margin-top: 2px;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .fail { font-size: 11.5px; color: var(--danger); font-weight: 500; margin-top: 4px; }
+  .from { font-size: 11.5px; color: var(--text-muted); margin-top: 3px; }
+  .chev { width: 11px; height: 11px; stroke: var(--text-soft); stroke-width: 2.2; fill: none; margin-top: 11px; flex-shrink: 0; }
+  .retry { align-self: center; flex-shrink: 0; font-size: 11px; font-weight: 600; color: var(--text);
+    background: var(--bg); border: 1px solid var(--surface-2); border-radius: 999px; padding: 5px 12px; }
+  .sk { height: 9px; border-radius: 3px; background: var(--surface-2); animation: pulse 1.4s ease-in-out infinite; }
+  @keyframes pulse { 0%,100% { opacity: 1 } 50% { opacity: .45 } }
+
+  .verdict { margin-top: 36px; border: 1px solid var(--surface-2); border-radius: 16px;
+    padding: 22px 24px; background: var(--surface); max-width: 900px; }
+  .verdict h3 { font-size: 14px; font-weight: 700; margin-bottom: 10px; }
+  .verdict p { font-size: 13px; color: var(--text-muted); line-height: 1.68; }
+  .verdict p + p { margin-top: 10px; }
+  .verdict b { color: var(--text); font-weight: 600; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="header">
+    <div>
+      <h1>the landed row</h1>
+      <div class="meta">kebi-app · while you were away · what a share becomes once kebi answers</div>
+      <p class="lede">
+        The queue works — shares now resolve into real places. What is on your phone is the
+        <b>left-hand column</b>, and three things about it are still wrong: one saved place hides
+        the others behind "and 2 more", a loading row does not show its link, and a landed place
+        gets a <b>generic pin</b> instead of looking like a place.
+      </p>
+    </div>
+    <div class="theme-toggle">
+      <button class="active" data-theme="light">light</button>
+      <button data-theme="dark">dark</button>
+    </div>
+  </div>
+
+  <div class="section-head">
+    <span class="section-title">one share, four places</span>
+    <span class="section-count">now vs proposed</span>
+  </div>
+  <p class="section-desc">
+    A single TikTok often yields several places. Right now only the first is visible.
+  </p>
+
+  <div class="crops">
+
+    <div class="col">
+      <span class="tag no">on your phone now</span>
+      <h2>first place + "and 2 more"</h2>
+      <div class="stage">
+        <div class="eyebrow"><span class="lb">while you were away</span><span class="x">✕</span></div>
+        <div class="group">
+          <div class="row">
+            <div class="av">🔗</div>
+            <div class="body">
+              <div class="nm">tiktok · today, 11:20 pm</div>
+              <div class="sub">vt.tiktok.com/ZSVSnKYxm/</div>
+              <div class="fail">no place found</div>
+            </div>
+            <button class="retry">try again</button>
+          </div>
+          <div class="rule"></div>
+          <div class="row">
+            <div class="av">📍</div>
+            <div class="body"><div class="nm">Aston Movie Night Best Sunset</div></div>
+            <svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>
+          </div>
+          <div class="rule"></div>
+          <div class="row">
+            <div class="av">📍</div>
+            <div class="body">
+              <div class="nm">Kayu Cafe and Restaurant</div>
+              <div class="sub">and 2 more</div>
+            </div>
+            <svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>
+          </div>
+          <div class="rule"></div>
+          <div class="row">
+            <div class="av">♪</div>
+            <div class="body">
+              <div class="nm">tiktok · today, 11:23 pm</div>
+              <div style="margin-top:8px"><div class="sk" style="width:46%"></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="note">
+        the failed row uses a <b>chain link</b> while the loading row uses the TikTok mark —
+        inconsistent. "and 2 more" <b>hides real saves</b>. And the loading row lost its link.
+      </div>
+    </div>
+
+    <div class="col">
+      <span class="tag rec">proposed</span>
+      <h2>every place its own row</h2>
+      <div class="stage">
+        <div class="eyebrow"><span class="lb">while you were away</span><span class="x">✕</span></div>
+        <div class="group">
+          <div class="row">
+            <div class="av">♪</div>
+            <div class="body">
+              <div class="nm">tiktok · today, 11:20 pm</div>
+              <div class="sub">vt.tiktok.com/ZSVSnKYxm/</div>
+              <div class="fail">no place found</div>
+            </div>
+            <button class="retry">try again</button>
+          </div>
+          <div class="rule"></div>
+          <div class="row">
+            <div class="av">🌅</div>
+            <div class="body"><div class="nm">Aston Movie Night Best Sunset</div></div>
+            <svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>
+          </div>
+          <div class="rule"></div>
+          <div class="row">
+            <div class="av">☕</div>
+            <div class="body"><div class="nm">Kayu Cafe and Restaurant</div></div>
+            <svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>
+          </div>
+          <div class="rule"></div>
+          <div class="row">
+            <div class="av">🍸</div>
+            <div class="body"><div class="nm">Sunset Point Bar</div></div>
+            <svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>
+          </div>
+          <div class="rule"></div>
+          <div class="row">
+            <div class="av">🏝️</div>
+            <div class="body"><div class="nm">Melasti Beach</div></div>
+            <svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>
+          </div>
+          <div class="rule"></div>
+          <div class="row">
+            <div class="av">♪</div>
+            <div class="body">
+              <div class="nm">tiktok · today, 11:23 pm</div>
+              <div class="sub">vt.tiktok.com/ZSVSqMp3h/</div>
+              <div style="margin-top:8px"><div class="sk" style="width:46%"></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="note">
+        every saved place is its own row — <b>nothing hidden</b>. The source mark is consistent
+        across all states. Loading rows carry their link. Landed rows use the
+        <b>place's own emoji</b>, exactly like a stash row.
+      </div>
+    </div>
+
+  </div>
+
+  <div class="section-head">
+    <span class="section-title">the open question</span>
+    <span class="section-count">the landed row's avatar</span>
+  </div>
+  <p class="section-desc">
+    You said <b>generic icon</b>, then <b>the first one is no</b> — so I have drawn both, because
+    I do not want to guess which you meant.
+  </p>
+
+  <div class="crops">
+    <div class="col">
+      <span class="tag">a · generic pin</span>
+      <h2>every place, same mark</h2>
+      <div class="stage">
+        <div class="group">
+          <div class="row"><div class="av">📍</div><div class="body"><div class="nm">Kayu Cafe and Restaurant</div></div>
+            <svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></div>
+          <div class="rule"></div>
+          <div class="row"><div class="av">📍</div><div class="body"><div class="nm">Melasti Beach</div></div>
+            <svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></div>
+        </div>
+      </div>
+      <div class="note">
+        one mark says "this is a place". Calm, and it needs <b>no extra data</b> — names are all
+        we keep today. But every row looks the same, and it does not match the stash.
+      </div>
+    </div>
+
+    <div class="col">
+      <span class="tag rec">b · the place's own emoji</span>
+      <h2>same as the stash</h2>
+      <div class="stage">
+        <div class="group">
+          <div class="row"><div class="av">☕</div><div class="body"><div class="nm">Kayu Cafe and Restaurant</div></div>
+            <svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></div>
+          <div class="rule"></div>
+          <div class="row"><div class="av">🏝️</div><div class="body"><div class="nm">Melasti Beach</div></div>
+            <svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></div>
+        </div>
+      </div>
+      <div class="note">
+        the same <code>PlaceAvatar</code> the stash and library use, driven by the place's
+        categories. A landed row then <b>is</b> a place row — which is what it became. Costs
+        keeping two extra fields per place when the result is stored.
+      </div>
+    </div>
+  </div>
+
+  <div class="verdict">
+    <h3>what I would do</h3>
+    <p>
+      <b>Flood the places</b> either way — "and 2 more" hides saves the user made, on the one
+      surface whose job is telling them what landed.
+    </p>
+    <p>
+      <b>b for the avatar.</b> Once a share becomes a place, it should look like every other place
+      in the app; a pin is a placeholder for data we are choosing to throw away. The cost is two
+      fields.
+    </p>
+    <p>
+      <b>And the source mark should be consistent</b> — the failed row's chain link is a leftover,
+      not a decision.
+    </p>
+  </div>
+
+</div>
+<script>
+document.querySelectorAll('.theme-toggle button').forEach(function (b) {
+  b.addEventListener('click', function () {
+    document.querySelectorAll('.theme-toggle button').forEach(function (x) { x.classList.remove('active'); });
+    b.classList.add('active');
+    document.body.classList.toggle('dark', b.dataset.theme === 'dark');
+  });
+});
+</script>
+</body>
+</html>

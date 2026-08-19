@@ -1,5 +1,8 @@
 app:
-  environment: development
+  # No `environment` key: it lived here to gate the dev auth bypass, said
+  # `development` in production, and so disabled the guard it existed to be.
+  # Anything that differs per environment now reads the environment (see
+  # AuthMiddleware.isDeployed, resolveSynchronize).
   port: 3333
   api_prefix: api/v1
 

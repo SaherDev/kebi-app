@@ -1,4 +1,4 @@
-import { ensureShareToken, revokeShareToken } from './share-credential';
+import { clearShareState, ensureShareToken } from './share-credential';
 import { SHARE_TOKEN_RENEW_WITHIN_MS } from '../api/share-token';
 import { HttpError } from '../api/transports/fetch.transport';
 import type { HttpClient } from '../api/types';
@@ -9,6 +9,7 @@ const mockState = {
   stored: [] as Array<{ token: string; expiresAt: number }>,
   baseUrls: [] as string[],
   cleared: 0,
+  unfolded: 0,
 };
 
 jest.mock('./share-storage', () => ({
@@ -22,8 +23,15 @@ jest.mock('./share-storage', () => ({
     mockState.stored.push({ token, expiresAt });
     return true;
   },
-  clearShareToken: () => {
+  clearAllShareState: () => {
     mockState.cleared += 1;
+  },
+}));
+
+jest.mock('./share-fold', () => ({
+  clearShareFolded: () => {
+    mockState.unfolded += 1;
+    return Promise.resolve();
   },
 }));
 
@@ -53,6 +61,7 @@ beforeEach(() => {
   mockState.stored = [];
   mockState.baseUrls = [];
   mockState.cleared = 0;
+  mockState.unfolded = 0;
 });
 
 describe('ensureShareToken', () => {
@@ -128,15 +137,23 @@ describe('ensureShareToken', () => {
   });
 });
 
-describe('revokeShareToken', () => {
+describe('clearShareState', () => {
   it('clears the only copy the extension can reach', () => {
-    revokeShareToken();
+    clearShareState();
     expect(mockState.cleared).toBe(1);
+  });
+
+  it('takes the shares with it, so the next account inherits nothing', () => {
+    // None of this storage is scoped to a user; revoking the token alone would
+    // leave the previous person's activity on screen and their queued links
+    // ready to drain into whoever signs in next.
+    clearShareState();
+    expect(mockState.unfolded).toBe(1);
   });
 
   it('is a no-op without an App Group', () => {
     mockState.available = false;
-    revokeShareToken();
+    clearShareState();
     expect(mockState.cleared).toBe(0);
   });
 });

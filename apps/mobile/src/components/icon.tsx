@@ -24,6 +24,8 @@ export type IconName =
   | 'edit'
   | 'ellipsis'
   | 'chevron-right'
+  | 'chevron-up'
+  | 'chevron-down'
   | 'arrow-right'
   | 'check'
   | 'plus'
@@ -49,6 +51,7 @@ export type IconName =
   | 'mic'
   | 'send'
   | 'stop'
+  | 'refresh'
   | 'globe'
   | 'sun'
   | 'moon'
@@ -94,6 +97,9 @@ const ICONS: Record<IconName, ReactNode> = {
   ),
   edit: <Path d="M12 20h9M16.5 3.5a2.12 2.12 0 113 3L7 19l-4 1 1-4z" />,
   'chevron-right': <Polyline points="9 6 15 12 9 18" />,
+  // The same chevron rotated — fold / unfold, as on any collapsible section.
+  'chevron-up': <Polyline points="6 15 12 9 18 15" />,
+  'chevron-down': <Polyline points="6 9 12 15 18 9" />,
   // Full arrow → for forward CTAs (the login send-code button).
   'arrow-right': (
     <>
@@ -231,6 +237,14 @@ const ICONS: Record<IconName, ReactNode> = {
     </>
   ),
   stop: <Rect x={6} y={6} width={12} height={12} rx={3} />,
+  // Retry on a share that failed while nobody was watching — the arrow returns
+  // to where it started, which is what "send it again" looks like.
+  refresh: (
+    <>
+      <Polyline points="23 4 23 10 17 10" />
+      <Path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
+    </>
+  ),
   // Category/price meta row on the place card (kebi-chat-mockup `.group-row`).
   globe: (
     <>

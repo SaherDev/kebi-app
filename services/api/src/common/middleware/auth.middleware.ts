@@ -129,11 +129,10 @@ export class AuthMiddleware implements NestMiddleware {
   private devBypass(
     token: string,
   ): { user: AuthenticatedUser; identity: NormalizedIdentity } | null {
-    const isProd = this.configService.get<string>('app.environment') === 'production';
     const enabled = this.configService.get<string>('APP_DEV_BYPASS_ENABLED') === 'true';
     const bypassToken = this.configService.get<string>('DEV_BYPASS_TOKEN');
     const bypassUserId = this.configService.get<string>('DEV_BYPASS_USER_ID');
-    if (isProd || !enabled || !bypassToken || !bypassUserId || token !== bypassToken) {
+    if (this.isDeployed() || !enabled || !bypassToken || !bypassUserId || token !== bypassToken) {
       return null;
     }
     this.logger.warn(`Dev bypass auth used for user ${bypassUserId} — never enable in production`);
@@ -144,6 +143,32 @@ export class AuthMiddleware implements NestMiddleware {
         claims: new TokenClaims({ internal_id: bypassUserId, ai_enabled: true }),
       },
     };
+  }
+
+  /**
+   * Whether this process is running somewhere deployed — the only question the
+   * dev bypass is allowed to ask about its environment.
+   *
+   * It used to ask `app.environment`, which is read from the **committed**
+   * `config/app.yaml`. That file said `development`, in production, for as long
+   * as it existed: the guard was dead in the deployed build, and a request
+   * carrying the static token was served as a synthetic user with no `users`
+   * row — writing places and taste-model rows under an id no account owns.
+   *
+   * A committed file cannot be trusted to say which environment it is running
+   * in, because it is the same file everywhere. So this reads runtime markers
+   * only, and fails closed: any sign of a deployment denies the bypass, whatever
+   * else is configured. Same rule `resolveSynchronize` states for DB_SYNCHRONIZE
+   * — per-environment values come from the environment.
+   */
+  private isDeployed(): boolean {
+    // Railway sets RAILWAY_ENVIRONMENT in every deployment; NODE_ENV covers any
+    // other host. Presence alone is the signal — its value is not consulted, so
+    // a staging deployment is as forbidden as production.
+    return (
+      this.configService.get<string>('RAILWAY_ENVIRONMENT') !== undefined ||
+      this.configService.get<string>('NODE_ENV') === 'production'
+    );
   }
 
   /**

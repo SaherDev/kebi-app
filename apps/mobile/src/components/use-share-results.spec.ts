@@ -25,6 +25,28 @@ jest.mock('../lib/share-storage', () => ({
     );
     return true;
   },
+  dismissPendingShares: () => {
+    mockStore.pending = mockStore.pending.map((p) =>
+      (p as { outcome?: unknown }).outcome ? { ...(p as object), dismissed_at: 1 } : p,
+    );
+    return true;
+  },
+  onShareStoreChange: () => () => undefined,
+  toSharePlace: (place: {
+    id?: string | null;
+    place_name: string;
+    icon: string | null;
+    categories: string[];
+  }) => ({
+    id: place.id ?? null,
+    name: place.place_name,
+    icon: place.icon,
+    categories: place.categories,
+  }),
+  clearShareHistory: () => {
+    mockStore.pending = mockStore.pending.filter((p) => !(p as { outcome?: unknown }).outcome);
+    return true;
+  },
 }));
 
 const mockExtract = jest.fn();
@@ -55,20 +77,57 @@ describe('useShareResults', () => {
     expect(result.current.rows[0].state).toBe('working');
   });
 
+  it('leads with the caption the host app gave us, not the url', async () => {
+    // Nobody recognises vt.tiktok.com/ZSVSVQqHe — they recognise what it said.
+    mockStore.pending = [
+      {
+        id: 'a',
+        raw_input: 'https://vt.tiktok.com/ZSVSVQqHe/',
+        title: 'partying in Uluwatu hits different',
+        shared_at: 1,
+      },
+    ];
+
+    const { result } = renderHook(() => useShareResults());
+
+    await waitFor(() => expect(result.current.rows).toHaveLength(1));
+    expect(result.current.rows[0].label).toBe('partying in Uluwatu hits different');
+    expect(result.current.rows[0].source).toBe('tiktok');
+  });
+
+  it('names it by source and time when the share carried no text', async () => {
+    // TikTok supplies no caption, and vt.tiktok.com/ZSVSVQqHe is not something
+    // anyone recognises — "the tiktok I shared at 10:28" is.
+    mockStore.pending = [{ id: 'a', raw_input: 'https://vt.tiktok.com/ZSVSVQqHe/', shared_at: 1 }];
+
+    const { result } = renderHook(() => useShareResults());
+
+    await waitFor(() => expect(result.current.rows).toHaveLength(1));
+    expect(result.current.rows[0].label).toMatch(/^tiktok · /);
+    expect(result.current.rows[0].label).not.toContain('ZSVSVQqHe');
+  });
+
   it('reports a delivered success as landed, with its place names', async () => {
     mockStore.pending = [
       {
         id: 'a',
         raw_input: 'https://tiktok.com/x',
         shared_at: 1,
-        outcome: { status: 'completed', place_names: ['Warung Bu Mi'] },
+        outcome: {
+          status: 'completed',
+          places: [
+            { id: 'p1', name: 'Warung Bu Mi', icon: null, categories: ['restaurant'] },
+          ],
+        },
       },
     ];
 
     const { result } = renderHook(() => useShareResults());
 
     await waitFor(() => expect(result.current.rows[0].state).toBe('landed'));
-    expect(result.current.rows[0].placeNames).toEqual(['Warung Bu Mi']);
+    expect(result.current.rows[0].places).toEqual([
+      { id: 'p1', name: 'Warung Bu Mi', icon: null, categories: ['restaurant'] },
+    ]);
   });
 
   it('reports a delivered failure, carrying the reason', async () => {
@@ -77,7 +136,7 @@ describe('useShareResults', () => {
         id: 'a',
         raw_input: 'https://instagram.com/reel/x',
         shared_at: 1,
-        outcome: { status: 'failed', place_names: [], failure_reason: 'unsupported_url' },
+        outcome: { status: 'failed', places: [], failure_reason: 'unsupported_url' },
       },
     ];
 
@@ -89,7 +148,7 @@ describe('useShareResults', () => {
 
   it('treats a completed response with no results as a failure, not a success', async () => {
     mockStore.pending = [
-      { id: 'a', raw_input: 'x', shared_at: 1, outcome: { status: 'completed', place_names: [] } },
+      { id: 'a', raw_input: 'x', shared_at: 1, outcome: { status: 'completed', places: [] } },
     ];
 
     const { result } = renderHook(() => useShareResults());
@@ -102,14 +161,21 @@ describe('useShareResults', () => {
       mockStore.queue = [{ raw_input: 'https://tiktok.com/x', shared_at: 5 }];
       mockExtract.mockResolvedValue({
         status: 'completed',
-        results: [{ place: { place_name: 'Secret Spot' } }],
+        results: [
+          { place: { id: 'p2', place_name: 'Secret Spot', icon: null, categories: ['cafe'] } },
+        ],
         failure_reason: null,
       });
 
       const { result } = renderHook(() => useShareResults());
 
       await waitFor(() => expect(result.current.rows[0]?.state).toBe('landed'));
-      expect(result.current.rows[0].placeNames).toEqual(['Secret Spot']);
+      expect(result.current.rows[0].places[0]).toEqual({
+        id: 'p2',
+        name: 'Secret Spot',
+        icon: null,
+        categories: ['cafe'],
+      });
       // Emptied, so a relaunch cannot send it a second time.
       expect(mockStore.queue).toEqual([]);
     });
@@ -162,14 +228,62 @@ describe('useShareResults', () => {
     await waitFor(() => expect(result.current.rows).toEqual([]));
   });
 
-  it('clears for good on dismiss', async () => {
-    mockStore.pending = [{ id: 'a', raw_input: 'x', shared_at: 1 }];
+  it('takes finished shares off home without destroying them', async () => {
+    // ✕ means "not on my home screen", not "never happened" — the /shares
+    // history is the whole reason the record survives dismissal.
+    mockStore.pending = [
+      { id: 'a', raw_input: 'x', shared_at: 1, outcome: { status: 'completed', places: [] } },
+    ];
     const { result } = renderHook(() => useShareResults());
     await waitFor(() => expect(result.current.rows).toHaveLength(1));
 
     act(() => result.current.dismiss());
 
     expect(result.current.rows).toEqual([]);
+    expect(mockStore.pending).toHaveLength(1);
+  });
+
+  it('still shows dismissed shares to the history screen', async () => {
+    mockStore.pending = [
+      {
+        id: 'a',
+        raw_input: 'x',
+        shared_at: 1,
+        dismissed_at: 2,
+        outcome: {
+          status: 'completed',
+          places: [{ id: 'p1', name: 'Kayu', icon: null, categories: [] }],
+        },
+      },
+    ];
+
+    const { result } = renderHook(() => useShareResults({ includeDismissed: true }));
+
+    await waitFor(() => expect(result.current.rows).toHaveLength(1));
+    expect(result.current.rows[0].dismissed).toBe(true);
+  });
+
+  it('spares a still-working share from a dismissal', async () => {
+    // It has nothing to report yet; clearing it would mean the result of a link
+    // shared two minutes ago never surfaces anywhere.
+    mockStore.pending = [{ id: 'a', raw_input: 'x', shared_at: 1 }];
+    const { result } = renderHook(() => useShareResults());
+    await waitFor(() => expect(result.current.rows).toHaveLength(1));
+
+    act(() => result.current.dismiss());
+
+    expect(result.current.rows).toHaveLength(1);
+  });
+
+  it('deletes outright on clear', async () => {
+    mockStore.pending = [
+      { id: 'a', raw_input: 'x', shared_at: 1, outcome: { status: 'completed', places: [] } },
+    ];
+    const { result } = renderHook(() => useShareResults({ includeDismissed: true }));
+    await waitFor(() => expect(result.current.rows).toHaveLength(1));
+
+    act(() => result.current.clear());
+
     expect(mockStore.pending).toEqual([]);
   });
 });

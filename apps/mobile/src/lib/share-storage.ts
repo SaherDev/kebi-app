@@ -4,6 +4,7 @@ import {
   removeSharedItem,
   setSharedItem,
 } from './app-group';
+import { SHARE_HISTORY_MS } from './share-config';
 
 /**
  * The App Group contract between the app and the "Save to Kebi" share extension
@@ -25,43 +26,80 @@ export const SHARE_KEYS = {
    * point at whatever the app itself is pointing at.
    */
   apiBaseUrl: 'kebi.share.api_base_url',
-  /** Links the extension could not send, as a JSON array. Drained by the app. */
+  /**
+   * Links the extension wrote down, as a JSON array. The extension's only
+   * output; the app drains it on open.
+   */
   queue: 'kebi.share.queue',
-  /** Shares the extension handed to iOS, as a JSON array. See {@link PendingShare}. */
+  /**
+   * Shares the app has taken off the queue and is working through, as a JSON
+   * array. Written only by the app — it survives here rather than in component
+   * state so a row keeps its place across a relaunch mid-drain.
+   */
   pending: 'kebi.share.pending',
 } as const;
 
 /**
- * A share the extension handed to iOS to upload. The extension writes it before
- * posting and never touches it again — it is dead by the time an answer exists.
- * The app fills in `outcome` when the background session delivers the response,
- * which may be seconds later or on the next launch entirely.
- *
- * `id` is generated client-side because the extension cannot learn a server-side
- * request id: it dies before any response arrives. It is also what makes a
- * background-session retry safe to recognise.
+ * A share the app has adopted off the queue and is extracting. `outcome` is
+ * filled in when the call returns; absent means still working, which is the
+ * honest default.
  */
 export interface PendingShare {
   id: string;
   raw_input: string;
+  /**
+   * What the host app called the thing being shared — TikTok passes the video
+   * caption. Absent when the share carried no text. A url is not something a
+   * person remembers, so this is what the card leads with when it exists.
+   */
+  title?: string;
   /** When the user shared it — epoch ms. What the card shows, not the drain time. */
   shared_at: number;
   /** Absent while still working. */
   outcome?: PendingOutcome;
+  /**
+   * When the user cleared this off home — epoch ms, absent until they do.
+   *
+   * ✕ used to delete the record, which made "show all" incapable of showing
+   * anything the user had already waved away. Dismissal is now a mark: home
+   * skips these, the screen keeps them, and {@link SHARE_HISTORY_MS} does the
+   * forgetting.
+   */
+  dismissed_at?: number;
 }
 
 export interface PendingOutcome {
   status: 'completed' | 'failed';
-  /** Place names saved, for the card's rows. Empty on failure. */
-  place_names: string[];
+  /**
+   * Every place this share saved — one row each, nothing hidden behind "and N
+   * more" on the one surface whose job is saying what landed. Empty on failure.
+   */
+  places: SharePlace[];
   /** kebi's failure_reason when it failed — drives which message the row shows. */
   failure_reason?: string;
+}
+
+/**
+ * The slice of a saved place a share row needs: enough to draw it like any
+ * other place row, and to open it. A name alone forces a generic pin and a
+ * chevron that goes nowhere.
+ */
+export interface SharePlace {
+  /** `PlaceCore.id` — what `/place` opens, same as a stash row pushes. */
+  id: string | null;
+  name: string;
+  /** `PlaceCore.icon`, feeding PlaceAvatar. */
+  icon: string | null;
+  /** `PlaceCore.categories`, most-specific first — drives the emoji. */
+  categories: string[];
 }
 
 /** One link the extension took but could not deliver. */
 export interface QueuedShare {
   /** The raw shared text or URL, exactly as the extension received it. */
   raw_input: string;
+  /** The host app's own label for it — see {@link PendingShare.title}. */
+  title?: string;
   /** When the user shared it — epoch ms. The app shows this, not the drain time. */
   shared_at: number;
 }
@@ -112,6 +150,27 @@ export function clearShareToken(): void {
 }
 
 /**
+ * Wipe everything this device knows about shares. Called the moment the app is
+ * no longer signed in.
+ *
+ * The App Group belongs to the device, not to an account — nothing in it is
+ * scoped to a user, and the client is deliberately blind to identity (ADR-044)
+ * so it could not scope them even if it wanted to. Left alone, the next person
+ * to sign in on this phone would read the previous one's recent activity, and
+ * the queue would drain their links into a stranger's library. Both are worse
+ * than losing a link.
+ *
+ * The base URL survives: it describes the build, not the person, and is
+ * rewritten on the next sign-in anyway.
+ */
+export function clearAllShareState(): void {
+  clearShareToken();
+  removeSharedItem(SHARE_KEYS.queue);
+  removeSharedItem(SHARE_KEYS.pending);
+  notify();
+}
+
+/**
  * Read the links the extension could not send. Returns an empty array on absent
  * or unparseable content — a corrupt queue must not block the app from starting.
  */
@@ -148,16 +207,122 @@ export function readPendingShares(): PendingShare[] {
   try {
     const parsed = JSON.parse(raw);
     if (!Array.isArray(parsed)) return [];
-    return parsed.filter(isPendingShare);
+    return parsed.filter(isPendingShare).filter(isFresh);
   } catch {
     return [];
   }
 }
 
+/**
+ * Whether a record is still within the history window. Applied on read rather
+ * than by a sweep: there is no background pass to hang one off, and reading is
+ * the only moment the app is looking at this list anyway.
+ *
+ * A share still working is never aged out however old it is — an undelivered
+ * outcome is unfinished business, not history.
+ */
+function isFresh(share: PendingShare): boolean {
+  if (!share.outcome) return true;
+  return Date.now() - share.shared_at < SHARE_HISTORY_MS;
+}
+
+/**
+ * Take everything currently on home off it, keeping the records. What ✕ does.
+ *
+ * Shares still working are left alone: they have nothing to report yet, so
+ * clearing them would mean the result of a link the user shared two minutes ago
+ * never surfaces anywhere.
+ */
+export function dismissPendingShares(): boolean {
+  const now = Date.now();
+  return writePendingShares(
+    readPendingShares().map((share) =>
+      share.outcome && !share.dismissed_at ? { ...share, dismissed_at: now } : share,
+    ),
+  );
+}
+
 /** Write the pending list back — after recording an outcome, or after dismissal. */
 export function writePendingShares(items: PendingShare[]): boolean {
-  if (items.length === 0) return removeSharedItem(SHARE_KEYS.pending);
-  return setSharedItem(SHARE_KEYS.pending, JSON.stringify(items));
+  const wrote =
+    items.length === 0
+      ? removeSharedItem(SHARE_KEYS.pending)
+      : setSharedItem(SHARE_KEYS.pending, JSON.stringify(items));
+  notify();
+  return wrote;
+}
+
+/**
+ * Watchers of this list. The card used to re-read only on mount and on
+ * foreground, which was enough while the extension was the only writer — the
+ * app was by definition not running when a share arrived. Now the save sheet
+ * writes too, from a screen the user is looking at, so the row has to appear
+ * and resolve without a trip through the background.
+ */
+const listeners = new Set<() => void>();
+
+/** Subscribe to writes; returns the unsubscribe. */
+export function onShareStoreChange(listener: () => void): () => void {
+  listeners.add(listener);
+  return () => {
+    listeners.delete(listener);
+  };
+}
+
+function notify(): void {
+  for (const listener of listeners) listener();
+}
+
+/**
+ * Put a save made *inside* the app into the same list the extension feeds.
+ *
+ * A save from the sheet and a link shared from TikTok are the same event — you
+ * handed kebi something and it went and found places — so they belong on one
+ * surface. Nothing else about the sheet changes: it still waits out its grace
+ * window, still relaxes, still fires its toast. This only gives the result
+ * somewhere durable to land as well, which matters most when it fails: today
+ * that is a toast you may already have walked away from.
+ *
+ * Returns the id to record the outcome against, or null if shared storage is
+ * unavailable — the caller carries on regardless, since the toast is still the
+ * primary receipt.
+ */
+export function recordLocalSave(rawInput: string, title?: string): string | null {
+  if (!isAppGroupAvailable()) return null;
+  const existing = readPendingShares();
+  const id = `app-${Date.now()}-${existing.length}`;
+  const wrote = writePendingShares([
+    ...existing,
+    { id, raw_input: rawInput, title, shared_at: Date.now() },
+  ]);
+  return wrote ? id : null;
+}
+
+/**
+ * The slice of a saved place a row needs. Shared by both writers — the queue
+ * drain and the save sheet — so a row drawn from either is the same row.
+ */
+export function toSharePlace(place: {
+  id?: string | null;
+  place_name: string;
+  icon: string | null;
+  categories: string[];
+}): SharePlace {
+  return {
+    id: place.id ?? null,
+    name: place.place_name,
+    icon: place.icon,
+    categories: place.categories,
+  };
+}
+
+/**
+ * Throw the history away for good — the screen's "clear", the one place a
+ * delete still happens. Shares still working survive it for the same reason
+ * dismissal spares them: their result has nowhere else to land.
+ */
+export function clearShareHistory(): boolean {
+  return writePendingShares(readPendingShares().filter((share) => !share.outcome));
 }
 
 /**
