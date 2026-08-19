@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Kebi — share &amp; forget options</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #FAFAF9;
+    --surface: #F1F1EF;
+    --surface-2: #E8E8E5;
+    --text: #1A1A1A;
+    --text-muted: #8A8A87;
+    --text-soft: #B5B5B1;
+    --success: #4A7C3A;
+    --like: #C2632F;
+    --warn: #B45309;
+    --danger: #D14343;
+    --pill-green: #E8F2E1;
+    --pill-warm: #FEE4D4;
+    --pill-amber: #FEF3C7;
+    --pill-red: #FBE4E4;
+    --tag-rec: #A7C7A0;
+    --tag: #D4B891;
+    --tag-no: #D9A3A3;
+    --toast-bg: #1A1A1A;
+    --toast-text: #F5F1EA;
+    --ios-sheet: #F2F2F7;
+    --ios-tile: #FFFFFF;
+  }
+
+  body.dark {
+    --bg: #13110F;
+    --surface: #1C1A17;
+    --surface-2: #26231F;
+    --text: #F5F1EA;
+    --text-muted: #9A938A;
+    --text-soft: #6E6862;
+    --success: #A8C293;
+    --like: #E0A176;
+    --warn: #D9B36B;
+    --danger: #E89090;
+    --pill-green: #1F2A18;
+    --pill-warm: #3A2418;
+    --pill-amber: #33280F;
+    --pill-red: #351919;
+    --toast-bg: #F5F1EA;
+    --toast-text: #1A1A1A;
+    --ios-sheet: #1C1C1E;
+    --ios-tile: #2C2C2E;
+  }
+
+  html, body {
+    background: var(--bg); color: var(--text);
+    font-family: 'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased; min-height: 100vh;
+  }
+  body.dark { background: #0A0908; }
+
+  .page { max-width: 1500px; margin: 0 auto; padding: 56px 32px 96px; }
+
+  .header {
+    display: flex; align-items: flex-start; justify-content: space-between;
+    padding-bottom: 32px; border-bottom: 1px solid var(--surface-2); margin-bottom: 40px;
+  }
+  .header h1 { font-size: 24px; font-weight: 700; letter-spacing: -0.025em; }
+  .header-meta { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+  .lede { font-size: 14px; color: var(--text-muted); line-height: 1.6; max-width: 860px; margin-top: 14px; }
+  .lede b { color: var(--text); font-weight: 600; }
+  .lede code { font-size: 12px; background: var(--surface-2); border-radius: 5px; padding: 1px 6px; }
+
+  .theme-toggle { display: flex; background: var(--surface); border-radius: 999px; padding: 3px; flex-shrink: 0; }
+  .theme-toggle button {
+    padding: 6px 14px; background: transparent; border: none; border-radius: 999px;
+    font-family: inherit; font-size: 12px; font-weight: 500; color: var(--text-muted); cursor: pointer;
+  }
+  .theme-toggle button.active { background: var(--text); color: var(--bg); }
+
+  .section { margin-bottom: 64px; }
+  .section-head {
+    display: flex; align-items: baseline; justify-content: space-between;
+    margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid var(--surface-2);
+  }
+  .section-title { font-size: 11px; font-weight: 600; color: var(--text-soft); text-transform: uppercase; letter-spacing: 0.08em; }
+  .section-count { font-size: 12px; color: var(--text-soft); }
+  .section-h2 { font-size: 26px; font-weight: 700; letter-spacing: -0.025em; margin-bottom: 8px; }
+  .section-desc { font-size: 14px; color: var(--text-muted); line-height: 1.6; max-width: 860px; margin-bottom: 28px; }
+  .section-desc b { color: var(--text); font-weight: 600; }
+  .section-desc code { font-size: 12px; background: var(--surface-2); border-radius: 5px; padding: 1px 6px; }
+
+  .crops { display: flex; flex-wrap: wrap; gap: 30px; align-items: flex-start; }
+  .crop-wrap { width: 330px; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+  .crop-wrap .card, .crop-wrap .ios, .crop-wrap .toast-wrap { align-self: stretch; }
+  .phone-label { font-size: 13px; font-weight: 600; letter-spacing: -0.01em; }
+  .crop-note { font-size: 11.5px; color: var(--text-muted); line-height: 1.55; }
+  .crop-note b { color: var(--text); font-weight: 600; }
+  .crop-note code { font-size: 10.5px; background: var(--surface-2); border-radius: 4px; padding: 1px 5px; }
+  .opt-tag {
+    display: inline-block; font-size: 10px; font-weight: 700; letter-spacing: .08em;
+    text-transform: uppercase; color: #1A1A1A; background: var(--tag);
+    border-radius: 999px; padding: 3px 10px;
+  }
+  .opt-tag.rec { background: var(--tag-rec); }
+  .opt-tag.no  { background: var(--tag-no); }
+
+  /* ── the card, as it really renders ── */
+  .card {
+    background: var(--surface); border: 1px solid var(--surface-2);
+    border-radius: 18px; padding: 12px;
+  }
+  .card-head { display: flex; align-items: center; gap: 9px; padding: 0 4px 8px; }
+  .card-head .t { font-size: 14px; font-weight: 500; color: var(--text); }
+  .card-head .n { font-size: 14px; color: var(--text-muted); }
+  .card-head .badge {
+    margin-left: auto; display: inline-flex; align-items: center; gap: 4px;
+    font-size: 9.5px; font-weight: 700; letter-spacing: .04em;
+    color: var(--success); background: var(--pill-green); border-radius: 999px; padding: 2px 8px;
+  }
+  .card-head .badge.warm { color: var(--like); background: var(--pill-warm); }
+  .card-head .x {
+    margin-left: 6px; width: 20px; height: 20px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center; background: var(--surface-2);
+  }
+  .card-head .x svg { width: 9px; height: 9px; stroke: var(--text-muted); stroke-width: 2.6; fill: none; }
+  .rule { height: 1px; background: var(--surface-2); }
+
+  .row { display: flex; align-items: flex-start; gap: 10px; padding: 9px 4px; }
+  .av {
+    width: 34px; height: 34px; border-radius: 9px; background: var(--bg);
+    display: flex; align-items: center; justify-content: center; font-size: 17px; flex-shrink: 0;
+  }
+  .av.src { font-size: 14px; }
+  .row .body { flex: 1; min-width: 0; }
+  .row .nm { font-size: 14px; font-weight: 600; color: var(--text); letter-spacing: -0.01em; }
+  .pills { display: flex; gap: 5px; margin-top: 4px; flex-wrap: wrap; }
+  .pill {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 1.5px 7px; border-radius: 999px; font-size: 9.5px; font-weight: 600;
+  }
+  .pill::before { content: ''; width: 4px; height: 4px; border-radius: 50%; }
+  .pill.warm { background: var(--pill-warm); color: var(--like); }
+  .pill.warm::before { background: var(--like); }
+  .pill.green { background: var(--pill-green); color: var(--success); }
+  .pill.green::before { background: var(--success); }
+  .pill.red { background: var(--pill-red); color: var(--danger); }
+  .pill.red::before { background: var(--danger); }
+  .meta { font-size: 11.5px; color: var(--text-muted); margin-top: 4px; }
+  .meta.mono { font-variant-numeric: tabular-nums; }
+  .chev { width: 11px; height: 11px; stroke: var(--text-soft); stroke-width: 2.2; fill: none; flex-shrink: 0; margin-top: 10px; }
+
+  /* new-save dot */
+  .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--success); flex-shrink: 0; margin-top: 13px; }
+
+  /* working row — skeleton */
+  .sk { border-radius: 6px; background: var(--surface-2); animation: pulse 1.5s ease-in-out infinite; }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .45; } }
+  .sk.nm { height: 13px; width: 62%; }
+  .sk.meta { height: 10px; width: 42%; margin-top: 7px; }
+  .spin {
+    width: 13px; height: 13px; border-radius: 50%; flex-shrink: 0; margin-top: 9px;
+    border: 1.8px solid var(--surface-2); border-top-color: var(--text-soft);
+    animation: spin .8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .foot { display: flex; align-items: center; padding: 9px 4px 2px; }
+  .foot .t { font-size: 14px; color: var(--text); }
+  .foot .t.quiet { color: var(--text-muted); font-size: 13px; }
+  .foot .chev { margin: 0 0 0 auto; }
+
+  /* retry button on a failed row */
+  .retry {
+    align-self: center; margin-top: 2px; flex-shrink: 0;
+    font-size: 11px; font-weight: 600; color: var(--text);
+    background: var(--bg); border: 1px solid var(--surface-2);
+    border-radius: 999px; padding: 4px 11px;
+  }
+
+  /* ── iOS share sheet crop ── */
+  .ios {
+    background: var(--ios-sheet); border: 1px solid var(--surface-2);
+    border-radius: 18px; padding: 14px 12px 16px; position: relative; overflow: hidden;
+  }
+  .ios-grab { width: 36px; height: 4px; border-radius: 2px; background: var(--text-soft); opacity: .45; margin: 0 auto 12px; }
+  .ios-src { display: flex; align-items: center; gap: 10px; padding: 10px; background: var(--ios-tile); border-radius: 12px; }
+  .ios-src .thumb {
+    width: 38px; height: 38px; border-radius: 8px; flex-shrink: 0;
+    background: linear-gradient(135deg, #FE2C55, #25F4EE); display: flex;
+    align-items: center; justify-content: center; font-size: 16px;
+  }
+  .ios-src .t { font-size: 13px; font-weight: 600; color: var(--text); }
+  .ios-src .u { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+  .ios-apps { display: flex; gap: 16px; padding: 16px 6px 4px; }
+  .ios-app { display: flex; flex-direction: column; align-items: center; gap: 6px; width: 58px; }
+  .ios-app .ic {
+    width: 48px; height: 48px; border-radius: 12px; background: var(--ios-tile);
+    display: flex; align-items: center; justify-content: center; font-size: 22px;
+    border: 1px solid var(--surface-2);
+  }
+  .ios-app.kebi .ic { background: #1A1A1A; border-color: #1A1A1A; }
+  .ios-app .lb { font-size: 10px; color: var(--text-muted); text-align: center; line-height: 1.3; }
+  .ios-app.kebi .lb { color: var(--text); font-weight: 600; }
+
+  /* extension confirm card */
+  .ext {
+    background: var(--surface); border: 1px solid var(--surface-2);
+    border-radius: 18px; padding: 16px 14px;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .ext .mark {
+    width: 34px; height: 34px; border-radius: 10px; background: var(--pill-green);
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .ext .mark svg { width: 15px; height: 15px; stroke: var(--success); stroke-width: 2.6; fill: none; }
+  .ext .t { font-size: 14px; font-weight: 600; }
+  .ext .u { font-size: 11.5px; color: var(--text-muted); margin-top: 3px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  /* toast crop */
+  .toast-wrap { padding: 8px 0; }
+  .toast {
+    background: var(--toast-bg); border-radius: 14px; padding: 13px 14px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .toast .ic { width: 16px; height: 16px; stroke: var(--toast-text); stroke-width: 2.2; fill: none; flex-shrink: 0; }
+  .toast .tx { font-size: 13.5px; color: var(--toast-text); font-weight: 500; flex: 1; }
+  .toast .act { font-size: 13px; font-weight: 600; color: var(--toast-text); opacity: .65; flex-shrink: 0; }
+
+  /* lock-screen notification crop */
+  .notif {
+    background: rgba(255,255,255,.82); border: 1px solid var(--surface-2);
+    border-radius: 16px; padding: 12px 13px; display: flex; gap: 10px; align-items: flex-start;
+  }
+  body.dark .notif { background: rgba(40,38,35,.86); }
+  .notif .ic {
+    width: 22px; height: 22px; border-radius: 6px; background: #1A1A1A; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center; font-size: 11px;
+  }
+  .notif .hd { display: flex; align-items: baseline; gap: 6px; }
+  .notif .ap { font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: .04em; }
+  .notif .tm { font-size: 11px; color: var(--text-soft); margin-left: auto; }
+  .notif .tt { font-size: 13.5px; font-weight: 600; margin-top: 3px; }
+  .notif .bd { font-size: 12.5px; color: var(--text-muted); margin-top: 1px; line-height: 1.4; }
+
+  .verdict {
+    margin-top: 34px; border: 1px solid var(--surface-2); border-radius: 16px;
+    padding: 22px 24px; background: var(--surface); max-width: 940px;
+  }
+  .verdict h3 { font-size: 14px; font-weight: 700; margin-bottom: 10px; }
+  .verdict p { font-size: 13px; color: var(--text-muted); line-height: 1.65; }
+  .verdict p + p { margin-top: 10px; }
+  .verdict b { color: var(--text); font-weight: 600; }
+  .verdict code { font-size: 11.5px; background: var(--bg); border-radius: 5px; padding: 1px 6px; }
+</style>
+</head>
+<body>
+
+<div class="page">
+
+  <div class="header">
+    <div>
+      <h1>share &amp; forget — what the user actually sees</h1>
+      <div class="header-meta">kebi-app · ios SavetoKebi extension + apps/mobile home · options, nothing locked</div>
+      <p class="lede">
+        today a TikTok share <b>cold-boots the whole app</b> — splash, auth gate, home's three
+        fetches — just to raise a save sheet the user came to dismiss. the goal instead:
+        <b>share, forget, and meet the results later</b>.
+        <br><br>
+        two hard constraints shape every option here. the extension <b>cannot hold the
+        request</b> — <code>extract</code> is synchronous and takes ~30–60&nbsp;s on a cold video URL
+        (<code>api/extract.ts</code>), and iOS kills a share extension seconds after it completes.
+        and <b>nobody is present when it lands</b>, so a failure can't be a toast — today's
+        <code>unsupported_url</code> and <code>save_limit_reached</code> toasts would fire into an
+        empty room.
+        <br><br>
+        so this page decides two moments: <b>the share</b>, and <b>the next open</b>.
+      </p>
+    </div>
+    <div class="theme-toggle">
+      <button class="active" data-theme="light">light</button>
+      <button data-theme="dark">dark</button>
+    </div>
+  </div>
+
+  <!-- ══════════════ SECTION 1 ══════════════ -->
+  <div class="section">
+    <div class="section-head">
+      <span class="section-title">moment one · outside the app</span>
+      <span class="section-count">2 options</span>
+    </div>
+    <h2 class="section-h2">the share itself</h2>
+    <p class="section-desc">
+      the user is in TikTok. they hit share, they tap Kebi. from here Kebi owns
+      <b>at most a second or two</b> before iOS takes the screen back. the only question is
+      whether we spend it.
+    </p>
+
+    <div class="crops">
+
+      <div class="crop-wrap">
+        <span class="opt-tag rec">a · recommended</span>
+        <div class="phone-label">silent — iOS's own dismiss</div>
+        <div class="ios">
+          <div class="ios-grab"></div>
+          <div class="ios-src">
+            <div class="thumb">♪</div>
+            <div>
+              <div class="t">best warungs in Canggu</div>
+              <div class="u">tiktok.com/@balifood/video/73…</div>
+            </div>
+          </div>
+          <div class="ios-apps">
+            <div class="ios-app"><div class="ic">💬</div><div class="lb">Messages</div></div>
+            <div class="ios-app kebi"><div class="ic">🐦</div><div class="lb">Save to Kebi</div></div>
+            <div class="ios-app"><div class="ic">📝</div><div class="lb">Notes</div></div>
+            <div class="ios-app"><div class="ic">🔖</div><div class="lb">Reading</div></div>
+          </div>
+        </div>
+        <div class="crop-note">
+          tap and the sheet closes — the same feel as Save to Notes. <b>no Kebi UI at all</b>,
+          no app launch, back in the feed in under a second. the cost is honesty: the user gets
+          <b>no confirmation</b> that Kebi took it, so the next-open surface has to carry the
+          whole burden of proof.
+        </div>
+      </div>
+
+      <div class="crop-wrap">
+        <span class="opt-tag">b · one-line confirm</span>
+        <div class="phone-label">a beat of acknowledgement</div>
+        <div class="ext">
+          <div class="mark"><svg viewBox="0 0 24 24"><polyline points="4 12 10 18 20 6"/></svg></div>
+          <div style="min-width:0">
+            <div class="t">saved to kebi</div>
+            <div class="u">tiktok.com/@balifood/video/73…</div>
+          </div>
+        </div>
+        <div class="crop-note">
+          the extension paints one card in Kebi's own type and colour, then dismisses itself
+          after ~800&nbsp;ms. <b>proof it landed</b>, and the only moment in this flow where the
+          brand appears. the cost: the extension now has UI to keep alive and theme, and it
+          <b>stalls the return to TikTok</b> — the exact friction "forget" is meant to remove.
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ══════════════ SECTION 2 ══════════════ -->
+  <div class="section">
+    <div class="section-head">
+      <span class="section-title">moment two · next open</span>
+      <span class="section-count">today + 3 options</span>
+    </div>
+    <h2 class="section-h2">meeting what you missed</h2>
+    <p class="section-desc">
+      the user shared four links across two days and never opened the app. now they do. real-size
+      home crops. the question: does Kebi <b>account for what happened while you were gone</b>,
+      or does it just quietly be up to date?
+    </p>
+
+    <div class="crops">
+
+      <!-- TODAY -->
+      <div class="crop-wrap">
+        <span class="opt-tag no">today</span>
+        <div class="phone-label">nothing — they're just in there</div>
+        <div class="card">
+          <div class="card-head"><span class="t">your stash</span><span class="n">41</span></div>
+          <div class="row">
+            <div class="av">🍜</div>
+            <div class="body">
+              <div class="nm">Warung Bu Mi</div>
+              <div class="pills"><span class="pill warm">not visited</span></div>
+              <div class="meta">indonesian · $ · Canggu</div>
+            </div>
+            <svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>
+          </div>
+          <div class="rule"></div>
+          <div class="row">
+            <div class="av">☕</div>
+            <div class="body">
+              <div class="nm">Secret Spot</div>
+              <div class="pills"><span class="pill warm">not visited</span></div>
+              <div class="meta">cafe · $$ · Canggu</div>
+            </div>
+            <svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>
+          </div>
+          <div class="rule"></div>
+          <div class="row">
+            <div class="av">🍕</div>
+            <div class="body">
+              <div class="nm">Luigi's Hot Pizza</div>
+              <div class="pills"><span class="pill green">went</span></div>
+              <div class="meta">pizza · $ · Canggu</div>
+            </div>
+            <svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>
+          </div>
+          <div class="foot"><span class="t">show all 41</span>
+            <svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>
+          </div>
+        </div>
+        <div class="crop-note">
+          the purest reading of "forget": the count went 37&nbsp;→&nbsp;41 and the new places sit
+          in the stash like any other. <b>zero build.</b> but the user can never tell a
+          <b>successful save from a lost one</b> — and the one that failed leaves no trace at all.
+        </div>
+      </div>
+
+      <!-- OPTION A -->
+      <div class="crop-wrap">
+        <span class="opt-tag rec">a · recommended</span>
+        <div class="phone-label">"while you were away"</div>
+        <div class="card">
+          <div class="card-head">
+            <span class="t">while you were away</span>
+            <span class="badge">4 shared</span>
+            <span class="x"><svg viewBox="0 0 24 24"><line x1="5" y1="5" x2="19" y2="19"/><line x1="19" y1="5" x2="5" y2="19"/></svg></span>
+          </div>
+          <div class="row">
+            <div class="av">🍜</div>
+            <div class="body">
+              <div class="nm">Warung Bu Mi</div>
+              <div class="pills"><span class="pill warm">not visited</span></div>
+              <div class="meta">indonesian · $ · Canggu</div>
+            </div>
+            <svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>
+          </div>
+          <div class="rule"></div>
+          <div class="row">
+            <div class="av">☕</div>
+            <div class="body">
+              <div class="nm">Secret Spot</div>
+              <div class="pills"><span class="pill warm">not visited</span></div>
+              <div class="meta">cafe · $$ · Canggu</div>
+            </div>
+            <svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>
+          </div>
+          <div class="rule"></div>
+          <div class="row">
+            <div class="av src">📱</div>
+            <div class="body">
+              <div class="sk nm"></div>
+              <div class="sk meta"></div>
+            </div>
+            <div class="spin"></div>
+          </div>
+          <div class="rule"></div>
+          <div class="row">
+            <div class="av src">🔗</div>
+            <div class="body">
+              <div class="nm">instagram.com/reel/C8x…</div>
+              <div class="pills"><span class="pill red">no place found</span></div>
+            </div>
+            <button class="retry">try again</button>
+          </div>
+          <div class="foot"><span class="t quiet">got it</span>
+            <svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>
+          </div>
+        </div>
+        <div class="crop-note">
+          a card <b>above the stash</b>, only when something landed while away — dismiss and it's
+          gone for good. it is the literal answer to "open later and see what I missed", and it's
+          the only option with <b>somewhere to put a failure</b>. crucially it shows two states at
+          once: <b>landed</b> rows and a <b>still working</b> row.
+        </div>
+      </div>
+
+      <!-- OPTION B -->
+      <div class="crop-wrap">
+        <span class="opt-tag">b · mark the stash</span>
+        <div class="phone-label">no new surface, just a dot</div>
+        <div class="card">
+          <div class="card-head">
+            <span class="t">your stash</span><span class="n">41</span>
+            <span class="badge">3 new</span>
+          </div>
+          <div class="row">
+            <div class="av">🍜</div>
+            <div class="body">
+              <div class="nm">Warung Bu Mi</div>
+              <div class="pills"><span class="pill warm">not visited</span></div>
+              <div class="meta">indonesian · $ · Canggu</div>
+            </div>
+            <div class="dot"></div>
+          </div>
+          <div class="rule"></div>
+          <div class="row">
+            <div class="av">☕</div>
+            <div class="body">
+              <div class="nm">Secret Spot</div>
+              <div class="pills"><span class="pill warm">not visited</span></div>
+              <div class="meta">cafe · $$ · Canggu</div>
+            </div>
+            <div class="dot"></div>
+          </div>
+          <div class="rule"></div>
+          <div class="row">
+            <div class="av">🏝️</div>
+            <div class="body">
+              <div class="nm">Old Man's</div>
+              <div class="pills"><span class="pill warm">not visited</span></div>
+              <div class="meta">bar · $$ · Canggu</div>
+            </div>
+            <div class="dot"></div>
+          </div>
+          <div class="foot"><span class="t">show all 41</span>
+            <svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>
+          </div>
+        </div>
+        <div class="crop-note">
+          reuses the card that's already there — a count in the header, a dot per unseen row.
+          <b>cheapest of the three</b> and it never pushes the stash down. but the dots
+          <b>fight the chevron</b> for the same slot, and there is still <b>nowhere for a
+          failure to live</b> — a share that found no place simply never appears.
+        </div>
+      </div>
+
+      <!-- OPTION C -->
+      <div class="crop-wrap">
+        <span class="opt-tag">c · an inbox</span>
+        <div class="phone-label">a place shares go to land</div>
+        <div class="card">
+          <div class="card-head">
+            <span class="t">shared</span><span class="n">4</span>
+            <span class="badge warm">2 need you</span>
+          </div>
+          <div class="row">
+            <div class="av src">📱</div>
+            <div class="body">
+              <div class="nm">Warung Bu Mi</div>
+              <div class="meta mono">from tiktok · tue 21:04</div>
+            </div>
+            <svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>
+          </div>
+          <div class="rule"></div>
+          <div class="row">
+            <div class="av src">📱</div>
+            <div class="body">
+              <div class="nm">Secret Spot</div>
+              <div class="meta mono">from tiktok · wed 08:12</div>
+            </div>
+            <svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>
+          </div>
+          <div class="rule"></div>
+          <div class="row">
+            <div class="av src">🔗</div>
+            <div class="body">
+              <div class="nm">instagram.com/reel/C8x…</div>
+              <div class="pills"><span class="pill red">no place found</span></div>
+            </div>
+            <button class="retry">try again</button>
+          </div>
+          <div class="foot"><span class="t">open shared</span>
+            <svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>
+          </div>
+        </div>
+        <div class="crop-note">
+          shares get their <b>own screen</b> with a full history — every link, when it came,
+          what became of it. the most capable, and the most expensive: a new route, a new
+          data model, a badge to maintain. it also makes shares a <b>separate thing to
+          process</b>, which is the opposite of forgetting.
+        </div>
+      </div>
+
+    </div>
+
+    <div class="verdict">
+      <h3>why a</h3>
+      <p>
+        <b>a is the only option that survives both architectures.</b> if we build the cheap
+        version — the extension queues to an App Group file and the app drains it on next open —
+        the work genuinely starts when the user arrives, so the card opens with <b>working</b> rows
+        that resolve in place over a few seconds. if we later move to a server-side
+        <code>pending</code> enqueue, the same card opens with everything <b>already landed</b>.
+        same component, no redesign, and the design never lies about which one is running.
+      </p>
+      <p>
+        <b>b and c both leave failures homeless</b>, and failures are the whole reason this
+        surface exists — a save that worked needs no announcement, a save that didn't does.
+        c is the right shape if shares later gain volume (dozens a week, a real history worth
+        scrolling); today it builds a screen to hold four rows.
+      </p>
+      <p>
+        <b>the dismiss is load-bearing.</b> the card must be <b>gone for good</b> once tapped
+        away, or it becomes a second inbox by accident — which is c, arrived at without deciding to.
+      </p>
+    </div>
+  </div>
+
+  <!-- ══════════════ SECTION 3 ══════════════ -->
+  <div class="section">
+    <div class="section-head">
+      <span class="section-title">moment two · the optional beat</span>
+      <span class="section-count">the "maybe" pieces</span>
+    </div>
+    <h2 class="section-h2">the notification, and the wrong room</h2>
+    <p class="section-desc">
+      you said "maybe notification and maybe not". worth seeing what it buys — and what it costs,
+      because the app has <b>no push infrastructure at all today</b>: no <code>expo-notifications</code>,
+      no APNs, no device-token registration, no gateway route.
+    </p>
+
+    <div class="crops">
+
+      <div class="crop-wrap">
+        <span class="opt-tag">if we do push</span>
+        <div class="phone-label">lock screen, one per batch</div>
+        <div class="notif">
+          <div class="ic">🐦</div>
+          <div style="flex:1;min-width:0">
+            <div class="hd">
+              <span class="ap">kebi</span>
+              <span class="tm">now</span>
+            </div>
+            <div class="tt">Warung Bu Mi is in your stash</div>
+            <div class="bd">plus 2 more from what you shared. one didn't work out.</div>
+          </div>
+        </div>
+        <div class="crop-note">
+          fires when the batch finishes server-side — so it <b>only exists in the expensive
+          architecture</b>, never in the queue-and-drain version. one notification per batch, never
+          per link, or four TikToks in a row means four buzzes. tapping it opens straight to
+          the <b>while you were away</b> card, which is the same surface as option a.
+        </div>
+      </div>
+
+      <div class="crop-wrap">
+        <span class="opt-tag no">what we must not ship</span>
+        <div class="phone-label">today's toast, into an empty room</div>
+        <div class="toast-wrap">
+          <div class="toast">
+            <svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="13"/><line x1="12" y1="16" x2="12" y2="16"/></svg>
+            <span class="tx">couldn't save that link</span>
+            <span class="act">try again</span>
+          </div>
+        </div>
+        <div class="crop-note">
+          the current failure path (<code>save-sheet-context.tsx</code>) — a toast with a
+          <b>try again</b> that reopens the sheet prefilled. it assumes someone is watching. in a
+          forget-flow it fires while the user is in TikTok, auto-dismisses, and the link is
+          <b>silently gone</b>. this is the single behaviour that has to change no matter which
+          option wins.
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+<script>
+(function () {
+  document.querySelectorAll('.theme-toggle button').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      document.querySelectorAll('.theme-toggle button').forEach(function (b) { b.classList.remove('active'); });
+      btn.classList.add('active');
+      document.body.classList.toggle('dark', btn.dataset.theme === 'dark');
+    });
+  });
+})();
+</script>
+
+</body>
+</html>
