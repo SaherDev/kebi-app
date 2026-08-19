@@ -1,6 +1,7 @@
 import type {
   AuthUser,
   IntentsResponse,
+  LibraryAreasResponse,
   LibraryResponse,
   LibraryUserData,
   NormalizedIdentity,
@@ -26,6 +27,7 @@ describe('UserController', () => {
       updateProfile: jest.fn(),
       changePlan: jest.fn(),
       getLibrary: jest.fn(),
+      getLibraryAreas: jest.fn(),
       getIntents: jest.fn(),
       savePlace: jest.fn(),
       updatePlace: jest.fn(),
@@ -101,6 +103,19 @@ describe('UserController', () => {
 
       expect(service.getLibrary).toHaveBeenCalledTimes(1);
       expect(service.getLibrary).toHaveBeenCalledWith('user_test_123', query);
+      expect(result).toBe(response);
+    });
+  });
+
+  describe('GET /user/library/areas', () => {
+    it('forwards the verified user id — the distribution takes no params', async () => {
+      const response: LibraryAreasResponse = { areas: [] };
+      service.getLibraryAreas.mockResolvedValueOnce(response);
+
+      const result = await controller.getLibraryAreas(user);
+
+      expect(service.getLibraryAreas).toHaveBeenCalledTimes(1);
+      expect(service.getLibraryAreas).toHaveBeenCalledWith('user_test_123');
       expect(result).toBe(response);
     });
   });

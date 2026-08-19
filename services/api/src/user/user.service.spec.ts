@@ -318,6 +318,29 @@ describe('UserService', () => {
 
       expect(kebi.get).toHaveBeenCalledWith('/v1/user/library', USER_ID);
     });
+
+    it('forwards q and area, url-encoding the geo key (ADR-164, ADR-165)', async () => {
+      (kebi.get as jest.Mock).mockResolvedValueOnce(response);
+
+      await service.getLibrary(USER_ID, { q: 'canggu coffee', area: 'id/bali/canggu' });
+
+      expect(kebi.get).toHaveBeenCalledWith(
+        '/v1/user/library?q=canggu+coffee&area=id%2Fbali%2Fcanggu',
+        USER_ID
+      );
+    });
+  });
+
+  describe('getLibraryAreas', () => {
+    it('GETs the distribution with identity only — it takes no params', async () => {
+      const areas = { areas: [] };
+      (kebi.get as jest.Mock).mockResolvedValueOnce(areas);
+
+      const result = await service.getLibraryAreas(USER_ID);
+
+      expect(kebi.get).toHaveBeenCalledWith('/v1/user/library/areas', USER_ID);
+      expect(result).toBe(areas);
+    });
   });
 
   describe('getIntents', () => {

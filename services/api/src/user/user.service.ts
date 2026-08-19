@@ -3,6 +3,7 @@ import type {
   AuthUser,
   DataScope,
   IntentsResponse,
+  LibraryAreasResponse,
   LibraryResponse,
   LibraryUserData,
   NormalizedIdentity,
@@ -178,6 +179,16 @@ export class UserService {
       ? `/v1/user/library?${queryString}`
       : '/v1/user/library';
     return this.kebi.get<LibraryResponse>(path, userId);
+  }
+
+  /**
+   * Which areas the caller's saves fall into, with an exact count each
+   * (ADR-165) — the Library's grouping index. Takes no query params: the
+   * distribution is deliberately unfiltered, so there is nothing to forward
+   * but identity.
+   */
+  async getLibraryAreas(userId: string): Promise<LibraryAreasResponse> {
+    return this.kebi.get<LibraryAreasResponse>('/v1/user/library/areas', userId);
   }
 
   async getIntents(
