@@ -1,5 +1,13 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { FlatList, Pressable, RefreshControl, SectionList, Text, View } from 'react-native';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  FlatList,
+  Pressable,
+  RefreshControl,
+  SectionList,
+  type SectionListData,
+  Text,
+  View,
+} from 'react-native';
 import type { SavedPlaceView } from '@kebi-app/shared';
 import { ScreenScaffold } from '../components/screen-scaffold';
 import { LibraryTopBar } from '../components/library-top-bar';
@@ -8,7 +16,11 @@ import { LibraryAreaHeader } from '../components/library-area-header';
 import { LibraryEmpty } from '../components/library-empty';
 import { LibrarySearchEmpty } from '../components/library-search-empty';
 import { Spinner } from '../components/spinner';
-import { useLibrarySections, ELSEWHERE_KEY } from '../components/use-library-sections';
+import {
+  useLibrarySections,
+  ELSEWHERE_KEY,
+  type LibrarySection,
+} from '../components/use-library-sections';
 import { useLibrarySearch } from '../components/use-library-search';
 import { useSaveSheet } from '../components/save-sheet-context';
 import { useSavedPlaces } from '../components/saved-places-context';
@@ -74,8 +86,34 @@ export default function LibraryScreen() {
     </View>
   );
 
-  const renderCard = (view: SavedPlaceView, highlight?: string) => (
-    <LibraryPlaceCard view={view} highlight={highlight} />
+  // Both lists render a memoised row, so these have to be stable too — a fresh
+  // `renderItem` on every render hands each row a new element and undoes it.
+  const highlight = trimmed.toLowerCase();
+  const renderMatch = useCallback(
+    ({ item }: { item: SavedPlaceView }) => <LibraryPlaceCard view={item} highlight={highlight} />,
+    [highlight],
+  );
+  const renderRow = useCallback(
+    ({ item }: { item: SavedPlaceView }) => <LibraryPlaceCard view={item} />,
+    [],
+  );
+  const renderSectionHeader = useCallback(
+    ({ section }: { section: SectionListData<SavedPlaceView, LibrarySection> }) => (
+      <View className="pb-1 pt-3">
+        <LibraryAreaHeader
+          group={section.group}
+          tappable={section.tappable}
+          here={section.here}
+          label={section.group.key === ELSEWHERE_KEY ? t('library.elsewhere') : undefined}
+        />
+      </View>
+    ),
+    [t],
+  );
+
+  const sectionData = useMemo(
+    () => sections.map((section) => ({ ...section, data: section.rows })),
+    [sections],
   );
 
   let body;
@@ -101,8 +139,8 @@ export default function LibraryScreen() {
       body = (
         <FlatList
           data={search.rows}
-          keyExtractor={(view) => view.user_data.user_place_id}
-          renderItem={({ item }) => renderCard(item, trimmed.toLowerCase())}
+          keyExtractor={keyOf}
+          renderItem={renderMatch}
           ListHeaderComponent={
             <View className="pb-2 pt-1">
               <Text className="px-1 text-small text-text-muted">
@@ -136,19 +174,10 @@ export default function LibraryScreen() {
     // ── At rest: grouped by area ────────────────────────────────────────────
     body = (
       <SectionList
-        sections={sections.map((section) => ({ ...section, data: section.rows }))}
-        keyExtractor={(view) => view.user_data.user_place_id}
-        renderItem={({ item }) => renderCard(item)}
-        renderSectionHeader={({ section }) => (
-          <View className="pb-1 pt-3">
-            <LibraryAreaHeader
-              group={section.group}
-              tappable={section.tappable}
-              here={section.here}
-              label={section.group.key === ELSEWHERE_KEY ? t('library.elsewhere') : undefined}
-            />
-          </View>
-        )}
+        sections={sectionData}
+        keyExtractor={keyOf}
+        renderItem={renderRow}
+        renderSectionHeader={renderSectionHeader}
         ListHeaderComponent={<View className="pb-1">{hero}</View>}
         ListFooterComponent={loadingMore ? <ListSpinner /> : null}
         onEndReached={loadMore}
@@ -177,6 +206,8 @@ export default function LibraryScreen() {
     </View>
   );
 }
+
+const keyOf = (view: SavedPlaceView) => view.user_data.user_place_id;
 
 function ListSpinner() {
   return (

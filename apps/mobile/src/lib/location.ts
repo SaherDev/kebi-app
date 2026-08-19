@@ -9,6 +9,9 @@
  * Best-effort and non-blocking: a denied permission, an unavailable provider,
  * a slow/stuck GPS, or any thrown error resolves to `null` (the contract is
  * `location | null`) — it must never delay or fail the message send.
+ *
+ * Reverse-geocode results are cached per session (see {@link reverseGeocode}),
+ * so the screens that ask where the device is on mount pay for the lookup once.
  */
 import * as Location from 'expo-location';
 import type { ChatLocation } from '../api/chat';
@@ -51,6 +54,53 @@ function toLatLng(pos: Location.LocationObject): ChatLocation {
 }
 
 /**
+ * Decimal places the reverse-geocode cache rounds coordinates to for its key.
+ * Three is ~110 m — far finer than the city or country a lookup resolves to, so
+ * a drifting last-known fix still hits the cache instead of geocoding again.
+ */
+const GEOCODE_KEY_PRECISION = 3;
+
+/** In-flight and resolved reverse-geocodes for this session, by rounded coords. */
+const geocodes = new Map<string, Promise<Location.LocationGeocodedAddress | null>>();
+
+/**
+ * The device's address for these coordinates, looked up once per location per
+ * session.
+ *
+ * Every screen that wants to know where the device is asks on mount, and the
+ * Library asks for the country and the city at the same moment — that was two
+ * identical `reverseGeocodeAsync` calls per mount. Caching the promise (not just
+ * the result) collapses concurrent callers onto one lookup, and later mounts get
+ * the answer without an await, so the Library's sections are ordered by the
+ * device's country on first paint instead of visibly re-ordering a beat later.
+ *
+ * Only useful answers are kept: an empty result or a thrown lookup is dropped
+ * from the cache so the next caller retries, rather than one transient failure
+ * disabling the feature for the rest of the session.
+ */
+function reverseGeocode(coords: ChatLocation): Promise<Location.LocationGeocodedAddress | null> {
+  const key = `${coords.lat.toFixed(GEOCODE_KEY_PRECISION)},${coords.lng.toFixed(GEOCODE_KEY_PRECISION)}`;
+  const cached = geocodes.get(key);
+  if (cached) return cached;
+
+  const pending = (async () => {
+    const results = await withTimeout(
+      Location.reverseGeocodeAsync({ latitude: coords.lat, longitude: coords.lng }),
+      FIX_TIMEOUT_MS,
+    );
+    return results?.[0] ?? null;
+  })();
+  geocodes.set(key, pending);
+  void pending
+    .then((place) => {
+      if (!place) geocodes.delete(key);
+    })
+    .catch(() => geocodes.delete(key));
+
+  return pending;
+}
+
+/**
  * Reverse-geocode coordinates to a short place label for the home header — the
  * neighbourhood/district when available, else the city. Uses the device's native
  * geocoder (no API key, no network call), so it's cheap display chrome, not an
@@ -60,11 +110,7 @@ function toLatLng(pos: Location.LocationObject): ChatLocation {
  */
 export async function getDeviceCity(coords: ChatLocation): Promise<string | null> {
   try {
-    const results = await withTimeout(
-      Location.reverseGeocodeAsync({ latitude: coords.lat, longitude: coords.lng }),
-      FIX_TIMEOUT_MS,
-    );
-    const place = results?.[0];
+    const place = await reverseGeocode(coords);
     if (!place) return null;
     return place.district ?? place.subregion ?? place.city ?? null;
   } catch {
@@ -86,11 +132,7 @@ export async function getDeviceCity(coords: ChatLocation): Promise<string | null
  */
 export async function getDeviceCountryCode(coords: ChatLocation): Promise<string | null> {
   try {
-    const results = await withTimeout(
-      Location.reverseGeocodeAsync({ latitude: coords.lat, longitude: coords.lng }),
-      FIX_TIMEOUT_MS,
-    );
-    const code = results?.[0]?.isoCountryCode;
+    const code = (await reverseGeocode(coords))?.isoCountryCode;
     return code ? code.toLowerCase() : null;
   } catch {
     return null;
