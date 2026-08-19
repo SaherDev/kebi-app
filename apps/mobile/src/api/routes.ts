@@ -14,6 +14,9 @@ export const API_ROUTES = {
   home: '/home',
   /** The Library: browse the caller's saved places, keyset-paged (api-contract.md §GET /v1/user/library). */
   library: '/user/library',
+
+  /** Which areas the caller's saves fall into, with exact counts (ADR-165). */
+  libraryAreas: '/user/library/areas',
   /** "what you wanted" recall: the caller's recent intent-bearing turns (api-contract.md §GET /v1/user/intents). */
   userIntents: '/user/intents',
   /** One place, saved by the caller or not — the place screen (api-contract.md §GET /v1/places/{id}). */

@@ -130,36 +130,14 @@
     "eyebrow": "your stash",
     "heroCount": "{{count}} places",
     "heroSuffix": ", saved up",
-    "results": "{{count}} results",
     "searchPlaceholder": "search your stash...",
     "search": {
       "noMatches": "no matches for “{{query}}”",
       "tryAgain": "try a different word or",
       "clear": "clear search"
     },
-    "sortAction": "change sort",
     "error": "couldn't load your stash",
     "retry": "try again",
-    "sort": {
-      "title": "sort",
-      "label": "order",
-      "recent": "recent",
-      "name": "A–Z",
-      "reset": "reset",
-      "apply": "apply"
-    },
-    "filter": {
-      "cta": "filter",
-      "title": "filter",
-      "status": "status",
-      "all": "all",
-      "beenSaved": "visited",
-      "new": "not visited",
-      "approved": "approved",
-      "approve": "needs review",
-      "reset": "reset",
-      "apply": "apply"
-    },
     "pill": {
       "visited": "visited",
       "notVisited": "not visited",
@@ -190,7 +168,9 @@
     "toast": {
       "updateFailed": "couldn't update that — try again",
       "removeFailed": "couldn't remove that one"
-    }
+    },
+    "matchCount": "{{count}} of {{total}}",
+    "elsewhere": "elsewhere"
   },
   "chat": {
     "greeting": "what's the move?",
