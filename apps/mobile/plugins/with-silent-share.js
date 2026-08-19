@@ -1,6 +1,6 @@
 const fs = require('node:fs');
 const path = require('node:path');
-const { withDangerousMod } = require('expo/config-plugins');
+const { withXcodeProject } = require('expo/config-plugins');
 
 /**
  * Replaces the ShareViewController that `expo-share-intent` generates with one
@@ -15,9 +15,13 @@ const { withDangerousMod } = require('expo/config-plugins');
  * *app* whenever iOS can deliver it.
  *
  * A config plugin rather than a patch: this is a near-total rewrite of that
- * file, so a patch would conflict with every expo-share-intent release. Runs
- * after their plugin (order matters — it is listed later in app.json) and
- * overwrites the file they just wrote.
+ * file, so a patch would conflict with every expo-share-intent release.
+ *
+ * **Ordering is load-bearing and counter-intuitive.** Both this and
+ * expo-share-intent write from `withXcodeProject`, and within a mod phase Expo
+ * composes plugins so the *earliest*-registered runs *last*. So this plugin must
+ * be listed FIRST in app.json's plugins array to overwrite the file they wrote —
+ * listing it after them runs it before them, and their controller wins.
  *
  * The extension is deliberately dumb. It does not parse, retry, or interpret;
  * it records what it sent and lets the app reconcile. Anything it cannot send —
@@ -32,9 +36,7 @@ const withSilentShare = (config, options = {}) => {
     );
   }
 
-  return withDangerousMod(config, [
-    'ios',
-    async (cfg) => {
+  return withXcodeProject(config, (cfg) => {
       const target = path.join(
         cfg.modRequest.platformProjectRoot,
         extensionName,
@@ -44,13 +46,12 @@ const withSilentShare = (config, options = {}) => {
       // every share, which looks like a design regression rather than a bug.
       if (!fs.existsSync(target)) {
         throw new Error(
-          `with-silent-share: ${target} not found — is expo-share-intent listed before this plugin in app.json?`,
+          `with-silent-share: ${target} not found — expo-share-intent must be installed, and this plugin must be listed FIRST in app.json (see the note above on mod ordering).`,
         );
       }
-      await fs.promises.writeFile(target, shareViewController(appGroup), 'utf8');
+      fs.writeFileSync(target, shareViewController(appGroup), 'utf8');
       return cfg;
-    },
-  ]);
+  });
 };
 
 /** The whole extension, as it will exist on disk. */
