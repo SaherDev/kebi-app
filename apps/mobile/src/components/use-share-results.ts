@@ -1,0 +1,197 @@
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { AppState } from 'react-native';
+import { useApiClient } from '../api/hooks';
+import { extractPlace } from '../api/extract';
+import {
+  canShareInBackground,
+  readPendingShares,
+  readShareQueue,
+  recordShareOutcome,
+  writePendingShares,
+  writeShareQueue,
+  type PendingShare,
+} from '../lib/share-storage';
+
+/**
+ * What the "while you were away" surface renders — one row per link shared from
+ * outside the app.
+ *
+ * `working` is the honest default. A share the extension handed to iOS has no
+ * outcome until the background session is delivered, which may be seconds later
+ * or on a later launch entirely; until then the only truthful thing to say is
+ * that it is still going.
+ */
+export interface ShareResultRow {
+  id: string;
+  rawInput: string;
+  sharedAt: number;
+  state: 'working' | 'landed' | 'failed';
+  placeNames: string[];
+  failureReason?: string;
+}
+
+export interface UseShareResults {
+  rows: ShareResultRow[];
+  /** Clear the surface for good. Only the ✕ calls this. */
+  dismiss: () => void;
+  /** Send a failed link again — the row's "try again". */
+  retry: (id: string) => void;
+}
+
+/**
+ * Reads what came in while the app was away, and finishes the job for anything
+ * the extension could not send itself.
+ *
+ * Two sources feed one list. Shares the extension handed to iOS already left
+ * the phone — the app only reports them. Shares in the fallback queue (no token,
+ * no network at share time) never left, so the app sends them now, all at once:
+ * a handful of links is not worth serialising behind a 30–60 s path when the
+ * user is watching.
+ *
+ * Runs on mount and on every foreground, one code path — whether the user was
+ * gone five seconds or two days is not a distinction worth making.
+ */
+export function useShareResults(): UseShareResults {
+  const client = useApiClient();
+  const clientRef = useRef(client);
+  clientRef.current = client;
+
+  const [rows, setRows] = useState<ShareResultRow[]>([]);
+  const draining = useRef(false);
+
+  const read = useCallback(() => {
+    if (!canShareInBackground()) return;
+    setRows(readPendingShares().map(toRow));
+  }, []);
+
+  const drain = useCallback(async () => {
+    if (!canShareInBackground() || draining.current) return;
+    const queued = readShareQueue();
+    if (queued.length === 0) return;
+
+    draining.current = true;
+    try {
+      // Move them into the pending list first, so they render as working rows
+      // immediately and survive the app dying mid-drain — the queue is emptied
+      // in the same breath so a relaunch cannot send them twice.
+      const adopted: PendingShare[] = queued.map((item, index) => ({
+        id: `local-${item.shared_at}-${index}`,
+        raw_input: item.raw_input,
+        shared_at: item.shared_at,
+      }));
+      writePendingShares([...readPendingShares(), ...adopted]);
+      // Rewrite the remainder rather than clearing: the extension may have
+      // appended while we were reading.
+      const remaining = readShareQueue().filter(
+        (item) => !queued.some((q) => q.raw_input === item.raw_input && q.shared_at === item.shared_at),
+      );
+      writeShareQueue(remaining);
+      read();
+
+      await Promise.all(
+        adopted.map(async (item) => {
+          try {
+            const res = await extractPlace(clientRef.current, item.raw_input);
+            recordShareOutcome(
+              item.id,
+              res.status === 'completed' && res.results.length > 0
+                ? { status: 'completed', place_names: res.results.map((r) => r.place.place_name) }
+                : {
+                    status: 'failed',
+                    place_names: [],
+                    failure_reason: res.failure_reason ?? res.status,
+                  },
+            );
+          } catch {
+            // Transport failure or timeout. Left without an outcome on purpose:
+            // "still working" beats telling the user it failed when the next
+            // open may well resolve it.
+          }
+          read();
+        }),
+      );
+    } finally {
+      draining.current = false;
+    }
+  }, [read]);
+
+  const refresh = useCallback(() => {
+    read();
+    void drain();
+  }, [read, drain]);
+
+  useEffect(() => {
+    refresh();
+    // Foreground, not focus: a share arrives while the app is backgrounded, and
+    // route focus never changes.
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state === 'active') refresh();
+    });
+    return () => sub.remove();
+  }, [refresh]);
+
+  const dismiss = useCallback(() => {
+    writePendingShares([]);
+    setRows([]);
+  }, []);
+
+  const retry = useCallback(
+    (id: string) => {
+      const target = readPendingShares().find((share) => share.id === id);
+      if (!target) return;
+
+      // Drop the outcome first so the row goes back to working immediately —
+      // the send takes up to a minute, and a button that looks inert for that
+      // long reads as broken.
+      writePendingShares(
+        readPendingShares().map((share) =>
+          share.id === id ? { id: share.id, raw_input: share.raw_input, shared_at: share.shared_at } : share,
+        ),
+      );
+      read();
+
+      void (async () => {
+        try {
+          const res = await extractPlace(clientRef.current, target.raw_input);
+          recordShareOutcome(
+            id,
+            res.status === 'completed' && res.results.length > 0
+              ? { status: 'completed', place_names: res.results.map((r) => r.place.place_name) }
+              : {
+                  status: 'failed',
+                  place_names: [],
+                  failure_reason: res.failure_reason ?? res.status,
+                },
+          );
+        } catch {
+          // Same as the drain: no outcome beats a wrong one.
+        }
+        read();
+      })();
+    },
+    [read],
+  );
+
+  return { rows, dismiss, retry };
+}
+
+function toRow(share: PendingShare): ShareResultRow {
+  if (!share.outcome) {
+    return {
+      id: share.id,
+      rawInput: share.raw_input,
+      sharedAt: share.shared_at,
+      state: 'working',
+      placeNames: [],
+    };
+  }
+  const landed = share.outcome.status === 'completed' && share.outcome.place_names.length > 0;
+  return {
+    id: share.id,
+    rawInput: share.raw_input,
+    sharedAt: share.shared_at,
+    state: landed ? 'landed' : 'failed',
+    placeNames: share.outcome.place_names,
+    failureReason: share.outcome.failure_reason,
+  };
+}

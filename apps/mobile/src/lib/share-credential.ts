@@ -3,6 +3,7 @@ import { mintShareToken, SHARE_TOKEN_RENEW_WITHIN_MS } from '../api/share-token'
 import {
   canShareInBackground,
   clearShareToken,
+  storeApiBaseUrl,
   storeShareToken,
   storedShareTokenExpiry,
 } from './share-storage';
@@ -22,6 +23,12 @@ export async function ensureShareToken(client: HttpClient): Promise<void> {
   // No App Group (Android, simulator without the entitlement, Jest) — there is
   // nowhere to put a token and no extension to read it.
   if (!canShareInBackground()) return;
+
+  // Refreshed every time, not just when the token is: the extension is compiled
+  // once but a dev build and a production build point at different gateways,
+  // and a stale base URL would post saves at whichever backend was last built.
+  const baseUrl = process.env.EXPO_PUBLIC_API_URL;
+  if (baseUrl) storeApiBaseUrl(baseUrl);
 
   const expiry = storedShareTokenExpiry();
   if (expiry !== null && expiry - Date.now() > SHARE_TOKEN_RENEW_WITHIN_MS) return;

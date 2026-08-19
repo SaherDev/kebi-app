@@ -7,11 +7,16 @@ const mockState = {
   available: true,
   expiry: null as number | null,
   stored: [] as Array<{ token: string; expiresAt: number }>,
+  baseUrls: [] as string[],
   cleared: 0,
 };
 
 jest.mock('./share-storage', () => ({
   canShareInBackground: () => mockState.available,
+  storeApiBaseUrl: (url: string) => {
+    mockState.baseUrls.push(url);
+    return true;
+  },
   storedShareTokenExpiry: () => mockState.expiry,
   storeShareToken: (token: string, expiresAt: number) => {
     mockState.stored.push({ token, expiresAt });
@@ -46,6 +51,7 @@ beforeEach(() => {
   mockState.available = true;
   mockState.expiry = null;
   mockState.stored = [];
+  mockState.baseUrls = [];
   mockState.cleared = 0;
 });
 
@@ -67,6 +73,16 @@ describe('ensureShareToken', () => {
 
     expect(client.posts).toBe(0);
     expect(mockState.stored).toEqual([]);
+  });
+
+  it('refreshes the extension’s base URL even when the token needs nothing', async () => {
+    // The extension is compiled once; a dev build and a production build point
+    // at different gateways, and a stale URL sends saves to the wrong backend.
+    mockState.expiry = Date.now() + 90 * 86_400_000;
+
+    await ensureShareToken(fakeClient(FRESH));
+
+    expect(mockState.baseUrls).toEqual([process.env.EXPO_PUBLIC_API_URL]);
   });
 
   it('renews before expiry, not at it', async () => {

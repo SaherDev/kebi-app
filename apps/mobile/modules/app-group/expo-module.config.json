@@ -1,6 +1,7 @@
 {
   "platforms": ["apple"],
   "apple": {
-    "modules": ["KebiAppGroupModule"]
+    "modules": ["KebiAppGroupModule"],
+    "appDelegateSubscribers": ["KebiShareSessionSubscriber"]
   }
 }

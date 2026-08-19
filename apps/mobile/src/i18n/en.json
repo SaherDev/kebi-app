@@ -778,5 +778,17 @@
     "zr": "Congo - Kinshasa",
     "zw": "Zimbabwe",
     "zz": "Unknown Region"
+  },
+  "share": {
+    "whileYouWereAway": "while you were away",
+    "dismiss": "dismiss",
+    "tryAgain": "try again",
+    "andMore": "and {{count}} more",
+    "failure": {
+      "unsupported_url": "kebi can't read that link",
+      "save_limit_reached": "your library is full",
+      "no_candidates": "no place found",
+      "generic": "couldn't save that one"
+    }
   }
 }

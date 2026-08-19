@@ -9,6 +9,7 @@ import { HomeLocationLine } from '../components/home-location-line';
 import { HomeHero } from '../components/home-hero';
 import { QuickPrompts } from '../components/quick-prompts';
 import { IntentList } from '../components/intent-list';
+import { WhileYouWereAway } from '../components/while-you-were-away';
 import { StashSection } from '../components/stash-section';
 import { useHome } from '../components/use-home';
 import { useIntents } from '../components/use-intents';
@@ -85,6 +86,10 @@ export default function HomeScreen() {
         <HomeHero greeting={home.greeting} />
         <QuickPrompts chips={home.chips} onSelect={chat.open} />
         <IntentList intents={intents.intents} onSelect={chat.open} />
+        {/* Above the stash: what came in from outside while the app was closed.
+            Renders nothing unless something did (ADR-041 — no empty states on
+            home), and clears for good once dismissed. */}
+        <WhileYouWereAway />
         <StashSection views={stash.views} areaName={stash.areaName} total={stash.total} />
       </ScrollView>
     </ScreenScaffold>
