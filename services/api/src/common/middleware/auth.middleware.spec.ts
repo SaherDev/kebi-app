@@ -1,6 +1,7 @@
 import 'reflect-metadata';
 import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
+import { UnauthorizedException } from '@nestjs/common';
 import { NormalizedIdentity } from '@kebi-app/shared';
 import { AuthMiddleware } from './auth.middleware';
 import {
@@ -290,6 +291,76 @@ describe('AuthMiddleware', () => {
       await expect(mw.use(shareRequest(token), {} as any, jest.fn())).rejects.toThrow(
         'Invalid or expired token',
       );
+    });
+  });
+
+  describe('dev bypass cannot reach a deployment', () => {
+    const BYPASS = {
+      APP_DEV_BYPASS_ENABLED: 'true',
+      DEV_BYPASS_TOKEN: 'local-token',
+      DEV_BYPASS_USER_ID: 'user_local_1',
+    };
+
+    /** Everything the bypass wants, plus whatever marks this as deployed. */
+    function bypassRequest(overrides: Record<string, unknown>) {
+      const mw = new AuthMiddleware(
+        makeConfig({ ...BYPASS, ...overrides }),
+        provider,
+        makeShareTokens(),
+        makeUserSettings(),
+      );
+      const req = {
+        headers: { authorization: 'Bearer local-token' },
+        path: '/user/settings',
+      } as unknown as Request;
+      return { mw, req };
+    }
+
+    /**
+     * Denied means the static token gets no special treatment: it is handed to
+     * the real identity provider, which has never heard of it.
+     */
+    async function expectNoBypass(overrides: Record<string, unknown>) {
+      provider.verify.mockRejectedValue(new UnauthorizedException('bad token'));
+      const { mw, req } = bypassRequest(overrides);
+
+      await expect(mw.use(req, {} as Response, jest.fn())).rejects.toThrow(UnauthorizedException);
+      expect(provider.verify).toHaveBeenCalledWith('local-token');
+    }
+
+    it('refuses on Railway, however the bypass is configured', async () => {
+      // The guard used to read `app.environment` out of the committed app.yaml,
+      // which said `development` in production — so it was dead exactly where it
+      // mattered, and the static token was served as a synthetic user with no
+      // account behind it.
+      await expectNoBypass({ RAILWAY_ENVIRONMENT: 'production' });
+    });
+
+    it('refuses in any deployed environment, not only the one called production', async () => {
+      // Presence is the signal, not the value: staging is a deployment too.
+      await expectNoBypass({ RAILWAY_ENVIRONMENT: 'staging' });
+    });
+
+    it('refuses under NODE_ENV=production off Railway', async () => {
+      await expectNoBypass({ NODE_ENV: 'production' });
+    });
+
+    it('ignores a committed environment claiming to be development', async () => {
+      // A file that ships everywhere cannot say where it is running.
+      await expectNoBypass({
+        RAILWAY_ENVIRONMENT: 'production',
+        'app.environment': 'development',
+      });
+    });
+
+    it('still works locally, where nothing marks a deployment', async () => {
+      const { mw, req } = bypassRequest({});
+      const next = jest.fn();
+
+      await mw.use(req, {} as Response, next);
+
+      expect(next).toHaveBeenCalled();
+      expect((req as unknown as { user: { id: string } }).user.id).toBe('user_local_1');
     });
   });
 });
