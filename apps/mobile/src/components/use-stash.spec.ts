@@ -58,7 +58,7 @@ describe('useStash', () => {
   it("previews the Library's first group, not the newest saves", async () => {
     const { result } = renderHook(() => useStash());
 
-    await waitFor(() => expect(result.current.areaName).toBe('Canggu'));
+    await waitFor(() => expect(result.current.views).toHaveLength(2));
     expect(result.current.views.map((v) => v.user_data.user_place_id)).toEqual([
       'canggu1',
       'canggu2',
@@ -82,8 +82,6 @@ describe('useStash', () => {
 
     await waitFor(() => expect(result.current.views).toHaveLength(1));
     expect(result.current.views[0].user_data.user_place_id).toBe('newest1');
-    // No badge, because nothing narrowed the rows.
-    expect(result.current.areaName).toBeNull();
   });
 
   it('falls back to newest when there is no location', async () => {
@@ -95,7 +93,8 @@ describe('useStash', () => {
     const { result } = renderHook(() => useStash());
 
     // Still groups — it just orders by size, so the biggest group leads.
-    await waitFor(() => expect(result.current.areaName).toBe('Naryn Region'));
+    await waitFor(() => expect(mockGetLibrary).toHaveBeenCalledTimes(2));
+    expect(mockGetLibrary.mock.calls[1][1]).toMatchObject({ area: 'kg/naryn' });
   });
 
   it('falls back to newest when the distribution fails', async () => {
@@ -106,7 +105,6 @@ describe('useStash', () => {
     const { result } = renderHook(() => useStash());
 
     await waitFor(() => expect(result.current.views).toHaveLength(2));
-    expect(result.current.areaName).toBeNull();
     expect(result.current.error).toBe(false);
   });
 

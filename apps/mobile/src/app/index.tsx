@@ -90,7 +90,7 @@ export default function HomeScreen() {
             Renders nothing unless something did (ADR-041 — no empty states on
             home), and clears for good once dismissed. */}
         <WhileYouWereAway />
-        <StashSection views={stash.views} areaName={stash.areaName} total={stash.total} />
+        <StashSection views={stash.views} total={stash.total} />
       </ScrollView>
     </ScreenScaffold>
   );

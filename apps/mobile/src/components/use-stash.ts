@@ -26,8 +26,6 @@ import { useTranslation } from '../i18n/context';
  */
 export interface UseStash {
   views: SavedPlaceView[];
-  /** The area these rows came from — the card's badge. `null` when unfiltered. */
-  areaName: string | null;
   total: number | null;
   loading: boolean;
   error: boolean;
@@ -43,7 +41,6 @@ export function useStash(): UseStash {
   clientRef.current = client;
 
   const [views, setViews] = useState<SavedPlaceView[]>([]);
-  const [areaName, setAreaName] = useState<string | null>(null);
   const [total, setTotal] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -87,13 +84,11 @@ export function useStash(): UseStash {
         if (id !== reqId.current) return;
         if (scoped.places.length > 0) {
           setViews(scoped.places);
-          setAreaName(first.name);
           return;
         }
       }
 
       setViews(plain.places);
-      setAreaName(null);
     } catch {
       if (id !== reqId.current) return;
       setError(true);
@@ -108,5 +103,5 @@ export function useStash(): UseStash {
     }, [load]),
   );
 
-  return { views, areaName, total, loading, error, refetch: load };
+  return { views, total, loading, error, refetch: load };
 }
