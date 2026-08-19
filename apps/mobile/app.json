@@ -70,6 +70,13 @@
           "iosShareExtensionName": "Save to Kebi",
           "iosAppGroupIdentifier": "group.app.kebi"
         }
+      ],
+      [
+        "./plugins/with-silent-share",
+        {
+          "appGroup": "group.app.kebi",
+          "extensionName": "SavetoKebi"
+        }
       ]
     ],
     "extra": {

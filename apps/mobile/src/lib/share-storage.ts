@@ -19,9 +19,44 @@ export const SHARE_KEYS = {
   token: 'kebi.share.token',
   /** Epoch ms the token lapses, so the app can re-mint before it does. */
   tokenExpiresAt: 'kebi.share.token_expires_at',
+  /**
+   * Gateway base URL the extension posts to. Written by the app rather than
+   * baked into the extension at build time, so dev and production builds each
+   * point at whatever the app itself is pointing at.
+   */
+  apiBaseUrl: 'kebi.share.api_base_url',
   /** Links the extension could not send, as a JSON array. Drained by the app. */
   queue: 'kebi.share.queue',
+  /** Shares the extension handed to iOS, as a JSON array. See {@link PendingShare}. */
+  pending: 'kebi.share.pending',
 } as const;
+
+/**
+ * A share the extension handed to iOS to upload. The extension writes it before
+ * posting and never touches it again — it is dead by the time an answer exists.
+ * The app fills in `outcome` when the background session delivers the response,
+ * which may be seconds later or on the next launch entirely.
+ *
+ * `id` is generated client-side because the extension cannot learn a server-side
+ * request id: it dies before any response arrives. It is also what makes a
+ * background-session retry safe to recognise.
+ */
+export interface PendingShare {
+  id: string;
+  raw_input: string;
+  /** When the user shared it — epoch ms. What the card shows, not the drain time. */
+  shared_at: number;
+  /** Absent while still working. */
+  outcome?: PendingOutcome;
+}
+
+export interface PendingOutcome {
+  status: 'completed' | 'failed';
+  /** Place names saved, for the card's rows. Empty on failure. */
+  place_names: string[];
+  /** kebi's failure_reason when it failed — drives which message the row shows. */
+  failure_reason?: string;
+}
 
 /** One link the extension took but could not deliver. */
 export interface QueuedShare {
@@ -46,6 +81,15 @@ export function storeShareToken(token: string, expiresAt: number): boolean {
     setSharedItem(SHARE_KEYS.token, token) &&
     setSharedItem(SHARE_KEYS.tokenExpiresAt, String(expiresAt))
   );
+}
+
+/**
+ * Point the extension at the same gateway the app uses. Written whenever the
+ * token is, so a dev build and a production build never post to each other's
+ * backend just because the extension was compiled once.
+ */
+export function storeApiBaseUrl(baseUrl: string): boolean {
+  return setSharedItem(SHARE_KEYS.apiBaseUrl, baseUrl);
 }
 
 /** When the stored token lapses, or null if there is no usable token. */
@@ -91,6 +135,59 @@ export function readShareQueue(): QueuedShare[] {
 export function writeShareQueue(items: QueuedShare[]): boolean {
   if (items.length === 0) return removeSharedItem(SHARE_KEYS.queue);
   return setSharedItem(SHARE_KEYS.queue, JSON.stringify(items));
+}
+
+/**
+ * Shares handed to iOS, newest last. Anything without an `outcome` is still in
+ * flight as far as the app can tell — which is the honest answer, since the
+ * background session may not have been delivered yet.
+ */
+export function readPendingShares(): PendingShare[] {
+  const raw = getSharedItem(SHARE_KEYS.pending);
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter(isPendingShare);
+  } catch {
+    return [];
+  }
+}
+
+/** Write the pending list back — after recording an outcome, or after dismissal. */
+export function writePendingShares(items: PendingShare[]): boolean {
+  if (items.length === 0) return removeSharedItem(SHARE_KEYS.pending);
+  return setSharedItem(SHARE_KEYS.pending, JSON.stringify(items));
+}
+
+/**
+ * Record what became of one share. Re-reads before writing because the
+ * extension may have appended a new share since the caller last looked, and a
+ * blind overwrite would drop it. Unknown ids are ignored: a delivery for a share
+ * the user already dismissed has nowhere to go, and that is fine.
+ */
+export function recordShareOutcome(id: string, outcome: PendingOutcome): boolean {
+  const items = readPendingShares();
+  let found = false;
+  const next = items.map((item) => {
+    if (item.id !== id) return item;
+    found = true;
+    return { ...item, outcome };
+  });
+  if (!found) return false;
+  return writePendingShares(next);
+}
+
+function isPendingShare(value: unknown): value is PendingShare {
+  if (typeof value !== 'object' || value === null) return false;
+  const item = value as Partial<PendingShare>;
+  return (
+    typeof item.id === 'string' &&
+    item.id !== '' &&
+    typeof item.raw_input === 'string' &&
+    item.raw_input.trim() !== '' &&
+    typeof item.shared_at === 'number'
+  );
 }
 
 function isQueuedShare(value: unknown): value is QueuedShare {
