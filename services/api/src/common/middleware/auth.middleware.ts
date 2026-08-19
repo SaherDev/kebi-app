@@ -11,6 +11,8 @@ import { AuthUser, IdentityClaims, NormalizedIdentity } from '@kebi-app/shared';
 import { IDENTITY_PROVIDER } from '../../auth/identity-provider.interface';
 import type { IdentityProvider } from '../../auth/identity-provider.interface';
 import { AuthenticatedUser } from '../../auth/authenticated-user';
+import { ShareTokenService } from '../../auth/share-token.service';
+import { UserSettingsService } from '../../auth/user-settings.service';
 import { TokenClaims } from '../../auth/token-claims';
 
 declare global {
@@ -46,6 +48,8 @@ export class AuthMiddleware implements NestMiddleware {
   constructor(
     private readonly configService: ConfigService,
     @Inject(IDENTITY_PROVIDER) private readonly provider: IdentityProvider,
+    private readonly shareTokens: ShareTokenService,
+    private readonly userSettings: UserSettingsService,
   ) {}
 
   async use(req: Request, res: Response, next: NextFunction): Promise<void> {
@@ -60,6 +64,12 @@ export class AuthMiddleware implements NestMiddleware {
     if (bypass) {
       req.user = bypass.user;
       req.identity = bypass.identity;
+      return next();
+    }
+
+    const shared = await this.shareTokenUser(token, path);
+    if (shared) {
+      req.user = shared;
       return next();
     }
 
@@ -134,6 +144,44 @@ export class AuthMiddleware implements NestMiddleware {
         claims: new TokenClaims({ internal_id: bypassUserId, ai_enabled: true }),
       },
     };
+  }
+
+  /**
+   * The share-extension credential (share-and-forget). A share token is not a
+   * session: it asserts a user id and nothing else, so the principal is resolved
+   * from user_settings — the source of truth (ADR-045) — rather than from stamped
+   * claims, which would be months stale on a 90-day token.
+   *
+   * Scoped to `auth.share_token.paths`: it opens the save route and nothing else.
+   * Returns null when this isn't a share token, leaving the provider path to run;
+   * a share token aimed at an out-of-scope route is rejected outright rather than
+   * falling through to be re-read as a Supabase JWT.
+   */
+  private async shareTokenUser(
+    token: string,
+    path: string,
+  ): Promise<AuthenticatedUser | null> {
+    if (!this.shareTokens.isShareToken(token)) return null;
+
+    const userId = this.shareTokens.verify(token);
+    if (!userId) {
+      this.logger.warn(`Rejected share token for ${path}`);
+      throw new UnauthorizedException('Invalid or expired token');
+    }
+    if (!this.matchesConfigured('auth.share_token.paths', ['/extract'], path)) {
+      this.logger.warn(`Share token used outside its scope: ${path}`);
+      throw new UnauthorizedException('Token is not valid for this route');
+    }
+
+    const settings = await this.userSettings.ensureForUser(userId);
+    return new AuthenticatedUser({
+      id: userId,
+      ai_enabled: settings.ai_enabled,
+      plan: settings.plan,
+      movement_profile: settings.movement_profile,
+      about_me: settings.about_me,
+      can_curate: settings.can_curate,
+    });
   }
 
   /** Verify the token via the provider, mapping any failure to a 401. */
