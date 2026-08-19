@@ -6,6 +6,8 @@ import { formatRelativeTime } from '../lib/format-relative-time';
 import { extractPlace } from '../api/extract';
 import {
   canShareInBackground,
+  clearShareHistory,
+  dismissPendingShares,
   readPendingShares,
   readShareQueue,
   recordShareOutcome,
@@ -34,6 +36,11 @@ export interface ShareResultRow {
    * recognises, whereas "tiktok · 10:28 pm" is the share you just made.
    */
   label: string;
+  /**
+   * The host app's own caption, when it sent one. The screen's group heading
+   * prefers it over the link — a caption is what the share was *about*.
+   */
+  title?: string;
   /** Which app it came from — drives the row's glyph. */
   source: ReturnType<typeof detectSource>;
   sharedAt: number;
@@ -41,14 +48,26 @@ export interface ShareResultRow {
   /** Every place this share saved — one row each. Empty unless landed. */
   places: SharePlace[];
   failureReason?: string;
+  /** Taken off home by ✕. Still history, so the screen keeps showing it. */
+  dismissed: boolean;
 }
 
 export interface UseShareResults {
   rows: ShareResultRow[];
-  /** Clear the surface for good. Only the ✕ calls this. */
+  /** Take the card off home. Keeps the records — the screen still has them. */
   dismiss: () => void;
+  /** Delete the history outright. Only the screen offers this. */
+  clear: () => void;
   /** Send a failed link again — the row's "try again". */
   retry: (id: string) => void;
+}
+
+export interface ShareResultsOptions {
+  /**
+   * Include shares the user has already cleared off home. The card wants the
+   * live set; the screen behind "show all" is a history and wants everything.
+   */
+  includeDismissed?: boolean;
 }
 
 /**
@@ -64,7 +83,7 @@ export interface UseShareResults {
  * Runs on mount and on every foreground, one code path — whether the user was
  * gone five seconds or two days is not a distinction worth making.
  */
-export function useShareResults(): UseShareResults {
+export function useShareResults({ includeDismissed = false }: ShareResultsOptions = {}): UseShareResults {
   const client = useApiClient();
   const clientRef = useRef(client);
   clientRef.current = client;
@@ -74,8 +93,9 @@ export function useShareResults(): UseShareResults {
 
   const read = useCallback(() => {
     if (!canShareInBackground()) return;
-    setRows(readPendingShares().map(toRow));
-  }, []);
+    const all = readPendingShares().map(toRow);
+    setRows(includeDismissed ? all : all.filter((row) => !row.dismissed));
+  }, [includeDismissed]);
 
   const drain = useCallback(async () => {
     if (!canShareInBackground() || draining.current) return;
@@ -145,9 +165,14 @@ export function useShareResults(): UseShareResults {
   }, [refresh]);
 
   const dismiss = useCallback(() => {
-    writePendingShares([]);
-    setRows([]);
-  }, []);
+    dismissPendingShares();
+    read();
+  }, [read]);
+
+  const clear = useCallback(() => {
+    clearShareHistory();
+    read();
+  }, [read]);
 
   const retry = useCallback(
     (id: string) => {
@@ -156,7 +181,8 @@ export function useShareResults(): UseShareResults {
 
       // Drop the outcome first so the row goes back to working immediately —
       // the send takes up to a minute, and a button that looks inert for that
-      // long reads as broken.
+      // long reads as broken. The dismissal goes with it: a retry is a live
+      // share again, and belongs back on home where its result can be seen.
       writePendingShares(
         readPendingShares().map((share) =>
           share.id === id
@@ -193,7 +219,7 @@ export function useShareResults(): UseShareResults {
     [read],
   );
 
-  return { rows, dismiss, retry };
+  return { rows, dismiss, clear, retry };
 }
 
 /**
@@ -226,10 +252,12 @@ function toRow(share: PendingShare): ShareResultRow {
       id: share.id,
       rawInput: share.raw_input,
       label: labelFor(share),
+      title: share.title,
       source: detectSource(share.raw_input),
       sharedAt: share.shared_at,
       state: 'working',
       places: [],
+      dismissed: false,
     };
   }
   const places = share.outcome.places ?? [];
@@ -238,10 +266,12 @@ function toRow(share: PendingShare): ShareResultRow {
     id: share.id,
     rawInput: share.raw_input,
     label: labelFor(share),
+    title: share.title,
     source: detectSource(share.raw_input),
     sharedAt: share.shared_at,
     state: landed ? 'landed' : 'failed',
     places,
     failureReason: share.outcome.failure_reason,
+    dismissed: share.dismissed_at !== undefined,
   };
 }

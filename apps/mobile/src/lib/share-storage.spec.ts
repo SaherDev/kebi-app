@@ -1,6 +1,11 @@
+import { SHARE_HISTORY_MS } from './share-config';
 import {
   SHARE_KEYS,
+  clearShareHistory,
   clearShareToken,
+  dismissPendingShares,
+  readPendingShares,
+  writePendingShares,
   readShareQueue,
   storeShareToken,
   storedShareTokenExpiry,
@@ -99,5 +104,58 @@ describe('share queue', () => {
     writeShareQueue(readShareQueue().filter((q) => q.raw_input !== item.raw_input));
 
     expect(readShareQueue()).toEqual([later]);
+  });
+});
+
+describe('share history', () => {
+  const finished = (id: string, sharedAt: number) => ({
+    id,
+    raw_input: `https://vt.tiktok.com/${id}`,
+    shared_at: sharedAt,
+    outcome: { status: 'completed' as const, places: [] },
+  });
+
+  it('marks dismissed shares rather than deleting them', () => {
+    writePendingShares([finished('a', Date.now())]);
+
+    dismissPendingShares();
+
+    expect(readPendingShares()).toHaveLength(1);
+    expect(readPendingShares()[0].dismissed_at).toEqual(expect.any(Number));
+  });
+
+  it('leaves a still-working share alone on dismissal', () => {
+    // No outcome yet: clearing it would strand the result of a live share.
+    writePendingShares([{ id: 'a', raw_input: 'https://x', shared_at: Date.now() }]);
+
+    dismissPendingShares();
+
+    expect(readPendingShares()[0].dismissed_at).toBeUndefined();
+  });
+
+  it('forgets finished shares once they age past the history window', () => {
+    const old = Date.now() - SHARE_HISTORY_MS - 1;
+    writePendingShares([finished('old', old), finished('new', Date.now())]);
+
+    expect(readPendingShares().map((s) => s.id)).toEqual(['new']);
+  });
+
+  it('never ages out a share that is still working', () => {
+    // However old it is, an undelivered outcome is unfinished business.
+    const old = Date.now() - SHARE_HISTORY_MS * 3;
+    writePendingShares([{ id: 'a', raw_input: 'https://x', shared_at: old }]);
+
+    expect(readPendingShares()).toHaveLength(1);
+  });
+
+  it('clears the history but keeps what is still in flight', () => {
+    writePendingShares([
+      finished('done', Date.now()),
+      { id: 'live', raw_input: 'https://x', shared_at: Date.now() },
+    ]);
+
+    clearShareHistory();
+
+    expect(readPendingShares().map((s) => s.id)).toEqual(['live']);
   });
 });

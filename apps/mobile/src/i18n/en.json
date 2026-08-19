@@ -782,13 +782,26 @@
   "share": {
     "whileYouWereAway": "while you were away",
     "dismiss": "dismiss",
+    "fold": "fold",
+    "unfold": "unfold",
+    "showAll": "show all {{count}}",
+    "clear": "clear",
+    "clearTitle": "clear this history?",
+    "clearBody": "the places you saved stay in your library — only the record of what you shared goes.",
+    "nothingSaved": "nothing saved",
+    "historySubtitle": "{{links}} links · {{places}} places saved",
+    "historyEmpty": "nothing shared into kebi yet. share a link from tiktok or instagram and it lands here.",
     "tryAgain": "try again",
-    "andMore": "and {{count}} more",
     "failure": {
       "unsupported_url": "kebi can't read that link",
       "save_limit_reached": "your library is full",
       "no_candidates": "no place found",
       "generic": "couldn't save that one"
+    },
+    "summary": {
+      "saved": "{{count}} saved",
+      "failed": "{{count}} didn't",
+      "working": "{{count}} saving"
     }
   }
 }

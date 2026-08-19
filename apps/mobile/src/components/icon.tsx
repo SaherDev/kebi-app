@@ -24,6 +24,8 @@ export type IconName =
   | 'edit'
   | 'ellipsis'
   | 'chevron-right'
+  | 'chevron-up'
+  | 'chevron-down'
   | 'arrow-right'
   | 'check'
   | 'plus'
@@ -95,6 +97,9 @@ const ICONS: Record<IconName, ReactNode> = {
   ),
   edit: <Path d="M12 20h9M16.5 3.5a2.12 2.12 0 113 3L7 19l-4 1 1-4z" />,
   'chevron-right': <Polyline points="9 6 15 12 9 18" />,
+  // The same chevron rotated — fold / unfold, as on any collapsible section.
+  'chevron-up': <Polyline points="6 15 12 9 18 15" />,
+  'chevron-down': <Polyline points="6 9 12 15 18 9" />,
   // Full arrow → for forward CTAs (the login send-code button).
   'arrow-right': (
     <>

@@ -4,6 +4,7 @@ import {
   removeSharedItem,
   setSharedItem,
 } from './app-group';
+import { SHARE_HISTORY_MS } from './share-config';
 
 /**
  * The App Group contract between the app and the "Save to Kebi" share extension
@@ -56,6 +57,15 @@ export interface PendingShare {
   shared_at: number;
   /** Absent while still working. */
   outcome?: PendingOutcome;
+  /**
+   * When the user cleared this off home — epoch ms, absent until they do.
+   *
+   * ✕ used to delete the record, which made "show all" incapable of showing
+   * anything the user had already waved away. Dismissal is now a mark: home
+   * skips these, the screen keeps them, and {@link SHARE_HISTORY_MS} does the
+   * forgetting.
+   */
+  dismissed_at?: number;
 }
 
 export interface PendingOutcome {
@@ -176,16 +186,54 @@ export function readPendingShares(): PendingShare[] {
   try {
     const parsed = JSON.parse(raw);
     if (!Array.isArray(parsed)) return [];
-    return parsed.filter(isPendingShare);
+    return parsed.filter(isPendingShare).filter(isFresh);
   } catch {
     return [];
   }
+}
+
+/**
+ * Whether a record is still within the history window. Applied on read rather
+ * than by a sweep: there is no background pass to hang one off, and reading is
+ * the only moment the app is looking at this list anyway.
+ *
+ * A share still working is never aged out however old it is — an undelivered
+ * outcome is unfinished business, not history.
+ */
+function isFresh(share: PendingShare): boolean {
+  if (!share.outcome) return true;
+  return Date.now() - share.shared_at < SHARE_HISTORY_MS;
+}
+
+/**
+ * Take everything currently on home off it, keeping the records. What ✕ does.
+ *
+ * Shares still working are left alone: they have nothing to report yet, so
+ * clearing them would mean the result of a link the user shared two minutes ago
+ * never surfaces anywhere.
+ */
+export function dismissPendingShares(): boolean {
+  const now = Date.now();
+  return writePendingShares(
+    readPendingShares().map((share) =>
+      share.outcome && !share.dismissed_at ? { ...share, dismissed_at: now } : share,
+    ),
+  );
 }
 
 /** Write the pending list back — after recording an outcome, or after dismissal. */
 export function writePendingShares(items: PendingShare[]): boolean {
   if (items.length === 0) return removeSharedItem(SHARE_KEYS.pending);
   return setSharedItem(SHARE_KEYS.pending, JSON.stringify(items));
+}
+
+/**
+ * Throw the history away for good — the screen's "clear", the one place a
+ * delete still happens. Shares still working survive it for the same reason
+ * dismissal spares them: their result has nowhere else to land.
+ */
+export function clearShareHistory(): boolean {
+  return writePendingShares(readPendingShares().filter((share) => !share.outcome));
 }
 
 /**

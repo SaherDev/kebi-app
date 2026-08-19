@@ -25,6 +25,16 @@ jest.mock('../lib/share-storage', () => ({
     );
     return true;
   },
+  dismissPendingShares: () => {
+    mockStore.pending = mockStore.pending.map((p) =>
+      (p as { outcome?: unknown }).outcome ? { ...(p as object), dismissed_at: 1 } : p,
+    );
+    return true;
+  },
+  clearShareHistory: () => {
+    mockStore.pending = mockStore.pending.filter((p) => !(p as { outcome?: unknown }).outcome);
+    return true;
+  },
 }));
 
 const mockExtract = jest.fn();
@@ -206,14 +216,62 @@ describe('useShareResults', () => {
     await waitFor(() => expect(result.current.rows).toEqual([]));
   });
 
-  it('clears for good on dismiss', async () => {
-    mockStore.pending = [{ id: 'a', raw_input: 'x', shared_at: 1 }];
+  it('takes finished shares off home without destroying them', async () => {
+    // ✕ means "not on my home screen", not "never happened" — the /shares
+    // history is the whole reason the record survives dismissal.
+    mockStore.pending = [
+      { id: 'a', raw_input: 'x', shared_at: 1, outcome: { status: 'completed', places: [] } },
+    ];
     const { result } = renderHook(() => useShareResults());
     await waitFor(() => expect(result.current.rows).toHaveLength(1));
 
     act(() => result.current.dismiss());
 
     expect(result.current.rows).toEqual([]);
+    expect(mockStore.pending).toHaveLength(1);
+  });
+
+  it('still shows dismissed shares to the history screen', async () => {
+    mockStore.pending = [
+      {
+        id: 'a',
+        raw_input: 'x',
+        shared_at: 1,
+        dismissed_at: 2,
+        outcome: {
+          status: 'completed',
+          places: [{ id: 'p1', name: 'Kayu', icon: null, categories: [] }],
+        },
+      },
+    ];
+
+    const { result } = renderHook(() => useShareResults({ includeDismissed: true }));
+
+    await waitFor(() => expect(result.current.rows).toHaveLength(1));
+    expect(result.current.rows[0].dismissed).toBe(true);
+  });
+
+  it('spares a still-working share from a dismissal', async () => {
+    // It has nothing to report yet; clearing it would mean the result of a link
+    // shared two minutes ago never surfaces anywhere.
+    mockStore.pending = [{ id: 'a', raw_input: 'x', shared_at: 1 }];
+    const { result } = renderHook(() => useShareResults());
+    await waitFor(() => expect(result.current.rows).toHaveLength(1));
+
+    act(() => result.current.dismiss());
+
+    expect(result.current.rows).toHaveLength(1);
+  });
+
+  it('deletes outright on clear', async () => {
+    mockStore.pending = [
+      { id: 'a', raw_input: 'x', shared_at: 1, outcome: { status: 'completed', places: [] } },
+    ];
+    const { result } = renderHook(() => useShareResults({ includeDismissed: true }));
+    await waitFor(() => expect(result.current.rows).toHaveLength(1));
+
+    act(() => result.current.clear());
+
     expect(mockStore.pending).toEqual([]);
   });
 });
