@@ -1,5 +1,5 @@
 import type { AreaHandle, LibraryAreaCount } from '@kebi-app/shared';
-import { LIBRARY_MIN_GROUP_SIZE } from './library-config';
+import { DEFAULT_LOCALE, LIBRARY_MIN_GROUP_SIZE } from './library-config';
 
 /**
  * Turning kebi's area distribution into the Library's section list (ADR-165).
@@ -39,25 +39,50 @@ function parentKeyOf(key: string): string | null {
 }
 
 /**
- * A display name for a geo key kebi never sent a handle for.
+ * A display name for a country key kebi never sent a handle for.
  *
- * Folding can land on an ancestor no save keyed to directly — most often the
- * country, since `parent` is only populated one level up from each entry. A
- * bare `th` is a heading nobody recognises, and the ISO code already carries
- * the answer, so the platform resolves it rather than the app shipping a
- * country table. Anything else (or a runtime without `Intl.DisplayNames`)
- * falls back to the key itself, which is at least honest.
+ * Folding can land on an ancestor no save keyed to directly — the country,
+ * since `parent` is only populated one level up from each entry, so nothing
+ * carries a country's name. A bare `th` is a heading nobody recognises, and
+ * the ISO code already carries the answer, so the platform resolves it rather
+ * than the app shipping a table of 250 countries.
+ *
+ * **Pinned to the app's locale, not the device's** — the UI is one language at
+ * a time, and a Thai-locale phone rendering `ไทย` between English headings
+ * would be worse than the code it replaced.
+ *
+ * Returns `null` when the runtime has no `Intl.DisplayNames` (Hermes support
+ * varies) or doesn't know the code. Callers show the bare code then, which is
+ * the honest floor — the real fix is kebi naming its own country areas, the
+ * same place every other area name comes from.
  */
-function countryName(key: string): string | null {
+function countryName(key: string, locale: string): string | null {
   if (key.includes('/')) return null;
+  const code = key.toUpperCase();
   try {
-    const display = new Intl.DisplayNames(undefined, { type: 'region' });
-    const resolved = display.of(key.toUpperCase());
+    const resolved = new Intl.DisplayNames([locale], { type: 'region' }).of(code);
     // `of` echoes the input back when it doesn't recognise the code.
-    return resolved && resolved.toLowerCase() !== key.toLowerCase() ? resolved : null;
+    return resolved && resolved.toUpperCase() !== code ? resolved : null;
   } catch {
     return null;
   }
+}
+
+/**
+ * What a group's heading reads.
+ *
+ * kebi names every area it has a row for, and that name always wins — except
+ * at country level, where it hands back the ISO code itself (`th`) because
+ * nothing upstream names countries. A code is not a heading, so the platform
+ * resolves it; failing that the code stands, uppercased, so it reads as a
+ * deliberate country code rather than a broken string.
+ */
+function displayName(key: string, handle: AreaHandle | undefined, locale: string): string {
+  const resolved = countryName(key, locale);
+  if (resolved) return resolved;
+  // A "name" that is merely the key is no better than the key.
+  if (handle && handle.name.toLowerCase() !== key.toLowerCase()) return handle.name;
+  return key.includes('/') ? key : key.toUpperCase();
 }
 
 /**
@@ -83,6 +108,7 @@ function countryName(key: string): string | null {
 export function buildLibraryGroups(
   areas: LibraryAreaCount[],
   homeCountry?: string | null,
+  locale: string = DEFAULT_LOCALE,
 ): LibraryGroup[] {
   // Every handle we've seen, by key — an entry's own, and its parent's. A fold
   // target is usually named by one of these rather than needing invention.
@@ -135,9 +161,7 @@ export function buildLibraryGroups(
     const handle = handles.get(bucket.key);
     return {
       key: bucket.key,
-      // A country reads by its name, not its code — and the code is all kebi
-      // has to give at that level, so the platform resolves it here.
-      name: countryName(bucket.key) ?? handle?.name ?? bucket.key,
+      name: displayName(bucket.key, handle, locale),
       icon: handle?.icon ?? null,
       uri: handle?.uri ?? '',
       count: bucket.count,

@@ -80,6 +80,22 @@ describe('buildLibraryGroups', () => {
     expect(groups[0].count).toBe(3);
   });
 
+  it('shows the bare code uppercased when the runtime cannot resolve it', () => {
+    const original = Intl.DisplayNames;
+    // Hermes support for DisplayNames varies; the floor must still read as a
+    // deliberate country code, not a broken lowercase string.
+    (Intl as { DisplayNames?: unknown }).DisplayNames = undefined;
+    try {
+      const groups = buildLibraryGroups([
+        count('th/bang-pu-mai', 'Bang Pu Mai', 1),
+        count('th/sam-phran', 'Sam Phran', 1),
+      ]);
+      expect(groups[0].name).toBe('TH');
+    } finally {
+      (Intl as { DisplayNames?: unknown }).DisplayNames = original;
+    }
+  });
+
   it('names a folded country from its code rather than showing "th"', () => {
     const groups = buildLibraryGroups([
       count('th/bang-pu-mai', 'Bang Pu Mai', 1),

@@ -32,3 +32,9 @@ export const LIBRARY_MIN_INITIAL_ROWS = 12;
  */
 export const LIBRARY_MIN_GROUP_SIZE = 3;
 
+/**
+ * Locale for names the app resolves itself (country headings). Pinned to the
+ * one locale we ship rather than the device's, so a heading can never come back
+ * in a language the rest of the screen isn't in.
+ */
+export const DEFAULT_LOCALE = 'en';
