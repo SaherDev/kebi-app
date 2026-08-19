@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AppState } from 'react-native';
 import { useApiClient } from '../api/hooks';
+import { useSavedPlaces } from './saved-places-context';
 import { detectSource } from '../lib/detect-source';
 import { formatRelativeTime } from '../lib/format-relative-time';
 import { extractPlace } from '../api/extract';
@@ -88,6 +89,13 @@ export function useShareResults({ includeDismissed = false }: ShareResultsOption
   const clientRef = useRef(client);
   clientRef.current = client;
 
+  // A drained share is a save, so it lands in the same session store the save
+  // sheet feeds — without this, a place saved from a share is missing from the
+  // library and the consult card's saved-state until the next server read.
+  const { add } = useSavedPlaces();
+  const addRef = useRef(add);
+  addRef.current = add;
+
   const [rows, setRows] = useState<ShareResultRow[]>([]);
   const draining = useRef(false);
 
@@ -126,6 +134,9 @@ export function useShareResults({ includeDismissed = false }: ShareResultsOption
         adopted.map(async (item) => {
           try {
             const res = await extractPlace(clientRef.current, item.raw_input);
+            if (res.status === 'completed' && res.results.length > 0) {
+              addRef.current(res.results.map((r) => r.place));
+            }
             recordShareOutcome(
               item.id,
               res.status === 'completed' && res.results.length > 0
@@ -200,6 +211,9 @@ export function useShareResults({ includeDismissed = false }: ShareResultsOption
       void (async () => {
         try {
           const res = await extractPlace(clientRef.current, target.raw_input);
+          if (res.status === 'completed' && res.results.length > 0) {
+            addRef.current(res.results.map((r) => r.place));
+          }
           recordShareOutcome(
             id,
             res.status === 'completed' && res.results.length > 0

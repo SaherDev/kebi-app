@@ -46,11 +46,15 @@ jest.mock('../api/extract', () => ({
 
 jest.mock('../api/hooks', () => ({ useApiClient: () => ({}) }));
 
+const mockAdd = jest.fn();
+jest.mock('./saved-places-context', () => ({ useSavedPlaces: () => ({ add: mockAdd }) }));
+
 beforeEach(() => {
   mockStore.available = true;
   mockStore.pending = [];
   mockStore.queue = [];
   mockExtract.mockReset();
+  mockAdd.mockReset();
 });
 
 describe('useShareResults', () => {
@@ -273,5 +277,22 @@ describe('useShareResults', () => {
     act(() => result.current.clear());
 
     expect(mockStore.pending).toEqual([]);
+  });
+
+  it('puts a drained share into the same store the save sheet feeds', async () => {
+    // A share that landed *is* a save. Without this the place is missing from
+    // the library and from the consult card's saved-state until a server read.
+    mockStore.queue = [{ raw_input: 'https://vt.tiktok.com/x', shared_at: 1 }];
+    mockExtract.mockResolvedValue({
+      status: 'completed',
+      results: [{ place: { id: 'p1', place_name: 'Kayu', icon: null, categories: [] } }],
+    });
+
+    renderHook(() => useShareResults());
+
+    await waitFor(() => expect(mockAdd).toHaveBeenCalled());
+    expect(mockAdd.mock.calls[0][0]).toEqual([
+      { id: 'p1', place_name: 'Kayu', icon: null, categories: [] },
+    ]);
   });
 });
