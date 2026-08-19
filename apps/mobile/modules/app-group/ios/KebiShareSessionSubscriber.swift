@@ -80,11 +80,34 @@ public class KebiShareSessionSubscriber: ExpoAppDelegateSubscriber, URLSessionDa
     guard let id = task.originalRequest?.value(forHTTPHeaderField: KebiShareSessionSubscriber.shareIdHeader) else {
       return
     }
-    // Transport failure. Leave the record untouched: iOS may still retry a
-    // background upload, and marking it failed here would lie about a share
-    // that is still on its way.
-    if error != nil { return }
-    guard let body, let outcome = Self.outcome(from: body) else { return }
+    // Every path below records *something*. A share whose answer already came
+    // and went must never sit as "still working" — a silent system that
+    // silently loses things is worse than a slow one, and an unresolvable
+    // shimmer is exactly that.
+    if error != nil {
+      // didCompleteWithError is terminal: iOS has already done its own retries.
+      Self.record(id: id, outcome: Self.failure(reason: "network"))
+      return
+    }
+
+    let status = (task.response as? HTTPURLResponse)?.statusCode ?? 0
+    guard (200..<300).contains(status) else {
+      // 5xx from kebi, 401 from an expired share token, anything else. The row
+      // can offer "try again", which is useless if the row never resolves.
+      Self.record(id: id, outcome: Self.failure(reason: status == 401 ? "unauthorized" : "server"))
+      return
+    }
+
+    // kebi's own "pending" is the one honest reason to record nothing: it took
+    // the link and is still working, so the row's shimmer is telling the truth.
+    if let body, Self.isPending(body) { return }
+
+    guard let body, let outcome = Self.outcome(from: body) else {
+      // 2xx whose body is not an ExtractPlaceResponse — schema drift, an HTML
+      // error page from a proxy. Unparseable is a failure, not a pending state.
+      Self.record(id: id, outcome: Self.failure(reason: "unreadable"))
+      return
+    }
     Self.record(id: id, outcome: outcome)
   }
 
@@ -93,6 +116,18 @@ public class KebiShareSessionSubscriber: ExpoAppDelegateSubscriber, URLSessionDa
       self?.completionHandler?()
       self?.completionHandler = nil
     }
+  }
+
+  /// True when kebi says it has the link but is not finished with it.
+  private static func isPending(_ data: Data) -> Bool {
+    guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+      return false
+    }
+    return (json["status"] as? String) == "pending"
+  }
+
+  private static func failure(reason: String) -> [String: Any] {
+    return ["status": "failed", "place_names": [], "failure_reason": reason]
   }
 
   /// Map kebi's ExtractPlaceResponse onto what the card needs: did it land, what
