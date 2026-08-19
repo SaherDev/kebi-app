@@ -276,10 +276,50 @@ export interface PlaceNote {
  * `GET /v1/places/{id}` returns this shape; `GET /v1/user/library` returns the
  * saved narrowing below.
  */
+/**
+ * A place's area, as something tappable (ADR-165) — the Library's group header
+ * and the place screen's area line.
+ *
+ * `uri` is **pre-composed and opaque**: the geo key is slash-hierarchical and
+ * passes through kebi's codec, so it is never rebuilt from `key`. Group and
+ * match on `key`, never on `name` — neighbourhood names repeat across
+ * countries. `parent` is one level up (`id/bali` above `id/bali/canggu`) and is
+ * what lets a client roll several leaf areas into one heading.
+ */
+export interface AreaHandle {
+  key: string;
+  name: string;
+  uri: string;
+  icon: string | null;
+  parent: AreaHandleParent | null;
+}
+
+/** One level up from an {@link AreaHandle} — the same handle without a parent. */
+export type AreaHandleParent = Omit<AreaHandle, "parent">;
+
+/**
+ * Any catalog place the caller can open, saved or not (ADR-151): the place, the
+ * caller's relationship to it, the place's insider notes (`claims`, ADR-127),
+ * and the area it sits in.
+ *
+ * `user_data` is `null` when the caller never saved this place — that null is
+ * the place screen's "offer save" signal, and it means there is no
+ * `user_place_id` to PATCH or DELETE, so every user-state affordance is absent.
+ * `GET /v1/places/{id}` returns this shape; `GET /v1/user/library` returns the
+ * saved narrowing below.
+ *
+ * `area` is a **sibling of `place`**, not a field inside `place.location`: the
+ * `uri` is a wire concern and the `icon` comes from the areas table, neither of
+ * which is a property of the stored location. It is `null` when the place's
+ * geography is coarser than a city — a data-completeness gap (the client's
+ * "elsewhere" bucket), **not** an unprofiled area: an area with no profile row
+ * still gets a working handle, because its screen renders unprofiled too.
+ */
 export interface PlaceView {
   place: PlaceCore;
   user_data: UserPlace | null;
   claims: PlaceNote[];
+  area: AreaHandle | null;
 }
 
 /**
@@ -299,11 +339,40 @@ export interface SavedPlaceView extends PlaceView {
  * unaffected by the request's filters or pagination — for the screen's hero
  * count. `null` only during the rollout window before kebi populates it (the
  * client falls back to the loaded count).
+ *
+ * `filtered_total` is how many saves match this request's `q` + filters across
+ * the **whole** library — the `3` in "3 of 84" (ADR-164). Server-side by
+ * necessity: under keyset paging a client cannot count matches it was never
+ * sent. Equals `total` when nothing is narrowing.
  */
 export interface LibraryResponse {
   places: SavedPlaceView[];
   next_cursor: string | null;
   total: number | null;
+  filtered_total: number | null;
+}
+
+/** One area the caller has saves in, with an exact whole-library count. */
+export interface LibraryAreaCount {
+  area: AreaHandle;
+  count: number;
+}
+
+/**
+ * GET /v1/user/library/areas response (ADR-165) — which areas the caller's
+ * saves fall into. Complete and unpaged, and **always unfiltered**: it ignores
+ * `q` and every browse filter, because it is the at-rest index and one that
+ * narrowed while someone typed would shift the sections under them.
+ *
+ * **The order carries no meaning** — sort for whatever the screen needs.
+ * `count` is exact-key: nested areas are separate entries and are *not* folded
+ * into their parent, so a client wanting one rolled-up heading sums the entries
+ * sharing a `parent` and opens it with `?area=<parent key>` (which matches by
+ * prefix). Areas coarser than a city are absent entirely — the "elsewhere"
+ * bucket is the client's to name and to count (`total` minus the sum).
+ */
+export interface LibraryAreasResponse {
+  areas: LibraryAreaCount[];
 }
 
 /**
