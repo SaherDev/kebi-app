@@ -75,9 +75,96 @@ class ShareViewController: UIViewController {
   private let pendingKey = "kebi.share.pending"
   private let queueKey = "kebi.share.queue"
 
-  override func viewDidAppear(_ animated: Bool) {
-    super.viewDidAppear(animated)
+  /// How long the card stays up. Long enough to read four words, short enough
+  /// that it never feels like a step (kebi-share-extension-options.html §a).
+  private let visibleDuration: TimeInterval = 0.9
+
+  private let cardTitle = UILabel()
+  private let cardSubtitle = UILabel()
+
+  override func viewDidLoad() {
+    super.viewDidLoad()
+    // iOS presents this controller whether or not it draws anything — the empty
+    // panel over the host app *is* that presentation. It cannot be skipped, so
+    // it gets filled instead: the surrounding area stays clear and one card
+    // carries the message.
+    view.backgroundColor = .clear
+    view.isOpaque = false
+    buildCard()
+    // viewDidLoad, not viewDidAppear: the latter fires only after the
+    // presentation animation, which is exactly the window the blank box showed.
     handleShare()
+  }
+
+  /// The card, built in code — a share extension has no access to the app's
+  /// NativeWind styles, so these values mirror the design tokens by hand:
+  /// --surface #1C1A17, --text #F5F1EA, --text-muted #9A938A, --pill-green.
+  private func buildCard() {
+    let card = UIView()
+    card.backgroundColor = UIColor(red: 0.110, green: 0.102, blue: 0.090, alpha: 1)
+    card.layer.cornerRadius = 20
+    card.layer.shadowColor = UIColor.black.cgColor
+    card.layer.shadowOpacity = 0.4
+    card.layer.shadowRadius = 30
+    card.layer.shadowOffset = CGSize(width: 0, height: 10)
+    card.translatesAutoresizingMaskIntoConstraints = false
+    view.addSubview(card)
+
+    let mark = UILabel()
+    mark.text = "\u{1F426}"
+    mark.font = .systemFont(ofSize: 17)
+    mark.textAlignment = .center
+    mark.backgroundColor = UIColor(red: 0.122, green: 0.165, blue: 0.094, alpha: 1)
+    mark.layer.cornerRadius = 10
+    mark.clipsToBounds = true
+    mark.translatesAutoresizingMaskIntoConstraints = false
+
+    // Present continuous, and the ellipsis is doing real work: at this instant
+    // we hold a link and nothing more. "saved" would be a claim we may have to
+    // retract in "while you were away", which is how that card stops being
+    // believed. "saving this…" is still true when the link turns out to be
+    // unsupported.
+    cardTitle.text = "saving this\u{2026}"
+    cardTitle.font = .systemFont(ofSize: 14.5, weight: .semibold)
+    cardTitle.textColor = UIColor(red: 0.961, green: 0.945, blue: 0.918, alpha: 1)
+
+    // The url is what makes this a receipt rather than a reassurance — it shows
+    // Kebi caught the video you meant, which you cannot check again later.
+    cardSubtitle.font = .systemFont(ofSize: 11.5)
+    cardSubtitle.textColor = UIColor(red: 0.604, green: 0.576, blue: 0.541, alpha: 1)
+    cardSubtitle.lineBreakMode = .byTruncatingTail
+
+    let text = UIStackView(arrangedSubviews: [cardTitle, cardSubtitle])
+    text.axis = .vertical
+    text.spacing = 3
+
+    let row = UIStackView(arrangedSubviews: [mark, text])
+    row.axis = .horizontal
+    row.spacing = 12
+    row.alignment = .center
+    row.translatesAutoresizingMaskIntoConstraints = false
+    card.addSubview(row)
+
+    NSLayoutConstraint.activate([
+      card.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 10),
+      card.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -10),
+      card.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -14),
+      mark.widthAnchor.constraint(equalToConstant: 34),
+      mark.heightAnchor.constraint(equalToConstant: 34),
+      row.leadingAnchor.constraint(equalTo: card.leadingAnchor, constant: 16),
+      row.trailingAnchor.constraint(equalTo: card.trailingAnchor, constant: -16),
+      row.topAnchor.constraint(equalTo: card.topAnchor, constant: 15),
+      row.bottomAnchor.constraint(equalTo: card.bottomAnchor, constant: -15),
+    ])
+  }
+
+  /// Host + path, scheme stripped — a url reads as a place it came from rather
+  /// than a protocol.
+  private func showReceipt(for raw: String) {
+    let trimmed = raw
+      .replacingOccurrences(of: "https://", with: "")
+      .replacingOccurrences(of: "http://", with: "")
+    cardSubtitle.text = trimmed
   }
 
   private func handleShare() {
@@ -90,6 +177,7 @@ class ShareViewController: UIViewController {
       guard let raw = shared?.trimmingCharacters(in: .whitespacesAndNewlines), !raw.isEmpty else {
         return self.complete()
       }
+      self.showReceipt(for: raw)
       self.send(raw)
       self.complete()
     }
@@ -217,10 +305,13 @@ class ShareViewController: UIViewController {
     defaults.set(json, forKey: key)
   }
 
-  /// Always succeeds, always immediately. The user is going back to TikTok
-  /// either way, and a share extension that lingers is the whole problem.
+  /// Dismiss after the card has had time to be read. The upload is already with
+  /// iOS by this point, so the wait costs the save nothing — it is only how long
+  /// the receipt stays on screen.
   private func complete() {
-    extensionContext?.completeRequest(returningItems: [], completionHandler: nil)
+    DispatchQueue.main.asyncAfter(deadline: .now() + visibleDuration) { [weak self] in
+      self?.extensionContext?.completeRequest(returningItems: [], completionHandler: nil)
+    }
   }
 }
 `;
