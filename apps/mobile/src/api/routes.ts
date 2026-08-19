@@ -6,6 +6,13 @@ export const API_ROUTES = {
   health: '/health',
   /** Provisions the user on sign-in (first authenticated call) — creates the product user server-side. */
   login: '/auth/login',
+  /**
+   * Mints the credential the iOS share extension saves with while the app is
+   * dormant (share-and-forget). Requires a live session — the extension itself
+   * can never mint one. 503 when the gateway has no secret configured, which the
+   * caller treats as "no share token" and falls back to queueing.
+   */
+  shareToken: '/auth/share-token',
   /** Conversational turn — always-streaming SSE (api-contract.md §POST /v1/chat/stream, ADR-036). */
   chat: '/chat',
   /** Saves a place: forwards a URL or place name to kebi for extraction (ADR-073). */
@@ -14,6 +21,9 @@ export const API_ROUTES = {
   home: '/home',
   /** The Library: browse the caller's saved places, keyset-paged (api-contract.md §GET /v1/user/library). */
   library: '/user/library',
+
+  /** Which areas the caller's saves fall into, with exact counts (ADR-165). */
+  libraryAreas: '/user/library/areas',
   /** "what you wanted" recall: the caller's recent intent-bearing turns (api-contract.md §GET /v1/user/intents). */
   userIntents: '/user/intents',
   /** One place, saved by the caller or not — the place screen (api-contract.md §GET /v1/places/{id}). */

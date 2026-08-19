@@ -1,0 +1,1283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Kebi — Library sort &amp; filter options</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #FAFAF9;
+    --surface: #F1F1EF;
+    --surface-2: #E8E8E5;
+    --text: #1A1A1A;
+    --text-muted: #8A8A87;
+    --text-soft: #B5B5B1;
+    --success: #4A7C3A;
+    --like: #C2632F;
+    --warn: #B45309;
+    --danger: #D14343;
+    --pill-green: #E8F2E1;
+    --pill-warm: #FEE4D4;
+    --pill-amber: #FEF3C7;
+    --scrim: rgba(15,13,10,0.45);
+    --tag-rec: #A7C7A0;
+    --tag: #D4B891;
+    --tag-no: #D9A3A3;
+    --tag-blocked: #C9BDE8;
+  }
+
+  body.dark {
+    --bg: #13110F;
+    --surface: #1C1A17;
+    --surface-2: #26231F;
+    --text: #F5F1EA;
+    --text-muted: #9A938A;
+    --text-soft: #6E6862;
+    --success: #A8C293;
+    --like: #E0A176;
+    --warn: #D9B36B;
+    --danger: #E89090;
+    --pill-green: #1F2A18;
+    --pill-warm: #3A2418;
+    --pill-amber: #33280F;
+    --scrim: rgba(0,0,0,0.55);
+  }
+
+  html, body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+    transition: background 200ms;
+  }
+  body.dark { background: #0A0908; }
+
+  .page { max-width: 1720px; margin: 0 auto; padding: 56px 32px 96px; }
+
+  .header {
+    display: flex; align-items: flex-start; justify-content: space-between;
+    padding-bottom: 32px; border-bottom: 1px solid var(--surface-2); margin-bottom: 40px;
+  }
+  .header h1 { font-size: 24px; font-weight: 700; letter-spacing: -0.025em; }
+  .header-meta { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+  .lede { font-size: 14px; color: var(--text-muted); line-height: 1.6; max-width: 820px; margin-top: 14px; }
+  .lede b { color: var(--text); font-weight: 600; }
+  .lede code { font-size: 12px; background: var(--surface-2); border-radius: 5px; padding: 1px 6px; }
+
+  .theme-toggle { display: flex; background: var(--surface); border-radius: 999px; padding: 3px; flex-shrink: 0; }
+  .theme-toggle button {
+    padding: 6px 14px; background: transparent; border: none; border-radius: 999px;
+    font-family: inherit; font-size: 12px; font-weight: 500; color: var(--text-muted);
+    cursor: pointer; letter-spacing: -0.005em;
+  }
+  .theme-toggle button.active { background: var(--text); color: var(--bg); }
+
+  .section { margin-bottom: 72px; }
+  .section-head {
+    display: flex; align-items: baseline; justify-content: space-between;
+    margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid var(--surface-2);
+  }
+  .section-title { font-size: 11px; font-weight: 600; color: var(--text-soft); text-transform: uppercase; letter-spacing: 0.08em; }
+  .section-count { font-size: 12px; color: var(--text-soft); }
+  .section-h2 { font-size: 26px; font-weight: 700; letter-spacing: -0.025em; margin-bottom: 8px; }
+  .section-desc { font-size: 14px; color: var(--text-muted); line-height: 1.6; max-width: 820px; margin-bottom: 28px; }
+  .section-desc b { color: var(--text); font-weight: 600; }
+  .section-desc code { font-size: 12px; background: var(--surface-2); border-radius: 5px; padding: 1px 6px; }
+
+  .phones { display: flex; flex-wrap: wrap; gap: 36px; align-items: flex-start; }
+  .phone-wrap { display: flex; flex-direction: column; align-items: center; gap: 10px; width: 300px; }
+  .phone-label { font-size: 13px; font-weight: 600; letter-spacing: -0.01em; }
+  .phone-sub { font-size: 11px; color: var(--text-muted); max-width: 290px; text-align: center; line-height: 1.55; }
+  .phone-sub b { color: var(--text); font-weight: 600; }
+  .opt-tag {
+    display: inline-block; font-size: 10px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
+    color: #1A1A1A; background: var(--tag); border-radius: 999px; padding: 3px 10px;
+  }
+  .opt-tag.rec { background: var(--tag-rec); }
+  .opt-tag.no  { background: var(--tag-no); }
+  .opt-tag.blocked { background: var(--tag-blocked); }
+
+  /* ---- phone frame ---- */
+  .phone {
+    position: relative;
+    width: 300px; height: 600px;
+    background: var(--bg);
+    border-radius: 40px;
+    overflow: hidden;
+    box-shadow: 0 0 0 9px #111, 0 0 0 11px var(--surface-2), 0 22px 48px rgba(0,0,0,0.22);
+    display: flex; flex-direction: column;
+  }
+
+  .status-bar {
+    height: 36px; padding: 12px 24px 0;
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 11px; font-weight: 600; color: var(--text); flex-shrink: 0;
+  }
+  .status-bar .right { letter-spacing: 2px; font-size: 9px; }
+
+  .top-bar {
+    padding: 8px 12px 6px;
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 6px; flex-shrink: 0;
+  }
+  .icon-btn {
+    width: 30px; height: 30px; border-radius: 50%; background: var(--surface);
+    display: flex; align-items: center; justify-content: center; border: none; flex-shrink: 0;
+  }
+  .icon-btn svg { width: 14px; height: 14px; stroke: var(--text); stroke-width: 1.8; fill: none; }
+
+  .top-pill {
+    display: flex; align-items: center; background: var(--surface);
+    border-radius: 999px; padding: 0 3px; margin-left: auto;
+  }
+  .pill-btn {
+    width: 30px; height: 30px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .pill-btn svg { width: 14px; height: 14px; stroke: var(--text); stroke-width: 1.8; fill: none; }
+
+  /* search-open variant of the top bar */
+  .top-pill.wide { flex: 1; margin-left: 0; padding-left: 11px; gap: 7px; }
+  .top-pill.wide svg.lead { width: 13px; height: 13px; stroke: var(--text-soft); stroke-width: 1.9; fill: none; flex-shrink: 0; }
+  .query { flex: 1; font-size: 12px; color: var(--text); letter-spacing: -0.005em; min-width: 0; }
+  .query .caret {
+    display: inline-block; width: 1px; height: 12px; background: var(--text);
+    vertical-align: -2px; margin-left: 1px;
+  }
+  .top-pill.wide .pill-btn svg { stroke: var(--text-muted); stroke-width: 2; }
+
+  .screen {
+    flex: 1; overflow: hidden;
+    padding: 6px 18px 12px;
+    display: flex; flex-direction: column; gap: 14px;
+  }
+
+  .eyebrow {
+    font-size: 9px; font-weight: 600; color: var(--text-soft);
+    text-transform: uppercase; letter-spacing: 0.08em;
+  }
+  .hero {
+    font-size: 26px; font-weight: 700; color: var(--text);
+    letter-spacing: -0.03em; line-height: 1.05; margin-top: 3px;
+  }
+  .hero .suffix { color: var(--text-muted); }
+  .stack { display: flex; flex-direction: column; gap: 7px; }
+
+  /* toolbar */
+  .toolbar-row {
+    display: flex; justify-content: space-between; align-items: center; padding: 0 2px;
+  }
+  .results-count { font-size: 11px; color: var(--text-muted); letter-spacing: -0.005em; }
+  .results-count b { color: var(--text); font-weight: 600; }
+  .toolbar-actions { display: flex; gap: 6px; }
+  .toolbar-btn {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 5px 9px; background: var(--surface); border-radius: 999px;
+    font-size: 11px; font-weight: 500; color: var(--text); letter-spacing: -0.005em;
+  }
+  .toolbar-btn svg { width: 11px; height: 11px; stroke: var(--text-muted); stroke-width: 1.8; fill: none; }
+
+  /* chip rail */
+  .chips { display: flex; gap: 6px; flex-wrap: nowrap; overflow: hidden; padding: 0 2px; }
+  .chip {
+    flex-shrink: 0; display: inline-flex; align-items: center; gap: 5px;
+    padding: 6px 11px; background: var(--surface); border-radius: 999px;
+    font-size: 11.5px; font-weight: 500; color: var(--text); letter-spacing: -0.005em;
+  }
+  .chip .n { font-size: 10px; font-weight: 600; color: var(--text-soft); }
+  .chip.active { background: var(--text); color: var(--bg); }
+  .chip.active .n { color: var(--bg); opacity: 0.55; }
+  .chip svg { width: 11px; height: 11px; stroke: currentColor; stroke-width: 1.9; fill: none; }
+  .chip.fade { opacity: 0.42; }
+
+  /* place card */
+  .card {
+    background: var(--surface); border-radius: 13px; padding: 10px 11px;
+    display: flex; flex-direction: column; gap: 6px;
+  }
+  .card-head { display: flex; align-items: center; gap: 8px; }
+  .avatar {
+    width: 24px; height: 24px; border-radius: 6px; background: var(--bg);
+    display: flex; align-items: center; justify-content: center; font-size: 13px; line-height: 1; flex-shrink: 0;
+  }
+  .card-name {
+    font-size: 13px; font-weight: 600; color: var(--text); letter-spacing: -0.01em;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1; min-width: 0;
+  }
+  .card mark { background: #FCE49A; color: var(--text); border-radius: 3px; padding: 0 1px; }
+  body.dark .card mark { background: #4A3D18; color: #F0E4C4; }
+  .chev { width: 11px; height: 11px; stroke: var(--text-soft); stroke-width: 2; fill: none; flex-shrink: 0; }
+  .card-meta { font-size: 11px; color: var(--text-muted); letter-spacing: -0.005em; padding-left: 32px; }
+  .card-pills { display: flex; gap: 5px; padding-left: 32px; }
+  .pill {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 1.5px 7px; border-radius: 999px; font-size: 9.5px; font-weight: 600; letter-spacing: -0.005em;
+  }
+  .pill::before { content: ''; width: 4px; height: 4px; border-radius: 50%; }
+  .pill.green { background: var(--pill-green); color: var(--success); }
+  .pill.green::before { background: var(--success); }
+  .pill.warm { background: var(--pill-warm); color: var(--like); }
+  .pill.warm::before { background: var(--like); }
+  .pill.amber { background: var(--pill-amber); color: var(--warn); }
+  .pill.amber::before { background: var(--warn); }
+
+  /* city section header */
+  .group-head {
+    display: flex; align-items: center; gap: 7px; padding: 2px 2px 0;
+  }
+  .group-title { font-size: 12px; font-weight: 700; color: var(--text); letter-spacing: -0.01em; }
+  .group-n { font-size: 11px; color: var(--text-soft); }
+  .group-here {
+    margin-left: auto; font-size: 9px; font-weight: 600; letter-spacing: 0.04em;
+    color: var(--success); background: var(--pill-green); border-radius: 999px; padding: 2px 7px;
+    display: inline-flex; align-items: center; gap: 4px;
+  }
+  .group-here svg { width: 8px; height: 8px; stroke: var(--success); stroke-width: 2.2; fill: none; }
+  .group-rule { height: 1px; background: var(--surface-2); margin: 0 2px; }
+
+  /* sheet */
+  .scrim {
+    position: absolute; inset: 0; background: var(--scrim);
+    display: flex; align-items: flex-end; z-index: 5;
+  }
+  .sheet {
+    width: 100%; background: var(--bg); border-radius: 20px 20px 0 0;
+    padding: 12px 16px 20px; display: flex; flex-direction: column; gap: 12px;
+  }
+  .sheet-handle { width: 30px; height: 3.5px; border-radius: 2px; background: var(--surface-2); margin: 0 auto; }
+  .sheet-title { font-size: 15px; font-weight: 700; color: var(--text); letter-spacing: -0.015em; }
+  .sheet-label {
+    font-size: 9px; font-weight: 600; color: var(--text-soft);
+    text-transform: uppercase; letter-spacing: 0.08em;
+  }
+  .sheet-options { display: flex; flex-wrap: wrap; gap: 5px; }
+  .sheet-chip {
+    padding: 6px 10px; background: var(--surface); border-radius: 999px;
+    font-size: 11.5px; font-weight: 500; color: var(--text);
+  }
+  .sheet-chip.active { background: var(--text); color: var(--bg); }
+  .sheet-actions { display: flex; gap: 6px; margin-top: 2px; }
+  .sheet-btn {
+    flex: 1; padding: 10px; border-radius: 11px; text-align: center;
+    font-size: 12px; font-weight: 600; letter-spacing: -0.005em;
+  }
+  .sheet-btn.primary { background: var(--text); color: var(--bg); }
+  .sheet-btn.secondary { background: var(--surface); color: var(--text); }
+
+  /* tap-cost annotation */
+  .taps {
+    position: absolute; top: 44px; left: 50%; transform: translateX(-50%);
+    z-index: 8; background: var(--danger); color: #fff;
+    font-size: 9.5px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase;
+    border-radius: 999px; padding: 4px 10px; white-space: nowrap;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.25);
+  }
+
+  /* empty / zero state */
+  .empty {
+    flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 8px; text-align: center; padding: 0 18px 40px;
+  }
+  .empty-title { font-size: 14px; font-weight: 600; color: var(--text); letter-spacing: -0.01em; }
+  .empty-sub { font-size: 11.5px; color: var(--text-muted); line-height: 1.55; }
+  .empty-cta {
+    margin-top: 4px; padding: 8px 14px; border-radius: 999px;
+    background: var(--text); color: var(--bg); font-size: 11.5px; font-weight: 600;
+  }
+
+  .fab-row { display: flex; justify-content: flex-end; padding: 0 12px 6px; flex-shrink: 0; }
+  .fab {
+    width: 42px; height: 42px; border-radius: 50%; background: var(--bg);
+    border: 1px solid var(--surface-2); display: flex; align-items: center; justify-content: center;
+  }
+  .fab svg { width: 27px; height: 27px; }
+  .home-ind { width: 100px; height: 4px; background: var(--text); border-radius: 3px; margin: 0 auto 7px; flex-shrink: 0; opacity: .85; }
+
+  /* tappable area section header */
+  .area-head {
+    display: flex; align-items: center; gap: 7px;
+    padding: 7px 9px; border-radius: 10px; background: var(--surface-2);
+  }
+  .area-head .glyph { font-size: 13px; line-height: 1; flex-shrink: 0; }
+  .area-head .name { font-size: 12.5px; font-weight: 700; color: var(--text); letter-spacing: -0.01em; }
+  .area-head .n { font-size: 11px; color: var(--text-muted); }
+  .area-head .go { margin-left: auto; width: 11px; height: 11px; stroke: var(--text-muted); stroke-width: 2.2; fill: none; flex-shrink: 0; }
+  .area-head.plain { background: transparent; padding-left: 2px; padding-right: 2px; }
+  .area-head.plain .name { color: var(--text-muted); font-weight: 600; }
+
+  /* area screen (the tap destination — already built) */
+  .crumb { font-size: 9.5px; color: var(--text-muted); letter-spacing: -0.005em; }
+  .crumb u { text-decoration: none; border-bottom: 1px solid var(--surface-2); }
+  .crumb .sep { margin: 0 4px; color: var(--text-soft); }
+  .area-title {
+    font-size: 22px; font-weight: 700; color: var(--text); letter-spacing: -0.03em;
+    display: flex; align-items: center; gap: 7px; margin-top: 2px;
+  }
+  .meta-row { display: flex; gap: 5px; margin-top: 6px; }
+  .meta-chip {
+    padding: 3px 8px; border-radius: 999px; background: var(--surface);
+    font-size: 9.5px; font-weight: 600; color: var(--text-muted); letter-spacing: -0.005em;
+  }
+  .desc { font-size: 11px; color: var(--text-muted); line-height: 1.5; margin-top: 8px; }
+  .tag-head {
+    display: flex; align-items: baseline; justify-content: space-between; margin-top: 12px; margin-bottom: 6px;
+  }
+  .tag-head span:first-child {
+    font-size: 9px; font-weight: 600; color: var(--text-soft);
+    text-transform: uppercase; letter-spacing: 0.08em;
+  }
+  .tag-head .count { font-size: 10px; color: var(--text-soft); }
+  .tag-chips { display: flex; flex-wrap: wrap; gap: 4px; }
+  .tag-chip {
+    padding: 4px 8px; border-radius: 999px; background: var(--surface);
+    font-size: 10px; font-weight: 500; color: var(--text); letter-spacing: -0.005em;
+  }
+  .rule { height: 1px; background: var(--surface-2); margin: 12px 0 0; border: 0; }
+  .prow { display: flex; align-items: center; gap: 8px; padding: 7px 2px; }
+  .prow + .prow { border-top: 1px solid var(--surface-2); }
+  .prow .av {
+    width: 22px; height: 22px; border-radius: 6px; background: var(--surface);
+    display: flex; align-items: center; justify-content: center; font-size: 12px; line-height: 1; flex-shrink: 0;
+  }
+  .prow .body { flex: 1; min-width: 0; }
+  .prow .pname { font-size: 12px; font-weight: 600; color: var(--text); letter-spacing: -0.01em; }
+  .prow .psub { font-size: 10px; color: var(--text-muted); margin-top: 1px; }
+  .prow .chevron { width: 10px; height: 10px; stroke: var(--text-soft); stroke-width: 2.2; fill: none; flex-shrink: 0; }
+
+  /* component crop — a slice of the library list, real size */
+  .crops { display: flex; flex-wrap: wrap; gap: 32px; align-items: flex-start; }
+  .crop-wrap { width: 300px; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+  .crop-wrap .crop { align-self: stretch; }
+  .crop {
+    background: var(--bg); border: 1px solid var(--surface-2); border-radius: 16px;
+    padding: 14px 18px 16px; display: flex; flex-direction: column; gap: 7px;
+    position: relative; overflow: hidden;
+  }
+  .crop-note { font-size: 11px; color: var(--text-muted); line-height: 1.55; }
+  .crop-note b { color: var(--text); font-weight: 600; }
+
+  /* v1 — bare header + hairline */
+  .h-bare {
+    display: flex; align-items: center; gap: 7px; padding: 2px 2px 6px;
+    border-bottom: 1px solid var(--surface-2);
+  }
+  .h-bare .glyph { font-size: 13px; line-height: 1; flex-shrink: 0; }
+  .h-bare .name { font-size: 13px; font-weight: 700; color: var(--text); letter-spacing: -0.01em; }
+  .h-bare .n { font-size: 11px; color: var(--text-soft); }
+  .h-bare .go { margin-left: auto; width: 11px; height: 11px; stroke: var(--text-soft); stroke-width: 2.2; fill: none; }
+  .h-bare.plain .name { color: var(--text-muted); font-weight: 600; }
+
+  /* v3 — plain header, count is the door */
+  .h-split { display: flex; align-items: center; gap: 7px; padding: 2px 2px 6px; border-bottom: 1px solid var(--surface-2); }
+  .h-split .glyph { font-size: 13px; line-height: 1; }
+  .h-split .name { font-size: 13px; font-weight: 700; color: var(--text); letter-spacing: -0.01em; }
+  .h-door {
+    margin-left: auto; display: inline-flex; align-items: center; gap: 4px;
+    padding: 3px 8px; border-radius: 999px; background: var(--surface);
+    font-size: 11px; font-weight: 600; color: var(--text);
+  }
+  .h-door svg { width: 9px; height: 9px; stroke: var(--text-muted); stroke-width: 2.4; fill: none; }
+
+  /* v4 — sticky */
+  .crop.sticky-demo { padding-top: 0; }
+  .h-sticky {
+    display: flex; align-items: center; gap: 7px;
+    margin: 0 -18px; padding: 10px 18px 9px;
+    background: var(--bg); border-bottom: 1px solid var(--surface-2);
+    box-shadow: 0 6px 12px -8px rgba(0,0,0,0.35);
+    position: relative; z-index: 2;
+  }
+  .h-sticky .glyph { font-size: 13px; line-height: 1; }
+  .h-sticky .name { font-size: 13px; font-weight: 700; color: var(--text); letter-spacing: -0.01em; }
+  .h-sticky .n { font-size: 11px; color: var(--text-soft); }
+  .h-sticky .go { margin-left: auto; width: 11px; height: 11px; stroke: var(--text-soft); stroke-width: 2.2; fill: none; }
+  .cut-off {
+    height: 14px; margin: 0 -18px -7px; position: relative; z-index: 1;
+    background: linear-gradient(var(--surface), transparent);
+  }
+
+  .tap-zone { outline: 1.5px dashed var(--danger); outline-offset: 2px; border-radius: 8px; }
+  .tap-key {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 10px; color: var(--text-muted); margin-top: 2px;
+  }
+  .tap-key::before {
+    content: ''; width: 14px; height: 8px; border-radius: 3px;
+    outline: 1.5px dashed var(--danger); outline-offset: -1px;
+  }
+
+  /* strips (count comparison) */
+  .strips { display: flex; flex-wrap: wrap; gap: 20px; }
+  .strip-wrap { width: 320px; display: flex; flex-direction: column; gap: 8px; }
+  .strip {
+    background: var(--bg); border: 1px solid var(--surface-2); border-radius: 14px;
+    padding: 12px 14px;
+  }
+  .strip-note { font-size: 11px; color: var(--text-muted); line-height: 1.55; }
+  .strip-note b { color: var(--text); font-weight: 600; }
+  .x { color: var(--danger); font-weight: 700; }
+  .ok { color: var(--success); font-weight: 700; }
+
+  .verdict {
+    margin-top: 36px; border: 1px solid var(--surface-2); border-radius: 16px;
+    padding: 22px 24px; background: var(--surface); max-width: 900px;
+  }
+  .verdict h3 { font-size: 14px; font-weight: 700; letter-spacing: -0.01em; margin-bottom: 10px; }
+  .verdict p { font-size: 13px; color: var(--text-muted); line-height: 1.65; }
+  .verdict p + p { margin-top: 10px; }
+  .verdict b { color: var(--text); font-weight: 600; }
+  .verdict code { font-size: 11.5px; background: var(--bg); border-radius: 5px; padding: 1px 6px; }
+</style>
+</head>
+<body>
+
+<div class="page">
+
+  <div class="header">
+    <div>
+      <h1>library — sort &amp; filter</h1>
+      <div class="header-meta">kebi-app · apps/mobile/src/app/library.tsx · <b>a locked</b> · b + c deferred to kebi</div>
+      <p class="lede">
+        today the screen carries a <b>sort sheet</b> (recent ↔ A–Z) and a <b>filter sheet</b>
+        (all / visited / not visited / approved / needs review). three taps and an overlay each,
+        for controls that go untouched. the search field already exists in the top bar — but it
+        filters only the <b>keyset page currently loaded</b>, so at 500 saves it answers
+        "no results" for places that exist. the options below differ in <b>what sits under the hero</b>.
+        <br><br>
+        <b>settled:</b> <b>a</b> as drawn — both sheets and the toolbar row are deleted, search is the
+        only control · until kebi ships <code>q</code>, the first keystroke <b>pages the whole library
+        in</b> and filters over all of it · the count is a <b>thin "3 of 84" line</b> that exists only
+        while a query is active · status filtering <b>goes away entirely</b>, with the amber
+        <code>approve?</code> pill still marking cards inline. <b>b</b> and <b>c</b> are parked on the
+        kebi list, not rejected.
+      </p>
+    </div>
+    <div class="theme-toggle">
+      <button class="active" data-theme="light">light</button>
+      <button data-theme="dark">dark</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════ 1 · THE CONTROL ═══════════════════════ -->
+  <div class="section">
+    <div class="section-head">
+      <span class="section-title">1 · the control</span>
+      <span class="section-count">a locked · b + c deferred</span>
+    </div>
+    <h2 class="section-h2">what sits under the hero</h2>
+    <p class="section-desc">
+      the question isn't chips-versus-sheet. it's <b>how much control the screen needs at all</b>
+      when its one job is "help me pick something right now". read left to right — each frame
+      removes something the one before it kept.
+      <br><br>
+      <b>a won on subtraction.</b> the chips went untouched not because they filtered the wrong
+      things but because a single-select row was hiding behind an overlay with a reset/apply footer.
+      <b>b is dropped</b> — its chips need server facets that don't exist, and §4 gets the same
+      "one tap, always visible, never empty" result out of data already on the row.
+      <b>c is next</b>, and grew: its headers become links. see §4.
+    </p>
+
+    <div class="phones">
+
+      <!-- ── TODAY ── -->
+      <div class="phone-wrap">
+        <span class="opt-tag no">today · being deleted</span>
+        <div class="phone-label">two sheets</div>
+        <div class="phone">
+          <div class="taps">3 taps · 2 animations</div>
+          <div class="status-bar"><span>9:41</span><span class="right">▮▮▮ ⌁</span></div>
+          <div class="top-bar">
+            <button class="icon-btn"><svg viewBox="0 0 24 24"><polyline points="15 6 9 12 15 18"/></svg></button>
+            <div class="top-pill">
+              <div class="pill-btn"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div>
+              <div class="pill-btn"><svg viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/></svg></div>
+            </div>
+          </div>
+          <div class="screen">
+            <div>
+              <div class="eyebrow">your stash</div>
+              <div class="hero">84 places<span class="suffix">, saved up</span></div>
+            </div>
+            <div class="toolbar-row">
+              <span class="results-count">20 results</span>
+              <div class="toolbar-actions">
+                <span class="toolbar-btn">
+                  <svg viewBox="0 0 24 24"><path d="M3 6h18M6 12h12M10 18h4"/></svg>recent
+                </span>
+                <span class="toolbar-btn">
+                  <svg viewBox="0 0 24 24"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>filter
+                </span>
+              </div>
+            </div>
+            <div class="stack">
+              <div class="card">
+                <div class="card-head"><div class="avatar">☕</div><span class="card-name">Secret Spot</span><svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></div>
+              </div>
+              <div class="card">
+                <div class="card-head"><div class="avatar">🍜</div><span class="card-name">Warung Bu Mi</span><svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></div>
+              </div>
+            </div>
+          </div>
+          <div class="scrim">
+            <div class="sheet">
+              <div class="sheet-handle"></div>
+              <div class="sheet-title">filter</div>
+              <div class="sheet-label">status</div>
+              <div class="sheet-options">
+                <span class="sheet-chip active">all</span>
+                <span class="sheet-chip">visited</span>
+                <span class="sheet-chip">not visited</span>
+                <span class="sheet-chip">approved</span>
+                <span class="sheet-chip">needs review</span>
+              </div>
+              <div class="sheet-actions">
+                <span class="sheet-btn secondary">reset</span>
+                <span class="sheet-btn primary">apply</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="phone-sub">
+          five single-select chips behind an overlay, with a <b>reset/apply</b> footer a single-select
+          row never needed. the active filter is invisible until you open it.
+        </div>
+      </div>
+
+      <!-- ── OPTION A ── -->
+      <div class="phone-wrap">
+        <span class="opt-tag rec">a · locked</span>
+        <div class="phone-label">search is the filter</div>
+        <div class="phone">
+          <div class="status-bar"><span>9:41</span><span class="right">▮▮▮ ⌁</span></div>
+          <div class="top-bar">
+            <button class="icon-btn"><svg viewBox="0 0 24 24"><polyline points="15 6 9 12 15 18"/></svg></button>
+            <div class="top-pill">
+              <div class="pill-btn"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div>
+              <div class="pill-btn"><svg viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/></svg></div>
+            </div>
+          </div>
+          <div class="screen">
+            <div>
+              <div class="eyebrow">your stash</div>
+              <div class="hero">84 places<span class="suffix">, saved up</span></div>
+            </div>
+            <div class="stack">
+              <div class="card">
+                <div class="card-head"><div class="avatar">☕</div><span class="card-name">Secret Spot</span><svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></div>
+                <div class="card-meta">coffee · $$ · 6 min · canggu</div>
+                <div class="card-pills"><span class="pill warm">new</span></div>
+              </div>
+              <div class="card">
+                <div class="card-head"><div class="avatar">🍜</div><span class="card-name">Warung Bu Mi</span><svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></div>
+                <div class="card-meta">indonesian · $ · 11 min · canggu</div>
+                <div class="card-pills"><span class="pill green">went</span></div>
+              </div>
+              <div class="card">
+                <div class="card-head"><div class="avatar">🍷</div><span class="card-name">Ulu Cliffhouse</span><svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></div>
+                <div class="card-meta">bar · $$$ · 48 min · uluwatu</div>
+                <div class="card-pills"><span class="pill warm">new</span><span class="pill amber">approve?</span></div>
+              </div>
+              <div class="card">
+                <div class="card-head"><div class="avatar">🥾</div><span class="card-name">Campuhan Ridge</span><svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></div>
+                <div class="card-meta">walk · free · 1h 5 min · ubud</div>
+              </div>
+            </div>
+          </div>
+          <div class="home-ind"></div>
+        </div>
+        <div class="phone-sub">
+          no toolbar row at all. <b>two components deleted</b>, one row of vertical space returned
+          to the list, and the hero count is the only number on screen — so it can't disagree with itself.
+        </div>
+      </div>
+
+      <!-- ── OPTION A · SEARCHING ── -->
+      <div class="phone-wrap">
+        <span class="opt-tag rec">a · locked · query active</span>
+        <div class="phone-label">the same screen, typing</div>
+        <div class="phone">
+          <div class="status-bar"><span>9:41</span><span class="right">▮▮▮ ⌁</span></div>
+          <div class="top-bar">
+            <div class="top-pill wide">
+              <svg class="lead" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <span class="query">canggu coffee<span class="caret"></span></span>
+              <div class="pill-btn"><svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg></div>
+            </div>
+          </div>
+          <div class="screen">
+            <div class="toolbar-row">
+              <span class="results-count"><b>3</b> of 84</span>
+            </div>
+            <div class="stack">
+              <div class="card">
+                <div class="card-head"><div class="avatar">☕</div><span class="card-name">Secret Spot</span><svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></div>
+                <div class="card-meta"><mark>coffee</mark> · $$ · 6 min · <mark>canggu</mark></div>
+              </div>
+              <div class="card">
+                <div class="card-head"><div class="avatar">☕</div><span class="card-name">Crate</span><svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></div>
+                <div class="card-meta"><mark>coffee</mark> · $ · 4 min · <mark>canggu</mark></div>
+              </div>
+              <div class="card">
+                <div class="card-head"><div class="avatar">☕</div><span class="card-name">Bungalow Living</span><svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></div>
+                <div class="card-meta"><mark>coffee</mark> · $$ · 9 min · <mark>canggu</mark></div>
+              </div>
+            </div>
+          </div>
+          <div class="home-ind"></div>
+        </div>
+        <div class="phone-sub">
+          typing does what the chips would have. the hero collapses out of the way, and
+          <b>"3 of 84"</b> replaces the page-count — the one number that makes filtering feel safe.
+        </div>
+      </div>
+
+      <!-- ── OPTION B ── -->
+      <div class="phone-wrap">
+        <span class="opt-tag no">b · dropped · see §4</span>
+        <div class="phone-label">search + three chips</div>
+        <div class="phone">
+          <div class="status-bar"><span>9:41</span><span class="right">▮▮▮ ⌁</span></div>
+          <div class="top-bar">
+            <button class="icon-btn"><svg viewBox="0 0 24 24"><polyline points="15 6 9 12 15 18"/></svg></button>
+            <div class="top-pill">
+              <div class="pill-btn"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div>
+              <div class="pill-btn"><svg viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/></svg></div>
+            </div>
+          </div>
+          <div class="screen">
+            <div>
+              <div class="eyebrow">your stash</div>
+              <div class="hero">84 places<span class="suffix">, saved up</span></div>
+            </div>
+            <div class="chips">
+              <span class="chip active">not been yet <span class="n">31</span></span>
+              <span class="chip">liked <span class="n">12</span></span>
+              <span class="chip"><svg viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>nearby <span class="n">8</span></span>
+            </div>
+            <div class="stack">
+              <div class="card">
+                <div class="card-head"><div class="avatar">☕</div><span class="card-name">Secret Spot</span><svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></div>
+                <div class="card-meta">coffee · $$ · 6 min · canggu</div>
+                <div class="card-pills"><span class="pill warm">new</span></div>
+              </div>
+              <div class="card">
+                <div class="card-head"><div class="avatar">🍷</div><span class="card-name">Ulu Cliffhouse</span><svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></div>
+                <div class="card-meta">bar · $$$ · 48 min · uluwatu</div>
+                <div class="card-pills"><span class="pill warm">new</span></div>
+              </div>
+              <div class="card">
+                <div class="card-head"><div class="avatar">🥾</div><span class="card-name">Campuhan Ridge</span><svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></div>
+                <div class="card-meta">walk · free · 1h 5 min · ubud</div>
+                <div class="card-pills"><span class="pill warm">new</span></div>
+              </div>
+            </div>
+          </div>
+          <div class="home-ind"></div>
+        </div>
+        <div class="phone-sub">
+          one tap, applied, always visible. <b>counts are the point</b> — a chip renders only when it
+          has rows, so no filter can ever empty the screen. needs <code>liked</code>, facet counts,
+          and a location param.
+        </div>
+      </div>
+
+      <!-- ── OPTION C ── -->
+      <div class="phone-wrap">
+        <span class="opt-tag rec">c · next · drawn out in §4</span>
+        <div class="phone-label">sections instead of sort</div>
+        <div class="phone">
+          <div class="status-bar"><span>9:41</span><span class="right">▮▮▮ ⌁</span></div>
+          <div class="top-bar">
+            <button class="icon-btn"><svg viewBox="0 0 24 24"><polyline points="15 6 9 12 15 18"/></svg></button>
+            <div class="top-pill">
+              <div class="pill-btn"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div>
+              <div class="pill-btn"><svg viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/></svg></div>
+            </div>
+          </div>
+          <div class="screen">
+            <div>
+              <div class="eyebrow">your stash</div>
+              <div class="hero">84 places<span class="suffix">, saved up</span></div>
+            </div>
+            <div class="stack">
+              <div class="group-head">
+                <span class="group-title">canggu</span><span class="group-n">14</span>
+                <span class="group-here"><svg viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/></svg>you're here</span>
+              </div>
+              <div class="group-rule"></div>
+              <div class="card">
+                <div class="card-head"><div class="avatar">☕</div><span class="card-name">Secret Spot</span><svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></div>
+                <div class="card-meta">coffee · $$ · 6 min</div>
+              </div>
+              <div class="card">
+                <div class="card-head"><div class="avatar">🍜</div><span class="card-name">Warung Bu Mi</span><svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></div>
+                <div class="card-meta">indonesian · $ · 11 min</div>
+              </div>
+              <div class="group-head" style="margin-top:4px;">
+                <span class="group-title">ubud</span><span class="group-n">9</span>
+              </div>
+              <div class="group-rule"></div>
+              <div class="card">
+                <div class="card-head"><div class="avatar">🥾</div><span class="card-name">Campuhan Ridge</span><svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></div>
+                <div class="card-meta">walk · free · 1h 5 min</div>
+              </div>
+              <div class="card">
+                <div class="card-head"><div class="avatar">🍲</div><span class="card-name">Locavore NXT</span><svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></div>
+                <div class="card-meta">tasting menu · $$$$ · 12 min</div>
+              </div>
+              <div class="group-head" style="margin-top:4px;">
+                <span class="group-title">uluwatu</span><span class="group-n">6</span>
+              </div>
+              <div class="group-rule"></div>
+              <div class="card">
+                <div class="card-head"><div class="avatar">🍷</div><span class="card-name">Ulu Cliffhouse</span><svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></div>
+                <div class="card-meta">bar · $$$ · 48 min</div>
+              </div>
+            </div>
+          </div>
+          <div class="home-ind"></div>
+        </div>
+        <div class="phone-sub">
+          nobody thinks "sort my saves A–Z" — they think <b>"what do I have in Bali"</b>.
+          current city pinned top, newest-first inside. needs whole-library grouping <i>and</i>
+          area-key normalization, or canggu files under badung.
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ═══════════════════════ 2 · THE COUNT ═══════════════════════ -->
+  <div class="section">
+    <div class="section-head">
+      <span class="section-title">2 · the count</span>
+      <span class="section-count">shipped bug · fix locked</span>
+    </div>
+    <h2 class="section-h2">the number that's currently lying</h2>
+    <p class="section-desc">
+      <code>library.tsx:93</code> passes <code>filtered.length</code> — the length of the
+      <b>loaded page</b> after client-side search. it renders as a statement about the library.
+      this is the same root cause as everything in §1: the client holds a slice and narrates it as the whole.
+    </p>
+
+    <div class="strips">
+      <div class="strip-wrap">
+        <div class="strip">
+          <div class="toolbar-row">
+            <span class="results-count">20 results</span>
+            <div class="toolbar-actions">
+              <span class="toolbar-btn"><svg viewBox="0 0 24 24"><path d="M3 6h18M6 12h12M10 18h4"/></svg>recent</span>
+            </div>
+          </div>
+        </div>
+        <div class="strip-note"><span class="x">✕ today.</span> "20" is the page size. the user has 84 saves. scroll once and it says 40.</div>
+      </div>
+
+      <div class="strip-wrap">
+        <div class="strip">
+          <div class="toolbar-row">
+            <span class="results-count">no results for <b>"canggu coffee"</b></span>
+          </div>
+        </div>
+        <div class="strip-note"><span class="x">✕ today.</span> said confidently while the match sits unloaded on page 4. the worst of the three.</div>
+      </div>
+
+      <div class="strip-wrap">
+        <div class="strip">
+          <div class="toolbar-row">
+            <span class="results-count"><b>3</b> of 84</span>
+          </div>
+        </div>
+        <div class="strip-note"><span class="ok">✓ locked.</span> a real count of a real query, from the whole library — paged in on the first keystroke until server <code>q</code> lands. present only while a query is active; at rest the hero already said 84.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════ 3 · ZERO ═══════════════════════ -->
+  <div class="section">
+    <div class="section-head">
+      <span class="section-title">3 · zero</span>
+      <span class="section-count">rule for b · 2 frames</span>
+    </div>
+    <h2 class="section-h2">never show a filter that returns nothing</h2>
+    <p class="section-desc">
+      the one point where design and engineering agree exactly. with counts, a chip that
+      would empty the library <b>simply isn't rendered</b> — so the only reachable empty state is
+      a search miss, which is the user's own words and therefore explicable.
+      <br><br>
+      <b>this is a rule for b, not work for today.</b> a has no chips to suppress. it's recorded
+      here so that whenever the chip rail does land, it lands with counts — a chip rail without
+      them is the left-hand frame, and shipping that would be a regression against a.
+    </p>
+
+    <div class="phones">
+
+      <div class="phone-wrap">
+        <span class="opt-tag no">without counts</span>
+        <div class="phone-label">a chip that empties the screen</div>
+        <div class="phone">
+          <div class="status-bar"><span>9:41</span><span class="right">▮▮▮ ⌁</span></div>
+          <div class="top-bar">
+            <button class="icon-btn"><svg viewBox="0 0 24 24"><polyline points="15 6 9 12 15 18"/></svg></button>
+            <div class="top-pill">
+              <div class="pill-btn"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div>
+              <div class="pill-btn"><svg viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/></svg></div>
+            </div>
+          </div>
+          <div class="screen">
+            <div>
+              <div class="eyebrow">your stash</div>
+              <div class="hero">84 places<span class="suffix">, saved up</span></div>
+            </div>
+            <div class="chips">
+              <span class="chip">not been yet</span>
+              <span class="chip active">liked</span>
+              <span class="chip">nearby</span>
+            </div>
+            <div class="empty">
+              <div class="empty-title">nothing here</div>
+              <div class="empty-sub">you have 84 saved places and the screen is blank.<br/>the control did this, and it looks like a bug.</div>
+            </div>
+          </div>
+          <div class="home-ind"></div>
+        </div>
+        <div class="phone-sub">
+          nobody has marked anything <b>liked</b> yet. the chip still rendered, so the user tapped
+          it and lost their library.
+        </div>
+      </div>
+
+      <div class="phone-wrap">
+        <span class="opt-tag rec">with counts</span>
+        <div class="phone-label">the chip never appears</div>
+        <div class="phone">
+          <div class="status-bar"><span>9:41</span><span class="right">▮▮▮ ⌁</span></div>
+          <div class="top-bar">
+            <button class="icon-btn"><svg viewBox="0 0 24 24"><polyline points="15 6 9 12 15 18"/></svg></button>
+            <div class="top-pill">
+              <div class="pill-btn"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div>
+              <div class="pill-btn"><svg viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/></svg></div>
+            </div>
+          </div>
+          <div class="screen">
+            <div>
+              <div class="eyebrow">your stash</div>
+              <div class="hero">84 places<span class="suffix">, saved up</span></div>
+            </div>
+            <div class="chips">
+              <span class="chip active">not been yet <span class="n">31</span></span>
+              <span class="chip"><svg viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>nearby <span class="n">8</span></span>
+            </div>
+            <div class="stack">
+              <div class="card">
+                <div class="card-head"><div class="avatar">☕</div><span class="card-name">Secret Spot</span><svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></div>
+                <div class="card-meta">coffee · $$ · 6 min · canggu</div>
+              </div>
+              <div class="card">
+                <div class="card-head"><div class="avatar">🍷</div><span class="card-name">Ulu Cliffhouse</span><svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></div>
+                <div class="card-meta">bar · $$$ · 48 min · uluwatu</div>
+              </div>
+              <div class="card">
+                <div class="card-head"><div class="avatar">🥾</div><span class="card-name">Campuhan Ridge</span><svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></div>
+                <div class="card-meta">walk · free · 1h 5 min · ubud</div>
+              </div>
+            </div>
+          </div>
+          <div class="home-ind"></div>
+        </div>
+        <div class="phone-sub">
+          <b>liked</b> is gone — count was zero, so it never rendered. the rail shrinks and grows with
+          the library instead of advertising dead ends.
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- ═══════════════════════ 4 · AREAS ═══════════════════════ -->
+  <div class="section">
+    <div class="section-head">
+      <span class="section-title">4 · areas</span>
+      <span class="section-count">supersedes b · 3 frames</span>
+    </div>
+    <h2 class="section-h2">the section header is a link, not a filter</h2>
+    <p class="section-desc">
+      c's city sections, with the headers made <b>tappable</b> — and that one change retires the whole
+      chip conversation. tapping <b>canggu</b> doesn't narrow a list; it opens the
+      <b>area screen that already exists</b> (<code>GET /v1/areas/{id}</code>, kebi ADR-153,
+      <code>apps/mobile/src/app/area.tsx</code>, mockup locked) — a profile, your saves there, and the
+      neighbourhoods under it, each with its own saved count.
+      <br><br>
+      <b>the canggu/badung worry was stale.</b> kebi's geo keys are already hierarchical
+      (<code>{cc}/{city}/{neighborhood}</code>) and <code>types.ts:356</code> uses
+      "<code>indonesia › bali</code> above the Canggu header" as its own example. the normalization
+      the backend doc asked for is <b>done</b>. what's missing is one field: library rows carry
+      <code>city</code> as a display string with <b>no area <code>uri</code></b>, so a header can be
+      grouped today but not yet tapped.
+    </p>
+
+    <div class="phones">
+
+      <!-- library, resting -->
+      <div class="phone-wrap">
+        <span class="opt-tag rec">1 · library at rest</span>
+        <div class="phone-label">grouped, every header a door</div>
+        <div class="phone">
+          <div class="status-bar"><span>9:41</span><span class="right">▮▮▮ ⌁</span></div>
+          <div class="top-bar">
+            <button class="icon-btn"><svg viewBox="0 0 24 24"><polyline points="15 6 9 12 15 18"/></svg></button>
+            <div class="top-pill">
+              <div class="pill-btn"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div>
+              <div class="pill-btn"><svg viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/></svg></div>
+            </div>
+          </div>
+          <div class="screen">
+            <div>
+              <div class="eyebrow">your stash</div>
+              <div class="hero">84 places<span class="suffix">, saved up</span></div>
+            </div>
+            <div class="stack">
+              <div class="h-bare">
+                <span class="glyph">🏄</span><span class="name">canggu</span><span class="n">14</span>
+                <svg class="go" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>
+              </div>
+              <div class="card">
+                <div class="card-head"><div class="avatar">☕</div><span class="card-name">Crate Café</span><svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></div>
+                <div class="card-meta">breakfast · fast wifi · $</div>
+              </div>
+              <div class="card">
+                <div class="card-head"><div class="avatar">🍜</div><span class="card-name">Warung Bu Mi</span><svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></div>
+                <div class="card-meta">indonesian · cash only · $</div>
+              </div>
+              <div class="h-bare" style="margin-top:6px;">
+                <span class="glyph">🌾</span><span class="name">ubud</span><span class="n">9</span>
+                <svg class="go" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>
+              </div>
+              <div class="card">
+                <div class="card-head"><div class="avatar">🥾</div><span class="card-name">Campuhan Ridge</span><svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></div>
+                <div class="card-meta">walk · free · 1h 5 min</div>
+              </div>
+              <div class="h-bare plain" style="margin-top:6px;">
+                <span class="name">elsewhere</span><span class="n">3</span>
+              </div>
+              <div class="card">
+                <div class="card-head"><div class="avatar">📍</div><span class="card-name">Kamachiku</span><svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></div>
+                <div class="card-meta">udon · ¥¥</div>
+              </div>
+            </div>
+          </div>
+          <div class="home-ind"></div>
+        </div>
+        <div class="phone-sub">
+          counts are <b>group lengths</b> — true, and free, because the client holds the whole library.
+          a section exists only if it has rows, so <b>§3's zero rule is satisfied by construction</b>.
+          rows with no city fall to a flat <b>elsewhere</b> bucket, which is <i>not</i> tappable.
+        </div>
+      </div>
+
+      <!-- library, searching -->
+      <div class="phone-wrap">
+        <span class="opt-tag rec">2 · searching</span>
+        <div class="phone-label">sections step aside</div>
+        <div class="phone">
+          <div class="status-bar"><span>9:41</span><span class="right">▮▮▮ ⌁</span></div>
+          <div class="top-bar">
+            <div class="top-pill wide">
+              <svg class="lead" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <span class="query">coffee<span class="caret"></span></span>
+              <div class="pill-btn"><svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg></div>
+            </div>
+          </div>
+          <div class="screen">
+            <div class="toolbar-row">
+              <span class="results-count"><b>4</b> of 84</span>
+            </div>
+            <div class="stack">
+              <div class="card">
+                <div class="card-head"><div class="avatar">☕</div><span class="card-name">Crate Café</span><svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></div>
+                <div class="card-meta">breakfast · <mark>coffee</mark> · canggu</div>
+              </div>
+              <div class="card">
+                <div class="card-head"><div class="avatar">☕</div><span class="card-name">Secret Spot</span><svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></div>
+                <div class="card-meta"><mark>coffee</mark> · $$ · canggu</div>
+              </div>
+              <div class="card">
+                <div class="card-head"><div class="avatar">☕</div><span class="card-name">Seniman</span><svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></div>
+                <div class="card-meta"><mark>coffee</mark> roasters · ubud</div>
+              </div>
+              <div class="card">
+                <div class="card-head"><div class="avatar">☕</div><span class="card-name">Fuglen</span><svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></div>
+                <div class="card-meta"><mark>coffee</mark> + cocktails · tokyo</div>
+              </div>
+            </div>
+          </div>
+          <div class="home-ind"></div>
+        </div>
+        <div class="phone-sub">
+          a query cuts across cities, so grouping would fragment four results into four one-row
+          sections. while typing the list goes <b>flat</b> — city stays visible in each row's meta line.
+        </div>
+      </div>
+
+      <!-- the destination -->
+      <div class="phone-wrap">
+        <span class="opt-tag rec">3 · the tap · already built</span>
+        <div class="phone-label">canggu</div>
+        <div class="phone">
+          <div class="status-bar"><span>9:41</span><span class="right">▮▮▮ ⌁</span></div>
+          <div class="top-bar">
+            <button class="icon-btn"><svg viewBox="0 0 24 24"><polyline points="15 6 9 12 15 18"/></svg></button>
+          </div>
+          <div class="screen" style="gap:0;">
+            <div class="crumb"><u>indonesia</u><span class="sep">›</span><u>bali</u></div>
+            <div class="area-title"><span>🏄</span>Canggu</div>
+            <div class="meta-row">
+              <span class="meta-chip">neighbourhood</span>
+              <span class="meta-chip">14 saved</span>
+            </div>
+            <div class="desc">
+              the surf-and-laptop end of bali. mornings are flat whites and standing desks, evenings
+              move west to the cliff bars for sunset.
+            </div>
+            <div class="tag-head"><span>best for</span></div>
+            <div class="tag-chips">
+              <span class="tag-chip">🌅 sunset drinks</span>
+              <span class="tag-chip">💻 café working</span>
+              <span class="tag-chip">🏄 beginner surf</span>
+            </div>
+            <hr class="rule" />
+            <div class="tag-head"><span>your places here</span><span class="count">14</span></div>
+            <div>
+              <div class="prow">
+                <div class="av">🍸</div>
+                <div class="body"><div class="pname">Savaya Bali</div><div class="psub">beach club · liked · went</div></div>
+                <svg class="chevron" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>
+              </div>
+              <div class="prow">
+                <div class="av">☕</div>
+                <div class="body"><div class="pname">Crate Café</div><div class="psub">breakfast · fast wifi · $</div></div>
+                <svg class="chevron" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>
+              </div>
+              <div class="prow">
+                <div class="av">🍜</div>
+                <div class="body"><div class="pname">Warung Bu Mi</div><div class="psub">indonesian · cash only · $</div></div>
+                <svg class="chevron" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>
+              </div>
+            </div>
+          </div>
+          <div class="home-ind"></div>
+        </div>
+        <div class="phone-sub">
+          not a mockup to build — <b>this screen ships today</b> behind every chat area link. the
+          library header just becomes another door into it. a chip could never have produced this.
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- ═══════════════════════ 5 · THE HEADER ═══════════════════════ -->
+  <div class="section">
+    <div class="section-head">
+      <span class="section-title">5 · the header</span>
+      <span class="section-count">v1 locked</span>
+    </div>
+    <h2 class="section-h2">what the city row itself looks like</h2>
+    <p class="section-desc">
+      real-size slices of the list, so the header can be judged against the cards it sits above.
+      the tension: a <b>full-width tappable header inside a scrolling list normally means
+      "collapse this section"</b> — here it navigates away, and a wide target is easy to hit by
+      accident mid-scroll. dashed outline marks <b>what actually taps</b>.
+      <br><br>
+      <b>settled: v1.</b> no fill, hairline rule, whole row taps through. the header stays
+      subordinate to the cards, and it reuses the group-header shape already locked in
+      <code>kebi-library-mockup.html</code> rather than inventing a second one. v4's pinning is a
+      later addition to v1 if long libraries want it, not a different design.
+    </p>
+    <div class="tap-key">= tap target</div>
+    <div style="height:22px"></div>
+
+    <div class="crops">
+
+      <!-- v1 bare -->
+      <div class="crop-wrap">
+        <span class="opt-tag rec">v1 · locked</span>
+        <div class="phone-label">bare header + hairline</div>
+        <div class="crop">
+          <div class="h-bare tap-zone">
+            <span class="glyph">🏄</span><span class="name">canggu</span><span class="n">14</span>
+            <svg class="go" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>
+          </div>
+          <div class="card">
+            <div class="card-head"><div class="avatar">☕</div><span class="card-name">Crate Café</span><svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></div>
+            <div class="card-meta">breakfast · fast wifi · $</div>
+          </div>
+          <div class="card">
+            <div class="card-head"><div class="avatar">🍜</div><span class="card-name">Warung Bu Mi</span><svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></div>
+            <div class="card-meta">indonesian · cash only · $</div>
+          </div>
+          <div class="h-bare tap-zone" style="margin-top:6px;">
+            <span class="glyph">🌾</span><span class="name">ubud</span><span class="n">9</span>
+            <svg class="go" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>
+          </div>
+        </div>
+        <div class="crop-note">
+          no fill, so the header <b>recedes and the cards lead</b>. same shape as the group headers
+          already in <code>kebi-library-mockup.html</code>. the chevron is the only navigation cue —
+          quiet, but the whole row still taps.
+        </div>
+      </div>
+
+      <!-- v2 filled -->
+      <div class="crop-wrap">
+        <span class="opt-tag no">v2 · not chosen</span>
+        <div class="phone-label">filled pill</div>
+        <div class="crop">
+          <div class="area-head tap-zone">
+            <span class="glyph">🏄</span><span class="name">canggu</span><span class="n">14</span>
+            <svg class="go" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>
+          </div>
+          <div class="card">
+            <div class="card-head"><div class="avatar">☕</div><span class="card-name">Crate Café</span><svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></div>
+            <div class="card-meta">breakfast · fast wifi · $</div>
+          </div>
+          <div class="card">
+            <div class="card-head"><div class="avatar">🍜</div><span class="card-name">Warung Bu Mi</span><svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></div>
+            <div class="card-meta">indonesian · cash only · $</div>
+          </div>
+          <div class="area-head tap-zone" style="margin-top:6px;">
+            <span class="glyph">🌾</span><span class="name">ubud</span><span class="n">9</span>
+            <svg class="go" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>
+          </div>
+        </div>
+        <div class="crop-note">
+          unmistakably tappable — and that's the problem. it carries <b>the same weight as a place
+          card</b>, so the list reads as alternating cards rather than header-then-contents, and the
+          widest target on screen navigates away.
+        </div>
+      </div>
+
+      <!-- v3 split -->
+      <div class="crop-wrap">
+        <span class="opt-tag no">v3 · not chosen</span>
+        <div class="phone-label">count is the door</div>
+        <div class="crop">
+          <div class="h-split">
+            <span class="glyph">🏄</span><span class="name">canggu</span>
+            <span class="h-door tap-zone">14 <svg viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></span>
+          </div>
+          <div class="card">
+            <div class="card-head"><div class="avatar">☕</div><span class="card-name">Crate Café</span><svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></div>
+            <div class="card-meta">breakfast · fast wifi · $</div>
+          </div>
+          <div class="card">
+            <div class="card-head"><div class="avatar">🍜</div><span class="card-name">Warung Bu Mi</span><svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></div>
+            <div class="card-meta">indonesian · cash only · $</div>
+          </div>
+          <div class="h-split" style="margin-top:6px;">
+            <span class="glyph">🌾</span><span class="name">ubud</span>
+            <span class="h-door tap-zone">9 <svg viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></span>
+          </div>
+        </div>
+        <div class="crop-note">
+          the name is <b>plain text and inert</b>; only the count pill navigates. no wide accidental
+          target, and the pill reads as "14 saved here — go see them". costs a little more chrome
+          per header.
+        </div>
+      </div>
+
+      <!-- v4 sticky -->
+      <div class="crop-wrap">
+        <span class="opt-tag no">v4 · not chosen</span>
+        <div class="phone-label">sticky while scrolling</div>
+        <div class="crop sticky-demo">
+          <div class="h-sticky tap-zone">
+            <span class="glyph">🏄</span><span class="name">canggu</span><span class="n">14</span>
+            <svg class="go" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>
+          </div>
+          <div class="cut-off"></div>
+          <div class="card">
+            <div class="card-head"><div class="avatar">🥗</div><span class="card-name">Peloton Supershop</span><svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></div>
+            <div class="card-meta">health food · $$</div>
+          </div>
+          <div class="card">
+            <div class="card-head"><div class="avatar">🍹</div><span class="card-name">La Brisa</span><svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></div>
+            <div class="card-meta">beach club · sunset · $$$</div>
+          </div>
+          <div class="card">
+            <div class="card-head"><div class="avatar">🏄</div><span class="card-name">Old Man's</span><svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></div>
+            <div class="card-meta">bar · cheap beer · $</div>
+          </div>
+        </div>
+        <div class="crop-note">
+          v1 pinned to the top while its section scrolls (<code>SectionList</code>,
+          <code>stickySectionHeadersEnabled</code>). across 84 places you <b>always know which city
+          you're in</b>, and the door is always reachable — no scrolling back up to leave.
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="verdict">
+      <h3>what ships, and what waits</h3>
+      <p>
+        <b>shipping now — a.</b> delete <code>library-sort-sheet.tsx</code>, delete
+        <code>library-filter-sheet.tsx</code>, drop the toolbar row from
+        <code>library-toolbar.tsx</code>. add the paging-loop search and the "3 of 84" line.
+        no backend needed. it is a <b>net deletion</b> — two components out, one wrong answer closed,
+        nothing added but a count that's true.
+      </p>
+      <p>
+        <b>the one part with teeth:</b> <code>use-library.ts</code> race-guards reads with a monotonic
+        <code>reqId</code> that drops superseded pages. a loop that pages to <code>next_cursor === null</code>
+        has to cooperate with that guard or it cancels itself partway and search silently sees a
+        partial library — the exact bug being fixed, wearing a new hat.
+      </p>
+      <p>
+        <b>next — §4 area sections.</b> grouping, headers, and counts are all client-side once a's
+        paging loop holds the library, so the bulk of it is a <code>FlatList</code> →
+        <code>SectionList</code> change. the tap destination needs no design and no build: it ships
+        today. the <i>only</i> blocker is that library rows carry <code>city</code> as a display
+        string with no area <code>uri</code> — <b>one field</b>, versus the four b would have needed.
+      </p>
+      <p>
+        <b>the caveat that doesn't go away:</b> sections are only honest over the <i>whole</i>
+        library. built over paged data, a half-populated "canggu" reads as complete — so §4 depends
+        on a's loop being right, which is the same <code>reqId</code> hazard above, now load-bearing
+        for two features instead of one.
+      </p>
+      <p>
+        <b>dropped — b.</b> of its three chips only <code>visited</code> and <code>approved</code>
+        have server params today, and those are the two you already don't use. <code>liked</code>,
+        <code>nearby</code>, and per-chip counts would all be new backend work to reach a weaker
+        version of what §4 gives away for free.
+      </p>
+    </div>
+  </div>
+
+</div>
+
+<script>
+(function () {
+  document.querySelectorAll('.theme-toggle button').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      document.querySelectorAll('.theme-toggle button').forEach(function (b) { b.classList.remove('active'); });
+      btn.classList.add('active');
+      document.body.classList.toggle('dark', btn.dataset.theme === 'dark');
+    });
+  });
+})();
+</script>
+
+</body>
+</html>

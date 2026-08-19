@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Kebi — while you were away</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #FAFAF9;
+    --surface: #F1F1EF;
+    --surface-2: #E8E8E5;
+    --text: #1A1A1A;
+    --text-muted: #8A8A87;
+    --text-soft: #B5B5B1;
+    --success: #4A7C3A;
+    --like: #C2632F;
+    --warn: #B45309;
+    --danger: #D14343;
+    --pill-green: #E8F2E1;
+    --pill-warm: #FEE4D4;
+    --pill-amber: #FEF3C7;
+    --tag-rec: #A7C7A0;
+    --tag: #D4B891;
+  }
+
+  body.dark {
+    --bg: #13110F;
+    --surface: #1C1A17;
+    --surface-2: #26231F;
+    --text: #F5F1EA;
+    --text-muted: #9A938A;
+    --text-soft: #6E6862;
+    --success: #A8C293;
+    --like: #E0A176;
+    --warn: #D9B36B;
+    --danger: #E89090;
+    --pill-green: #1F2A18;
+    --pill-warm: #3A2418;
+    --pill-amber: #33280F;
+  }
+
+  html, body {
+    background: var(--bg); color: var(--text);
+    font-family: 'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased; min-height: 100vh;
+  }
+  body.dark { background: #0A0908; }
+
+  .page { max-width: 1500px; margin: 0 auto; padding: 56px 32px 96px; }
+
+  .header {
+    display: flex; align-items: flex-start; justify-content: space-between;
+    padding-bottom: 32px; border-bottom: 1px solid var(--surface-2); margin-bottom: 40px;
+  }
+  .header h1 { font-size: 24px; font-weight: 700; letter-spacing: -0.025em; }
+  .header-meta { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+  .lede { font-size: 14px; color: var(--text-muted); line-height: 1.6; max-width: 880px; margin-top: 14px; }
+  .lede b { color: var(--text); font-weight: 600; }
+  .lede code { font-size: 12px; background: var(--surface-2); border-radius: 5px; padding: 1px 6px; }
+
+  .theme-toggle { display: flex; background: var(--surface); border-radius: 999px; padding: 3px; flex-shrink: 0; }
+  .theme-toggle button {
+    padding: 6px 14px; background: transparent; border: none; border-radius: 999px;
+    font-family: inherit; font-size: 12px; font-weight: 500; color: var(--text-muted); cursor: pointer;
+  }
+  .theme-toggle button.active { background: var(--text); color: var(--bg); }
+
+  .section { margin-bottom: 60px; }
+  .section-head {
+    display: flex; align-items: baseline; justify-content: space-between;
+    margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid var(--surface-2);
+  }
+  .section-title { font-size: 11px; font-weight: 600; color: var(--text-soft); text-transform: uppercase; letter-spacing: 0.08em; }
+  .section-count { font-size: 12px; color: var(--text-soft); }
+  .section-h2 { font-size: 26px; font-weight: 700; letter-spacing: -0.025em; margin-bottom: 8px; }
+  .section-desc { font-size: 14px; color: var(--text-muted); line-height: 1.6; max-width: 880px; margin-bottom: 28px; }
+  .section-desc b { color: var(--text); font-weight: 600; }
+  .section-desc code { font-size: 12px; background: var(--surface-2); border-radius: 5px; padding: 1px 6px; }
+
+  .crops { display: flex; flex-wrap: wrap; gap: 30px; align-items: flex-start; }
+  .crop-wrap { width: 330px; display: flex; flex-direction: column; gap: 10px; }
+  .phone-label { font-size: 13px; font-weight: 600; letter-spacing: -0.01em; }
+  .crop-note { font-size: 11.5px; color: var(--text-muted); line-height: 1.55; }
+  .crop-note b { color: var(--text); font-weight: 600; }
+  .crop-note code { font-size: 10.5px; background: var(--surface-2); border-radius: 4px; padding: 1px 5px; }
+  .opt-tag {
+    display: inline-block; align-self: flex-start; font-size: 10px; font-weight: 700; letter-spacing: .08em;
+    text-transform: uppercase; color: #1A1A1A; background: var(--tag);
+    border-radius: 999px; padding: 3px 10px;
+  }
+  .opt-tag.rec { background: var(--tag-rec); }
+
+  /* the surface it sits on, so the crops read as home */
+  .stage { background: var(--bg); border: 1px dashed var(--surface-2); border-radius: 12px; padding: 14px 12px; }
+
+  /* ── eyebrow: the constant. present at every count. ── */
+  .eyebrow {
+    display: flex; align-items: center; gap: 8px;
+    padding: 0 4px 10px;
+  }
+  .eyebrow .lb {
+    font-size: 11px; font-weight: 600; color: var(--text-soft);
+    text-transform: uppercase; letter-spacing: 0.08em;
+  }
+  .eyebrow .x {
+    margin-left: auto; width: 20px; height: 20px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center; background: var(--surface);
+  }
+  .eyebrow .x svg { width: 9px; height: 9px; stroke: var(--text-muted); stroke-width: 2.6; fill: none; }
+
+  /* ── group container: 14px, per §Group container ── */
+  .group {
+    background: var(--surface); border-radius: 14px; padding: 4px 12px;
+  }
+  body.dark .group { border: none; }
+  .rule { height: 1px; background: var(--surface-2); }
+
+  /* ── rows ── */
+  .row { display: flex; align-items: flex-start; gap: 10px; padding: 10px 4px; }
+  .row.bare { padding: 10px 4px; }
+  .av {
+    width: 34px; height: 34px; border-radius: 9px; background: var(--surface);
+    display: flex; align-items: center; justify-content: center; font-size: 17px; flex-shrink: 0;
+  }
+  .group .av { background: var(--bg); }
+  .av.src { font-size: 15px; }
+  .row .body { flex: 1; min-width: 0; }
+  .row .nm {
+    font-size: 14px; font-weight: 600; color: var(--text); letter-spacing: -0.01em;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .row .nm.url { font-weight: 500; color: var(--text-muted); }
+  .pills { display: flex; gap: 5px; margin-top: 4px; flex-wrap: wrap; }
+  .pill {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 3px 10px; border-radius: 999px; font-size: 11px; font-weight: 600; letter-spacing: 0.005em;
+  }
+  .pill::before { content: ''; width: 5px; height: 5px; border-radius: 50%; }
+  .pill.warm { background: var(--pill-warm); color: var(--like); }
+  .pill.warm::before { background: var(--like); }
+  .pill.green { background: var(--pill-green); color: var(--success); }
+  .pill.green::before { background: var(--success); }
+  .meta { font-size: 11.5px; color: var(--text-muted); margin-top: 4px; }
+  /* failure: plain danger text. no pill — §Status pills, "no pills for non-state labels" */
+  .meta.fail { color: var(--danger); font-weight: 500; }
+  .chev { width: 11px; height: 11px; stroke: var(--text-soft); stroke-width: 2.2; fill: none; flex-shrink: 0; margin-top: 11px; }
+
+  /* skeleton only — §Loading states, no spinners */
+  .sk { border-radius: 6px; background: var(--surface-2); animation: pulse 1.5s ease-in-out infinite; }
+  .group .sk { background: var(--surface-2); }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .45; } }
+  .sk.n { height: 13px; width: 58%; }
+  .sk.m { height: 10px; width: 38%; margin-top: 8px; }
+  .sk.av { animation: pulse 1.5s ease-in-out infinite; }
+
+  /* compact outlined button — §Buttons outlined variant, pill radius */
+  .retry {
+    align-self: center; flex-shrink: 0; font-family: inherit;
+    font-size: 13px; font-weight: 600; color: var(--text);
+    background: transparent; border: 1px solid var(--surface-2);
+    border-radius: 999px; padding: 6px 14px; cursor: pointer;
+  }
+  .group .retry { background: var(--bg); }
+
+  .spec {
+    margin-top: 34px; border: 1px solid var(--surface-2); border-radius: 16px;
+    padding: 22px 24px; background: var(--surface); max-width: 940px;
+  }
+  .spec h3 { font-size: 14px; font-weight: 700; margin-bottom: 12px; }
+  .spec dl { display: grid; grid-template-columns: 190px 1fr; gap: 9px 18px; }
+  .spec dt { font-size: 12.5px; font-weight: 600; color: var(--text); }
+  .spec dd { font-size: 12.5px; color: var(--text-muted); line-height: 1.55; }
+  .spec code { font-size: 11.5px; background: var(--bg); border-radius: 5px; padding: 1px 6px; }
+  .spec .sep { grid-column: 1 / -1; height: 1px; background: var(--surface-2); margin: 5px 0; }
+</style>
+</head>
+<body>
+
+<div class="page">
+
+  <div class="header">
+    <div>
+      <h1>while you were away</h1>
+      <div class="header-meta">kebi-app · apps/mobile home · <b>locked</b> — silent share, queue drained on open</div>
+      <p class="lede">
+        the surface a user meets when they open Kebi after sharing links into it from TikTok or
+        Instagram. the share itself is <b>silent</b> — no Kebi UI, no app launch — so this is the
+        only place the app ever accounts for what it caught.
+        <br><br>
+        the <b>eyebrow is the constant</b>. it is present at every count, and it carries the
+        dismiss. the group container appears only at <b>two or more</b> results, per
+        <code>§Group container</code> — "don't use a card for a single item". so this is not two
+        components, it is one eyebrow whose rows gain a container when there are enough of them.
+      </p>
+    </div>
+    <div class="theme-toggle">
+      <button class="active" data-theme="light">light</button>
+      <button data-theme="dark">dark</button>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-head">
+      <span class="section-title">the component</span>
+      <span class="section-count">5 states</span>
+    </div>
+    <h2 class="section-h2">every state, real size</h2>
+    <p class="section-desc">
+      dashed edge is the home background, not part of the component. rows resolve
+      <b>in place</b> as the queue drains — a row is born as a skeleton and becomes a place or a
+      failure without moving.
+    </p>
+
+    <div class="crops">
+
+      <!-- STATE 1 — single result -->
+      <div class="crop-wrap">
+        <span class="opt-tag rec">the common case</span>
+        <div class="phone-label">one result — no container</div>
+        <div class="stage">
+          <div class="eyebrow">
+            <span class="lb">while you were away</span>
+            <span class="x"><svg viewBox="0 0 24 24"><line x1="5" y1="5" x2="19" y2="19"/><line x1="19" y1="5" x2="5" y2="19"/></svg></span>
+          </div>
+          <div class="row bare">
+            <div class="av">🍜</div>
+            <div class="body">
+              <div class="nm">Warung Bu Mi</div>
+              <div class="pills"><span class="pill warm">not visited</span></div>
+              <div class="meta">indonesian · $ · Canggu</div>
+            </div>
+            <svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>
+          </div>
+        </div>
+        <div class="crop-note">
+          share one TikTok, open the app — the state that happens most. a bare row on the home
+          background, <b>no surface, no border, no footer</b>. the eyebrow does the naming and
+          holds the ✕.
+        </div>
+      </div>
+
+      <!-- STATE 2 — several landed -->
+      <div class="crop-wrap">
+        <span class="opt-tag">2+ results</span>
+        <div class="phone-label">the container appears</div>
+        <div class="stage">
+          <div class="eyebrow">
+            <span class="lb">while you were away</span>
+            <span class="x"><svg viewBox="0 0 24 24"><line x1="5" y1="5" x2="19" y2="19"/><line x1="19" y1="5" x2="5" y2="19"/></svg></span>
+          </div>
+          <div class="group">
+            <div class="row">
+              <div class="av">🍜</div>
+              <div class="body">
+                <div class="nm">Warung Bu Mi</div>
+                <div class="pills"><span class="pill warm">not visited</span></div>
+                <div class="meta">indonesian · $ · Canggu</div>
+              </div>
+              <svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>
+            </div>
+            <div class="rule"></div>
+            <div class="row">
+              <div class="av">☕</div>
+              <div class="body">
+                <div class="nm">Secret Spot</div>
+                <div class="pills"><span class="pill warm">not visited</span></div>
+                <div class="meta">cafe · $$ · Canggu</div>
+              </div>
+              <svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>
+            </div>
+            <div class="rule"></div>
+            <div class="row">
+              <div class="av">🏝️</div>
+              <div class="body">
+                <div class="nm">Old Man's</div>
+                <div class="pills"><span class="pill warm">not visited</span></div>
+                <div class="meta">bar · $$ · Canggu</div>
+              </div>
+              <svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>
+            </div>
+          </div>
+        </div>
+        <div class="crop-note">
+          same eyebrow, rows now grouped at <b>14px</b> per the doc. no header inside the
+          container — the eyebrow already named it, and a second title would say it twice.
+          <b>no count badge</b>: the rows are right there to be counted.
+        </div>
+      </div>
+
+      <!-- STATE 3 — draining -->
+      <div class="crop-wrap">
+        <span class="opt-tag">on open</span>
+        <div class="phone-label">draining — skeletons, no spinner</div>
+        <div class="stage">
+          <div class="eyebrow">
+            <span class="lb">while you were away</span>
+            <span class="x"><svg viewBox="0 0 24 24"><line x1="5" y1="5" x2="19" y2="19"/><line x1="19" y1="5" x2="5" y2="19"/></svg></span>
+          </div>
+          <div class="group">
+            <div class="row">
+              <div class="av">🍜</div>
+              <div class="body">
+                <div class="nm">Warung Bu Mi</div>
+                <div class="pills"><span class="pill warm">not visited</span></div>
+                <div class="meta">indonesian · $ · Canggu</div>
+              </div>
+              <svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>
+            </div>
+            <div class="rule"></div>
+            <div class="row">
+              <div class="av src">📱</div>
+              <div class="body">
+                <div class="sk n"></div>
+                <div class="sk m"></div>
+              </div>
+            </div>
+            <div class="rule"></div>
+            <div class="row">
+              <div class="av src">🔗</div>
+              <div class="body">
+                <div class="sk n"></div>
+                <div class="sk m"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="crop-note">
+          shimmer bars in the shape of the row that's coming — §Loading states, skeleton, and
+          explicitly <b>no spinner</b>. the avatar slot already shows <b>where the link came
+          from</b>, so the row has an identity before it has a name. a cold video URL can hold
+          this for ~30–60&nbsp;s.
+        </div>
+      </div>
+
+      <!-- STATE 4 — mixed with a failure -->
+      <div class="crop-wrap">
+        <span class="opt-tag">why this surface exists</span>
+        <div class="phone-label">one didn't work</div>
+        <div class="stage">
+          <div class="eyebrow">
+            <span class="lb">while you were away</span>
+            <span class="x"><svg viewBox="0 0 24 24"><line x1="5" y1="5" x2="19" y2="19"/><line x1="19" y1="5" x2="5" y2="19"/></svg></span>
+          </div>
+          <div class="group">
+            <div class="row">
+              <div class="av">🍜</div>
+              <div class="body">
+                <div class="nm">Warung Bu Mi</div>
+                <div class="pills"><span class="pill warm">not visited</span></div>
+                <div class="meta">indonesian · $ · Canggu</div>
+              </div>
+              <svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>
+            </div>
+            <div class="rule"></div>
+            <div class="row">
+              <div class="av">☕</div>
+              <div class="body">
+                <div class="nm">Secret Spot</div>
+                <div class="pills"><span class="pill green">went</span></div>
+                <div class="meta">cafe · $$ · Canggu</div>
+              </div>
+              <svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>
+            </div>
+            <div class="rule"></div>
+            <div class="row">
+              <div class="av src">🔗</div>
+              <div class="body">
+                <div class="nm url">instagram.com/reel/C8xK2p…</div>
+                <div class="meta fail">no place found</div>
+              </div>
+              <button class="retry">try again</button>
+            </div>
+          </div>
+        </div>
+        <div class="crop-note">
+          the failed row has <b>no place</b>, so it gets no avatar emoji and no status pill — the
+          url is the name, the source glyph is the identity, and the failure is
+          <b>plain danger text</b>. <code>try again</code> is the outlined variant. this row is the
+          reason the surface exists at all.
+        </div>
+      </div>
+
+      <!-- STATE 5 — only failures -->
+      <div class="crop-wrap">
+        <span class="opt-tag">edge</span>
+        <div class="phone-label">nothing worked — single failure</div>
+        <div class="stage">
+          <div class="eyebrow">
+            <span class="lb">while you were away</span>
+            <span class="x"><svg viewBox="0 0 24 24"><line x1="5" y1="5" x2="19" y2="19"/><line x1="19" y1="5" x2="5" y2="19"/></svg></span>
+          </div>
+          <div class="row bare">
+            <div class="av src">🔗</div>
+            <div class="body">
+              <div class="nm url">instagram.com/reel/C8xK2p…</div>
+              <div class="meta fail">no place found</div>
+            </div>
+            <button class="retry">try again</button>
+          </div>
+        </div>
+        <div class="crop-note">
+          one share, and it failed. still a bare row — the single-item rule doesn't care whether
+          the item succeeded. this is the state that the "dot on the stash" option could not
+          render at all, and the reason it lost.
+        </div>
+      </div>
+
+    </div>
+
+    <div class="spec">
+      <h3>spec</h3>
+      <dl>
+        <dt>eyebrow</dt>
+        <dd>11px / 600 / <code>0.08em</code> / uppercase / <code>--text-soft</code>. always present. carries the ✕.</dd>
+
+        <dt>container</dt>
+        <dd><code>--surface</code>, <code>14px</code> radius, <code>1px --surface-2</code> between siblings, no border in dark. <b>only at 2+ rows.</b></dd>
+
+        <dt>single row</dt>
+        <dd>no container, no border, sits on <code>--bg</code>. §Group container: a single item is a row, not a card.</dd>
+
+        <dt>dismiss</dt>
+        <dd>✕ on the eyebrow, both states. no <code>got it</code> footer — the ✕ already says it, and a footer would only exist in one of the two states.</dd>
+
+        <dt>loading row</dt>
+        <dd>skeleton bars in the shape of the incoming row. <b>no spinner.</b> avatar slot shows the source glyph immediately.</dd>
+
+        <dt>failed row</dt>
+        <dd>source glyph avatar, url as the name (<code>--text-muted</code>, 500), failure as plain <code>--danger</code> text. <b>no status pill</b> — nothing exists to have a status.</dd>
+
+        <dt>try again</dt>
+        <dd>outlined variant, <code>999px</code>, 13px / 600, compact padding. re-queues that one link.</dd>
+
+        <div class="sep"></div>
+
+        <dt>persistence</dt>
+        <dd>survives app close. only the ✕ clears it.</dd>
+
+        <dt>placement</dt>
+        <dd>home, above the stash. note the stash card is <code>18px</code> with an inline header — this one is <code>14px</code> with an eyebrow, deliberately, until the stash card is brought to spec.</dd>
+
+        <dt>errors</dt>
+        <dd>handled in-component. §Error handling stays three tiers — its "recoverable → toast" rule does not apply here, and that exception lives in this component, not the doc.</dd>
+
+        <dt>copy</dt>
+        <dd>lowercase throughout. <code>·</code> for inline meta. no exclamation, no title case.</dd>
+      </dl>
+    </div>
+  </div>
+
+</div>
+
+<script>
+(function () {
+  document.querySelectorAll('.theme-toggle button').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      document.querySelectorAll('.theme-toggle button').forEach(function (b) { b.classList.remove('active'); });
+      btn.classList.add('active');
+      document.body.classList.toggle('dark', btn.dataset.theme === 'dark');
+    });
+  });
+})();
+</script>
+
+</body>
+</html>

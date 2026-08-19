@@ -21,6 +21,7 @@ import { UserIdentityService } from './user-identity.service';
 import { UserSettingsRepository } from './user-settings.repository';
 import { UserSettingsService } from './user-settings.service';
 import { ClaimStamper } from './claim-stamper';
+import { ShareTokenService } from './share-token.service';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 
@@ -47,6 +48,7 @@ const DEFAULT_PROVIDER = 'supabase';
     UserSettingsRepository,
     UserSettingsService,
     ClaimStamper,
+    ShareTokenService,
     AuthService,
     {
       provide: IDENTITY_PROVIDER,
@@ -102,6 +104,7 @@ const DEFAULT_PROVIDER = 'supabase';
     UserIdentityService,
     UserSettingsService,
     ClaimStamper,
+    ShareTokenService,
   ],
 })
 export class AuthModule {}

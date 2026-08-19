@@ -90,7 +90,13 @@ export function usePlaceView(placeId: string | undefined): PlaceViewResult {
         });
         // 201 carries the created user-state, so the screen flips in place.
         setLoaded(
-          new SavedPlaceView({ place: view.place, user_data: userData, claims: view.claims }),
+          new SavedPlaceView({
+            place: view.place,
+            user_data: userData,
+            claims: view.claims,
+            // Saving doesn't move a place — it keeps the area it already resolved to.
+            area: view.area,
+          }),
         );
         toast.show({
           tone: 'success',

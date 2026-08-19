@@ -1,5 +1,9 @@
 import { z } from 'zod';
 import type {
+  AreaHandle as AreaHandleContract,
+  AreaHandleParent as AreaHandleParentContract,
+  LibraryAreaCount as LibraryAreaCountContract,
+  LibraryAreasResponse as LibraryAreasResponseContract,
   LibraryResponse as LibraryResponseContract,
   PlaceCore as PlaceCoreContract,
   PlaceNote as PlaceNoteContract,
@@ -99,6 +103,42 @@ export const PlaceNoteSchema = z
   .transform((p) => new PlaceNote(p));
 
 /**
+ * A place's area, as something tappable (ADR-165). `uri` is pre-composed and
+ * opaque — handed to the link handler, never rebuilt from `key`.
+ */
+export class AreaHandle implements AreaHandleContract {
+  readonly key: string;
+  readonly name: string;
+  readonly uri: string;
+  readonly icon: string | null;
+  readonly parent: AreaHandleParentContract | null;
+
+  constructor(p: AreaHandleContract) {
+    this.key = p.key;
+    this.name = p.name;
+    this.uri = p.uri;
+    this.icon = p.icon;
+    this.parent = p.parent;
+  }
+}
+
+const areaHandleShape = {
+  key: z.string(),
+  name: z.string(),
+  uri: z.string(),
+  icon: z.string().nullish().transform((v) => v ?? null),
+};
+
+const AreaHandleParentSchema = z.object(areaHandleShape);
+
+export const AreaHandleSchema = z
+  .object({
+    ...areaHandleShape,
+    parent: AreaHandleParentSchema.nullish().transform((v) => v ?? null),
+  })
+  .transform((p) => new AreaHandle(p));
+
+/**
  * Any catalog place the caller can open, saved or not (ADR-151). `user_data` is
  * `null` when the caller never saved it — the place screen's "offer save"
  * signal, and the reason every user-state affordance is absent there.
@@ -108,11 +148,13 @@ export class PlaceView implements PlaceViewContract {
   readonly place: PlaceCoreContract;
   readonly user_data: UserPlaceContract | null;
   readonly claims: PlaceNoteContract[];
+  readonly area: AreaHandleContract | null;
 
   constructor(p: PlaceViewContract) {
     this.place = p.place;
     this.user_data = p.user_data;
     this.claims = p.claims;
+    this.area = p.area;
   }
 }
 
@@ -125,11 +167,13 @@ export class SavedPlaceView implements SavedPlaceViewContract {
   readonly place: PlaceCoreContract;
   readonly user_data: UserPlaceContract;
   readonly claims: PlaceNoteContract[];
+  readonly area: AreaHandleContract | null;
 
   constructor(p: SavedPlaceViewContract) {
     this.place = p.place;
     this.user_data = p.user_data;
     this.claims = p.claims;
+    this.area = p.area;
   }
 }
 
@@ -140,6 +184,9 @@ const placeViewShape = {
     .array(PlaceNoteSchema)
     .nullish()
     .transform((v) => v ?? []),
+  // Null when the place's geography is coarser than a city (ADR-165) — the
+  // "elsewhere" bucket. Absent on a pre-ADR-165 kebi, which reads the same.
+  area: AreaHandleSchema.nullish().transform((v) => v ?? null),
 };
 
 export const SavedPlaceViewSchema = z
@@ -159,11 +206,13 @@ export class LibraryResponse implements LibraryResponseContract {
   readonly places: SavedPlaceViewContract[];
   readonly next_cursor: string | null;
   readonly total: number | null;
+  readonly filtered_total: number | null;
 
   constructor(p: LibraryResponseContract) {
     this.places = p.places;
     this.next_cursor = p.next_cursor;
     this.total = p.total;
+    this.filtered_total = p.filtered_total;
   }
 }
 
@@ -173,5 +222,39 @@ export const LibraryResponseSchema = z
     next_cursor: z.string().nullable(),
     // Tolerant: absent until kebi ships the field → treat as unknown (null).
     total: z.number().nullish().transform((v) => v ?? null),
+    // How many saves match `q` + filters across the whole library (ADR-164).
+    filtered_total: z.number().nullish().transform((v) => v ?? null),
   })
   .transform((p) => new LibraryResponse(p));
+
+/** One area the caller has saves in, with an exact whole-library count. */
+export class LibraryAreaCount implements LibraryAreaCountContract {
+  readonly area: AreaHandleContract;
+  readonly count: number;
+
+  constructor(p: LibraryAreaCountContract) {
+    this.area = p.area;
+    this.count = p.count;
+  }
+}
+
+export class LibraryAreasResponse implements LibraryAreasResponseContract {
+  readonly areas: LibraryAreaCountContract[];
+
+  constructor(p: LibraryAreasResponseContract) {
+    this.areas = p.areas;
+  }
+}
+
+export const LibraryAreasResponseSchema = z
+  .object({
+    areas: z
+      .array(
+        z
+          .object({ area: AreaHandleSchema, count: z.number() })
+          .transform((p) => new LibraryAreaCount(p)),
+      )
+      .nullish()
+      .transform((v) => v ?? []),
+  })
+  .transform((p) => new LibraryAreasResponse(p));

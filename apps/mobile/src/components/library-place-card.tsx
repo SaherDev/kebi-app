@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { memo, useMemo } from 'react';
 import { useRouter } from 'expo-router';
 import {
   derivePills,
@@ -34,7 +34,7 @@ interface LibraryPlaceCardProps {
   highlight?: string;
 }
 
-export function LibraryPlaceCard({ view, highlight }: LibraryPlaceCardProps) {
+function LibraryPlaceCardRow({ view, highlight }: LibraryPlaceCardProps) {
   const { t } = useTranslation();
   const router = useRouter();
   const placeDetail = usePlaceDetail();
@@ -98,3 +98,15 @@ export function LibraryPlaceCard({ view, highlight }: LibraryPlaceCardProps) {
     />
   );
 }
+
+/**
+ * Memoised, because the Library re-renders its whole list several times on a
+ * cold open — rows arrive, then the device's country resolves and re-orders the
+ * sections — and a row is not cheap: two menu builders, a pill derivation and a
+ * context-menu trigger each. Without this the re-orders rebuild every mounted
+ * row and the screen visibly stutters before settling.
+ *
+ * The optimistic state a row draws comes from context ({@link usePlaceActions}),
+ * which memoisation does not block, so a forget still hides the row instantly.
+ */
+export const LibraryPlaceCard = memo(LibraryPlaceCardRow);
