@@ -84,9 +84,15 @@ function ShareRow({ row, onRetry }: { row: ShareResultRow; onRetry: (id: string)
           <Icon name="link" size={15} className="text-text-soft" />
         </View>
         <View className="flex-1">
-          <Shimmer width="58%" />
-          <View className="h-2" />
-          <Shimmer width="38%" />
+          {/* The url has been known since the moment it was shared, so it is not
+              a skeleton. Only the place name is genuinely unknown — shimmering
+              both left the row saying nothing about which share it was. */}
+          <Text className="text-body font-medium text-text-muted" numberOfLines={1}>
+            {displayInput(row.rawInput)}
+          </Text>
+          <View className="mt-2">
+            <Shimmer width="46%" />
+          </View>
         </View>
       </View>
     );

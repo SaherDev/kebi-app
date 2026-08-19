@@ -50,15 +50,20 @@ public class KebiShareSessionSubscriber: ExpoAppDelegateSubscriber, URLSessionDa
     return true
   }
 
+  /// Returns Void, matching UIApplicationDelegate exactly. Expo dispatches this
+  /// through the protocol selector, so a mismatched signature is at best
+  /// fragile — and silently never running is the failure it produces.
   public func application(
     _ application: UIApplication,
     handleEventsForBackgroundURLSession identifier: String,
     completionHandler: @escaping () -> Void
-  ) -> Bool {
-    guard identifier == KebiShareSessionSubscriber.sessionIdentifier else { return false }
+  ) {
+    guard identifier == KebiShareSessionSubscriber.sessionIdentifier else {
+      completionHandler()
+      return
+    }
     self.completionHandler = completionHandler
     _ = session
-    return true
   }
 
   public func urlSession(_ session: URLSession, dataTask: URLSessionDataTask, didReceive data: Data) {

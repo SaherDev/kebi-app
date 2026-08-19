@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Kebi — the share extension second</title>
+<title>Kebi — the share moment</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -17,17 +17,14 @@
     --text: #1A1A1A;
     --text-muted: #8A8A87;
     --text-soft: #B5B5B1;
+    --success: #4A7C3A;
     --danger: #D14343;
-    --pill-green: #E8F2E1;
     --tag-rec: #A7C7A0;
     --tag: #D4B891;
-    --tag-no: #D9A3A3;
-    /* the extension's own dark surface — it never inherits a host theme */
     --ext-bg: #13110F;
     --ext-surface: #1C1A17;
     --ext-text: #F5F1EA;
     --ext-muted: #9A938A;
-    --ext-soft: #6E6862;
     --ext-pill: #1F2A18;
   }
 
@@ -36,67 +33,67 @@
     font-family: 'Inter', system-ui, sans-serif;
     -webkit-font-smoothing: antialiased; min-height: 100vh;
   }
+  .page { max-width: 1100px; margin: 0 auto; padding: 56px 32px 96px; }
 
-  .page { max-width: 1500px; margin: 0 auto; padding: 56px 32px 96px; }
-
-  .header {
-    display: flex; align-items: flex-start; justify-content: space-between;
-    padding-bottom: 32px; border-bottom: 1px solid var(--surface-2); margin-bottom: 36px;
-  }
-  .header h1 { font-size: 24px; font-weight: 700; letter-spacing: -0.025em; }
-  .header-meta { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
-  .lede { font-size: 14px; color: var(--text-muted); line-height: 1.6; max-width: 880px; margin-top: 14px; }
+  h1 { font-size: 26px; font-weight: 700; letter-spacing: -0.028em; }
+  .meta { font-size: 12px; color: var(--text-muted); margin-top: 5px; }
+  .lede { font-size: 15px; color: var(--text-muted); line-height: 1.65; max-width: 760px; margin-top: 16px; }
   .lede b { color: var(--text); font-weight: 600; }
-  .lede code { font-size: 12px; background: var(--surface-2); border-radius: 5px; padding: 1px 6px; }
 
-  .callout {
+  .constraint {
     border: 1px solid var(--surface-2); border-left: 3px solid var(--danger);
     background: var(--surface); border-radius: 10px; padding: 16px 18px;
-    max-width: 880px; margin: 22px 0 8px;
+    max-width: 760px; margin: 24px 0 48px;
   }
-  .callout h3 { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: var(--danger); margin-bottom: 8px; }
-  .callout p { font-size: 13px; color: var(--text-muted); line-height: 1.65; }
-  .callout b { color: var(--text); font-weight: 600; }
+  .constraint h3 { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--danger); margin-bottom: 8px; }
+  .constraint p { font-size: 13.5px; color: var(--text-muted); line-height: 1.65; }
+  .constraint b { color: var(--text); font-weight: 600; }
 
-  .section-head {
-    display: flex; align-items: baseline; justify-content: space-between;
-    margin: 44px 0 12px; padding-bottom: 12px; border-bottom: 1px solid var(--surface-2);
-  }
-  .section-title { font-size: 11px; font-weight: 600; color: var(--text-soft); text-transform: uppercase; letter-spacing: 0.08em; }
-  .section-count { font-size: 12px; color: var(--text-soft); }
-  .section-h2 { font-size: 26px; font-weight: 700; letter-spacing: -0.025em; margin-bottom: 8px; }
-  .section-desc { font-size: 14px; color: var(--text-muted); line-height: 1.6; max-width: 880px; margin-bottom: 28px; }
-  .section-desc b { color: var(--text); font-weight: 600; }
-
-  .crops { display: flex; flex-wrap: wrap; gap: 34px; align-items: flex-start; }
-  .crop-wrap { width: 268px; display: flex; flex-direction: column; gap: 10px; }
-  .phone-label { font-size: 13px; font-weight: 600; letter-spacing: -0.01em; }
-  .dur { font-size: 11px; color: var(--text-soft); font-variant-numeric: tabular-nums; }
-  .crop-note { font-size: 11.5px; color: var(--text-muted); line-height: 1.55; }
-  .crop-note b { color: var(--text); font-weight: 600; }
-  .opt-tag {
-    display: inline-block; align-self: flex-start; font-size: 10px; font-weight: 700; letter-spacing: .08em;
+  .pair { display: flex; gap: 56px; flex-wrap: wrap; }
+  .col { width: 300px; }
+  .col h2 { font-size: 19px; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 3px; }
+  .col .sub { font-size: 13px; color: var(--text-muted); margin-bottom: 14px; }
+  .tag {
+    display: inline-block; font-size: 10px; font-weight: 700; letter-spacing: .08em;
     text-transform: uppercase; color: #1A1A1A; background: var(--tag);
-    border-radius: 999px; padding: 3px 10px;
+    border-radius: 999px; padding: 3px 10px; margin-bottom: 10px;
   }
-  .opt-tag.rec { background: var(--tag-rec); }
-  .opt-tag.no  { background: var(--tag-no); }
+  .tag.rec { background: var(--tag-rec); }
 
   .phone {
-    width: 268px; height: 540px; border-radius: 32px; overflow: hidden; position: relative;
-    background: var(--ext-bg); box-shadow: 0 0 0 8px #111, 0 18px 40px rgba(0,0,0,.35);
-    display: flex; align-items: center; justify-content: center;
+    width: 300px; height: 600px; border-radius: 34px; overflow: hidden; position: relative;
+    box-shadow: 0 0 0 8px #111, 0 18px 44px rgba(0,0,0,.35);
+    display: flex; flex-direction: column; justify-content: flex-end;
   }
-  /* the sliver of host app iOS leaves at the very top */
-  .phone .host-sliver {
-    position: absolute; top: 0; left: 0; right: 0; height: 26px;
-    background: linear-gradient(160deg, #2f6f86, #3fa3b8);
+  /* TikTok underneath */
+  .phone.host { background: linear-gradient(160deg, #2f6f86, #3fa3b8 45%, #2a5f74); }
+  .phone.host::before {
+    content: ''; position: absolute; inset: 0;
+    background:
+      radial-gradient(circle at 32% 34%, rgba(255,255,255,.2), transparent 46%),
+      radial-gradient(circle at 70% 62%, rgba(0,0,0,.28), transparent 52%);
   }
+  .caption {
+    position: absolute; left: 0; right: 54px; top: 44%;
+    text-align: center; color: rgba(255,255,255,.93);
+    font-size: 13px; font-weight: 600; line-height: 1.4; padding: 0 18px;
+    text-shadow: 0 1px 3px rgba(0,0,0,.45);
+  }
+  .rail {
+    position: absolute; right: 12px; bottom: 120px;
+    display: flex; flex-direction: column; gap: 14px; align-items: center;
+    color: #fff; font-size: 9px; font-weight: 600;
+  }
+  .rail .g { font-size: 19px; }
+
+  /* blacked out */
+  .phone.dark { background: var(--ext-bg); justify-content: center; align-items: center; }
 
   .card {
-    background: var(--ext-surface); border-radius: 20px;
-    padding: 15px 16px; display: flex; align-items: center; gap: 12px;
-    margin: 0 14px; box-shadow: 0 12px 34px rgba(0,0,0,.45);
+    position: relative; margin: 0 12px 16px; border-radius: 20px;
+    background: var(--ext-surface); padding: 15px 16px;
+    display: flex; align-items: center; gap: 12px;
+    box-shadow: 0 12px 34px rgba(0,0,0,.5);
   }
   .card .mark {
     width: 34px; height: 34px; border-radius: 10px; flex-shrink: 0; background: var(--ext-pill);
@@ -104,85 +101,59 @@
   }
   .card .t { font-size: 14.5px; font-weight: 600; color: var(--ext-text); letter-spacing: -0.01em; }
   .card .u { font-size: 11.5px; color: var(--ext-muted); margin-top: 3px;
-    overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 160px; }
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 170px; }
 
-  /* b — a branded beat */
-  .beat { display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 0 24px; text-align: center; }
+  .beat { display: flex; flex-direction: column; align-items: center; gap: 14px; text-align: center; padding: 0 28px; }
   .beat .mascot { font-size: 46px; }
   .beat .t { font-size: 19px; font-weight: 700; color: var(--ext-text); letter-spacing: -0.02em; }
-  .beat .u { font-size: 12px; color: var(--ext-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 200px; }
+  .beat .u { font-size: 12px; color: var(--ext-muted); }
 
-  /* c — a flash */
-  .flash { display: flex; flex-direction: column; align-items: center; gap: 10px; }
-  .flash .mascot { font-size: 34px; }
-  .flash .t { font-size: 13px; font-weight: 600; color: var(--ext-muted); letter-spacing: .02em; }
+  .note { font-size: 12.5px; color: var(--text-muted); line-height: 1.6; margin-top: 14px; }
+  .note b { color: var(--text); font-weight: 600; }
 
-  /* d — the url is the subject */
-  .subject { padding: 0 26px; text-align: center; display: flex; flex-direction: column; gap: 12px; align-items: center; }
-  .subject .eyebrow { font-size: 11px; font-weight: 600; letter-spacing: .09em; text-transform: uppercase; color: var(--ext-soft); }
-  .subject .u { font-size: 16px; font-weight: 600; color: var(--ext-text); line-height: 1.35; word-break: break-all; }
-
-  .verdict {
-    margin-top: 38px; border: 1px solid var(--surface-2); border-radius: 16px;
-    padding: 22px 24px; background: var(--surface); max-width: 940px;
+  .decide {
+    margin-top: 52px; border: 1px solid var(--surface-2); border-radius: 16px;
+    padding: 24px 26px; background: var(--surface); max-width: 760px;
   }
-  .verdict h3 { font-size: 14px; font-weight: 700; margin-bottom: 10px; }
-  .verdict p { font-size: 13px; color: var(--text-muted); line-height: 1.65; }
-  .verdict p + p { margin-top: 10px; }
-  .verdict b { color: var(--text); font-weight: 600; }
-  .verdict code { font-size: 11.5px; background: var(--bg); border-radius: 5px; padding: 1px 6px; }
+  .decide h3 { font-size: 14px; font-weight: 700; margin-bottom: 12px; }
+  .decide p { font-size: 13.5px; color: var(--text-muted); line-height: 1.7; }
+  .decide p + p { margin-top: 11px; }
+  .decide b { color: var(--text); font-weight: 600; }
 </style>
 </head>
 <body>
-
 <div class="page">
 
-  <div class="header">
-    <div>
-      <h1>the share extension second</h1>
-      <div class="header-meta">kebi-app · ios SavetoKebi · <b>supersedes</b> the earlier version of this page</div>
-      <p class="lede">
-        Tapping <b>Save to Kebi</b> in TikTok hands the link to iOS in about 50&nbsp;ms. Everything
-        on this page is about the <b>second after that</b> — which iOS spends showing the
-        extension's own screen, whether we want it or not.
-      </p>
-
-      <div class="callout">
-        <h3>what changed since the last version of this page</h3>
-        <p>
-          The earlier design drew a small card <b>over a visible TikTok</b>. That is not
-          achievable. iOS presents a share extension full-screen in its own window and
-          <b>will not let it be transparent</b> — verified on iOS&nbsp;26.6, after clearing the
-          view, its superview, and the host window. The host app is blacked out for the whole
-          duration regardless of what we draw.
-          <br><br>
-          So the real choice was never "card or nothing". It is <b>what fills an unavoidable
-          full-screen second</b>, and <b>how short we can make it</b>.
-        </p>
-      </div>
-    </div>
-  </div>
-
-  <div class="section-head">
-    <span class="section-title">the unavoidable second</span>
-    <span class="section-count">4 options</span>
-  </div>
-  <h2 class="section-h2">what fills it</h2>
-  <p class="section-desc">
-    Real proportions. The thin strip at the top is the sliver of the host app iOS leaves visible —
-    the only reminder you never actually left TikTok. Nothing here is tappable; it dismisses
-    itself. <b>Duration is part of each design</b>, not a setting applied afterwards.
+  <h1>the share moment</h1>
+  <div class="meta">kebi-app · ios SavetoKebi · two candidates, same words, same 0.6s</div>
+  <p class="lede">
+    You tap <b>Save to Kebi</b> in TikTok. The link is handed to iOS in about 50&nbsp;ms — but iOS
+    then shows the extension's own screen for a moment. This is that moment, and the
+    <b>only</b> question is whether TikTok stays visible behind it.
   </p>
 
-  <div class="crops">
+  <div class="constraint">
+    <h3>the constraint</h3>
+    <p>
+      iOS presents a share extension in a sheet locked to full height — an Apple engineer
+      confirmed the size <b>cannot be changed</b>. Whether that sheet can be made
+      <b>see-through</b> is the open question: clearing the view, its superview and the host
+      window did not work, and the remaining option
+      (<b>NSExtensionActionWantsFullScreenPresentation</b>) is on the phone now, untested.
+      <br><br>
+      Design 1 needs transparency. Design 2 does not. That is the whole difference.
+    </p>
+  </div>
 
-    <!-- A -->
-    <div class="crop-wrap">
-      <span class="opt-tag">a · on the phone now</span>
-      <div class="phone-label">the card, centred</div>
-      <div class="dur">0.6s</div>
-      <div class="phone">
-        <div class="host-sliver"></div>
+  <div class="pair">
+
+    <div class="col">
+      <span class="tag rec">design 1 · if transparency works</span>
+      <h2>small card</h2>
+      <div class="sub">TikTok stays on screen</div>
+      <div class="phone host">
+        <div class="caption">I can't explain why but partying in Uluwatu hits different</div>
+        <div class="rail"><span class="g">🤍</span><span>43.6K</span><span class="g">💬</span><span>169</span><span class="g">🔖</span><span>6,765</span></div>
         <div class="card">
           <div class="mark">🐦</div>
           <div style="min-width:0">
@@ -191,104 +162,55 @@
           </div>
         </div>
       </div>
-      <div class="crop-note">
-        the option-A card from the old page, moved to the middle since there is no longer a
-        TikTok to sit above. Honest and specific — but it is a <b>row floating in a void</b>,
-        designed for a context that turned out not to exist.
-      </div>
+      <p class="note">
+        The original locked design. You never lose your place — the video is still there, a card
+        appears at the bottom, and it's gone. <b>Closest to "sharing costs nothing"</b>, because
+        nothing is taken away from you.
+      </p>
     </div>
 
-    <!-- B -->
-    <div class="crop-wrap">
-      <span class="opt-tag rec">b · recommended</span>
-      <div class="phone-label">a beat that owns the space</div>
-      <div class="dur">0.6s</div>
-      <div class="phone">
-        <div class="host-sliver"></div>
+    <div class="col">
+      <span class="tag">design 2 · if it does not</span>
+      <h2>full screen</h2>
+      <div class="sub">TikTok is hidden for 0.6s</div>
+      <div class="phone dark">
         <div class="beat">
           <div class="mascot">🐦</div>
           <div class="t">saving this…</div>
           <div class="u">vt.tiktok.com/ZSVSQcfSm/</div>
         </div>
       </div>
-      <div class="crop-note">
-        same words, same duration, composed <b>for a full screen</b> instead of squeezed into a
-        card. Reads as <b>a moment Kebi meant to have</b> rather than an accident — and it is the
-        only time Kebi appears in the entire flow, so a moment is defensible. Keeps the url, which
-        is the part that proves it caught the right video.
-      </div>
-    </div>
-
-    <!-- C -->
-    <div class="crop-wrap">
-      <span class="opt-tag">c · shortest</span>
-      <div class="phone-label">a flash</div>
-      <div class="dur">0.35s</div>
-      <div class="phone">
-        <div class="host-sliver"></div>
-        <div class="flash">
-          <div class="mascot">🐦</div>
-          <div class="t">saving…</div>
-        </div>
-      </div>
-      <div class="crop-note">
-        minimum footprint: barely long enough to register, closest to the original
-        "sharing costs nothing" promise. But at 0.35s the url is <b>unreadable</b>, so it is a
-        reassurance rather than a receipt — and a flash that fast can read as a <b>glitch</b>,
-        which is the problem we started with.
-      </div>
-    </div>
-
-    <!-- D -->
-    <div class="crop-wrap">
-      <span class="opt-tag">d · url is the subject</span>
-      <div class="phone-label">show what you caught</div>
-      <div class="dur">0.6s</div>
-      <div class="phone">
-        <div class="host-sliver"></div>
-        <div class="subject">
-          <div class="eyebrow">saving</div>
-          <div class="u">vt.tiktok.com/ZSVSQcfSm/</div>
-        </div>
-      </div>
-      <div class="crop-note">
-        inverts the hierarchy — the link is the message, "saving" is the label. Strongest
-        <b>proof</b> of the four. But a raw url as hero type is <b>ugly</b>, and TikTok's
-        shortlinks (<code>vt.tiktok.com/ZSVSQcfSm</code>) say nothing a human recognises, so the
-        proof is weaker than it looks.
-      </div>
+      <p class="note">
+        If the screen is going black anyway, this owns it: centred, deliberate, and unmistakably
+        Kebi. <b>The one thing it must not be</b> is design 1's small card floating in a black
+        screen — that card was drawn to sit over something, and marooned it reads as a bug.
+      </p>
     </div>
 
   </div>
 
-  <div class="verdict">
-    <h3>what I think</h3>
+  <div class="decide">
+    <h3>how this gets decided</h3>
     <p>
-      <b>b.</b> The second is not negotiable, so the only question is whether it looks deliberate.
-      a is the old design surviving into a context it was not drawn for — a small card marooned in
-      a full black screen reads as a mistake, because it <i>is</i> one: it was designed to sit over
-      something.
+      <b>One share from TikTok.</b> The build on the phone right now is design 1 with the
+      full-screen-presentation flag — the last untried way to get a transparent background.
     </p>
     <p>
-      <b>Shorter is not automatically better.</b> c chases the original promise, but a screen that
-      appears and vanishes in a third of a second is exactly what you flagged as "weird" at the
-      start. Below roughly half a second this stops reading as feedback and starts reading as a
-      flicker.
+      <b>TikTok visible behind the card</b> → design 1 works, it is the answer, and the earlier
+      full-screen builds were fighting the wrong presentation mode.
+      <br>
+      <b>Black screen</b> → transparency is not possible on iOS 26, and design 2 goes back in
+      immediately. There is nothing further to try: the sheet cannot be resized, and this flag was
+      the only remaining option Apple names.
     </p>
     <p>
-      <b>Keep the url.</b> It is the only thing in the whole flow that shows Kebi caught the video
-      you meant — everything after this point is invisible until you next open the app. d is right
-      that it matters, but wrong to make it the hero: a shortlink is not a place name.
-    </p>
-    <p>
-      <b>The copy stays honest either way.</b> <code>saving this…</code>, never "saved" — at this
-      instant we hold a link and have handed it to iOS. A claim here has to be retracted in "while
-      you were away" when a link turns out unsupported, and that card is the only trust a silent
-      flow has.
+      <b>The copy does not change either way.</b> <code>saving this…</code>, never "saved" — at
+      that instant we hold a link and have handed it to iOS. A success claim here would have to be
+      taken back in "while you were away" when a link turns out unsupported, and that surface is
+      the only trust a silent flow has.
     </p>
   </div>
 
 </div>
-
 </body>
 </html>

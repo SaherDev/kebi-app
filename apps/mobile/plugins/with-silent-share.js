@@ -1,5 +1,6 @@
 const fs = require('node:fs');
 const path = require('node:path');
+const { execFileSync } = require('node:child_process');
 const { withXcodeProject } = require('expo/config-plugins');
 
 /**
@@ -50,9 +51,34 @@ const withSilentShare = (config, options = {}) => {
         );
       }
       fs.writeFileSync(target, shareViewController(appGroup), 'utf8');
+      wantsFullScreenPresentation(cfg.modRequest.platformProjectRoot, extensionName);
       return cfg;
   });
 };
+
+/**
+ * Ask for full-screen presentation without the sheet's chrome.
+ *
+ * A share extension is presented in a UISheetPresentationController whose
+ * detents are locked to `.large` — an Apple engineer confirmed on the forums
+ * that they cannot be customised, so the sheet cannot be made smaller. This flag
+ * is the documented escape hatch: full screen, no dimming, no corner radius, no
+ * shadow, and the extension sizes its own content inside that.
+ *
+ * PlistBuddy rather than a plist library: none is resolvable from here, and
+ * iOS prebuild only ever runs on macOS. Delete-then-Add keeps it idempotent
+ * across repeated prebuilds.
+ */
+function wantsFullScreenPresentation(platformProjectRoot, extensionName) {
+  const plistPath = path.join(platformProjectRoot, extensionName, 'ShareExtension-Info.plist');
+  const key = ':NSExtension:NSExtensionAttributes:NSExtensionActionWantsFullScreenPresentation';
+  try {
+    execFileSync('/usr/libexec/PlistBuddy', ['-c', `Delete ${key}`, plistPath], { stdio: 'ignore' });
+  } catch {
+    // Not present yet — that is the normal case on a fresh prebuild.
+  }
+  execFileSync('/usr/libexec/PlistBuddy', ['-c', `Add ${key} bool true`, plistPath]);
+}
 
 /** The whole extension, as it will exist on disk. */
 function shareViewController(appGroup) {
@@ -83,16 +109,20 @@ class ShareViewController: UIViewController {
   private let cardTitle = UILabel()
   private let cardSubtitle = UILabel()
 
+  /// Outlives this controller on purpose — see the note where it is created.
+  private static var uploadSession: URLSession?
+
   override func viewDidLoad() {
     super.viewDidLoad()
     // iOS presents this controller whether or not it draws anything — the empty
     // panel over the host app *is* that presentation. It cannot be skipped, so
     // it gets filled instead: the surrounding area stays clear and one card
     // carries the message.
-    // iOS presents this full-screen and opaque, and will not be talked out of
-    // it (tried: clearing the view, its superview, and the host window). So the
-    // space is owned rather than fought: Kebi's own dark surface, one card
-    // centred in it, gone in well under a second.
+    // iOS will not let a share extension be see-through — verified on 26.6
+    // against both the sheet presentation and
+    // NSExtensionActionWantsFullScreenPresentation, clearing the view, its
+    // superview and the host window. The screen is ours whether we want it or
+    // not, so it is painted deliberately rather than left for iOS to fill.
     view.backgroundColor = UIColor(red: 0.075, green: 0.067, blue: 0.059, alpha: 1)
     buildCard()
     // viewDidLoad, not viewDidAppear: the latter fires only after the
@@ -100,14 +130,13 @@ class ShareViewController: UIViewController {
     handleShare()
   }
 
-  /// The moment, built in code — a share extension has no access to the app's
-  /// NativeWind styles, so these mirror the design tokens by hand: --bg
-  /// #13110F, --text #F5F1EA, --text-muted #9A938A.
+  /// Mascot, message, url — centred on Kebi's own dark field.
   ///
-  /// Composed for a full screen rather than squeezed into a card, because iOS
-  /// gives us a full screen whether we want one or not. A small row floating in
-  /// a black void reads as a mistake; this reads as a beat Kebi meant to have —
-  /// and it is the only time Kebi appears in the entire share flow.
+  /// No container: once the whole screen belongs to the extension there is
+  /// nothing for a card to separate itself from, and a panel drawn on top of a
+  /// full-bleed background is one border too many. Values mirror the design
+  /// tokens by hand, since a share extension cannot reach the app's NativeWind
+  /// styles.
   private func buildCard() {
     let mascot = UILabel()
     mascot.text = "\u{1F426}"
@@ -117,16 +146,14 @@ class ShareViewController: UIViewController {
     // Present continuous, and the ellipsis is doing real work: at this instant
     // we hold a link and nothing more. "saved" would be a claim we may have to
     // retract in "while you were away", which is how that card stops being
-    // believed. "saving this…" is still true when the link turns out to be
-    // unsupported.
+    // believed.
     cardTitle.text = "saving this\u{2026}"
     cardTitle.font = .systemFont(ofSize: 19, weight: .bold)
     cardTitle.textColor = UIColor(red: 0.961, green: 0.945, blue: 0.918, alpha: 1)
     cardTitle.textAlignment = .center
 
-    // The url is the only thing in the whole flow that shows Kebi caught the
-    // video you meant — everything after this is invisible until you next open
-    // the app. Subordinate to the message, but present.
+    // The one moment in the whole flow that shows kebi caught the video you
+    // meant — after this nothing is visible until the app is next opened.
     cardSubtitle.font = .systemFont(ofSize: 12)
     cardSubtitle.textColor = UIColor(red: 0.604, green: 0.576, blue: 0.541, alpha: 1)
     cardSubtitle.textAlignment = .center
@@ -142,19 +169,19 @@ class ShareViewController: UIViewController {
 
     NSLayoutConstraint.activate([
       stack.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-      stack.centerYAnchor.constraint(equalTo: view.centerYAnchor),
+      // Slightly above true centre — optical centre is where the eye expects it.
+      stack.centerYAnchor.constraint(equalTo: view.centerYAnchor, constant: -24),
       stack.leadingAnchor.constraint(greaterThanOrEqualTo: view.leadingAnchor, constant: 28),
       stack.trailingAnchor.constraint(lessThanOrEqualTo: view.trailingAnchor, constant: -28),
     ])
   }
 
-  /// Host + path, scheme stripped — a url reads as a place it came from rather
-  /// than a protocol.
+  /// Host + path, scheme stripped — a url reads as somewhere it came from
+  /// rather than a protocol.
   private func showReceipt(for raw: String) {
-    let trimmed = raw
+    cardSubtitle.text = raw
       .replacingOccurrences(of: "https://", with: "")
       .replacingOccurrences(of: "http://", with: "")
-    cardSubtitle.text = trimmed
   }
 
   private func handleShare() {
@@ -237,7 +264,18 @@ class ShareViewController: UIViewController {
     // The save matters more than its speed — but not so much that iOS should
     // sit on it waiting for ideal conditions.
     config.isDiscretionary = false
-    let session = URLSession(configuration: config, delegate: nil, delegateQueue: nil)
+    // Held statically, not locally. A URLSession deallocated while its tasks are
+    // in flight takes them with it, and a local one dies the moment this method
+    // returns — which is well before the upload has gone anywhere.
+    if ShareViewController.uploadSession == nil {
+      ShareViewController.uploadSession = URLSession(
+        configuration: config, delegate: nil, delegateQueue: nil
+      )
+    }
+    guard let session = ShareViewController.uploadSession else {
+      enqueue(rawInput, defaults: defaults)
+      return
+    }
 
     guard let bodyFile = writeTempBody(body, id: id) else {
       enqueue(rawInput, defaults: defaults)
