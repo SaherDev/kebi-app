@@ -1,66 +1,56 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { FlatList, Pressable, RefreshControl, Text, View } from 'react-native';
-import { placeDisplayName, type SavedPlaceView } from '@kebi-app/shared';
+import { FlatList, Pressable, RefreshControl, SectionList, Text, View } from 'react-native';
+import type { SavedPlaceView } from '@kebi-app/shared';
 import { ScreenScaffold } from '../components/screen-scaffold';
 import { LibraryTopBar } from '../components/library-top-bar';
-import { LibraryToolbar } from '../components/library-toolbar';
 import { LibraryPlaceCard } from '../components/library-place-card';
+import { LibraryAreaHeader } from '../components/library-area-header';
 import { LibraryEmpty } from '../components/library-empty';
 import { LibrarySearchEmpty } from '../components/library-search-empty';
-import { LibraryFilterSheet } from '../components/library-filter-sheet';
-import { LibrarySortSheet } from '../components/library-sort-sheet';
 import { Spinner } from '../components/spinner';
-import { useLibrary } from '../components/use-library';
+import { useLibrarySections, ELSEWHERE_KEY } from '../components/use-library-sections';
+import { useLibrarySearch } from '../components/use-library-search';
 import { useSaveSheet } from '../components/save-sheet-context';
 import { useSavedPlaces } from '../components/saved-places-context';
 import { useTranslation } from '../i18n/context';
 import { PRESS } from '../theme/motion';
 
-/** Does a saved place match the free-text search (client-side, over loaded rows)? */
-function matchesQuery(view: SavedPlaceView, query: string): boolean {
-  if (!query) return true;
-  const { place } = view;
-  const haystack = [
-    placeDisplayName(view),
-    place.place_name,
-    place.location?.neighborhood ?? '',
-    place.location?.city ?? '',
-    ...place.tags.map((tag) => tag.value),
-    ...place.categories,
-  ]
-    .join(' ')
-    .toLowerCase();
-  return haystack.includes(query);
-}
-
+/**
+ * The Library (kebi-library-filter-options.html §1 option A, §4, §5 v1).
+ *
+ * Two controls and no more: **search**, and **area sections whose headers are
+ * links**. The sort sheet, the filter sheet and the toolbar row that opened
+ * them are gone — they went unused, and each cost three taps and two
+ * animations to reach a single-select chip row.
+ *
+ * The two modes never mix. At rest the list is sectioned by area, with exact
+ * counts from kebi's distribution. While a query is active the sections step
+ * aside for a flat result list: a search cuts across areas, so grouping four
+ * matches would fragment them into four one-row sections, and the distribution
+ * is deliberately unfiltered so its counts would describe a different set than
+ * the rows on screen.
+ */
 export default function LibraryScreen() {
   const { t } = useTranslation();
   const saveSheet = useSaveSheet();
-  const library = useLibrary();
   const { items: savedItems } = useSavedPlaces();
   const [query, setQuery] = useState('');
-  const [filterOpen, setFilterOpen] = useState(false);
-  const [sortOpen, setSortOpen] = useState(false);
 
-  const {
-    views,
-    loading,
-    refreshing,
-    loadingMore,
-    error,
-    total,
-    sort,
-    status,
-    setSort,
-    setStatus,
-    loadMore,
-    refetch,
-    refresh,
-  } = library;
+  const trimmed = query.trim();
+  const searching = trimmed.length > 0;
 
-  // Hero shows the whole stash (kebi's grand total); fall back to the loaded
-  // count until kebi ships `total`.
-  const stashCount = total ?? views.length;
+  const library = useLibrarySections();
+  const search = useLibrarySearch(trimmed);
+
+  const { sections, total, loading, refreshing, loadingMore, error, loadMore, refetch, refresh } =
+    library;
+
+  // Hero shows the whole stash; fall back to what's loaded until kebi sends `total`.
+  const loadedCount = useMemo(
+    () => sections.reduce((sum, section) => sum + section.rows.length, 0),
+    [sections],
+  );
+  const stashCount = total ?? loadedCount;
 
   // The save sheet is a global overlay, so saving from here never changes screen
   // focus — bridge the in-memory saved count to a refetch so a new save appears.
@@ -72,83 +62,100 @@ export default function LibraryScreen() {
     }
   }, [savedItems.length, refetch]);
 
-  const normalizedQuery = query.trim().toLowerCase();
-  const filtered = useMemo(
-    () => views.filter((view) => matchesQuery(view, normalizedQuery)),
-    [views, normalizedQuery],
-  );
-
-  const header = (
-    <View className="gap-5 pb-1">
-      <View>
-        <Text className="text-eyebrow font-semibold uppercase text-text-soft">
-          {t('library.eyebrow')}
-        </Text>
-        <Text className="mt-1 text-[34px] font-bold leading-tight text-text">
-          {t('library.heroCount', { count: stashCount })}
-          <Text className="text-text-muted">{t('library.heroSuffix')}</Text>
-        </Text>
-      </View>
-      <LibraryToolbar
-        count={filtered.length}
-        sort={sort}
-        onOpenSort={() => setSortOpen(true)}
-        onOpenFilter={() => setFilterOpen(true)}
-      />
+  const hero = (
+    <View>
+      <Text className="text-eyebrow font-semibold uppercase text-text-soft">
+        {t('library.eyebrow')}
+      </Text>
+      <Text className="mt-1 text-[34px] font-bold leading-tight text-text">
+        {t('library.heroCount', { count: stashCount })}
+        <Text className="text-text-muted">{t('library.heroSuffix')}</Text>
+      </Text>
     </View>
   );
 
+  const renderCard = (view: SavedPlaceView, highlight?: string) => (
+    <LibraryPlaceCard view={view} highlight={highlight} />
+  );
+
   let body;
-  if (loading && views.length === 0) {
+  if (searching) {
+    // ── Search: flat, whole-library, with the true match count ──────────────
+    if (search.loading && search.rows.length === 0) {
+      body = (
+        <View className="flex-1 items-center justify-center pb-28">
+          <Spinner />
+        </View>
+      );
+    } else if (search.error) {
+      body = (
+        <LibraryError onRetry={search.retry} label={t('library.error')} cta={t('library.retry')} />
+      );
+    } else if (search.rows.length === 0) {
+      body = (
+        <View className="flex-1 px-6 pt-2">
+          <LibrarySearchEmpty query={trimmed} onClear={() => setQuery('')} />
+        </View>
+      );
+    } else {
+      body = (
+        <FlatList
+          data={search.rows}
+          keyExtractor={(view) => view.user_data.user_place_id}
+          renderItem={({ item }) => renderCard(item, trimmed.toLowerCase())}
+          ListHeaderComponent={
+            <View className="pb-2 pt-1">
+              <Text className="px-1 text-small text-text-muted">
+                {t('library.matchCount', {
+                  count: search.filteredTotal ?? search.rows.length,
+                  total: stashCount,
+                })}
+              </Text>
+            </View>
+          }
+          ListFooterComponent={search.loadingMore ? <ListSpinner /> : null}
+          onEndReached={search.loadMore}
+          onEndReachedThreshold={0.4}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+          contentContainerClassName="gap-2 px-6 pb-28 pt-2"
+        />
+      );
+    }
+  } else if (loading && sections.length === 0) {
     body = (
       <View className="flex-1 items-center justify-center pb-28">
         <Spinner />
       </View>
     );
-  } else if (error && views.length === 0) {
-    body = (
-      <View className="flex-1 items-center justify-center gap-4 px-6 pb-28">
-        <Text className="text-center text-body text-text-muted">{t('library.error')}</Text>
-        <Pressable
-          onPress={refetch}
-          accessibilityRole="button"
-          accessibilityLabel={t('library.retry')}
-          className={`rounded-card bg-text px-5 py-3 ${PRESS}`}
-        >
-          <Text className="text-small font-semibold text-bg">{t('library.retry')}</Text>
-        </Pressable>
-      </View>
-    );
-  } else if (views.length === 0) {
+  } else if (error && sections.length === 0) {
+    body = <LibraryError onRetry={refetch} label={t('library.error')} cta={t('library.retry')} />;
+  } else if (sections.length === 0) {
     body = <LibraryEmpty />;
-  } else if (normalizedQuery && filtered.length === 0) {
-    // Search with no matches: keep the hero + toolbar, center the message below.
-    body = (
-      <View className="flex-1 px-6 pt-2">
-        {header}
-        <LibrarySearchEmpty query={query.trim()} onClear={() => setQuery('')} />
-      </View>
-    );
   } else {
+    // ── At rest: grouped by area ────────────────────────────────────────────
     body = (
-      <FlatList
-        data={filtered}
+      <SectionList
+        sections={sections.map((section) => ({ ...section, data: section.rows }))}
         keyExtractor={(view) => view.user_data.user_place_id}
-        renderItem={({ item }) => (
-          <LibraryPlaceCard view={item} highlight={normalizedQuery} />
+        renderItem={({ item }) => renderCard(item)}
+        renderSectionHeader={({ section }) => (
+          <View className="pb-1 pt-3">
+            <LibraryAreaHeader
+              group={section.group}
+              tappable={section.tappable}
+              here={section.here}
+              label={section.group.key === ELSEWHERE_KEY ? t('library.elsewhere') : undefined}
+            />
+          </View>
         )}
-        ListHeaderComponent={header}
-        ListFooterComponent={
-          loadingMore ? (
-            <View className="items-center py-4">
-              <Spinner />
-            </View>
-          ) : null
-        }
+        ListHeaderComponent={<View className="pb-1">{hero}</View>}
+        ListFooterComponent={loadingMore ? <ListSpinner /> : null}
         onEndReached={loadMore}
         onEndReachedThreshold={0.4}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} />}
         showsVerticalScrollIndicator={false}
+        stickySectionHeadersEnabled={false}
         contentContainerClassName="gap-2 px-6 pb-28 pt-2"
       />
     );
@@ -157,22 +164,46 @@ export default function LibraryScreen() {
   return (
     <View className="flex-1">
       <ScreenScaffold
-        topBar={<LibraryTopBar query={query} onQueryChange={setQuery} onSave={() => saveSheet.open()} />}
+        topBar={
+          <LibraryTopBar
+            query={query}
+            onQueryChange={setQuery}
+            onSave={() => saveSheet.open()}
+          />
+        }
       >
         {body}
       </ScreenScaffold>
-      <LibrarySortSheet
-        open={sortOpen}
-        sort={sort}
-        onClose={() => setSortOpen(false)}
-        onApply={setSort}
-      />
-      <LibraryFilterSheet
-        open={filterOpen}
-        status={status}
-        onClose={() => setFilterOpen(false)}
-        onApply={setStatus}
-      />
+    </View>
+  );
+}
+
+function ListSpinner() {
+  return (
+    <View className="items-center py-4">
+      <Spinner />
+    </View>
+  );
+}
+
+interface LibraryErrorProps {
+  onRetry: () => void;
+  label: string;
+  cta: string;
+}
+
+function LibraryError({ onRetry, label, cta }: LibraryErrorProps) {
+  return (
+    <View className="flex-1 items-center justify-center gap-4 px-6 pb-28">
+      <Text className="text-center text-body text-text-muted">{label}</Text>
+      <Pressable
+        onPress={onRetry}
+        accessibilityRole="button"
+        accessibilityLabel={cta}
+        className={`rounded-card bg-text px-5 py-3 ${PRESS}`}
+      >
+        <Text className="text-small font-semibold text-bg">{cta}</Text>
+      </Pressable>
     </View>
   );
 }

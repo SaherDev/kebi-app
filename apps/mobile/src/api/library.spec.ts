@@ -1,6 +1,7 @@
 import {
   deleteUserPlace,
   getLibrary,
+  getLibraryAreas,
   libraryQueryString,
   saveUserPlace,
   updateUserPlace,
@@ -37,6 +38,14 @@ const USER_DATA = {
   visited_at: null,
 };
 
+const AREA = {
+  key: 'id/bali/canggu',
+  name: 'Canggu',
+  uri: 'kebi://area/aWQvYmFsaS9jYW5nZ3U',
+  icon: '🏄',
+  parent: { key: 'id/bali', name: 'Bali', uri: 'kebi://area/aWQvYmFsaQ', icon: null },
+};
+
 const LIBRARY = {
   places: [{ place: PLACE, user_data: USER_DATA }],
   next_cursor: 'eyJ0cyI6',
@@ -71,24 +80,24 @@ describe('libraryQueryString', () => {
     expect(libraryQueryString({})).toBe('');
   });
 
-  it('serialises sort + filter + paging, omitting unset', () => {
-    expect(libraryQueryString({ sort: 'name', approved: false, limit: 20, cursor: 'abc' })).toBe(
-      '?sort=name&approved=false&limit=20&cursor=abc',
-    );
+  it('serialises search + area + paging, omitting unset', () => {
+    expect(
+      libraryQueryString({ q: 'cang', area: 'id/bali', limit: 20, cursor: 'abc' }),
+    ).toBe('?q=cang&area=id%2Fbali&limit=20&cursor=abc');
   });
 
-  it('keeps visited=false (not dropped as falsy)', () => {
-    expect(libraryQueryString({ visited: false })).toBe('?visited=false');
+  it('drops a blank query rather than searching for nothing', () => {
+    expect(libraryQueryString({ q: '' })).toBe('');
   });
 });
 
 describe('getLibrary', () => {
   it('GETs the library route with the query string', async () => {
     const client = fakeClient(LIBRARY);
-    await getLibrary(client, { sort: 'recent', limit: 50 });
+    await getLibrary(client, { q: 'cang', limit: 50 });
 
     expect(client.calls).toEqual([
-      { method: 'GET', path: `${API_ROUTES.library}?sort=recent&limit=50` },
+      { method: 'GET', path: `${API_ROUTES.library}?q=cang&limit=50` },
     ]);
   });
 
@@ -102,10 +111,45 @@ describe('getLibrary', () => {
     expect(res.next_cursor).toBe('eyJ0cyI6');
   });
 
+  it('reads filtered_total and the row area, tolerating their absence', async () => {
+    const withArea = await getLibrary(
+      fakeClient({
+        ...LIBRARY,
+        filtered_total: 3,
+        places: [{ place: PLACE, user_data: USER_DATA, area: AREA }],
+      }),
+    );
+
+    expect(withArea.filtered_total).toBe(3);
+    expect(withArea.places[0].area?.key).toBe('id/bali/canggu');
+    expect(withArea.places[0].area?.parent?.name).toBe('Bali');
+
+    // A place coarser than a city (and a pre-ADR-165 kebi) both read as null.
+    const without = await getLibrary(fakeClient(LIBRARY));
+    expect(without.filtered_total).toBeNull();
+    expect(without.places[0].area).toBeNull();
+  });
+
   it('fails closed on schema drift', async () => {
     await expect(getLibrary(fakeClient({ places: 'nope' }))).rejects.toBeInstanceOf(
       SchemaValidationError,
     );
+  });
+});
+
+describe('getLibraryAreas', () => {
+  it('GETs the distribution route and validates it', async () => {
+    const client = fakeClient({ areas: [{ area: AREA, count: 11 }] });
+    const res = await getLibraryAreas(client);
+
+    expect(client.calls).toEqual([{ method: 'GET', path: API_ROUTES.libraryAreas }]);
+    expect(res.areas).toHaveLength(1);
+    expect(res.areas[0].count).toBe(11);
+    expect(res.areas[0].area.uri).toBe('kebi://area/aWQvYmFsaS9jYW5nZ3U');
+  });
+
+  it('treats a missing areas list as no areas', async () => {
+    expect((await getLibraryAreas(fakeClient({}))).areas).toEqual([]);
   });
 });
 

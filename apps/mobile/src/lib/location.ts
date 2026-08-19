@@ -72,6 +72,31 @@ export async function getDeviceCity(coords: ChatLocation): Promise<string | null
   }
 }
 
+/**
+ * The ISO country code the device is sitting in, lowercased (`id`, `th`), or
+ * `null` if it can't be resolved.
+ *
+ * This is what lets the Library lead with the areas you're actually in: kebi's
+ * geo keys start with the same code (`id/bali/canggu`), so the two can be
+ * compared **by code, never by name** — matching "Indonesia" against "Bali"
+ * would be exactly the fragility ADR-165's keys exist to avoid.
+ *
+ * Best-effort like everything else here: no permission, no fix, or no geocoder
+ * result all mean `null`, and the caller just falls back to ordering by size.
+ */
+export async function getDeviceCountryCode(coords: ChatLocation): Promise<string | null> {
+  try {
+    const results = await withTimeout(
+      Location.reverseGeocodeAsync({ latitude: coords.lat, longitude: coords.lng }),
+      FIX_TIMEOUT_MS,
+    );
+    const code = results?.[0]?.isoCountryCode;
+    return code ? code.toLowerCase() : null;
+  } catch {
+    return null;
+  }
+}
+
 /** Resolve `promise`, or `null` if it hasn't settled within `ms`. */
 function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T | null> {
   return Promise.race([

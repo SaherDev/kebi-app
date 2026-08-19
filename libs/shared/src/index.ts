@@ -8,6 +8,5 @@ export * from './lib/card-facets';
 export * from './lib/place-display';
 export * from './lib/source-line';
 export * from './lib/library-pills';
-export * from './lib/status-filters';
 export * from './schemas/location';
 export * from './types/sse';

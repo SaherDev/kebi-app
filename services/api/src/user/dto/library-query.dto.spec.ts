@@ -43,4 +43,20 @@ describe('LibraryQueryDto boolean params survive the global pipe', () => {
     expect(dto.visited).toBeUndefined();
     expect(dto.approved).toBeUndefined();
   });
+
+  /**
+   * `whitelist: true` strips any property the DTO does not declare, so an
+   * undeclared param reaches kebi as if the user never typed it — a search that
+   * silently returns the unfiltered library. Declaring them is the fix; this is
+   * the guard.
+   */
+  it('forwards q and area rather than stripping them (ADR-164, ADR-165)', async () => {
+    const dto = await run({ q: 'canggu coffee', area: 'id/bali/canggu' });
+    expect(dto.q).toBe('canggu coffee');
+    expect(dto.area).toBe('id/bali/canggu');
+  });
+
+  it('keeps a geo key with slashes intact', async () => {
+    expect((await run({ area: 'th/bangkok' })).area).toBe('th/bangkok');
+  });
 });

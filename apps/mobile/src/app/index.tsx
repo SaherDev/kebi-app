@@ -85,7 +85,7 @@ export default function HomeScreen() {
         <HomeHero greeting={home.greeting} />
         <QuickPrompts chips={home.chips} onSelect={chat.open} />
         <IntentList intents={intents.intents} onSelect={chat.open} />
-        <StashSection views={stash.views} total={stash.total} />
+        <StashSection views={stash.views} areaName={stash.areaName} total={stash.total} />
       </ScrollView>
     </ScreenScaffold>
   );

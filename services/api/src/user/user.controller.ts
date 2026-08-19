@@ -14,6 +14,7 @@ import type {
   AuthUser,
   MovementProfile,
   IntentsResponse,
+  LibraryAreasResponse,
   LibraryResponse,
   LibraryUserData,
   NormalizedIdentity,
@@ -93,6 +94,13 @@ export class UserController {
     @Query() query: LibraryQueryDto
   ): Promise<LibraryResponse> {
     return this.userService.getLibrary(user.id, query);
+  }
+
+  @Get('library/areas')
+  async getLibraryAreas(
+    @CurrentUser() user: AuthUser
+  ): Promise<LibraryAreasResponse> {
+    return this.userService.getLibraryAreas(user.id);
   }
 
   @Get('intents')

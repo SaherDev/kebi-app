@@ -3,6 +3,8 @@ import type { HttpClient } from './types';
 import { API_ROUTES } from './routes';
 import { validate } from './validate';
 import {
+  LibraryAreasResponse,
+  LibraryAreasResponseSchema,
   LibraryResponse,
   LibraryResponseSchema,
   PlaceView,
@@ -19,11 +21,14 @@ import {
  * Identity is the gateway's verified header — never a body/query field.
  */
 
-/** Query params for a Library page. Server-side sort + status filter; keyset cursor. */
+/**
+ * Query params for a Library page. `q` searches the whole library server-side
+ * (ADR-164) and `area` narrows to one geo key by prefix (ADR-165); paging is
+ * keyset via `cursor`.
+ */
 export interface LibraryQuery {
-  sort?: 'recent' | 'name';
-  visited?: boolean;
-  approved?: boolean;
+  q?: string;
+  area?: string;
   limit?: number;
   cursor?: string;
 }
@@ -31,9 +36,8 @@ export interface LibraryQuery {
 /** Build the `?…` query string, omitting unset params. */
 export function libraryQueryString(query: LibraryQuery): string {
   const params = new URLSearchParams();
-  if (query.sort) params.set('sort', query.sort);
-  if (query.visited !== undefined) params.set('visited', String(query.visited));
-  if (query.approved !== undefined) params.set('approved', String(query.approved));
+  if (query.q) params.set('q', query.q);
+  if (query.area) params.set('area', query.area);
   if (query.limit !== undefined) params.set('limit', String(query.limit));
   if (query.cursor) params.set('cursor', query.cursor);
   const qs = params.toString();
@@ -47,6 +51,17 @@ export async function getLibrary(
 ): Promise<LibraryResponse> {
   const raw = await client.get(`${API_ROUTES.library}${libraryQueryString(query)}`);
   return validate(LibraryResponseSchema, raw, 'LibraryResponse');
+}
+
+/**
+ * GET which areas the caller's saves fall into, with exact whole-library counts
+ * (api-contract.md §GET /v1/user/library/areas, ADR-165) — the Library's
+ * grouping index. Complete, unpaged, and always unfiltered, so it is fetched
+ * once per screen visit rather than per query.
+ */
+export async function getLibraryAreas(client: HttpClient): Promise<LibraryAreasResponse> {
+  const raw = await client.get(API_ROUTES.libraryAreas);
+  return validate(LibraryAreasResponseSchema, raw, 'LibraryAreasResponse');
 }
 
 /**

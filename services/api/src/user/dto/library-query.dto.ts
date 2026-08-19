@@ -26,6 +26,18 @@ const toArray = ({ value }: { value: unknown }): unknown => {
  * never a query field.
  */
 export class LibraryQueryDto {
+  // Free-text search over the whole library (ADR-164). kebi enforces the
+  // ≤200-char bound and treats blank/whitespace as "no search".
+  @IsOptional()
+  @IsString()
+  q?: string;
+
+  // One area by geo key, matched by prefix (ADR-165) — `id/bali` includes its
+  // neighbourhoods. kebi rejects a malformed key with 422.
+  @IsOptional()
+  @IsString()
+  area?: string;
+
   @IsOptional()
   @Transform(toArray)
   @IsArray()
