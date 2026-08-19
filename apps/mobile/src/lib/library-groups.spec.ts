@@ -80,27 +80,24 @@ describe('buildLibraryGroups', () => {
     expect(groups[0].count).toBe(3);
   });
 
-  it('shows the bare code uppercased when the runtime cannot resolve it', () => {
-    const original = Intl.DisplayNames;
-    // Hermes support for DisplayNames varies; the floor must still read as a
-    // deliberate country code, not a broken lowercase string.
-    (Intl as { DisplayNames?: unknown }).DisplayNames = undefined;
-    try {
-      const groups = buildLibraryGroups([
-        count('th/bang-pu-mai', 'Bang Pu Mai', 1),
-        count('th/sam-phran', 'Sam Phran', 1),
-      ]);
-      expect(groups[0].name).toBe('TH');
-    } finally {
-      (Intl as { DisplayNames?: unknown }).DisplayNames = original;
-    }
-  });
-
-  it('names a folded country from its code rather than showing "th"', () => {
+  it('shows the bare code uppercased when nothing can name it', () => {
+    // No lookup supplied — the floor must still read as a deliberate country
+    // code, not the lowercase key or a name that is merely the key.
     const groups = buildLibraryGroups([
       count('th/bang-pu-mai', 'Bang Pu Mai', 1),
       count('th/sam-phran', 'Sam Phran', 1),
     ]);
+
+    expect(groups[0].name).toBe('TH');
+  });
+
+  it('names a folded country from the supplied lookup', () => {
+    const names = (code: string) => (code === 'th' ? 'Thailand' : null);
+    const groups = buildLibraryGroups(
+      [count('th/bang-pu-mai', 'Bang Pu Mai', 1), count('th/sam-phran', 'Sam Phran', 1)],
+      null,
+      names,
+    );
 
     expect(groups[0].name).toBe('Thailand');
   });
@@ -153,8 +150,8 @@ describe('buildLibraryGroups', () => {
     ]);
 
     // Canggu and Thonglor stand; Bangkok's own 3 stands; Ubud is thin and
-    // folds through Bali to Indonesia.
-    expect(groups.map((g) => g.name)).toEqual(['Canggu', 'Thonglor', 'Bangkok', 'Indonesia']);
+    // folds through Bali to its country.
+    expect(groups.map((g) => g.name)).toEqual(['Canggu', 'Thonglor', 'Bangkok', 'ID']);
     expect(groups.map((g) => g.count)).toEqual([11, 4, 3, 2]);
   });
 

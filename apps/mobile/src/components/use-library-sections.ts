@@ -12,6 +12,7 @@ import {
   type LibraryGroup,
 } from '../lib/library-groups';
 import { getDeviceCity, getDeviceCountryCode, getDeviceLocation } from '../lib/location';
+import { useTranslation } from '../i18n/context';
 
 /**
  * The Library at rest: saves grouped by area (ADR-165).
@@ -61,6 +62,7 @@ export interface UseLibrarySections {
 export const ELSEWHERE_KEY = ' elsewhere';
 
 export function useLibrarySections(): UseLibrarySections {
+  const { t } = useTranslation();
   const client = useApiClient();
   // useApiClient() returns a fresh client each render; ref it so the loaders
   // stay stable (no refetch storm / focus-effect churn).
@@ -113,6 +115,20 @@ export function useLibrarySections(): UseLibrarySections {
     };
   }, []);
 
+  /**
+   * Country names, from the translation bundle rather than `Intl.DisplayNames`
+   * — Hermes doesn't implement it, so a runtime lookup silently degraded to the
+   * bare code on device while every test passed under Node. Ref'd so `load`
+   * stays stable.
+   */
+  const countryNamesRef = useRef<(code: string) => string | null>(() => null);
+  countryNamesRef.current = (code: string) => {
+    const key = `countries.${code.toLowerCase()}`;
+    const name = t(key);
+    // i18n-js echoes a missing key back; that is not a name.
+    return name && name !== key && !name.startsWith('[missing') ? name : null;
+  };
+
   const load = useCallback(async (pull = false) => {
     const id = (reqId.current += 1);
     if (pull) setRefreshing(true);
@@ -128,7 +144,7 @@ export function useLibrarySections(): UseLibrarySections {
       if (id !== reqId.current) return;
 
       cursorRef.current = page.next_cursor;
-      setGroups(buildLibraryGroups(index.areas));
+      setGroups(buildLibraryGroups(index.areas, null, countryNamesRef.current));
       setOrphans(elsewhereCount(index.areas, page.total));
       setTotal(page.total);
       setRows(page.places);
