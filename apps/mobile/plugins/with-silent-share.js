@@ -189,13 +189,18 @@ class ShareViewController: UIViewController {
           let attachments = item.attachments, !attachments.isEmpty else {
       return complete()
     }
+    // What the host app calls the thing being shared — TikTok passes the video
+    // caption here. A url is not something a person remembers; a caption is.
+    let caption = item.attributedContentText?.string
+      .trimmingCharacters(in: .whitespacesAndNewlines)
+
     loadSharedText(from: attachments) { [weak self] shared in
       guard let self else { return }
       guard let raw = shared?.trimmingCharacters(in: .whitespacesAndNewlines), !raw.isEmpty else {
         return self.complete()
       }
       self.showReceipt(for: raw)
-      self.send(raw)
+      self.send(raw, caption: caption)
       self.complete()
     }
   }
@@ -233,14 +238,14 @@ class ShareViewController: UIViewController {
 
   /// Hand the save to iOS. Everything that could stop us — no token, no base
   /// URL — falls back to the queue rather than losing the link.
-  private func send(_ rawInput: String) {
+  private func send(_ rawInput: String, caption: String?) {
     guard let defaults = UserDefaults(suiteName: appGroup) else { return }
 
     guard let token = defaults.string(forKey: tokenKey),
           let baseUrl = defaults.string(forKey: apiBaseUrlKey),
           let url = URL(string: baseUrl + "/extract"),
           let body = try? JSONSerialization.data(withJSONObject: ["raw_input": rawInput]) else {
-      enqueue(rawInput, defaults: defaults)
+      enqueue(rawInput, caption: caption, defaults: defaults)
       return
     }
 
@@ -248,7 +253,7 @@ class ShareViewController: UIViewController {
     // server-side request id could never reach the app. This is also what lets
     // the app recognise a background-session retry as the same share.
     let id = UUID().uuidString
-    recordPending(id: id, rawInput: rawInput, defaults: defaults)
+    recordPending(id: id, rawInput: rawInput, caption: caption, defaults: defaults)
 
     var request = URLRequest(url: url)
     request.httpMethod = "POST"
@@ -273,12 +278,12 @@ class ShareViewController: UIViewController {
       )
     }
     guard let session = ShareViewController.uploadSession else {
-      enqueue(rawInput, defaults: defaults)
+      enqueue(rawInput, caption: caption, defaults: defaults)
       return
     }
 
     guard let bodyFile = writeTempBody(body, id: id) else {
-      enqueue(rawInput, defaults: defaults)
+      enqueue(rawInput, caption: caption, defaults: defaults)
       return
     }
     session.uploadTask(with: request, fromFile: bodyFile).resume()
@@ -298,23 +303,29 @@ class ShareViewController: UIViewController {
     }
   }
 
-  private func recordPending(id: String, rawInput: String, defaults: UserDefaults) {
+  private func recordPending(
+    id: String, rawInput: String, caption: String?, defaults: UserDefaults
+  ) {
     var pending = readArray(pendingKey, from: defaults)
-    pending.append([
+    var entry: [String: Any] = [
       "id": id,
       "raw_input": rawInput,
       "shared_at": Int(Date().timeIntervalSince1970 * 1000),
-    ])
+    ]
+    if let caption, !caption.isEmpty { entry["title"] = caption }
+    pending.append(entry)
     writeArray(pending, to: pendingKey, in: defaults)
   }
 
   /// Could not send at all. The app drains this on next open.
-  private func enqueue(_ rawInput: String, defaults: UserDefaults) {
+  private func enqueue(_ rawInput: String, caption: String?, defaults: UserDefaults) {
     var queue = readArray(queueKey, from: defaults)
-    queue.append([
+    var entry: [String: Any] = [
       "raw_input": rawInput,
       "shared_at": Int(Date().timeIntervalSince1970 * 1000),
-    ])
+    ]
+    if let caption, !caption.isEmpty { entry["title"] = caption }
+    queue.append(entry)
     writeArray(queue, to: queueKey, in: defaults)
   }
 

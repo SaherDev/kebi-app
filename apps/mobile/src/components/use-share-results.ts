@@ -24,6 +24,14 @@ import {
 export interface ShareResultRow {
   id: string;
   rawInput: string;
+  /**
+   * What to call this share before a place name exists — the caption the host
+   * app supplied, falling back to the url. Nobody recognises
+   * `vt.tiktok.com/ZSVSVQqHe`; they recognise what the video said.
+   */
+  label: string;
+  /** True when {@link label} is the url itself, so it can be styled as one. */
+  labelIsUrl: boolean;
   sharedAt: number;
   state: 'working' | 'landed' | 'failed';
   placeNames: string[];
@@ -77,6 +85,7 @@ export function useShareResults(): UseShareResults {
       const adopted: PendingShare[] = queued.map((item, index) => ({
         id: `local-${item.shared_at}-${index}`,
         raw_input: item.raw_input,
+        title: item.title,
         shared_at: item.shared_at,
       }));
       writePendingShares([...readPendingShares(), ...adopted]);
@@ -145,7 +154,14 @@ export function useShareResults(): UseShareResults {
       // long reads as broken.
       writePendingShares(
         readPendingShares().map((share) =>
-          share.id === id ? { id: share.id, raw_input: share.raw_input, shared_at: share.shared_at } : share,
+          share.id === id
+          ? {
+              id: share.id,
+              raw_input: share.raw_input,
+              title: share.title,
+              shared_at: share.shared_at,
+            }
+          : share,
         ),
       );
       read();
@@ -180,6 +196,8 @@ function toRow(share: PendingShare): ShareResultRow {
     return {
       id: share.id,
       rawInput: share.raw_input,
+      label: share.title ?? share.raw_input,
+      labelIsUrl: !share.title,
       sharedAt: share.shared_at,
       state: 'working',
       placeNames: [],
@@ -189,6 +207,8 @@ function toRow(share: PendingShare): ShareResultRow {
   return {
     id: share.id,
     rawInput: share.raw_input,
+    label: share.title ?? share.raw_input,
+    labelIsUrl: !share.title,
     sharedAt: share.shared_at,
     state: landed ? 'landed' : 'failed',
     placeNames: share.outcome.place_names,

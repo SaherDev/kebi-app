@@ -44,6 +44,12 @@ export const SHARE_KEYS = {
 export interface PendingShare {
   id: string;
   raw_input: string;
+  /**
+   * What the host app called the thing being shared — TikTok passes the video
+   * caption. Absent when the share carried no text. A url is not something a
+   * person remembers, so this is what the card leads with when it exists.
+   */
+  title?: string;
   /** When the user shared it — epoch ms. What the card shows, not the drain time. */
   shared_at: number;
   /** Absent while still working. */
@@ -62,6 +68,8 @@ export interface PendingOutcome {
 export interface QueuedShare {
   /** The raw shared text or URL, exactly as the extension received it. */
   raw_input: string;
+  /** The host app's own label for it — see {@link PendingShare.title}. */
+  title?: string;
   /** When the user shared it — epoch ms. The app shows this, not the drain time. */
   shared_at: number;
 }

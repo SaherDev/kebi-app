@@ -55,6 +55,34 @@ describe('useShareResults', () => {
     expect(result.current.rows[0].state).toBe('working');
   });
 
+  it('leads with the caption the host app gave us, not the url', async () => {
+    // Nobody recognises vt.tiktok.com/ZSVSVQqHe — they recognise what it said.
+    mockStore.pending = [
+      {
+        id: 'a',
+        raw_input: 'https://vt.tiktok.com/ZSVSVQqHe/',
+        title: 'partying in Uluwatu hits different',
+        shared_at: 1,
+      },
+    ];
+
+    const { result } = renderHook(() => useShareResults());
+
+    await waitFor(() => expect(result.current.rows).toHaveLength(1));
+    expect(result.current.rows[0].label).toBe('partying in Uluwatu hits different');
+    expect(result.current.rows[0].labelIsUrl).toBe(false);
+  });
+
+  it('falls back to the url when the share carried no text', async () => {
+    mockStore.pending = [{ id: 'a', raw_input: 'https://vt.tiktok.com/ZSVSVQqHe/', shared_at: 1 }];
+
+    const { result } = renderHook(() => useShareResults());
+
+    await waitFor(() => expect(result.current.rows).toHaveLength(1));
+    expect(result.current.rows[0].label).toBe('https://vt.tiktok.com/ZSVSVQqHe/');
+    expect(result.current.rows[0].labelIsUrl).toBe(true);
+  });
+
   it('reports a delivered success as landed, with its place names', async () => {
     mockStore.pending = [
       {
