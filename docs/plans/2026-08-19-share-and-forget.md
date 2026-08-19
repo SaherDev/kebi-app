@@ -1,7 +1,7 @@
 # Share and forget — a shared link feeds the taste model without the app ever opening
 
 **Date:** 2026-08-19
-**Status:** planned, not started
+**Status:** credential chain built and tested; extension, drain, and card outstanding
 **Design:** `docs/kebi-app-design-system/kebi-while-you-were-away-mockup.html` (locked)
 **Options explored:** `docs/kebi-app-design-system/kebi-share-forget-options.html`
 
@@ -124,9 +124,10 @@ the better long-term shape, but it is not on the critical path. Worth a handoff 
 
 ## Open questions
 
-1. **Share-token revocation.** Stateless JWT means a token stolen from a device stays valid until
-   expiry — sign-out clears the App Group but cannot revoke. A `share_tokens` product table buys
-   real revocation at the cost of a lookup per share. Which?
+1. ~~**Share-token revocation.**~~ **Resolved:** stateless, no table. Verification already reads
+   user_settings to resolve the principal, so a table would not have saved the round-trip it was
+   meant to justify. Sign-out drops the extension's only copy; the token itself lapses at 90 days.
+   Revisit if a device is ever lost with a live token — that is the one case this does not cover.
 2. **Drain concurrency.** Fallback items hit a 30–60 s path. Serial is slow with 5 queued; parallel
    risks `save_limit_reached` fan-out and rate limits.
 3. **Killed mid-drain.** A queue entry must survive the app dying mid-extract without
