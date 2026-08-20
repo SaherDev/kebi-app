@@ -9,8 +9,12 @@ import { LIBRARY_MIN_GROUP_SIZE } from './library-config';
  * deliberate (pre-summing would make the leaf histogram unavailable), so the
  * rollup below is the client's job.
  *
- * Geo keys are `{cc}/{city}[/{neighborhood}]`, so folding a group into its
- * parent is one segment off the end.
+ * Geo keys are slash-hierarchical, so folding a group into its parent is one
+ * segment off the end. That `/`-nesting is the **only** structure the contract
+ * lets a client rely on: since ADR-169 the segments themselves are geo-registry
+ * provider ids, never names, so nothing here parses or displays one. The
+ * country comes off the handle's `country_code`, and the heading off its
+ * `name`.
  */
 
 /** One section on the Library screen. */
@@ -25,11 +29,20 @@ export interface LibraryGroup {
   count: number;
   /** Every distribution key that folded into this group — the row lookup. */
   memberKeys: string[];
+  /** ISO alpha-2 of this group's country, for home-first ordering. */
+  countryCode: string | null;
 }
 
-/** The `{cc}` head of a geo key — the country the area sits in. */
-function countryOf(key: string): string {
-  return key.split('/')[0];
+/**
+ * The country an area sits in.
+ *
+ * kebi ships it as `country_code` so a client never reads the opaque key. The
+ * fallback is the key's head, which is the ISO code in both the slug and the
+ * id-path era — **rollout only**, for a build talking to a kebi from before the
+ * ADR-169 deploy. Delete it once that is live.
+ */
+function countryCodeOf(key: string, handle: AreaHandle | undefined): string | null {
+  return handle?.country_code ?? key.split('/')[0] ?? null;
 }
 
 /** One level up, or `null` at country level. */
@@ -48,10 +61,14 @@ export type CountryNames = (code: string) => string | null;
  * What a group's heading reads.
  *
  * kebi names every area it has a row for, and that name always wins — except
- * at country level, where it hands back the ISO code itself (`th`) because
- * nothing upstream names countries. A code is not a heading, so it is looked
- * up; failing that the code stands, uppercased, so it reads as a deliberate
- * country code rather than a broken string.
+ * at country level, which this index ships no handle for (kebi's call: a
+ * country is not an area anyone navigates to from here), so the code is looked
+ * up locally. Failing that the code stands, uppercased, so it reads as a
+ * deliberate country code rather than a broken string.
+ *
+ * **The key is never a heading.** Its segments are provider ids since ADR-169
+ * — `id/ChIJoQ8Q…` on screen is worse than useless — so an unnamed group falls
+ * back to its country, which is always known.
  *
  * The lookup is injected rather than `Intl.DisplayNames`, which **Hermes does
  * not implement** — relying on it meant a silent fall back to the bare code on
@@ -60,14 +77,16 @@ export type CountryNames = (code: string) => string | null;
 function displayName(
   key: string,
   handle: AreaHandle | undefined,
+  countryCode: string | null,
   countryNames: CountryNames,
 ): string {
-  // Country level only: everything deeper is named by kebi.
-  const resolved = key.includes('/') ? null : countryNames(key);
-  if (resolved) return resolved;
-  // A "name" that is merely the key is no better than the key.
-  if (handle && handle.name.toLowerCase() !== key.toLowerCase()) return handle.name;
-  return key.includes('/') ? key : key.toUpperCase();
+  const country = countryCode ? countryNames(countryCode) : null;
+  const bareCode = (countryCode ?? '').toUpperCase();
+  // Country level: nothing upstream names countries, so the lookup is the name.
+  if (!key.includes('/')) return country ?? bareCode;
+  // Deeper: kebi named it, unless this is a fold target the distribution never
+  // described — then the country stands in for a key we must not print.
+  return handle?.name ?? country ?? bareCode;
 }
 
 /**
@@ -105,10 +124,14 @@ export function buildLibraryGroups(
     }
   }
 
+  // The country rides along on the bucket rather than being re-derived at the
+  // end: a fold target the distribution never described has no handle of its
+  // own, but its members do, and an ancestor is always in the same country.
   let buckets = areas.map(({ area, count }) => ({
     key: area.key,
     count,
     memberKeys: [area.key],
+    countryCode: countryCodeOf(area.key, area),
   }));
 
   // Fold upward until every group is big enough or has run out of ancestors,
@@ -123,7 +146,10 @@ export function buildLibraryGroups(
     if (foldable.length === 0) break;
     const deepest = Math.max(...foldable.map((bucket) => depthOf(bucket.key)));
 
-    const merged = new Map<string, { key: string; count: number; memberKeys: string[] }>();
+    const merged = new Map<
+      string,
+      { key: string; count: number; memberKeys: string[]; countryCode: string | null }
+    >();
     for (const bucket of buckets) {
       const parent = parentKeyOf(bucket.key);
       const target =
@@ -135,8 +161,14 @@ export function buildLibraryGroups(
       if (existing) {
         existing.count += bucket.count;
         existing.memberKeys.push(...bucket.memberKeys);
+        existing.countryCode ??= bucket.countryCode;
       } else {
-        merged.set(target, { key: target, count: bucket.count, memberKeys: [...bucket.memberKeys] });
+        merged.set(target, {
+          key: target,
+          count: bucket.count,
+          memberKeys: [...bucket.memberKeys],
+          countryCode: bucket.countryCode,
+        });
       }
     }
     buckets = [...merged.values()];
@@ -144,13 +176,15 @@ export function buildLibraryGroups(
 
   const groups = buckets.map((bucket) => {
     const handle = handles.get(bucket.key);
+    const countryCode = handle?.country_code ?? bucket.countryCode;
     return {
       key: bucket.key,
-      name: displayName(bucket.key, handle, countryNames),
+      name: displayName(bucket.key, handle, countryCode, countryNames),
       icon: handle?.icon ?? null,
       uri: handle?.uri ?? '',
       count: bucket.count,
       memberKeys: bucket.memberKeys,
+      countryCode,
     };
   });
 
@@ -166,7 +200,7 @@ export function buildLibraryGroups(
  * Size alone reads wrong on the road: in Bali with saves in Canggu (5), Da Nang
  * (4) and Uluwatu (3), biggest-first splits the two Bali areas apart with a
  * Vietnamese city nobody standing in Canggu wants between them. Matching is on
- * the key's `{cc}` head, never on a name.
+ * `country_code`, never on a name and never on the key.
  *
  * Returns a new array; the input is not mutated.
  */
@@ -175,7 +209,8 @@ export function orderLibraryGroups(
   homeCountry?: string | null,
 ): LibraryGroup[] {
   const home = homeCountry?.toLowerCase() ?? null;
-  const isHome = (group: LibraryGroup) => (home !== null && countryOf(group.key) === home ? 0 : 1);
+  const isHome = (group: LibraryGroup) =>
+    home !== null && group.countryCode?.toLowerCase() === home ? 0 : 1;
 
   return [...groups].sort(
     (a, b) => isHome(a) - isHome(b) || b.count - a.count || a.name.localeCompare(b.name),
@@ -196,15 +231,25 @@ export function groupKeyByAreaKey(groups: LibraryGroup[]): Map<string, string> {
 
 /**
  * How many saves have no area at all — geography coarser than a city, so kebi
- * omits them from the distribution entirely. Derived rather than sent: it is
- * the grand total minus everything that *did* key.
+ * omits them from the distribution entirely.
  *
- * `0` when the total is unknown, so an unpopulated `total` shows no bucket
- * rather than a wrong one. Note this reads high on production until the
- * ADR-163 backfill runs — older rows have no country code, and a key cannot be
- * computed from one that isn't there.
+ * kebi counts them as `unassigned_count`, which is the whole point: derived
+ * client-side it is `total` minus the sum, a number that is only right once the
+ * entire library is paged in and understates itself until then.
+ *
+ * The derivation survives as the rollout fallback for a kebi from before that
+ * field shipped — delete it, and the `served` parameter's null branch, once the
+ * deploy is live. `0` when the total is unknown too, so an unpopulated `total`
+ * shows no bucket rather than a wrong one.
  */
-export function elsewhereCount(areas: LibraryAreaCount[], total: number | null): number {
+export function elsewhereCount(
+  served: number | null | undefined,
+  areas: LibraryAreaCount[],
+  total: number | null,
+): number {
+  // Undefined as well as null: a kebi that omits the field entirely is not
+  // claiming zero, and arithmetic on `undefined` would put NaN on screen.
+  if (served !== null && served !== undefined) return Math.max(0, served);
   if (total === null) return 0;
   const keyed = areas.reduce((sum, entry) => sum + entry.count, 0);
   return Math.max(0, total - keyed);

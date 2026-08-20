@@ -28,13 +28,21 @@ jest.mock('../lib/location', () => ({
 
 function area(key: string, name: string) {
   const parentKey = key.split('/').slice(0, -1).join('/');
+  const countryCode = key.split('/')[0];
   return {
     key,
     name,
     uri: `kebi://area/${key}`,
     icon: null,
+    country_code: countryCode,
     parent: parentKey
-      ? { key: parentKey, name: parentKey, uri: `kebi://area/${parentKey}`, icon: null }
+      ? {
+          key: parentKey,
+          name: parentKey,
+          uri: `kebi://area/${parentKey}`,
+          icon: null,
+          country_code: countryCode,
+        }
       : null,
   };
 }
@@ -56,6 +64,9 @@ describe('useLibrarySections', () => {
         { area: area('id/bali/canggu', 'Canggu'), count: 5 },
         { area: area('jp/tokyo', 'Tokyo'), count: 3 },
       ],
+      // Default to the rollout shape (kebi hasn't shipped the count yet), so
+      // the derivation stays covered; the test below sends a real one.
+      unassigned_count: null,
     });
     mockGetLibrary.mockResolvedValue(
       page([row('a', 'id/bali/canggu'), row('b', 'jp/tokyo')], null, 8),
@@ -174,8 +185,29 @@ describe('useLibrarySections', () => {
     expect(last.group.key).toBe(ELSEWHERE_KEY);
     expect(last.tappable).toBe(false);
     expect(last.rows.map((r) => r.user_data.user_place_id)).toEqual(['orphan']);
-    // 9 total minus the 8 the distribution keyed.
+    // No served count, so it derives: 9 total minus the 8 the distribution keyed.
     expect(last.group.count).toBe(1);
+  });
+
+  it("takes kebi's unassigned_count over the derived shortfall", async () => {
+    // The honest number, and one the client could not reach: four arealess
+    // saves when only one has been paged in. Deriving gives 1 and reads wrong.
+    mockGetLibraryAreas.mockResolvedValue({
+      areas: [
+        { area: area('id/bali/canggu', 'Canggu'), count: 5 },
+        { area: area('jp/tokyo', 'Tokyo'), count: 3 },
+      ],
+      unassigned_count: 4,
+    });
+    mockGetLibrary.mockResolvedValue(
+      page([row('orphan', null), row('a', 'id/bali/canggu')], 'more', 12),
+    );
+    const { result } = renderHook(() => useLibrarySections());
+
+    await waitFor(() => expect(result.current.sections).toHaveLength(2));
+    const last = result.current.sections[1];
+    expect(last.group.key).toBe(ELSEWHERE_KEY);
+    expect(last.group.count).toBe(4);
   });
 
   it('omits elsewhere entirely when every save keyed', async () => {

@@ -145,7 +145,7 @@ export function useLibrarySections(): UseLibrarySections {
 
       cursorRef.current = page.next_cursor;
       setGroups(buildLibraryGroups(index.areas, null, countryNamesRef.current));
-      setOrphans(elsewhereCount(index.areas, page.total));
+      setOrphans(elsewhereCount(index.unassigned_count, index.areas, page.total));
       setTotal(page.total);
       setRows(page.places);
     } catch {
@@ -241,10 +241,12 @@ export function useLibrarySections(): UseLibrarySections {
           name: '',
           icon: null,
           uri: '',
-          // The distribution's shortfall is the honest total; fall back to what
-          // is actually in hand when it can't be derived.
+          // kebi's `unassigned_count` is the honest total; the max guards the
+          // rollout fallback, which understates until the library is paged in.
           count: Math.max(orphans, elsewhere.length),
           memberKeys: [],
+          // These saves have no area, so no country either — never home.
+          countryCode: null,
         },
         tappable: false,
         here: false,

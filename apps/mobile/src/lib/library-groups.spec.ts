@@ -1,16 +1,37 @@
 import type { AreaHandle, LibraryAreaCount } from '@kebi-app/shared';
 import { buildLibraryGroups, elsewhereCount, orderLibraryGroups } from './library-groups';
 
+/**
+ * Names for the parent handles kebi ships alongside a leaf. A key is never a
+ * name — since ADR-169 its segments are provider ids — so the fixture has to
+ * carry them, exactly as the wire does.
+ */
+const PARENT_NAMES: Record<string, string> = {
+  'th/bangkok': 'Bangkok',
+  'id/bali': 'Bali',
+  'jp/tokyo': 'Tokyo',
+  // The id-path era's Bali — same place, unrecognisable as a string.
+  'id/ChIJoQ8Q1Ry0': 'Bali',
+};
+
 function area(key: string, name: string, icon: string | null = null): AreaHandle {
   const segments = key.split('/');
   const parentKey = segments.slice(0, -1).join('/');
+  const countryCode = segments[0];
   return {
     key,
     name,
     uri: `kebi://area/${key}`,
     icon,
+    country_code: countryCode,
     parent: parentKey
-      ? { key: parentKey, name: parentKey, uri: `kebi://area/${parentKey}`, icon: null }
+      ? {
+          key: parentKey,
+          name: PARENT_NAMES[parentKey] ?? parentKey,
+          uri: `kebi://area/${parentKey}`,
+          icon: null,
+          country_code: countryCode,
+        }
       : null,
   };
 }
@@ -41,7 +62,7 @@ describe('buildLibraryGroups', () => {
     ]);
 
     expect(groups).toHaveLength(1);
-    expect(groups[0]).toMatchObject({ name: 'th/bangkok', key: 'th/bangkok', count: 5 });
+    expect(groups[0]).toMatchObject({ name: 'Bangkok', key: 'th/bangkok', count: 5 });
   });
 
   it('keeps the big neighbourhood and folds the thin ones beside it', () => {
@@ -51,7 +72,7 @@ describe('buildLibraryGroups', () => {
       count('id/bali/amed', 'Amed', 2),
     ]);
 
-    expect(groups.map((g) => g.name)).toEqual(['Canggu', 'id/bali']);
+    expect(groups.map((g) => g.name)).toEqual(['Canggu', 'Bali']);
     expect(groups.map((g) => g.count)).toEqual([5, 3]);
   });
 
@@ -238,21 +259,97 @@ describe('orderLibraryGroups', () => {
 });
 
 describe('elsewhereCount', () => {
-  it('is the grand total minus everything that keyed', () => {
+  it("takes kebi's served count over anything derivable", () => {
+    // The derived answer here would be 4; the served one is the truth, and it
+    // is right before the library has finished paging in.
     const areas = [count('id/bali/canggu', 'Canggu', 11), count('jp/tokyo', 'Tokyo', 5)];
 
-    expect(elsewhereCount(areas, 20)).toBe(4);
+    expect(elsewhereCount(3, areas, 20)).toBe(3);
+  });
+
+  it('trusts a served zero — every save resolved to an area', () => {
+    expect(elsewhereCount(0, [count('id/bali/canggu', 'Canggu', 11)], 20)).toBe(0);
+  });
+
+  it('falls back to total minus what keyed when kebi sends no count', () => {
+    const areas = [count('id/bali/canggu', 'Canggu', 11), count('jp/tokyo', 'Tokyo', 5)];
+
+    expect(elsewhereCount(null, areas, 20)).toBe(4);
   });
 
   it('is zero when every save keyed', () => {
-    expect(elsewhereCount([count('id/bali', 'Bali', 8)], 8)).toBe(0);
+    expect(elsewhereCount(null, [count('id/bali', 'Bali', 8)], 8)).toBe(0);
   });
 
   it('is zero when the total is unknown, rather than a wrong number', () => {
-    expect(elsewhereCount([count('id/bali', 'Bali', 8)], null)).toBe(0);
+    expect(elsewhereCount(null, [count('id/bali', 'Bali', 8)], null)).toBe(0);
   });
 
   it('never goes negative if counts and total disagree mid-rollout', () => {
-    expect(elsewhereCount([count('id/bali', 'Bali', 8)], 3)).toBe(0);
+    expect(elsewhereCount(null, [count('id/bali', 'Bali', 8)], 3)).toBe(0);
+  });
+});
+
+describe('opaque geo keys (ADR-169)', () => {
+  // What kebi actually sends since the geo-identity migration: the country
+  // code, then provider place ids. Nothing below the head is renderable.
+  const CANGGU = 'id/ChIJoQ8Q1Ry0/ChIJZZZYbadung';
+  const UBUD = 'id/ChIJoQ8Q1Ry0/ChIJUUUUubud';
+
+  it('never puts a key segment in a heading', () => {
+    // 2 + 2 clears the bar at city level, so the fold stops there.
+    const groups = buildLibraryGroups([count(CANGGU, 'Canggu', 2), count(UBUD, 'Ubud', 2)]);
+
+    // Both are thin, so they fold to a city the distribution only described as
+    // a parent — the old code printed that key. Now it reads as a name.
+    expect(groups).toHaveLength(1);
+    expect(groups[0].name).toBe('Bali');
+    expect(groups[0].name).not.toContain('ChIJ');
+    expect(groups[0].name).not.toContain('/');
+  });
+
+  it('falls back to the country, never the key, when nothing names a group', () => {
+    // A leaf whose parent handle kebi never sent: unnameable, and its key is
+    // unprintable. The country is what is left.
+    const orphan: LibraryAreaCount = {
+      area: {
+        key: 'jp/ChIJXXXXtokyo/ChIJYYYYnezu',
+        name: 'Nezu',
+        uri: 'kebi://area/token',
+        icon: null,
+        country_code: 'jp',
+        parent: null,
+      },
+      count: 1,
+    };
+
+    const groups = buildLibraryGroups([orphan], null, (code) =>
+      code === 'jp' ? 'Japan' : null,
+    );
+
+    expect(groups[0].name).toBe('Japan');
+  });
+
+  it('orders home-first from country_code, with no handle on the fold target', () => {
+    const groups = buildLibraryGroups(
+      [count(CANGGU, 'Canggu', 2), count(UBUD, 'Ubud', 2), count('vn/ChIJDaNang', 'Da Nang', 9)],
+      'id',
+    );
+
+    // Da Nang is far bigger, but standing in Indonesia, Bali leads.
+    expect(groups.map((g) => g.name)).toEqual(['Bali', 'Da Nang']);
+  });
+
+  it('still orders home-first mid-rollout, before country_code ships', () => {
+    // A kebi from before the deploy: no country_code anywhere. The key's head
+    // is the ISO code in both eras, which is what the fallback leans on.
+    const stripped = [count(CANGGU, 'Canggu', 5), count('vn/ChIJDaNang', 'Da Nang', 9)].map(
+      (entry) => ({
+        count: entry.count,
+        area: { ...entry.area, country_code: null, parent: null },
+      }),
+    );
+
+    expect(buildLibraryGroups(stripped, 'id')[0].name).toBe('Canggu');
   });
 });
