@@ -283,14 +283,25 @@ export interface PlaceNote {
  * `uri` is **pre-composed and opaque**: the geo key is slash-hierarchical and
  * passes through kebi's codec, so it is never rebuilt from `key`. Group and
  * match on `key`, never on `name` — neighbourhood names repeat across
- * countries. `parent` is one level up (`id/bali` above `id/bali/canggu`) and is
- * what lets a client roll several leaf areas into one heading.
+ * countries. `parent` is one level up and is what lets a client roll several
+ * leaf areas into one heading.
+ *
+ * Since ADR-169 the key's segments are geo-registry provider ids, not name
+ * slugs: **nothing in a key may be parsed or displayed.** The only structure a
+ * client may rely on is `/`-prefix nesting (a parent key prefixes its
+ * children's). `country_code` exists precisely so grouping and sorting by
+ * country never has to read the key's head.
+ *
+ * `country_code` is `null` only during the rollout window before kebi's
+ * ADR-169 deploy lands; tighten to a plain `string` once it is live.
  */
 export interface AreaHandle {
   key: string;
   name: string;
   uri: string;
   icon: string | null;
+  /** ISO alpha-2 of the country this area sits in. */
+  country_code: string | null;
   parent: AreaHandleParent | null;
 }
 
@@ -368,11 +379,22 @@ export interface LibraryAreaCount {
  * `count` is exact-key: nested areas are separate entries and are *not* folded
  * into their parent, so a client wanting one rolled-up heading sums the entries
  * sharing a `parent` and opens it with `?area=<parent key>` (which matches by
- * prefix). Areas coarser than a city are absent entirely — the "elsewhere"
- * bucket is the client's to name and to count (`total` minus the sum).
+ * prefix).
+ *
+ * Saves whose geography is coarser than a city have no key, no name and no
+ * screen, so they appear in no `areas` entry — they are counted in
+ * `unassigned_count` instead, which completes the index:
+ * `sum(areas[].count) + unassigned_count === total`. Naming that bucket
+ * ("elsewhere") is still the client's call.
+ *
+ * `unassigned_count` is `null` only during the rollout window before kebi's
+ * deploy lands, where the client falls back to deriving it (`total` minus the
+ * sum) — a number that is wrong on screen until the whole library is paged in.
+ * Tighten to a plain `number` once it is live.
  */
 export interface LibraryAreasResponse {
   areas: LibraryAreaCount[];
+  unassigned_count: number | null;
 }
 
 /**

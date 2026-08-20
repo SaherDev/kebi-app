@@ -104,13 +104,16 @@ export const PlaceNoteSchema = z
 
 /**
  * A place's area, as something tappable (ADR-165). `uri` is pre-composed and
- * opaque — handed to the link handler, never rebuilt from `key`.
+ * opaque — handed to the link handler, never rebuilt from `key`, whose segments
+ * are geo-registry provider ids since ADR-169. `country_code` is how a client
+ * groups by country without reading the key.
  */
 export class AreaHandle implements AreaHandleContract {
   readonly key: string;
   readonly name: string;
   readonly uri: string;
   readonly icon: string | null;
+  readonly country_code: string | null;
   readonly parent: AreaHandleParentContract | null;
 
   constructor(p: AreaHandleContract) {
@@ -118,6 +121,7 @@ export class AreaHandle implements AreaHandleContract {
     this.name = p.name;
     this.uri = p.uri;
     this.icon = p.icon;
+    this.country_code = p.country_code;
     this.parent = p.parent;
   }
 }
@@ -127,6 +131,9 @@ const areaHandleShape = {
   name: z.string(),
   uri: z.string(),
   icon: z.string().nullish().transform((v) => v ?? null),
+  // Nullish for the rollout window before kebi's ADR-169 deploy; the callers
+  // fall back to the key's `{cc}` head until then.
+  country_code: z.string().nullish().transform((v) => v ?? null),
 };
 
 const AreaHandleParentSchema = z.object(areaHandleShape);
@@ -240,9 +247,11 @@ export class LibraryAreaCount implements LibraryAreaCountContract {
 
 export class LibraryAreasResponse implements LibraryAreasResponseContract {
   readonly areas: LibraryAreaCountContract[];
+  readonly unassigned_count: number | null;
 
   constructor(p: LibraryAreasResponseContract) {
     this.areas = p.areas;
+    this.unassigned_count = p.unassigned_count;
   }
 }
 
@@ -256,5 +265,8 @@ export const LibraryAreasResponseSchema = z
       )
       .nullish()
       .transform((v) => v ?? []),
+    // `null` (not 0) when absent: a mid-rollout kebi that never sends the field
+    // is not claiming every save resolved, and 0 would silence the bucket.
+    unassigned_count: z.number().nullish().transform((v) => v ?? null),
   })
   .transform((p) => new LibraryAreasResponse(p));

@@ -10,7 +10,8 @@ import type { AreaScreenView } from '../api/models/area';
  * list surface holds an area view to hand over, so every open fetches.
  *
  * **Thin first open.** An area nobody has opened before comes back
- * `profiled: false` — no summary, no level, no icon, a slug-derived name — and
+ * `profiled: false` — no summary, no level, no icon, its name and breadcrumb
+ * straight off the geo registry's stored names (ADR-169) — and
  * that very response is what triggers kebi's profiler. The dressed row exists a
  * few seconds later, so this refetches **once**, after a delay, rather than
  * leaving the user on a bare header until they back out and return. One retry
