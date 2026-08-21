@@ -174,8 +174,10 @@
       "kebi": "kebi found this"
     },
     "empty": {
-      "title": "your stash is empty",
-      "hint": "tap the bookmark up top to save your first place. paste a link or just name it."
+      "hero": "nothing",
+      "heroSuffix": " saved yet",
+      "save": "save your first place",
+      "saveSub": "paste a link, or just name it"
     },
     "toast": {
       "updateFailed": "couldn't update that — try again",
@@ -183,7 +185,10 @@
     },
     "matchCount": "{{count}} of {{total}}",
     "elsewhere": "elsewhere",
-    "here": "you're here"
+    "here": "you're here",
+    "moreFailed": "couldn't load more",
+    "refreshFailed": "couldn't refresh",
+    "searchFailed": "search didn't go through."
   },
   "chat": {
     "greeting": "what's the move?",

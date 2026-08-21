@@ -15,7 +15,9 @@ import { LibraryPlaceCard } from '../components/library-place-card';
 import { LibraryAreaHeader } from '../components/library-area-header';
 import { LibraryEmpty } from '../components/library-empty';
 import { LibrarySearchEmpty } from '../components/library-search-empty';
-import { Spinner } from '../components/spinner';
+import { LibrarySearchSkeleton, LibrarySkeleton } from '../components/library-skeleton';
+import { ErrorRow } from '../components/error-row';
+import { Skeleton } from '../components/skeleton';
 import {
   useLibrarySections,
   ELSEWHERE_KEY,
@@ -23,6 +25,7 @@ import {
 } from '../components/use-library-sections';
 import { useLibrarySearch } from '../components/use-library-search';
 import { useSaveSheet } from '../components/save-sheet-context';
+import { useToast } from '../components/toast-context';
 import { useSavedPlaces } from '../components/saved-places-context';
 import { useTranslation } from '../i18n/context';
 import { PRESS } from '../theme/motion';
@@ -45,6 +48,7 @@ import { PRESS } from '../theme/motion';
 export default function LibraryScreen() {
   const { t } = useTranslation();
   const saveSheet = useSaveSheet();
+  const toast = useToast();
   const { items: savedItems } = useSavedPlaces();
   const [query, setQuery] = useState('');
 
@@ -54,8 +58,18 @@ export default function LibraryScreen() {
   const library = useLibrarySections();
   const search = useLibrarySearch(trimmed);
 
-  const { sections, total, loading, refreshing, loadingMore, error, loadMore, refetch, refresh } =
-    library;
+  const {
+    sections,
+    total,
+    loading,
+    refreshing,
+    loadingMore,
+    error,
+    moreError,
+    loadMore,
+    refetch,
+    refresh,
+  } = library;
 
   // Hero shows the whole stash; fall back to what's loaded until kebi sends `total`.
   const loadedCount = useMemo(
@@ -63,6 +77,22 @@ export default function LibraryScreen() {
     [sections],
   );
   const stashCount = total ?? loadedCount;
+
+  // A read that fails while the list already has rows never replaces them
+  // (ADR-056) — that's a refresh or a background refetch, so it's a toast with
+  // a retry and the stale places stay readable. Fires on the transition only.
+  const hadErrorRef = useRef(false);
+  useEffect(() => {
+    if (error && !hadErrorRef.current && sections.length > 0) {
+      toast.show({
+        tone: 'danger',
+        icon: 'alert',
+        text: t('library.refreshFailed'),
+        action: { label: t('common.retry'), onPress: refresh },
+      });
+    }
+    hadErrorRef.current = error;
+  }, [error, sections.length, refresh, toast, t]);
 
   // The save sheet is a global overlay, so saving from here never changes screen
   // focus — bridge the in-memory saved count to a refetch so a new save appears.
@@ -120,14 +150,24 @@ export default function LibraryScreen() {
   if (searching) {
     // ── Search: flat, whole-library, with the true match count ──────────────
     if (search.loading && search.rows.length === 0) {
+      // Two cards in a result's geometry, under a shimmering count — the list
+      // is never blanked mid-typing (ADR-056).
       body = (
-        <View className="flex-1 items-center justify-center pb-28">
-          <Spinner />
+        <View className="flex-1 px-6 pt-2">
+          <LibrarySearchSkeleton />
         </View>
       );
     } else if (search.error) {
+      // The query stays in the field, so retry is one tap and not a retype.
       body = (
-        <LibraryError onRetry={search.retry} label={t('library.error')} cta={t('library.retry')} />
+        <View className="flex-1 px-6 pt-2">
+          <ErrorRow
+            text={t('library.searchFailed')}
+            actionLabel={t('common.retry')}
+            onAction={search.retry}
+          />
+          <LibrarySearchSkeleton frozen />
+        </View>
       );
     } else if (search.rows.length === 0) {
       body = (
@@ -151,7 +191,13 @@ export default function LibraryScreen() {
               </Text>
             </View>
           }
-          ListFooterComponent={search.loadingMore ? <ListSpinner /> : null}
+          ListFooterComponent={
+            <ListTail
+              loading={search.loadingMore}
+              failed={search.moreError}
+              onRetry={search.loadMore}
+            />
+          }
           onEndReached={search.loadMore}
           onEndReachedThreshold={0.4}
           keyboardShouldPersistTaps="handled"
@@ -162,14 +208,26 @@ export default function LibraryScreen() {
     }
   } else if (loading && sections.length === 0) {
     body = (
-      <View className="flex-1 items-center justify-center pb-28">
-        <Spinner />
+      <View className="flex-1 px-6 pt-2">
+        <LibrarySkeleton />
       </View>
     );
   } else if (error && sections.length === 0) {
-    body = <LibraryError onRetry={refetch} label={t('library.error')} cta={t('library.retry')} />;
+    // The screen keeps the shape it promised: the skeleton freezes and the
+    // failure sits on top of it, so a successful retry fills in (ADR-056).
+    body = (
+      <View className="flex-1 px-6 pt-2">
+        <ErrorRow
+          text={t('library.error')}
+          detail={t('home.nothingLost')}
+          actionLabel={t('common.retry')}
+          onAction={refetch}
+        />
+        <LibrarySkeleton frozen />
+      </View>
+    );
   } else if (sections.length === 0) {
-    body = <LibraryEmpty />;
+    body = <LibraryEmpty onSave={() => saveSheet.open()} />;
   } else {
     // ── At rest: grouped by area ────────────────────────────────────────────
     body = (
@@ -179,7 +237,9 @@ export default function LibraryScreen() {
         renderItem={renderRow}
         renderSectionHeader={renderSectionHeader}
         ListHeaderComponent={<View className="pb-1">{hero}</View>}
-        ListFooterComponent={loadingMore ? <ListSpinner /> : null}
+        ListFooterComponent={
+          <ListTail loading={loadingMore} failed={moreError} onRetry={loadMore} />
+        }
         onEndReached={loadMore}
         onEndReachedThreshold={0.4}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} />}
@@ -209,32 +269,49 @@ export default function LibraryScreen() {
 
 const keyOf = (view: SavedPlaceView) => view.user_data.user_place_id;
 
-function ListSpinner() {
-  return (
-    <View className="items-center py-4">
-      <Spinner />
-    </View>
-  );
-}
-
-interface LibraryErrorProps {
+/**
+ * The end of a paged list (ADR-056): one skeleton row while the next page is on
+ * its way, and — where the old code was silent — one centred line when that page
+ * failed. A list that just stops paging is indistinguishable from a list that
+ * ended, so the tail says which it is. No dot and no card: the rows above are
+ * fine, only their continuation isn't.
+ */
+function ListTail({
+  loading,
+  failed,
+  onRetry,
+}: {
+  loading: boolean;
+  failed: boolean;
   onRetry: () => void;
-  label: string;
-  cta: string;
-}
-
-function LibraryError({ onRetry, label, cta }: LibraryErrorProps) {
+}) {
+  const { t } = useTranslation();
+  if (failed) {
+    return (
+      <View className="flex-row items-center justify-center gap-1 py-4">
+        <Text className="text-small text-text-muted">{t('library.moreFailed')}</Text>
+        <Pressable
+          onPress={onRetry}
+          accessibilityRole="button"
+          accessibilityLabel={t('common.retry')}
+          hitSlop={10}
+          className={`px-2 ${PRESS}`}
+        >
+          <Text className="text-small font-semibold text-text">{t('common.retry')}</Text>
+        </Pressable>
+      </View>
+    );
+  }
+  if (!loading) return null;
   return (
-    <View className="flex-1 items-center justify-center gap-4 px-6 pb-28">
-      <Text className="text-center text-body text-text-muted">{label}</Text>
-      <Pressable
-        onPress={onRetry}
-        accessibilityRole="button"
-        accessibilityLabel={cta}
-        className={`rounded-card bg-text px-5 py-3 ${PRESS}`}
-      >
-        <Text className="text-small font-semibold text-bg">{cta}</Text>
-      </Pressable>
+    <View className="rounded-large bg-surface p-3">
+      <View className="flex-row items-center gap-2.5">
+        <Skeleton height={34} width={34} radius="small" className="!bg-bg" />
+        <Skeleton height={15} width="52%" className="!bg-bg" />
+      </View>
+      <View className="mt-2">
+        <Skeleton height={12} width="66%" className="!bg-bg" />
+      </View>
     </View>
   );
 }
