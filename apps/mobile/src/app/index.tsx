@@ -101,8 +101,10 @@ export default function HomeScreen() {
         <StashSection
           views={stash.views}
           total={stash.total}
+          loading={stash.loading}
           error={stash.error}
           onRetry={refetchStash}
+          onSave={() => saveSheet.open()}
         />
       </ScrollView>
     </ScreenScaffold>

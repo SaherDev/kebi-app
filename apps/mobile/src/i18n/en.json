@@ -39,7 +39,15 @@
     },
     "stashFailed": "couldn't load your stash.",
     "recallFailed": "couldn't load what you asked for.",
-    "nothingLost": "nothing lost."
+    "nothingLost": "nothing lost.",
+    "saveFirst": "save your first place",
+    "saveFirstSub": "paste a link, or just name it",
+    "ghost": {
+      "first": "the ramen place you sent yourself",
+      "firstMeta": "udon · ¥¥ · nezu",
+      "second": "that café from the reel",
+      "secondMeta": "coffee · ¥¥ · tomigaya"
+    }
   },
   "placeMenu": {
     "thisPlace": "this place",
