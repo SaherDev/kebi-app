@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { MOVEMENT_MODES, REACH_VALUES } from '@kebi-app/shared';
 import type { MovementMode, Reach } from '@kebi-app/shared';
@@ -7,10 +7,14 @@ import { ScreenScaffold } from '../components/screen-scaffold';
 import { TopBar } from '../components/top-bar';
 import { IconButton } from '../components/icon-button';
 import { SegmentedControl } from '../components/segmented-control';
+import { ErrorRow } from '../components/error-row';
+import { FieldsSkeleton } from '../components/fields-skeleton';
+import { Spinner } from '../components/spinner';
 import { useToast } from '../components/toast-context';
 import { useApiClient } from '../api/hooks';
 import { getUserSettings, updateMovementProfile } from '../api/user-settings';
 import { useTranslation } from '../i18n/context';
+import type { FormStatus } from '../lib/form-status';
 import { triggerHaptic } from '../lib/haptics';
 import { supabase } from '../lib/supabase';
 import { PRESS } from '../theme/motion';
@@ -43,40 +47,42 @@ export default function GettingAroundScreen() {
   const toast = useToast();
   const client = useApiClient();
 
-  const [loading, setLoading] = useState(true);
+  const [status, setStatus] = useState<FormStatus>('loading');
   const [saving, setSaving] = useState(false);
   const [modes, setModes] = useState<MovementMode[]>([]);
   const [reach, setReach] = useState<Reach>('normal');
   /** Whether a human ever chose these — drives the "kebi is guessing" note. */
   const [chosen, setChosen] = useState(false);
 
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const settings = await getUserSettings(client);
-        if (cancelled) return;
-        const profile = settings.movement_profile;
-        // A seeded profile's modes are still shown — they are a reasonable
-        // starting guess to edit — but it does not count as chosen.
-        if (profile) {
-          setModes(profile.available_modes);
-          setReach(profile.reach);
-          setChosen(profile.isChosen);
-        }
-      } catch {
-        if (cancelled) return;
-        toast.show({ tone: 'danger', icon: 'alert', text: t('gettingAround.loadFailed') });
-      } finally {
-        if (!cancelled) setLoading(false);
+  // Client identity is stable per render, so the load runs once on mount and
+  // again only when the user retries.
+  const clientRef = useRef(client);
+  clientRef.current = client;
+
+  const load = useCallback(async () => {
+    setStatus('loading');
+    try {
+      const settings = await getUserSettings(clientRef.current);
+      const profile = settings.movement_profile;
+      // A seeded profile's modes are still shown — they are a reasonable
+      // starting guess to edit — but it does not count as chosen.
+      if (profile) {
+        setModes(profile.available_modes);
+        setReach(profile.reach);
+        setChosen(profile.isChosen);
       }
-    })();
-    return () => {
-      cancelled = true;
-    };
-    // Client identity is stable per render; run once on mount.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+      setStatus('ready');
+    } catch {
+      // A profile we could not read is not a profile the user cleared, and
+      // saving replaces it whole — so the screen stays unwritable until we
+      // have it (ADR-056).
+      setStatus('failed');
+    }
   }, []);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
 
   const toggleMode = (mode: MovementMode) => {
     triggerHaptic('filter-chip');
@@ -112,25 +118,38 @@ export default function GettingAroundScreen() {
         />
       }
     >
-      {loading ? (
-        <View className="flex-1 items-center justify-center">
-          <ActivityIndicator />
+      <ScrollView
+        contentContainerClassName="gap-6 px-6 pb-8 pt-2"
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Static copy — never waits on the read (ADR-056). */}
+        <View className="gap-1">
+          <Text className="text-eyebrow font-semibold uppercase text-text-soft">
+            {t('gettingAround.eyebrow')}
+          </Text>
+          <Text className="font-bold text-hero text-text">{t('gettingAround.hero')}</Text>
+          <Text className="mt-1 text-small leading-5 text-text-muted">
+            {t('gettingAround.lede')}
+          </Text>
         </View>
-      ) : (
-        <ScrollView
-          contentContainerClassName="gap-6 px-6 pb-8 pt-2"
-          showsVerticalScrollIndicator={false}
-        >
-          <View className="gap-1">
-            <Text className="text-eyebrow font-semibold uppercase text-text-soft">
-              {t('gettingAround.eyebrow')}
-            </Text>
-            <Text className="font-bold text-hero text-text">{t('gettingAround.hero')}</Text>
-            <Text className="mt-1 text-small leading-5 text-text-muted">
-              {t('gettingAround.lede')}
-            </Text>
-          </View>
 
+        {status !== 'ready' ? (
+          <>
+            {status === 'failed' ? (
+              <ErrorRow
+                text={t('gettingAround.loadFailed')}
+                detail={t('gettingAround.loadFailedDetail')}
+                actionLabel={t('common.retry')}
+                onAction={() => void load()}
+              />
+            ) : null}
+            <FieldsSkeleton
+              frozen={status === 'failed'}
+              labels={[t('gettingAround.modes'), t('gettingAround.reach')]}
+            />
+          </>
+        ) : (
+          <>
           {/* modes */}
           <View className="gap-2">
             <Text className="ps-1 text-eyebrow font-semibold uppercase text-text-soft">
@@ -196,9 +215,12 @@ export default function GettingAroundScreen() {
             // Disabled dim via inline style — NativeWind can leave a toggled
             // opacity-* class stuck (see button.tsx).
             style={{ opacity: canSave ? 1 : 0.4 }}
-            className={`items-center justify-center rounded-card bg-text px-4 py-3.5 ${PRESS}`}
+            className={`flex-row items-center justify-center gap-2 rounded-card bg-text px-4 py-3.5 ${PRESS}`}
           >
-            <Text className="text-small font-semibold text-bg">{t('gettingAround.save')}</Text>
+            {saving ? <Spinner /> : null}
+            <Text className="text-small font-semibold text-bg">
+              {saving ? t('gettingAround.saving') : t('gettingAround.save')}
+            </Text>
           </Pressable>
 
           {modes.length === 0 ? (
@@ -206,8 +228,9 @@ export default function GettingAroundScreen() {
               {t('gettingAround.pickOne')}
             </Text>
           ) : null}
-        </ScrollView>
-      )}
+          </>
+        )}
+      </ScrollView>
     </ScreenScaffold>
   );
 }
