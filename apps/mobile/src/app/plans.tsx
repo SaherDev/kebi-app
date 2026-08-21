@@ -9,6 +9,7 @@ import { BillingToggle } from '../components/billing-toggle';
 import { PlanCard } from '../components/plan-card';
 import { PLAN_CONTENT, type BillingCycle } from '../components/plans-content';
 import { useProfile } from '../components/use-profile';
+import { ErrorRow } from '../components/error-row';
 import { useChat } from '../components/chat-context';
 import { PLACE_ORIGIN_CHAT } from '../components/use-open-chat-entity';
 import { useToast } from '../components/toast-context';
@@ -45,7 +46,13 @@ function useReturnToChat() {
 export default function PlansScreen() {
   const { t } = useTranslation();
   const router = useRouter();
-  const { profile, setLocalPlan } = useProfile();
+  const {
+    profile,
+    loading: profileLoading,
+    error: profileError,
+    refetch,
+    setLocalPlan,
+  } = useProfile();
   const toast = useToast();
   const client = useApiClient();
 
@@ -53,13 +60,21 @@ export default function PlansScreen() {
 
   const [cycle, setCycle] = useState<BillingCycle>('monthly');
   const [busy, setBusy] = useState(false);
+  /** Which tier the in-flight switch is heading to — that card shows it. */
+  const [switchingTo, setSwitchingTo] = useState<PlanTier | null>(null);
 
   const currentPlan = profile?.plan ?? null;
+  // Every card is a local constant except one boolean: whether it is yours. So
+  // only the CTAs wait, and if the profile never lands they stay disabled —
+  // read the plans by all means, but don't switch to one blind (ADR-056).
+  const planPending = profileLoading && !profile;
+  const planUnknown = profileError && !profile;
 
   const handleSelect = async (tier: PlanTier) => {
     if (busy || tier === currentPlan) return;
     const previous = currentPlan;
     setBusy(true);
+    setSwitchingTo(tier);
     setLocalPlan(tier); // optimistic — the JWT stays stale until refreshSession
     try {
       await changePlan(client, tier);
@@ -75,6 +90,7 @@ export default function PlansScreen() {
       toast.show({ tone: 'danger', icon: 'alert', text: t('plans.toast.planFailed') });
     } finally {
       setBusy(false);
+      setSwitchingTo(null);
     }
   };
 
@@ -108,6 +124,16 @@ export default function PlansScreen() {
           saveLabel={t('plans.billing.save')}
         />
 
+        {planUnknown ? (
+          <ErrorRow
+            tone="warn"
+            text={t('plans.planUnknown')}
+            detail={t('plans.planUnknownDetail')}
+            actionLabel={t('common.retry')}
+            onAction={refetch}
+          />
+        ) : null}
+
         {/* Plan cards */}
         <View className="gap-3">
           {PLAN_CONTENT.map((content) => (
@@ -116,7 +142,9 @@ export default function PlansScreen() {
               content={content}
               cycle={cycle}
               isCurrent={content.tier === currentPlan}
-              busy={busy}
+              busy={busy || planUnknown}
+              switching={switchingTo === content.tier}
+              pending={planPending}
               onSelect={() => handleSelect(content.tier)}
             />
           ))}

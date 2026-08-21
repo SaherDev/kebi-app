@@ -2,6 +2,8 @@ import { View, Text, Pressable } from 'react-native';
 import { PLAN_TIERS } from '@kebi-app/shared';
 import { PRESS } from '../theme/motion';
 import { Icon } from './icon';
+import { Skeleton } from './skeleton';
+import { Spinner } from './spinner';
 import { useTranslation } from '../i18n/context';
 import type { PlanContent, BillingCycle } from './plans-content';
 
@@ -22,10 +24,26 @@ interface PlanCardProps {
   isCurrent: boolean;
   /** A switch is in flight — disable all cards' CTAs to avoid double-submits. */
   busy: boolean;
+  /** This card is the one being switched to — its CTA shows the progress. */
+  switching?: boolean;
+  /**
+   * We don't know the caller's plan yet, so no card knows whether it is theirs
+   * (ADR-056). Everything else here is a local constant and paints at once;
+   * only the CTA waits, because acting on it could buy a plan you already have.
+   */
+  pending?: boolean;
   onSelect: () => void;
 }
 
-export function PlanCard({ content, cycle, isCurrent, busy, onSelect }: PlanCardProps) {
+export function PlanCard({
+  content,
+  cycle,
+  isCurrent,
+  busy,
+  switching,
+  pending,
+  onSelect,
+}: PlanCardProps) {
   const { t } = useTranslation();
   const { tier, popular } = content;
   const meta = PLAN_TIERS[tier];
@@ -104,14 +122,25 @@ export function PlanCard({ content, cycle, isCurrent, busy, onSelect }: PlanCard
         ))}
       </View>
 
-      {/* CTA */}
-      <PlanCta
-        label={isCurrent ? t('plans.currentCta') : t(`plans.tiers.${tier}.cta`)}
-        popular={popular}
-        disabled={isCurrent || busy}
-        isCurrent={isCurrent}
-        onPress={onSelect}
-      />
+      {/* CTA — the one part of the card that depends on who is looking. */}
+      {pending ? (
+        <Skeleton height={44} radius="card" className={popular ? '!bg-on-fill-chip' : ''} />
+      ) : (
+        <PlanCta
+          label={
+            switching
+              ? t('plans.switching')
+              : isCurrent
+                ? t('plans.currentCta')
+                : t(`plans.tiers.${tier}.cta`)
+          }
+          popular={popular}
+          disabled={isCurrent || busy}
+          isCurrent={isCurrent}
+          busy={switching}
+          onPress={onSelect}
+        />
+      )}
     </View>
   );
 }
@@ -122,12 +151,15 @@ function PlanCta({
   popular,
   disabled,
   isCurrent,
+  busy,
   onPress,
 }: {
   label: string;
   popular: boolean;
   disabled: boolean;
   isCurrent: boolean;
+  /** This card's switch is in flight — a spinner rides in the button. */
+  busy?: boolean;
   onPress: () => void;
 }) {
   // current = muted disabled pill; selectable = primary (inverted on popular).
@@ -155,8 +187,11 @@ function PlanCta({
       accessibilityState={{ disabled }}
       // Inline opacity (not a toggled className) so a disabled card never sticks dim.
       style={{ opacity: disabled && !isCurrent ? 0.4 : 1 }}
-      className={`items-center justify-center rounded-card px-4 py-3 ${isCurrent ? '' : PRESS} ${box}`}
+      className={`flex-row items-center justify-center gap-2 rounded-card px-4 py-3 ${
+        isCurrent ? '' : PRESS
+      } ${box}`}
     >
+      {busy ? <Spinner /> : null}
       <Text className={`text-small font-semibold ${text}`}>{label}</Text>
     </Pressable>
   );

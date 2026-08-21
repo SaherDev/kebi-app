@@ -376,7 +376,10 @@
     "limitReached": {
       "save": "you've hit your save limit",
       "daily": "you've used all your asks today"
-    }
+    },
+    "switching": "switching",
+    "planUnknown": "couldn't check your plan.",
+    "planUnknownDetail": "nothing has changed."
   },
   "auth": {
     "introLead": "save places from tiktok, instagram, wherever. tell me what you want — i find the match.",
@@ -861,5 +864,14 @@
       "second": "the café next door to it",
       "secondMeta": "coffee · ¥¥ · nezu"
     }
+  },
+  "billing": {
+    "emptySub": "nothing to show yet — there's been nothing to bill.",
+    "coming": {
+      "receipts": "receipts and invoices",
+      "method": "payment method",
+      "renews": "when your plan renews"
+    },
+    "emptyHow": "this fills in once there is something to bill. change your plan from"
   }
 }
