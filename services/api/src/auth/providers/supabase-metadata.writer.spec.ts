@@ -99,11 +99,14 @@ describe('SupabaseMetadataWriter', () => {
     expect(http.put).not.toHaveBeenCalled();
   });
 
-  it('dedupes an identical repeat stamp for the same user', async () => {
+  it('writes every stamp, even an identical repeat — there is no dedupe', async () => {
+    // A dedupe here once suppressed the write that repairs a corrupted
+    // account: it tracked what this process last wrote, not what the account
+    // actually stores. Corrections must always land.
     const writer = make();
     await writer.stamp('uuid-4', { internal_id: 'user_y', plan: 'homebody' });
     await writer.stamp('uuid-4', { internal_id: 'user_y', plan: 'homebody' });
-    expect(http.put).toHaveBeenCalledTimes(1);
+    expect(http.put).toHaveBeenCalledTimes(2);
   });
 
   it('re-stamps when a claim changes (e.g. a plan switch)', async () => {
@@ -113,7 +116,7 @@ describe('SupabaseMetadataWriter', () => {
     expect(http.put).toHaveBeenCalledTimes(2);
   });
 
-  it('does not record a successful stamp when the admin call fails', async () => {
+  it('fails open on an admin error and retries on the next stamp', async () => {
     http.put
       .mockReturnValueOnce(throwError(() => new Error('500 admin error')))
       .mockReturnValueOnce(of({ data: {} }));

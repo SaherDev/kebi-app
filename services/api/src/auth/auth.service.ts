@@ -40,10 +40,19 @@ export class AuthService {
 
     await this.seedName(identity);
 
+    // A token claiming a different internal_id than the mapping resolves is a
+    // corrupted account (this has shipped a user an empty library before) — the
+    // re-stamp below repairs it, but the repair must be loud, not silent.
+    const claims = identity.claims;
+    if (claims.internal_id !== undefined && claims.internal_id !== userId) {
+      this.logger.error(
+        `[IDENTITY_DRIFT] Login for ${identity.externalId}: token claims internal_id ${claims.internal_id} but the mapping owns ${userId} — re-stamping the account.`,
+      );
+    }
+
     // Stamp the token from settings only when it's out of sync (different id, or
     // plan/ai_enabled/movement_profile/about_me changed) — steady-state logins
     // skip it.
-    const claims = identity.claims;
     const inSync =
       claims.internal_id === userId &&
       claims.plan === settings.plan &&
