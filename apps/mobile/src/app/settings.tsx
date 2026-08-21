@@ -114,14 +114,13 @@ export default function SettingsScreen() {
       : t('settings.unknownValue');
   const version = Constants.expoConfig?.version ?? '';
 
+  // The sheet holds while this runs and stays open if it throws (ADR-056) —
+  // closing instantly made a slow wipe look like a no-op, and let a second tap
+  // fire a second one.
   const handleNuke = async () => {
+    await deleteUserData(client);
     setNukeOpen(false);
-    try {
-      await deleteUserData(client);
-      toast.show({ tone: 'success', icon: 'trash', text: t('settings.toast.nuked') });
-    } catch {
-      toast.show({ tone: 'danger', icon: 'alert', text: t('settings.toast.nukeFailed') });
-    }
+    toast.show({ tone: 'success', icon: 'trash', text: t('settings.toast.nuked') });
   };
 
   const handleLogout = () => {
@@ -370,6 +369,8 @@ export default function SettingsScreen() {
         title={t('settings.nukeTitle')}
         body={t('settings.nukeBody')}
         confirmLabel={t('settings.nukeConfirm')}
+        busyLabel={t('settings.nuking')}
+        failedText={t('settings.nukeFailedDetail')}
         onConfirm={handleNuke}
         onClose={() => setNukeOpen(false)}
       />

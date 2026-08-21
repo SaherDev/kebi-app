@@ -52,13 +52,28 @@ export interface ActionConfirm {
   text: string;
 }
 
+/**
+ * How one write reports its own failure. A pill flip has nothing to lose and
+ * keeps the generic line; a note has the user's words in it, so it says what
+ * failed and offers the way back (ADR-056).
+ */
+export interface ActionFailure {
+  text: string;
+  onRetry?: () => void;
+}
+
 export interface PlaceActionsValue {
   /**
    * PATCH a save's user-state (approved/liked/visited); optimistic + rollback.
    * `confirm` shows a confirmation toast immediately (design-system: fire the
    * toast on the optimistic action); the error toast supersedes it on failure.
    */
-  update: (view: SavedPlaceView, patch: UpdateUserPlaceRequest, confirm?: ActionConfirm) => Promise<void>;
+  update: (
+    view: SavedPlaceView,
+    patch: UpdateUserPlaceRequest,
+    confirm?: ActionConfirm,
+    failure?: ActionFailure,
+  ) => Promise<boolean>;
   /** Remove a save with an undo window; the DELETE fires only after it elapses. */
   forget: (view: SavedPlaceView) => void;
   /** The view's effective user-state + whether it's been (optimistically) removed. */
@@ -66,7 +81,7 @@ export interface PlaceActionsValue {
 }
 
 const fallback: PlaceActionsValue = {
-  update: async () => undefined,
+  update: async () => false,
   forget: () => undefined,
   resolve: (view) => ({ userData: view.user_data, removed: false }),
 };
@@ -92,7 +107,17 @@ export function PlaceActionsProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const update = useCallback(
-    async (view: SavedPlaceView, patch: UpdateUserPlaceRequest, confirm?: ActionConfirm) => {
+    async (
+      view: SavedPlaceView,
+      patch: UpdateUserPlaceRequest,
+      confirm?: ActionConfirm,
+      /**
+       * How this particular write should report a failure (ADR-056). Without
+       * it every action shares one line — fine for a pill flip, wrong for a
+       * note, where the user typed something and wants to know it survived.
+       */
+      failure?: ActionFailure,
+    ): Promise<boolean> => {
       const id = view.user_data.user_place_id;
       const current = overridesRef.current[id];
       const prev = current?.userData ?? view.user_data;
@@ -101,9 +126,18 @@ export function PlaceActionsProvider({ children }: { children: ReactNode }) {
       try {
         const fresh = await updateUserPlace(clientRef.current, id, patch);
         setOverride(id, { ...overridesRef.current[id], userData: fresh });
+        return true;
       } catch {
         setOverride(id, { ...overridesRef.current[id], userData: prev }); // rollback
-        toast.show({ tone: 'danger', icon: 'alert', text: t('library.toast.updateFailed') });
+        toast.show({
+          tone: 'danger',
+          icon: 'alert',
+          text: failure?.text ?? t('library.toast.updateFailed'),
+          ...(failure?.onRetry
+            ? { action: { label: t('toast.tryAgain'), onPress: failure.onRetry } }
+            : {}),
+        });
+        return false;
       }
     },
     [setOverride, toast, t],

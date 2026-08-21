@@ -21,17 +21,38 @@ export function usePlaceMenuItems(view: SavedPlaceView): ContextMenuItem[] {
       {
         emoji: '👍',
         label: t('placeMenu.looksRight'),
-        onPress: () => void update(view, { approved: true }, { emoji: '👍', text: t('placeMenu.toast.approved') }),
+        // Each action names itself when it fails and offers the retry — one
+        // shared "couldn't update that" covered a pill, a note and a delete
+        // alike (ADR-056). The retry re-fires the same patch.
+        onPress: () =>
+          void update(
+            view,
+            { approved: true },
+            { emoji: '👍', text: t('placeMenu.toast.approved') },
+            { text: t('placeMenu.toast.approveFailed'), onRetry: () => void update(view, { approved: true }) },
+          ),
       },
       {
         emoji: '❤️',
         label: t('placeMenu.like'),
-        onPress: () => void update(view, { liked: true }, { emoji: '❤️', text: t('placeMenu.toast.liked') }),
+        onPress: () =>
+          void update(
+            view,
+            { liked: true },
+            { emoji: '❤️', text: t('placeMenu.toast.liked') },
+            { text: t('placeMenu.toast.likeFailed'), onRetry: () => void update(view, { liked: true }) },
+          ),
       },
       {
         emoji: '✅',
         label: t('placeMenu.beenThere'),
-        onPress: () => void update(view, { visited: true }, { emoji: '✅', text: t('placeMenu.toast.been') }),
+        onPress: () =>
+          void update(
+            view,
+            { visited: true },
+            { emoji: '✅', text: t('placeMenu.toast.been') },
+            { text: t('placeMenu.toast.beenFailed'), onRetry: () => void update(view, { visited: true }) },
+          ),
       },
       {
         emoji: '🗑️',

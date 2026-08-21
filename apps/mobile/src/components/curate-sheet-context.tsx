@@ -110,6 +110,17 @@ export function CurateSheetProvider({ children }: { children: ReactNode }) {
     [target],
   );
 
+  /** Bring the failed write's sheet back, on the anchor it was written for. */
+  const reopen = useCallback(
+    (anchor: CurateAnchor | undefined) => {
+      setTarget((prev) =>
+        anchor ? { anchor, view: prev?.anchor === anchor ? prev.view : null } : { anchor: undefined, view: null },
+      );
+      setIsOpen(true);
+    },
+    [],
+  );
+
   const send = useCallback(
     async (text: string, anchor: CurateAnchor | undefined, forKey: string) => {
       try {
@@ -131,10 +142,20 @@ export function CurateSheetProvider({ children }: { children: ReactNode }) {
               : t('curate.toast.added', { count: String(result.claims_written) }),
         });
       } catch {
-        show({ emoji: '⚠️', text: t('curate.toast.failed') });
+        // The prose is still in `drafts` (see above) — but a draft the user
+        // can't find is a draft they retype (ADR-056). Say it survived, and
+        // carry the way back to it.
+        show({
+          emoji: '⚠️',
+          text: t('curate.toast.failed'),
+          action: {
+            label: t('toast.tryAgain'),
+            onPress: () => reopen(anchor),
+          },
+        });
       }
     },
-    [show, t],
+    [show, t, reopen],
   );
 
   const handleSubmit = useCallback(

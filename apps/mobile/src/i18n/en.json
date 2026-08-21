@@ -9,7 +9,8 @@
     "edit": "edit",
     "search": "search",
     "close": "close",
-    "retry": "retry"
+    "retry": "retry",
+    "failedGeneric": "couldn't do that."
   },
   "nav": {
     "savePlace": "save a place",
@@ -60,7 +61,10 @@
     "toast": {
       "approved": "noted",
       "liked": "liked",
-      "been": "marked as been"
+      "been": "marked as been",
+      "approveFailed": "couldn't approve that one",
+      "likeFailed": "couldn't mark that one",
+      "beenFailed": "couldn't mark that one"
     }
   },
   "note": {
@@ -70,7 +74,8 @@
     "placeholder": "what do you want to remember about this place?",
     "cta": "save",
     "toast": {
-      "saved": "note saved"
+      "saved": "note saved",
+      "saveFailed": "couldn't save your note — kept"
     }
   },
   "place": {
@@ -109,7 +114,8 @@
       "title": "show on",
       "google": "google maps",
       "apple": "apple maps",
-      "waze": "waze"
+      "waze": "waze",
+      "nothingToOpen": "kebi doesn't have an address for this one yet. it fills in as it learns more."
     },
     "refreshFailed": "couldn't refresh",
     "gone": "this place isn't in your stash",
@@ -313,7 +319,9 @@
     "whatYouveAddedSub": "every note you wrote",
     "unknownValue": "—",
     "summaryFailed": "couldn't check these.",
-    "summaryFailedDetail": "your answers are safe."
+    "summaryFailedDetail": "your answers are safe.",
+    "nuking": "nuking",
+    "nukeFailedDetail": "nothing was deleted."
   },
   "plans": {
     "eyebrow": "plans",
@@ -539,7 +547,7 @@
       "added": "added {{count}} notes",
       "addedOne": "added 1 note",
       "nothingNew": "kebi already knew that",
-      "failed": "couldn't send that — your text is still there"
+      "failed": "couldn't add that — kept"
     },
     "thisArea": "this area"
   },

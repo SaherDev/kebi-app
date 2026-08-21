@@ -106,6 +106,8 @@ export default function SharesScreen() {
         body={t('share.clearBody')}
         confirmLabel={t('share.clear')}
         onConfirm={() => {
+          // Local storage — instant and can't fail, so no busy or failed state
+          // to hold (ADR-056). The sheet closes the moment it's done.
           clear();
           setConfirming(false);
         }}

@@ -49,7 +49,12 @@ jest.mock('react-native-gesture-handler', () => ({
   Gesture: { Pan: () => mockChain() },
 }));
 
-jest.mock('expo-linking', () => ({ openURL: jest.fn() }));
+jest.mock('expo-linking', () => ({
+  openURL: jest.fn(),
+  // The maps chooser asks the OS which apps can actually open a URL — a row
+  // that can't work shouldn't be offered (ADR-056).
+  canOpenURL: jest.fn(async () => true),
+}));
 
 function makeView(over: Partial<SavedPlaceView> = {}): SavedPlaceView {
   return {

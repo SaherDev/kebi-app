@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import * as Linking from 'expo-linking';
 import type { PlaceCore } from '@kebi-app/shared';
@@ -13,6 +14,14 @@ import { useTranslation } from '../i18n/context';
  * (a pin / place card, not directions) and dismisses. Only rows whose URL can be
  * built are shown (Google is the durable, exact one; Apple/Waze need coords).
  * Triggered by the place page's "map" button.
+ *
+ * Two states beyond the list (ADR-056). A row is only drawn if the OS says it
+ * can open that URL — offering an app that isn't installed produces a tap that
+ * silently does nothing, which is the same defect as a button that can't work.
+ * And a place with nothing to open at all (no coords, no address, no provider
+ * id — a place kebi just discovered) gets one line rather than an empty box.
+ * The place page hides the trigger in that case, so this is a safety net, not a
+ * screen anyone should reach.
  */
 
 interface MapsChooserSheetProps {
@@ -24,11 +33,44 @@ interface MapsChooserSheetProps {
 export function MapsChooserSheet({ open, onClose, place }: MapsChooserSheetProps) {
   const { t } = useTranslation();
   const targets = buildMapsTargets(place);
+  type MapsApp = (typeof targets)[number]['app'];
+  /** Apps the OS confirms it can open. `null` until the check resolves. */
+  const [openable, setOpenable] = useState<MapsApp[] | null>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    let live = true;
+    void Promise.all(
+      targets.map((target) =>
+        Linking.canOpenURL(target.url)
+          .then((can) => (can ? target.app : null))
+          // A provider that refuses to answer is assumed present: hiding a row
+          // that would have worked is worse than showing one that might not.
+          .catch(() => target.app),
+      ),
+    ).then((apps) => {
+      if (live) setOpenable(apps.filter((app): app is MapsApp => app !== null));
+    });
+    return () => {
+      live = false;
+    };
+    // `targets` is derived from `place` and stable for a given sheet opening.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, place]);
+
+  // Before the check resolves, show everything — the list is instant and a
+  // flash of rows disappearing is worse than a tap that no-ops.
+  const shown = openable === null ? targets : targets.filter((t2) => openable.includes(t2.app));
 
   return (
     <BottomSheet open={open} title={t('place.maps.title')} onClose={onClose}>
+      {shown.length === 0 ? (
+        <Text className="px-1 pb-1 text-body leading-6 text-text-muted">
+          {t('place.maps.nothingToOpen')}
+        </Text>
+      ) : (
       <View className="overflow-hidden rounded-large bg-surface">
-        {targets.map((target, index) => {
+        {shown.map((target, index) => {
           const label = t(`place.maps.${target.app}`);
           return (
             <Pressable
@@ -49,6 +91,7 @@ export function MapsChooserSheet({ open, onClose, place }: MapsChooserSheetProps
           );
         })}
       </View>
+      )}
     </BottomSheet>
   );
 }

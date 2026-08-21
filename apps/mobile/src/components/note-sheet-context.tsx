@@ -28,6 +28,12 @@ export function NoteSheetProvider({ children }: { children: ReactNode }) {
 
   const [view, setView] = useState<SavedPlaceView | null>(null);
   const [isOpen, setIsOpen] = useState(false);
+  /**
+   * The text of a write that hasn't landed yet. The sheet closes optimistically,
+   * so without this a failed save takes the user's words with it (ADR-056) —
+   * the same guarantee the curate composer makes. Cleared once the write lands.
+   */
+  const [draft, setDraft] = useState<string | null>(null);
 
   const open = useCallback((next: SavedPlaceView) => {
     setView(next);
@@ -38,14 +44,34 @@ export function NoteSheetProvider({ children }: { children: ReactNode }) {
   const handleSubmit = useCallback(
     (text: string) => {
       if (!view) return;
-      void update(view, { note: text || null }, { emoji: '📝', text: t('note.toast.saved') });
+      const target = view;
+      setDraft(text);
       close();
+      void (async () => {
+        const ok = await update(
+          target,
+          { note: text || null },
+          { emoji: '📝', text: t('note.toast.saved') },
+          {
+            // Its own sentence: "couldn't update that" covers a like and a
+            // been-there too, and neither of those has anything to keep.
+            text: t('note.toast.saveFailed'),
+            onRetry: () => {
+              setView(target);
+              setIsOpen(true);
+            },
+          },
+        );
+        if (ok) setDraft(null);
+      })();
     },
     [view, update, t, close],
   );
 
   const value = useMemo<NoteSheetContextValue>(() => ({ open }), [open]);
-  const initialNote = view ? resolve(view).userData.note : null;
+  // A draft held from a failed write wins over the stored note — it is the
+  // newer of the two, and the only copy that exists.
+  const initialNote = draft ?? (view ? resolve(view).userData.note : null);
 
   return (
     <NoteSheetContext.Provider value={value}>
