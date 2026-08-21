@@ -46,7 +46,11 @@ load · a spinner inside a button is fine (an action in flight, not content on i
 
 ## Pages
 
-### A. Designed — mockups exist, options chosen, ready to build
+> **Status 2026-08-21:** sections A and B are **built** on `feature/mobile-states` — all 15 screens,
+> plus the three bug fixes. Section C (overlays and sheets) is still open, minus the three report
+> sheets, which shipped with help.
+
+### A. Designed — mockups exist, options chosen, **built**
 
 | # | Screen | File | Route / component | Decided |
 |---|---|---|---|---|
@@ -61,14 +65,14 @@ load · a spinner inside a button is fine (an action in flight, not content on i
 | 9 | about you · getting around | `kebi-forms-states-options.html` | `app/about-you.tsx`, `app/getting-around.tsx` | copy stays, fields shimmer; **failed read = frozen fields, no inputs, no save button**; button becomes spinner + "saving" |
 | 10 | plans · billing | `kebi-plans-states-options.html` | `app/plans.tsx`, `app/billing.tsx` | only the CTAs shimmer (everything else is a local constant); profile failure = read yes / write no; billing names what will live there and drops the empty ••• |
 
-### B. Still to design — screens
+### B. Designed and **built** — the five that had no mockup
 
-| # | Screen | Route | What its file has to decide |
+| # | Screen | File | Decided |
 |---|---|---|---|
-| 11 | help | `app/help.tsx` | the feedback sheet's sending / sent / failed states; whether a failed submit keeps the typed report (it must) |
-| 12 | login | `app/(auth)/login.tsx` | phone/email validation, "sending code" in-flight, provider-unavailable, offline before auth exists |
-| 13 | verify | `app/(auth)/verify.tsx` | wrong code · expired code · rate limited — three different sentences today collapsed; resend cooldown |
-| 14 | splash / auth gate | `app/_layout.tsx`, `components/splash.tsx` | what a slow or failed session restore shows after the splash budget (2.5s) expires — the app's only true blocking wait |
+| 11 | help | `kebi-help-states-options.html` | the report sheets own their send: spinner + "sending", a persistent failure line inside the sheet, the button becomes "try again". **Deviation:** rows with nothing to attach stay open — both sheets were built for that case and the save sheet has a manual link field, so dimming would remove the only way to report an unrecorded failure. Only the sublabel changes. |
+| 12–13 | login · verify | `kebi-auth-states-options.html` | everything existing kept. Offline is warn-toned and says the address is fine; a provider failure says "not you" and points at the social buttons; verify gets four distinct sentences, and an expired code **waives the resend cooldown** |
+| 14 | splash / auth gate | `kebi-boot-states-options.html` | the boot holds while auth is unresolved instead of handing off on a timer — status at 5s, a retry at 15s, "your places are safe" |
+| 27 | `+not-found` | `kebi-boot-states-options.html` | the route the app never had. Until now an unmatched URL rendered expo-router's own error screen |
 
 ### C. Still to design — overlays and sheets
 
@@ -79,8 +83,8 @@ Not routes, but each is a surface a user waits on, and none has a failure state 
 | 15 | save sheet | `save-sheet.tsx` | has empty/filled/saving already; needs **failed** (and it's the app's main write path) |
 | 16 | curate sheet | `curate-sheet.tsx` | insider write with no receipt — a failed submit must keep the prose |
 | 17 | note sheet | `note-sheet.tsx` | same: a note that fails to save must not vanish |
-| 18 | report sheets | `report-save-sheet.tsx`, `report-wrong-answer-sheet.tsx` | sending / sent / failed |
-| 19 | feedback form sheet | `feedback-form-sheet.tsx` | shared with help (#11) — decide once, there |
+| ~~18~~ | ~~report sheets~~ | `report-save-sheet.tsx`, `report-wrong-answer-sheet.tsx` | **done** — shipped with help |
+| ~~19~~ | ~~feedback form sheet~~ | `feedback-form-sheet.tsx` | **done** — shipped with help |
 | 20 | country picker | `country-picker-sheet.tsx` | a long list with a filter: filtered-empty case |
 | 21 | maps chooser | `maps-chooser-sheet.tsx` | "no maps app installed" is an empty state nobody wrote |
 | 22 | confirm sheet | `confirm-sheet.tsx` | the confirmed action's in-flight and failed states (nuke, clear history) |
