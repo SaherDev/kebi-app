@@ -24,7 +24,8 @@ import { useToast } from './toast-context';
 interface BottomSheetProps {
   open: boolean;
   title: string;
-  onClose: () => void;
+  /** Omit to lock the sheet — used while a destructive action is in flight. */
+  onClose?: () => void;
   children: ReactNode;
 }
 
@@ -82,7 +83,7 @@ export function BottomSheet({ open, title, onClose, children }: BottomSheetProps
     })
     .onEnd((e) => {
       if (e.translationY > CLOSE_DISTANCE || e.velocityY > CLOSE_VELOCITY) {
-        runOnJS(onClose)();
+        if (onClose) runOnJS(onClose)();
       } else {
         translateY.value = withSpring(0, SPRING_CONFIG.sheet);
       }
@@ -95,6 +96,7 @@ export function BottomSheet({ open, title, onClose, children }: BottomSheetProps
       <AnimatedPressable
         style={[StyleSheet.absoluteFill, scrimStyle, { backgroundColor: SCRIM_COLOR }]}
         onPress={onClose}
+        disabled={!onClose}
         accessibilityRole="button"
         accessibilityLabel={t('common.close')}
       />

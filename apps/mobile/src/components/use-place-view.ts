@@ -25,10 +25,15 @@ import { useTranslation } from '../i18n/context';
 export type PlaceViewState =
   | { status: 'loading'; view: null }
   | { status: 'ready'; view: PlaceView }
-  | { status: 'failed'; view: null };
+  /** Nothing to show. `retryable` is false for a place that is simply gone. */
+  | { status: 'failed'; view: null; retryable: boolean };
 
 export interface PlaceViewResult {
   state: PlaceViewState;
+  /** True while a seeded screen is still waiting on its by-id refresh. */
+  refreshing: boolean;
+  /** Re-read the place after a recoverable failure (ADR-056). */
+  retry: () => void;
   /** Save this place to the caller's library; no-op while one is in flight. */
   save: () => void;
   /** True while the save request is in flight (the button shows its pending state). */
@@ -54,7 +59,10 @@ export function usePlaceView(placeId: string | undefined): PlaceViewResult {
   // a snapshot taken during the first render would miss it entirely.
   const [loaded, setLoaded] = useState<PlaceView | null>(null);
   const [failed, setFailed] = useState(false);
+  /** A 404 (or a forgotten place): retrying cannot change the answer. */
+  const [gone, setGone] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [attempt, setAttempt] = useState(0);
   const view = loaded ?? seeded;
 
   useEffect(() => {
@@ -67,17 +75,45 @@ export function usePlaceView(placeId: string | undefined): PlaceViewResult {
           setLoaded(fresh);
           setFailed(false);
         }
-      } catch {
+      } catch (err) {
         // `failed` only decides what an *empty* screen shows: a seeded screen
         // keeps rendering what it has, since blanking a card the user is
         // already reading is worse than a stale one.
-        if (live) setFailed(true);
+        if (!live) return;
+        const status =
+          err && typeof err === 'object' && 'status' in err
+            ? (err as { status?: number }).status
+            : undefined;
+        setGone(status === 404);
+        setFailed(true);
       }
     })();
     return () => {
       live = false;
     };
-  }, [placeId]);
+  }, [placeId, attempt]);
+
+  const retry = useCallback(() => {
+    setFailed(false);
+    setAttempt((n) => n + 1);
+  }, []);
+
+  // A refresh that fails behind a seeded screen never replaces it — the places
+  // stays readable and the failure is a toast (ADR-056). Fires on the
+  // transition only, and never for a cold open, which has its own screen.
+  const toldRef = useRef(false);
+  useEffect(() => {
+    if (failed && !toldRef.current && seeded && !gone) {
+      toldRef.current = true;
+      toast.show({
+        tone: 'danger',
+        icon: 'alert',
+        text: t('place.refreshFailed'),
+        action: { label: t('common.retry'), onPress: retry },
+      });
+    }
+    if (!failed) toldRef.current = false;
+  }, [failed, seeded, gone, toast, t, retry]);
 
   const save = useCallback(() => {
     const id = view?.place.id;
@@ -121,9 +157,11 @@ export function usePlaceView(placeId: string | undefined): PlaceViewResult {
   // it reads as failed rather than spinning forever.
   const state: PlaceViewState = view
     ? { status: 'ready', view }
-    : failed || !placeId
-      ? { status: 'failed', view: null }
-      : { status: 'loading', view: null };
+    : !placeId || gone
+      ? { status: 'failed', view: null, retryable: false }
+      : failed
+        ? { status: 'failed', view: null, retryable: true }
+        : { status: 'loading', view: null };
 
-  return { state, save, saving };
+  return { state, refreshing: loaded == null && seeded != null, retry, save, saving };
 }

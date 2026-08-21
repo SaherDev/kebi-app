@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Kebi Library — loading / empty / error</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #FAFAF9; --surface: #F1F1EF; --surface-2: #E8E8E5;
+    --text: #1A1A1A; --text-muted: #8A8A87; --text-soft: #B5B5B1;
+    --success: #4A7C3A; --like: #C2410C; --new-bg: #FEE4D4; --new-fg: #C2410C;
+    --green-bg: rgba(74,124,58,.14); --danger: #D14343; --warn: #B45309;
+    --tag: #D4B891; --tag-rec: #A7C7A0; --tag-cur: #C9C9C4;
+    --page: #FAFAF9; --page-ink: #1A1A1A;
+  }
+  body.dark {
+    --bg: #13110F; --surface: #1C1A17; --surface-2: #26231F;
+    --text: #F5F1EA; --text-muted: #9A938A; --text-soft: #6E6862;
+    --new-bg: #3A2418; --new-fg: #E8A87C; --success: #7FB08C; --like: #E8A87C;
+    --green-bg: rgba(127,176,140,.16); --danger: #E89090; --warn: #D9B45F;
+    --tag-cur: #45413B; --page: #0A0908; --page-ink: #F5F1EA;
+  }
+  html, body { background: var(--page); color: var(--page-ink);
+    font-family: 'Inter', system-ui, sans-serif; -webkit-font-smoothing: antialiased; min-height: 100vh; }
+  .page { max-width: 1800px; margin: 0 auto; padding: 52px 36px 120px; }
+
+  .header { display: flex; align-items: flex-start; justify-content: space-between;
+    padding-bottom: 26px; border-bottom: 1px solid var(--surface-2); }
+  h1 { font-size: 25px; font-weight: 700; letter-spacing: -0.028em; }
+  .meta { font-size: 12px; color: var(--text-muted); margin-top: 5px; }
+  .lede { font-size: 14px; color: var(--text-muted); line-height: 1.65; max-width: 880px; margin-top: 14px; }
+  .lede b { color: var(--page-ink); font-weight: 600; }
+  .lede code, .section-desc code, .note code { font-size: 12px; background: var(--surface-2);
+    border-radius: 5px; padding: 1px 6px; }
+  .theme-toggle { display: flex; background: var(--surface); border-radius: 999px; padding: 3px; flex-shrink: 0; }
+  .theme-toggle button { padding: 6px 14px; background: transparent; border: none; border-radius: 999px;
+    font-family: inherit; font-size: 12px; font-weight: 500; color: var(--text-muted); cursor: pointer; }
+  .theme-toggle button.active { background: var(--page-ink); color: var(--page); }
+
+  .section-head { display: flex; align-items: baseline; justify-content: space-between;
+    margin: 46px 0 12px; padding-bottom: 12px; border-bottom: 1px solid var(--surface-2); }
+  .section-title { font-size: 11px; font-weight: 600; color: var(--text-soft);
+    text-transform: uppercase; letter-spacing: 0.08em; }
+  .section-q { font-size: 12px; color: var(--text-soft); }
+  .section-desc { font-size: 14px; color: var(--text-muted); line-height: 1.6; max-width: 880px; margin-bottom: 24px; }
+  .section-desc b { color: var(--page-ink); font-weight: 600; }
+
+  .row-of { display: flex; flex-wrap: wrap; gap: 34px; align-items: flex-start; }
+  .col { width: 390px; display: flex; flex-direction: column; gap: 10px; }
+  .col.narrow { width: 336px; }
+  .col h2 { font-size: 15px; font-weight: 700; letter-spacing: -0.02em; }
+  .note { font-size: 11.5px; color: var(--text-muted); line-height: 1.55; }
+  .note b { color: var(--page-ink); font-weight: 600; }
+  .tag { display: inline-block; align-self: flex-start; font-size: 10px; font-weight: 700;
+    letter-spacing: .08em; text-transform: uppercase; color: #1A1A1A; background: var(--tag);
+    border-radius: 999px; padding: 3px 10px; }
+  .tag.rec { background: var(--tag-rec); }
+  .tag.cur { background: var(--tag-cur); color: var(--page-ink); }
+
+  /* phone */
+  .phone { width: 390px; height: 760px; background: var(--bg); border-radius: 44px; overflow: hidden;
+    position: relative; box-shadow: 0 0 0 10px #111, 0 0 0 12px var(--page), 0 24px 50px rgba(0,0,0,0.28);
+    display: flex; flex-direction: column; }
+  .status-bar { height: 44px; padding: 15px 30px 0; display: flex; justify-content: space-between;
+    align-items: center; font-size: 14px; font-weight: 600; color: var(--text); flex-shrink: 0; }
+  .batt { width: 22px; height: 11px; border: 1px solid var(--text); border-radius: 3px; position: relative; }
+  .batt::before { content: ''; position: absolute; inset: 1.5px; background: var(--text); border-radius: 1px; }
+  .top-bar { padding: 12px 16px 8px; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
+  .icon-btn { width: 38px; height: 38px; border-radius: 50%; background: var(--surface);
+    display: flex; align-items: center; justify-content: center; border: none; }
+  .icon-btn svg { width: 17px; height: 17px; stroke: var(--text); stroke-width: 1.8; fill: none; }
+  .top-pill { display: flex; align-items: center; background: var(--surface); border-radius: 999px; padding: 0 3px; }
+  .top-pill button { width: 38px; height: 38px; border-radius: 50%; background: transparent; border: none;
+    display: flex; align-items: center; justify-content: center; }
+  .top-pill svg { width: 17px; height: 17px; stroke: var(--text); stroke-width: 1.8; fill: none; }
+  .search-open { width: 238px; padding: 0 4px 0 14px; }
+  .search-open input { flex: 1; background: transparent; border: none; outline: none; font-family: inherit;
+    font-size: 14px; color: var(--text); width: 100%; }
+  .search-open input::placeholder { color: var(--text-soft); }
+  .scroll { flex: 1; overflow: hidden; padding: 8px 24px 16px; display: flex; flex-direction: column; gap: 8px; }
+  .tab-bar { padding: 0 16px 8px; display: flex; justify-content: flex-end; flex-shrink: 0; }
+  .kebi-ai-btn { width: 56px; height: 56px; border-radius: 50%; background: white;
+    border: 1px solid var(--surface-2); display: flex; align-items: center; justify-content: center; }
+  body.dark .kebi-ai-btn { background: #F5EBD3; border: none; }
+  .kebi-ai-btn svg { width: 36px; height: 36px; }
+  .home-indicator { width: 128px; height: 5px; background: var(--text); border-radius: 3px;
+    margin: 2px auto 8px; flex-shrink: 0; opacity: .85; }
+
+  /* library content */
+  .eyebrow { font-size: 11px; font-weight: 600; color: var(--text-soft);
+    text-transform: uppercase; letter-spacing: 0.08em; }
+  .hero { font-size: 34px; font-weight: 700; letter-spacing: -0.03em; line-height: 1.1;
+    color: var(--text); margin-top: 4px; }
+  .hero .suffix { color: var(--text-muted); }
+  .area-head { display: flex; align-items: center; gap: 8px; border-bottom: 1px solid var(--surface-2);
+    padding: 12px 4px 6px; }
+  .area-head .nm { font-size: 14px; font-weight: 700; color: var(--text); }
+  .area-head .ct { font-size: 12px; color: var(--text-soft); }
+  .area-head .here { font-size: 10.5px; font-weight: 600; color: var(--success);
+    background: var(--green-bg); border-radius: 999px; padding: 2px 8px; }
+  .area-head svg { width: 11px; height: 11px; stroke: var(--text-soft); stroke-width: 2.2;
+    fill: none; margin-left: auto; }
+  .card { background: var(--surface); border-radius: 14px; padding: 12px; margin-top: 8px; }
+  .card-head { display: flex; align-items: center; gap: 10px; }
+  .avatar { width: 34px; height: 34px; border-radius: 9px; background: var(--bg);
+    display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
+  .card-title { font-size: 15px; font-weight: 600; color: var(--text); letter-spacing: -0.015em; }
+  .card-title mark { background: rgba(194,65,12,.18); color: var(--like); border-radius: 3px; }
+  .pills { display: flex; gap: 6px; margin-top: 9px; }
+  .pill { font-size: 10.5px; font-weight: 600; padding: 2px 8px; border-radius: 999px; }
+  .pill.green { background: var(--green-bg); color: var(--success); }
+  .pill.warm { background: var(--new-bg); color: var(--new-fg); }
+  .card-line { display: flex; align-items: center; gap: 7px; margin-top: 8px;
+    font-size: 12px; color: var(--text-muted); }
+  .card-line.src { color: var(--text-soft); }
+  .card-line svg { width: 12px; height: 12px; stroke: currentColor; stroke-width: 1.8; fill: none; flex-shrink: 0; }
+  .count-line { font-size: 12px; color: var(--text-muted); padding: 4px 4px 0; }
+
+  /* states */
+  .sk { border-radius: 5px; background: var(--surface-2); position: relative; overflow: hidden; }
+  .sk::after { content: ''; position: absolute; inset: 0; transform: translateX(-100%);
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.6), transparent);
+    animation: shimmer 1.4s linear infinite; }
+  body.dark .sk::after { background: linear-gradient(90deg, transparent, rgba(255,255,255,0.07), transparent); }
+  @keyframes shimmer { 100% { transform: translateX(100%); } }
+  .card .sk { background: var(--bg); }
+  .sk.h10 { height: 10px; } .sk.h12 { height: 12px; } .sk.h15 { height: 15px; }
+  .sk.hero-sk { height: 30px; width: 74%; }
+  .sk.av { width: 34px; height: 34px; border-radius: 9px; }
+  .sk.pill { height: 15px; border-radius: 999px; }
+  .frozen { opacity: .45; } .frozen .sk::after { animation: none; opacity: 0; }
+
+  .ghost { opacity: .38; }
+  .add-row { display: flex; align-items: center; gap: 10px; padding: 12px; margin-top: 8px;
+    border: 1px dashed var(--surface-2); border-radius: 14px; }
+  body.dark .add-row { border-color: var(--surface-2); }
+  .add-av { width: 34px; height: 34px; border-radius: 9px; border: 1px dashed var(--text-soft);
+    display: flex; align-items: center; justify-content: center; font-size: 17px;
+    color: var(--text-muted); flex-shrink: 0; line-height: 1; }
+  .add-lb { font-size: 14.5px; font-weight: 600; color: var(--text-muted); }
+  .add-sub { font-size: 11.5px; color: var(--text-soft); margin-top: 2px; }
+
+  .err-inline { display: flex; align-items: center; gap: 9px; padding: 10px 4px; }
+  .err-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--danger); flex-shrink: 0; }
+  .err-txt { font-size: 12.5px; color: var(--text-muted); flex: 1; line-height: 1.4; }
+  .err-txt b { color: var(--text); font-weight: 600; }
+  .retry { background: transparent; border: none; font-family: inherit; font-size: 13px;
+    font-weight: 600; color: var(--text); padding: 2px 6px; cursor: pointer; }
+  .btn-filled { background: var(--text); color: var(--bg); border: none; font-family: inherit;
+    font-size: 13px; font-weight: 600; padding: 11px 18px; border-radius: 12px; }
+  .center { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 14px; text-align: center; padding: 0 24px 90px; }
+  .center .t { font-size: 22px; font-weight: 700; letter-spacing: -0.025em; }
+  .center .h { font-size: 13.5px; color: var(--text-muted); line-height: 1.45; max-width: 250px; }
+  .center .h strong { color: var(--text); font-weight: 600; }
+  .mascot { animation: breathe 3.2s ease-in-out infinite; transform-origin: 50% 60%; }
+  @keyframes breathe { 0%,100% { transform: scale(1); } 50% { transform: scale(1.045); } }
+  .save-ring { position: relative; }
+  .save-ring::after { content: ''; position: absolute; inset: 3px; border-radius: 50%;
+    border: 2px solid var(--text); opacity: 0; animation: ring 2.2s ease-out infinite; }
+  @keyframes ring { 0% { transform: scale(.7); opacity: .5; } 70%,100% { transform: scale(1.5); opacity: 0; } }
+  .toast-wrap { position: absolute; left: 0; right: 0; bottom: 92px; display: flex; justify-content: center; }
+  .toast { display: flex; align-items: center; gap: 10px; background: var(--text); color: var(--bg);
+    border-radius: 999px; padding: 11px 8px 11px 16px; max-width: 280px; font-size: 13px; font-weight: 500; }
+  .toast button { background: transparent; border: none; font-family: inherit; font-size: 13px;
+    font-weight: 600; color: var(--bg); padding: 2px 10px; }
+  .stage { background: var(--bg); border: 1px dashed var(--surface-2); border-radius: 12px; padding: 14px 12px; }
+
+  .verdict { margin-top: 44px; border: 1px solid var(--surface-2); border-radius: 16px;
+    padding: 22px 24px; background: var(--surface); max-width: 1000px; }
+  .verdict h3 { font-size: 14px; font-weight: 700; margin-bottom: 10px; }
+  .verdict p { font-size: 13px; color: var(--text-muted); line-height: 1.68; }
+  .verdict p + p { margin-top: 10px; }
+  .verdict b { color: var(--page-ink); font-weight: 600; }
+  .verdict code { font-size: 11.5px; background: var(--bg); border-radius: 5px; padding: 1px 6px; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="header">
+    <div>
+      <h1>library — loading, empty, error</h1>
+      <div class="meta">kebi-app · apps/mobile/src/app/library.tsx · applies the kernel</div>
+      <p class="lede">
+        Library is the only screen that already has all three states — and all three are the versions the
+        kernel replaces: a centred <code>&lt;Spinner /&gt;</code>, a mascot empty, and a centred error with a
+        filled retry button. It also has states nothing else does: a <b>search</b> that runs its own request,
+        a <b>paged tail</b>, and <b>area sections</b> whose headers must survive the skeleton.
+      </p>
+    </div>
+    <div class="theme-toggle">
+      <button class="active" data-theme="light">light</button>
+      <button data-theme="dark">dark</button>
+    </div>
+  </div>
+
+  <!-- 1 LOADING -->
+  <div class="section-head">
+    <span class="section-title">1 · first load</span>
+    <span class="section-q">does the hero count wait for the fetch?</span>
+  </div>
+  <p class="section-desc">
+    The hero reads <b>"7 places, saved up"</b> — and the count only exists after the request lands. So the
+    question isn't whether to skeleton the cards (we are), it's whether the biggest text on the screen
+    shimmers with them or holds its space silently.
+  </p>
+
+  <div class="row-of">
+
+    <div class="col">
+      <span class="tag cur">today</span>
+      <h2>a · centred spinner</h2>
+      <div class="phone">
+        <div class="status-bar"><span>9:41</span><div class="batt"></div></div>
+        <div class="top-bar">
+          <button class="icon-btn"><svg viewBox="0 0 24 24"><polyline points="15 6 9 12 15 18"/></svg></button>
+          <div class="top-pill">
+            <button><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></button>
+            <button><svg viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/></svg></button>
+          </div>
+        </div>
+        <div class="scroll"><div class="center"><div style="width:22px;height:22px;border-radius:50%;border:2px solid var(--surface-2);border-top-color:var(--text-muted);animation:rot .8s linear infinite"></div></div></div>
+        <div class="home-indicator"></div>
+      </div>
+      <p class="note">
+        No hero, no headers, no shape — then the whole screen assembles at once. The scroll position and
+        every card land in one jump.
+      </p>
+    </div>
+
+    <div class="col">
+      <span class="tag rec">recommended</span>
+      <h2>b · hero shimmers with the cards</h2>
+      <div class="phone">
+        <div class="status-bar"><span>9:41</span><div class="batt"></div></div>
+        <div class="top-bar">
+          <button class="icon-btn"><svg viewBox="0 0 24 24"><polyline points="15 6 9 12 15 18"/></svg></button>
+          <div class="top-pill">
+            <button><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></button>
+            <button><svg viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/></svg></button>
+          </div>
+        </div>
+        <div class="scroll">
+          <div><div class="eyebrow">your stash</div><div class="sk hero-sk" style="margin-top:8px"></div></div>
+          <div class="area-head"><div class="sk h12" style="width:96px"></div><div class="sk h10" style="width:16px"></div></div>
+          <div class="card">
+            <div class="card-head"><div class="sk av"></div><div class="sk h15" style="width:52%"></div></div>
+            <div class="pills"><div class="sk pill" style="width:46px"></div><div class="sk pill" style="width:38px"></div></div>
+            <div style="margin-top:9px"><div class="sk h12" style="width:66%"></div></div>
+            <div style="margin-top:8px"><div class="sk h10" style="width:38%"></div></div>
+          </div>
+          <div class="card">
+            <div class="card-head"><div class="sk av"></div><div class="sk h15" style="width:64%"></div></div>
+            <div class="pills"><div class="sk pill" style="width:56px"></div></div>
+            <div style="margin-top:9px"><div class="sk h12" style="width:74%"></div></div>
+            <div style="margin-top:8px"><div class="sk h10" style="width:34%"></div></div>
+          </div>
+          <div class="card">
+            <div class="card-head"><div class="sk av"></div><div class="sk h15" style="width:44%"></div></div>
+            <div style="margin-top:9px"><div class="sk h12" style="width:60%"></div></div>
+          </div>
+        </div>
+        <div class="home-indicator"></div>
+      </div>
+      <p class="note">
+        Hero bar, <b>one</b> area header, three cards — the exact geometry of a loaded library, so the real
+        content swaps in without a single pixel moving. One header only: how many areas you have is
+        unknown, and inventing four would be a guess the data may contradict.
+      </p>
+    </div>
+
+    <div class="col">
+      <span class="tag">alternative</span>
+      <h2>c · hero holds, cards shimmer</h2>
+      <div class="phone">
+        <div class="status-bar"><span>9:41</span><div class="batt"></div></div>
+        <div class="top-bar">
+          <button class="icon-btn"><svg viewBox="0 0 24 24"><polyline points="15 6 9 12 15 18"/></svg></button>
+          <div class="top-pill">
+            <button><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></button>
+            <button><svg viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/></svg></button>
+          </div>
+        </div>
+        <div class="scroll">
+          <div><div class="eyebrow">your stash</div><h1 class="hero">&nbsp;</h1></div>
+          <div class="card">
+            <div class="card-head"><div class="sk av"></div><div class="sk h15" style="width:52%"></div></div>
+            <div class="pills"><div class="sk pill" style="width:46px"></div><div class="sk pill" style="width:38px"></div></div>
+            <div style="margin-top:9px"><div class="sk h12" style="width:66%"></div></div>
+          </div>
+          <div class="card">
+            <div class="card-head"><div class="sk av"></div><div class="sk h15" style="width:64%"></div></div>
+            <div style="margin-top:9px"><div class="sk h12" style="width:74%"></div></div>
+          </div>
+          <div class="card">
+            <div class="card-head"><div class="sk av"></div><div class="sk h15" style="width:44%"></div></div>
+            <div style="margin-top:9px"><div class="sk h12" style="width:60%"></div></div>
+          </div>
+        </div>
+        <div class="home-indicator"></div>
+      </div>
+      <p class="note">
+        Hero keeps its height but stays blank, like home does today. Calmer — one less shimmer region — but
+        a 34px hole at the top of the screen reads as a rendering bug, and the eye goes there first.
+      </p>
+    </div>
+
+  </div>
+
+  <!-- 2 SEARCH -->
+  <div class="section-head">
+    <span class="section-title">2 · search</span>
+    <span class="section-q">what happens between keystroke and results?</span>
+  </div>
+  <p class="section-desc">
+    Search is a <b>separate request</b> over the whole stash (<code>useLibrarySearch</code>), flat rather than
+    grouped by area. Today the first keystroke replaces the entire list with a centred spinner, so the screen
+    goes blank while you're still typing. The empty and error cases below are already built — they only need
+    to inherit the kernel's language.
+  </p>
+
+  <div class="row-of">
+
+    <div class="col narrow">
+      <span class="tag cur">today</span>
+      <h2>a · list → spinner</h2>
+      <div class="stage" style="min-height:300px">
+        <div class="top-pill search-open" style="margin-bottom:14px"><input value="ram" readonly /><button><svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div>
+        <div style="display:flex;justify-content:center;padding:70px 0"><div style="width:22px;height:22px;border-radius:50%;border:2px solid var(--surface-2);border-top-color:var(--text-muted);animation:rot .8s linear infinite"></div></div>
+      </div>
+      <p class="note">
+        Three characters in, everything you had is gone and a spinner is centred where the results will be.
+        Every further keystroke re-blanks it.
+      </p>
+    </div>
+
+    <div class="col narrow">
+      <span class="tag rec">recommended</span>
+      <h2>b · skeleton rows under a count</h2>
+      <div class="stage" style="min-height:300px">
+        <div class="top-pill search-open" style="margin-bottom:14px"><input value="ram" readonly /><button><svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div>
+        <div class="count-line"><div class="sk h10" style="width:88px"></div></div>
+        <div class="card">
+          <div class="card-head"><div class="sk av"></div><div class="sk h15" style="width:56%"></div></div>
+          <div style="margin-top:9px"><div class="sk h12" style="width:64%"></div></div>
+        </div>
+        <div class="card">
+          <div class="card-head"><div class="sk av"></div><div class="sk h15" style="width:46%"></div></div>
+          <div style="margin-top:9px"><div class="sk h12" style="width:70%"></div></div>
+        </div>
+      </div>
+      <p class="note">
+        Two skeleton cards (a search usually returns few) under a shimmering match-count line. Same
+        geometry as a result card, so the answer replaces it in place. <b>Only shown on the first search</b> —
+        refining an existing query keeps the current results and dims them instead of re-blanking.
+      </p>
+    </div>
+
+    <div class="col narrow">
+      <span class="tag rec">settled</span>
+      <h2>c · no matches</h2>
+      <div class="stage" style="min-height:300px">
+        <div class="top-pill search-open" style="margin-bottom:14px"><input value="tonkatsu" readonly /><button><svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div>
+        <div style="text-align:center;padding:64px 18px 0">
+          <div style="font-size:15px;font-weight:600;color:var(--text)">nothing matches "tonkatsu"</div>
+          <div style="font-size:12.5px;color:var(--text-muted);margin-top:7px">try a shorter word, or
+            <span style="color:var(--like);font-weight:600">clear search</span></div>
+        </div>
+      </div>
+      <p class="note">
+        Already built (<code>library-search-empty.tsx</code>) and already right — the query echoed back and
+        the undo inline. <b>No ghost rows, no add-row here</b>: you got here by typing, so the fix is
+        untyping. Unchanged by this pass.
+      </p>
+    </div>
+
+    <div class="col narrow">
+      <span class="tag rec">recommended</span>
+      <h2>d · search failed</h2>
+      <div class="stage" style="min-height:300px">
+        <div class="top-pill search-open" style="margin-bottom:14px"><input value="ram" readonly /><button><svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div>
+        <div class="err-inline"><span class="err-dot"></span><span class="err-txt"><b>search didn't go through.</b></span><button class="retry">retry</button></div>
+        <div class="frozen">
+          <div class="card">
+            <div class="card-head"><div class="sk av"></div><div class="sk h15" style="width:56%"></div></div>
+            <div style="margin-top:9px"><div class="sk h12" style="width:64%"></div></div>
+          </div>
+          <div class="card">
+            <div class="card-head"><div class="sk av"></div><div class="sk h15" style="width:46%"></div></div>
+            <div style="margin-top:9px"><div class="sk h12" style="width:70%"></div></div>
+          </div>
+        </div>
+      </div>
+      <p class="note">
+        The kernel's error over the frozen search skeleton. Replaces today's centred block + filled button,
+        which threw away the search bar's context. The query stays in the field, so retry is one tap and
+        not a retype.
+      </p>
+    </div>
+
+  </div>
+
+  <!-- 3 EMPTY -->
+  <div class="section-head">
+    <span class="section-title">3 · empty stash</span>
+    <span class="section-q">keep the mascot, or apply the kernel?</span>
+  </div>
+  <p class="section-desc">
+    This is the one empty state the app already has — <code>library-empty.tsx</code>, mascot and pulsing
+    bookmark ring, built from <code>kebi-library-empty-mockup.html</code>. The kernel says ghost preview +
+    add-row. They disagree, so pick.
+  </p>
+
+  <div class="row-of">
+
+    <div class="col">
+      <span class="tag cur">today</span>
+      <h2>a · mascot + bookmark ring</h2>
+      <div class="phone">
+        <div class="status-bar"><span>9:41</span><div class="batt"></div></div>
+        <div class="top-bar">
+          <button class="icon-btn"><svg viewBox="0 0 24 24"><polyline points="15 6 9 12 15 18"/></svg></button>
+          <div class="top-pill">
+            <button><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></button>
+            <button class="save-ring"><svg viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/></svg></button>
+          </div>
+        </div>
+        <div class="scroll">
+          <div class="eyebrow">your stash</div>
+          <div class="center">
+            <svg class="mascot" width="80" height="80" viewBox="0 0 64 64"><ellipse cx="32" cy="38" rx="20" ry="20" fill="#D4B891"/><ellipse cx="32" cy="42" rx="13" ry="13" fill="#F5EBD3"/><ellipse cx="13" cy="34" rx="3.5" ry="6" fill="#A89070" transform="rotate(-25 13 34)"/><ellipse cx="51" cy="34" rx="3.5" ry="6" fill="#A89070" transform="rotate(25 51 34)"/><circle cx="25" cy="30" r="3.5" fill="white"/><circle cx="39" cy="30" r="3.5" fill="white"/><circle cx="25" cy="30" r="1.7" fill="#1A1A1A"/><circle cx="39" cy="30" r="1.7" fill="#1A1A1A"/><path d="M30 33 L34 33 L32 36 Z" fill="#C87A4A"/><path d="M30 14 Q32 10 34 14" stroke="#8B7355" stroke-width="1.6" fill="none" stroke-linecap="round"/></svg>
+            <div class="t">your stash is empty</div>
+            <div class="h">tap the <strong>bookmark</strong> up top to save your first place. paste a link or just name it.</div>
+          </div>
+        </div>
+        <div class="tab-bar"><div class="kebi-ai-btn"><svg viewBox="0 0 64 64"><ellipse cx="32" cy="38" rx="20" ry="20" fill="#D4B891"/><ellipse cx="32" cy="42" rx="13" ry="13" fill="#F5EBD3"/><circle cx="25" cy="30" r="3.5" fill="white"/><circle cx="39" cy="30" r="3.5" fill="white"/><circle cx="25" cy="30" r="1.7" fill="#1A1A1A"/><circle cx="39" cy="30" r="1.7" fill="#1A1A1A"/><path d="M30 33 L34 33 L32 36 Z" fill="#C87A4A"/></svg></div></div>
+        <div class="home-indicator"></div>
+      </div>
+      <p class="note">
+        Warm, and the ring teaches the real save control. But it's a <b>different empty</b> from every other
+        screen's, and the mascot already carries the loading screen and the splash — a third job dilutes it.
+      </p>
+    </div>
+
+    <div class="col">
+      <span class="tag rec">recommended</span>
+      <h2>b · ghost cards + add-row, ring kept</h2>
+      <div class="phone">
+        <div class="status-bar"><span>9:41</span><div class="batt"></div></div>
+        <div class="top-bar">
+          <button class="icon-btn"><svg viewBox="0 0 24 24"><polyline points="15 6 9 12 15 18"/></svg></button>
+          <div class="top-pill">
+            <button><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></button>
+            <button class="save-ring"><svg viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/></svg></button>
+          </div>
+        </div>
+        <div class="scroll">
+          <div><div class="eyebrow">your stash</div><h1 class="hero">nothing<span class="suffix"> saved yet</span></h1></div>
+          <div class="ghost">
+            <div class="card">
+              <div class="card-head"><div class="avatar">🍜</div><div class="card-title">the ramen place you sent yourself</div></div>
+              <div class="pills"><span class="pill green">saved</span></div>
+              <div class="card-line">udon · ¥¥ · nezu</div>
+            </div>
+            <div class="card">
+              <div class="card-head"><div class="avatar">☕</div><div class="card-title">that café from the reel</div></div>
+              <div class="card-line">coffee · ¥¥ · tomigaya</div>
+            </div>
+          </div>
+          <div class="add-row">
+            <div class="add-av">+</div>
+            <div><div class="add-lb">save your first place</div><div class="add-sub">paste a link, or just name it</div></div>
+          </div>
+        </div>
+        <div class="tab-bar"><div class="kebi-ai-btn"><svg viewBox="0 0 64 64"><ellipse cx="32" cy="38" rx="20" ry="20" fill="#D4B891"/><ellipse cx="32" cy="42" rx="13" ry="13" fill="#F5EBD3"/><circle cx="25" cy="30" r="3.5" fill="white"/><circle cx="39" cy="30" r="3.5" fill="white"/><circle cx="25" cy="30" r="1.7" fill="#1A1A1A"/><circle cx="39" cy="30" r="1.7" fill="#1A1A1A"/><path d="M30 33 L34 33 L32 36 Z" fill="#C87A4A"/></svg></div></div>
+        <div class="home-indicator"></div>
+      </div>
+      <p class="note">
+        The hero stays and answers itself — <b>"nothing saved yet"</b> in the same slot that will read
+        "7 places, saved up". Two ghost cards, then the add-row as a dashed card in the list. The
+        <b>bookmark ring is kept</b>, so both routes to saving are taught at once and there's still no
+        primary button. Same composition as home's empty, one size up.
+      </p>
+    </div>
+
+    <div class="col">
+      <span class="tag">middle</span>
+      <h2>c · mascot + add-row, no ghosts</h2>
+      <div class="phone">
+        <div class="status-bar"><span>9:41</span><div class="batt"></div></div>
+        <div class="top-bar">
+          <button class="icon-btn"><svg viewBox="0 0 24 24"><polyline points="15 6 9 12 15 18"/></svg></button>
+          <div class="top-pill">
+            <button><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></button>
+            <button class="save-ring"><svg viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/></svg></button>
+          </div>
+        </div>
+        <div class="scroll">
+          <div class="eyebrow">your stash</div>
+          <div class="center" style="padding-bottom:60px">
+            <svg class="mascot" width="72" height="72" viewBox="0 0 64 64"><ellipse cx="32" cy="38" rx="20" ry="20" fill="#D4B891"/><ellipse cx="32" cy="42" rx="13" ry="13" fill="#F5EBD3"/><ellipse cx="13" cy="34" rx="3.5" ry="6" fill="#A89070" transform="rotate(-25 13 34)"/><ellipse cx="51" cy="34" rx="3.5" ry="6" fill="#A89070" transform="rotate(25 51 34)"/><circle cx="25" cy="30" r="3.5" fill="white"/><circle cx="39" cy="30" r="3.5" fill="white"/><circle cx="25" cy="30" r="1.7" fill="#1A1A1A"/><circle cx="39" cy="30" r="1.7" fill="#1A1A1A"/><path d="M30 33 L34 33 L32 36 Z" fill="#C87A4A"/></svg>
+            <div class="t">your stash is empty</div>
+          </div>
+          <div class="add-row" style="margin-bottom:16px">
+            <div class="add-av">+</div>
+            <div><div class="add-lb">save your first place</div><div class="add-sub">paste a link, or just name it</div></div>
+          </div>
+        </div>
+        <div class="tab-bar"><div class="kebi-ai-btn"><svg viewBox="0 0 64 64"><ellipse cx="32" cy="38" rx="20" ry="20" fill="#D4B891"/><ellipse cx="32" cy="42" rx="13" ry="13" fill="#F5EBD3"/><circle cx="25" cy="30" r="3.5" fill="white"/><circle cx="39" cy="30" r="3.5" fill="white"/><circle cx="25" cy="30" r="1.7" fill="#1A1A1A"/><circle cx="39" cy="30" r="1.7" fill="#1A1A1A"/><path d="M30 33 L34 33 L32 36 Z" fill="#C87A4A"/></svg></div></div>
+        <div class="home-indicator"></div>
+      </div>
+      <p class="note">
+        Keeps the mascot's warmth and gains a real affordance. But the add-row floats at the bottom with
+        nothing above it, so it reads as a footer rather than as the first row of a list that will grow.
+      </p>
+    </div>
+
+  </div>
+
+  <!-- 4 ERROR -->
+  <div class="section-head">
+    <span class="section-title">4 · failures</span>
+    <span class="section-q">first load, and the paged tail</span>
+  </div>
+  <p class="section-desc">
+    Two different failures with two different answers: nothing on screen yet, versus a list you're already
+    scrolling. The second one is where today's code has nothing at all — <code>loadMore</code> failing is
+    completely silent, so an infinite list just quietly stops being infinite.
+  </p>
+
+  <div class="row-of">
+
+    <div class="col">
+      <span class="tag cur">today</span>
+      <h2>a · centred block + filled retry</h2>
+      <div class="phone">
+        <div class="status-bar"><span>9:41</span><div class="batt"></div></div>
+        <div class="top-bar">
+          <button class="icon-btn"><svg viewBox="0 0 24 24"><polyline points="15 6 9 12 15 18"/></svg></button>
+          <div class="top-pill">
+            <button><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></button>
+            <button><svg viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/></svg></button>
+          </div>
+        </div>
+        <div class="scroll">
+          <div class="center">
+            <div style="font-size:14px;color:var(--text-muted)">couldn't load your places</div>
+            <button class="btn-filled">try again</button>
+          </div>
+        </div>
+        <div class="home-indicator"></div>
+      </div>
+      <p class="note">
+        The whole screen becomes the error, and the filled button is the same slab we rejected on the empty
+        state. Nothing survives a two-second blip.
+      </p>
+    </div>
+
+    <div class="col">
+      <span class="tag rec">recommended</span>
+      <h2>b · frozen skeleton + retry line</h2>
+      <div class="phone">
+        <div class="status-bar"><span>9:41</span><div class="batt"></div></div>
+        <div class="top-bar">
+          <button class="icon-btn"><svg viewBox="0 0 24 24"><polyline points="15 6 9 12 15 18"/></svg></button>
+          <div class="top-pill">
+            <button><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></button>
+            <button><svg viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/></svg></button>
+          </div>
+        </div>
+        <div class="scroll">
+          <div><div class="eyebrow">your stash</div><h1 class="hero">&nbsp;</h1></div>
+          <div class="err-inline"><span class="err-dot"></span><span class="err-txt"><b>couldn't load your places.</b> nothing lost.</span><button class="retry">retry</button></div>
+          <div class="frozen">
+            <div class="card">
+              <div class="card-head"><div class="sk av"></div><div class="sk h15" style="width:52%"></div></div>
+              <div class="pills"><div class="sk pill" style="width:46px"></div></div>
+              <div style="margin-top:9px"><div class="sk h12" style="width:66%"></div></div>
+            </div>
+            <div class="card">
+              <div class="card-head"><div class="sk av"></div><div class="sk h15" style="width:64%"></div></div>
+              <div style="margin-top:9px"><div class="sk h12" style="width:74%"></div></div>
+            </div>
+            <div class="card">
+              <div class="card-head"><div class="sk av"></div><div class="sk h15" style="width:44%"></div></div>
+              <div style="margin-top:9px"><div class="sk h12" style="width:60%"></div></div>
+            </div>
+          </div>
+        </div>
+        <div class="home-indicator"></div>
+      </div>
+      <p class="note">
+        The kernel: skeleton stops shimmering, dims to 45%, retry line on top. The screen keeps the shape it
+        promised, so a successful retry <b>fills in</b> rather than rebuilding. Pull-to-refresh still works
+        as a second way out.
+      </p>
+    </div>
+
+    <div class="col narrow">
+      <span class="tag rec">recommended</span>
+      <h2>c · the tail failed</h2>
+      <div class="stage" style="min-height:300px">
+        <div class="card" style="margin-top:0">
+          <div class="card-head"><div class="avatar">🍷</div><div class="card-title">Saint Jardim</div></div>
+          <div class="card-line">portuguese · ¥¥¥ · shimokitazawa</div>
+        </div>
+        <div class="err-inline" style="justify-content:center;padding:16px 4px">
+          <span class="err-txt" style="flex:0 0 auto">couldn't load more</span>
+          <button class="retry">retry</button>
+        </div>
+      </div>
+      <p class="note">
+        Where a skeleton row would have been, one centred line replaces it — no dot, no card, because the
+        list above is fine and only its continuation failed. Scrolling to the bottom again re-triggers it, so
+        the retry is a convenience rather than the only way. <b>Same slot handles the search list's tail.</b>
+      </p>
+    </div>
+
+    <div class="col narrow">
+      <span class="tag rec">settled</span>
+      <h2>d · refresh failed</h2>
+      <div class="stage" style="min-height:300px; position:relative">
+        <div class="card" style="margin-top:0">
+          <div class="card-head"><div class="avatar">🍜</div><div class="card-title">Kamachiku</div></div>
+          <div class="pills"><span class="pill green">saved</span><span class="pill green">went</span></div>
+          <div class="card-line">udon · ¥¥ · nezu</div>
+        </div>
+        <div class="card">
+          <div class="card-head"><div class="avatar">☕</div><div class="card-title">Fuglen</div></div>
+          <div class="card-line">coffee · ¥¥ · tomigaya</div>
+        </div>
+        <div style="display:flex;justify-content:center;padding-top:30px"><div class="toast">couldn't refresh<button>retry</button></div></div>
+      </div>
+      <p class="note">
+        Pull-to-refresh that fails never touches the list — the spinner retracts, the places stay, a 5s toast
+        carries the retry. Identical rule on home and everywhere else content already exists.
+      </p>
+    </div>
+
+  </div>
+
+  <div class="verdict">
+    <h3>library, decided</h3>
+    <p>
+      <b>1b</b> — hero bar + one area header + three cards, all shimmering. The hero is the count, and a
+      blank 34px hero hole looks more broken than a shimmering one.
+    </p>
+    <p>
+      <b>2b + 2c + 2d</b> — first search shows two skeleton cards under a shimmering count; refining a query
+      dims the existing results instead of blanking them; "no matches" stays exactly as built; a failed
+      search freezes its skeleton and keeps the query in the field.
+    </p>
+    <p>
+      <b>3b</b> — retire the mascot empty here. The hero answers itself with <code>nothing saved yet</code>,
+      two ghost cards show what lands, and the add-row is the last card. <b>Keep the pulsing bookmark
+      ring</b> — it costs nothing and teaches the control that persists after the ghost is gone. The mascot
+      keeps its two real jobs: splash and blocking load.
+    </p>
+    <p>
+      <b>4b + 4c + 4d</b> — frozen skeleton for a failed first load, a centred one-liner where the tail
+      skeleton would be, and a toast for a failed refresh. The tail case is new behaviour: today
+      <code>loadMore</code> failing is silent, and a list that stops paging with no explanation is
+      indistinguishable from a list that ended.
+    </p>
+  </div>
+
+</div>
+<style>@keyframes rot { 100% { transform: rotate(360deg); } }</style>
+<script>
+  document.querySelectorAll('.theme-toggle button').forEach(function (b) {
+    b.addEventListener('click', function () {
+      document.querySelectorAll('.theme-toggle button').forEach(function (x) { x.classList.remove('active'); });
+      b.classList.add('active');
+      document.body.classList.toggle('dark', b.dataset.theme === 'dark');
+    });
+  });
+</script>
+</body>
+</html>

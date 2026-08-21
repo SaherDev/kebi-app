@@ -85,7 +85,15 @@ export function useOpenChatEntity(closeChat: () => void): (entity: ChatEntity) =
       closeChat();
       router.push({
         pathname: route.pathname,
-        params: { id, from: PLACE_ORIGIN_CHAT },
+        // The rail chip carries the entity's name and icon; passing them lets
+        // the destination paint its title on the first frame (ADR-056). The
+        // place screen ignores them — it seeds from the place-detail context.
+        params: {
+          id,
+          from: PLACE_ORIGIN_CHAT,
+          name: entity.name,
+          icon: entity.icon ?? '',
+        },
       });
     },
     [closeChat, router],

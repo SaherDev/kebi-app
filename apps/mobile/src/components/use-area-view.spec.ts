@@ -33,7 +33,7 @@ describe('useAreaView', () => {
 
     const { result } = renderHook(() => useAreaView(AREA_ID));
 
-    await waitFor(() => expect(result.current.status).toBe('ready'));
+    await waitFor(() => expect(result.current.state.status).toBe('ready'));
     expect(mockGetArea).toHaveBeenCalledTimes(1);
     expect(mockGetArea.mock.calls[0][1]).toBe(AREA_ID);
   });
@@ -58,13 +58,13 @@ describe('useAreaView', () => {
     mockGetArea.mockResolvedValueOnce(thin).mockResolvedValueOnce(dressed);
 
     const { result } = renderHook(() => useAreaView(AREA_ID));
-    await waitFor(() => expect(result.current.view?.profiled).toBe(false));
+    await waitFor(() => expect(result.current.state.view?.profiled).toBe(false));
 
     await act(async () => {
       jest.advanceTimersByTime(3000);
     });
 
-    await waitFor(() => expect(result.current.view?.summary).toBe(dressed.summary));
+    await waitFor(() => expect(result.current.state.view?.summary).toBe(dressed.summary));
     expect(mockGetArea).toHaveBeenCalledTimes(2);
   });
 
@@ -86,7 +86,7 @@ describe('useAreaView', () => {
 
     const { result } = renderHook(() => useAreaView(AREA_ID));
 
-    await waitFor(() => expect(result.current.status).toBe('failed'));
+    await waitFor(() => expect(result.current.state.status).toBe('failed'));
   });
 
   it('keeps a painted screen when the retry throws', async () => {
@@ -94,20 +94,38 @@ describe('useAreaView', () => {
     mockGetArea.mockResolvedValueOnce(thin).mockRejectedValueOnce(new Error('boom'));
 
     const { result } = renderHook(() => useAreaView(AREA_ID));
-    await waitFor(() => expect(result.current.status).toBe('ready'));
+    await waitFor(() => expect(result.current.state.status).toBe('ready'));
 
     await act(async () => {
       jest.advanceTimersByTime(3000);
     });
 
-    expect(result.current.status).toBe('ready');
-    expect(result.current.view?.name).toBe('Canggu');
+    expect(result.current.state.status).toBe('ready');
+    expect(result.current.state.view?.name).toBe('Canggu');
   });
 
-  it('cannot resolve without an id', () => {
+  it('cannot resolve without an id, and says so is not worth retrying', () => {
     const { result } = renderHook(() => useAreaView(undefined));
 
-    expect(result.current.status).toBe('failed');
+    expect(result.current.state.status).toBe('failed');
+    // Nothing about tapping again could produce an id (ADR-056), so the screen
+    // must not offer a retry for this one.
+    expect(result.current.state).toMatchObject({ retryable: false });
     expect(mockGetArea).not.toHaveBeenCalled();
+  });
+
+  it('retries a failed read, and reports ready when the second try lands', async () => {
+    mockGetArea.mockRejectedValueOnce(new Error('boom')).mockResolvedValue(dressed);
+
+    const { result } = renderHook(() => useAreaView(AREA_ID));
+    await waitFor(() => expect(result.current.state.status).toBe('failed'));
+    expect(result.current.state).toMatchObject({ retryable: true });
+
+    await act(async () => {
+      result.current.retry();
+    });
+
+    await waitFor(() => expect(result.current.state.status).toBe('ready'));
+    expect(mockGetArea).toHaveBeenCalledTimes(2);
   });
 });

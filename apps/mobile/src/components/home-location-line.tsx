@@ -1,5 +1,6 @@
 import { Text, View } from 'react-native';
 import { Icon } from './icon';
+import { Skeleton } from './skeleton';
 import type { Weather } from '../lib/weather';
 
 /**
@@ -17,6 +18,9 @@ export function HomeLocationLine({ city, weather }: HomeLocationLineProps) {
   return (
     <View className="flex-row items-center gap-1.5">
       <Icon name="pin" size={13} className="text-text-muted" />
+      {/* The pin is furniture; the place is data. Hold its width while the fix
+          and the reverse-geocode resolve rather than letting the bar jump. */}
+      {city == null && weather == null ? <Skeleton height={10} width={96} /> : null}
       {city ? <Text className="text-small text-text-muted">{city.toLowerCase()}</Text> : null}
       {city && weather ? <View className="h-[3px] w-[3px] rounded-full bg-text-soft" /> : null}
       {weather ? (

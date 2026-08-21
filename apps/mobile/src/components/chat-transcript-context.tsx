@@ -75,6 +75,9 @@ export type TurnSegment =
       endedAt?: number;
     };
 
+/** Why a turn ended without an answer. Drives tone and whether retry is offered. */
+export type TurnErrorKind = 'generic' | 'rate_limit' | 'offline';
+
 export interface KebiTurn {
   key: string;
   role: 'kebi';
@@ -92,6 +95,12 @@ export interface KebiTurn {
   stopped?: boolean;
   /** From an `error` frame / a thrown transport error. */
   errorDetail?: string;
+  /**
+   * What kind of failure this was (ADR-056). A plan limit is not an error —
+   * nothing broke — and retrying it is guaranteed to fail, so the turn renders
+   * it in the warn tone with an upgrade path instead of a retry.
+   */
+  errorKind?: TurnErrorKind;
   startedAt: number;
   /** Set on finish — summed step `duration_ms` when all present, else wall-clock. */
   durationMs?: number;
@@ -121,7 +130,7 @@ type Action =
   | { type: 'SET_MESSAGE'; kebiKey: string; content: string; entities: ChatEntity[] }
   | { type: 'FINISH'; kebiKey: string; toolCallsUsed: number; now: number }
   | { type: 'STOP'; kebiKey: string; now: number }
-  | { type: 'FAIL'; kebiKey: string; detail: string }
+  | { type: 'FAIL'; kebiKey: string; detail: string; kind: TurnErrorKind }
   | { type: 'TOGGLE_COLLAPSE'; kebiKey: string; collapsed: boolean }
   | { type: 'CLEAR' }
   | { type: 'RESTORE'; turns: ChatTurn[] };
@@ -335,7 +344,13 @@ function reducer(state: TranscriptState, action: Action): TranscriptState {
     case 'FAIL':
       return mapKebi(state, action.kebiKey, (turn) =>
         turn.status === 'streaming'
-          ? { ...turn, status: 'error', collapsed: true, errorDetail: action.detail }
+          ? {
+              ...turn,
+              status: 'error',
+              collapsed: true,
+              errorDetail: action.detail,
+              errorKind: action.kind,
+            }
           : turn,
       );
 
@@ -369,7 +384,7 @@ export interface ChatTranscriptValue {
   finishTurn: (kebiKey: string, toolCallsUsed: number) => void;
   /** User cancelled the stream — finish the turn and mark it stopped. */
   stopTurn: (kebiKey: string) => void;
-  failTurn: (kebiKey: string, detail: string) => void;
+  failTurn: (kebiKey: string, detail: string, kind?: TurnErrorKind) => void;
   toggleCollapse: (kebiKey: string, collapsed: boolean) => void;
   /** Empty the transcript (clear chat history). Snapshot `turns` first for undo. */
   clearTranscript: () => void;
@@ -434,9 +449,12 @@ export function ChatTranscriptProvider({ children }: { children: ReactNode }) {
     dispatch({ type: 'STOP', kebiKey, now: Date.now() });
   }, []);
 
-  const failTurn = useCallback((kebiKey: string, detail: string) => {
-    dispatch({ type: 'FAIL', kebiKey, detail });
-  }, []);
+  const failTurn = useCallback(
+    (kebiKey: string, detail: string, kind: TurnErrorKind = 'generic') => {
+      dispatch({ type: 'FAIL', kebiKey, detail, kind });
+    },
+    [],
+  );
 
   const toggleCollapse = useCallback((kebiKey: string, collapsed: boolean) => {
     dispatch({ type: 'TOGGLE_COLLAPSE', kebiKey, collapsed });

@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Kebi Place — loading / empty / error</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #FAFAF9; --surface: #F1F1EF; --surface-2: #E8E8E5;
+    --text: #1A1A1A; --text-muted: #8A8A87; --text-soft: #B5B5B1;
+    --success: #4A7C3A; --green-bg: rgba(74,124,58,.14); --like: #C2410C;
+    --danger: #D14343; --warn: #B45309;
+    --tag: #D4B891; --tag-rec: #A7C7A0; --tag-cur: #C9C9C4;
+    --page: #FAFAF9; --page-ink: #1A1A1A;
+  }
+  body.dark {
+    --bg: #13110F; --surface: #1C1A17; --surface-2: #26231F;
+    --text: #F5F1EA; --text-muted: #9A938A; --text-soft: #6E6862;
+    --success: #7FB08C; --green-bg: rgba(127,176,140,.16); --like: #E8A87C;
+    --danger: #E89090; --warn: #D9B45F; --tag-cur: #45413B;
+    --page: #0A0908; --page-ink: #F5F1EA;
+  }
+  html, body { background: var(--page); color: var(--page-ink);
+    font-family: 'Inter', system-ui, sans-serif; -webkit-font-smoothing: antialiased; min-height: 100vh; }
+  .page { max-width: 1800px; margin: 0 auto; padding: 52px 36px 120px; }
+  .header { display: flex; align-items: flex-start; justify-content: space-between;
+    padding-bottom: 26px; border-bottom: 1px solid var(--surface-2); }
+  h1 { font-size: 25px; font-weight: 700; letter-spacing: -0.028em; }
+  .meta { font-size: 12px; color: var(--text-muted); margin-top: 5px; }
+  .lede { font-size: 14px; color: var(--text-muted); line-height: 1.65; max-width: 880px; margin-top: 14px; }
+  .lede b { color: var(--page-ink); font-weight: 600; }
+  .lede code, .section-desc code, .note code, .verdict code { font-size: 12px;
+    background: var(--surface-2); border-radius: 5px; padding: 1px 6px; }
+  .theme-toggle { display: flex; background: var(--surface); border-radius: 999px; padding: 3px; flex-shrink: 0; }
+  .theme-toggle button { padding: 6px 14px; background: transparent; border: none; border-radius: 999px;
+    font-family: inherit; font-size: 12px; font-weight: 500; color: var(--text-muted); cursor: pointer; }
+  .theme-toggle button.active { background: var(--page-ink); color: var(--page); }
+  .section-head { display: flex; align-items: baseline; justify-content: space-between;
+    margin: 46px 0 12px; padding-bottom: 12px; border-bottom: 1px solid var(--surface-2); }
+  .section-title { font-size: 11px; font-weight: 600; color: var(--text-soft);
+    text-transform: uppercase; letter-spacing: 0.08em; }
+  .section-q { font-size: 12px; color: var(--text-soft); }
+  .section-desc { font-size: 14px; color: var(--text-muted); line-height: 1.6; max-width: 880px; margin-bottom: 24px; }
+  .section-desc b { color: var(--page-ink); font-weight: 600; }
+  .row-of { display: flex; flex-wrap: wrap; gap: 34px; align-items: flex-start; }
+  .col { width: 390px; display: flex; flex-direction: column; gap: 10px; }
+  .col h2 { font-size: 15px; font-weight: 700; letter-spacing: -0.02em; }
+  .note { font-size: 11.5px; color: var(--text-muted); line-height: 1.55; }
+  .note b { color: var(--page-ink); font-weight: 600; }
+  .tag { display: inline-block; align-self: flex-start; font-size: 10px; font-weight: 700;
+    letter-spacing: .08em; text-transform: uppercase; color: #1A1A1A; background: var(--tag);
+    border-radius: 999px; padding: 3px 10px; }
+  .tag.rec { background: var(--tag-rec); }
+  .tag.cur { background: var(--tag-cur); color: var(--page-ink); }
+
+  .phone { width: 390px; height: 760px; background: var(--bg); border-radius: 44px; overflow: hidden;
+    position: relative; box-shadow: 0 0 0 10px #111, 0 0 0 12px var(--page), 0 24px 50px rgba(0,0,0,0.28);
+    display: flex; flex-direction: column; }
+  .status-bar { height: 44px; padding: 15px 30px 0; display: flex; justify-content: space-between;
+    align-items: center; font-size: 14px; font-weight: 600; color: var(--text); flex-shrink: 0; }
+  .batt { width: 22px; height: 11px; border: 1px solid var(--text); border-radius: 3px; position: relative; }
+  .batt::before { content: ''; position: absolute; inset: 1.5px; background: var(--text); border-radius: 1px; }
+  .top-bar { padding: 12px 16px 8px; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
+  .icon-btn { width: 38px; height: 38px; border-radius: 50%; background: var(--surface);
+    display: flex; align-items: center; justify-content: center; border: none; }
+  .icon-btn svg { width: 17px; height: 17px; stroke: var(--text); stroke-width: 1.8; fill: none; }
+  .top-pill { display: flex; align-items: center; background: var(--surface); border-radius: 999px; padding: 0 3px; }
+  .top-pill button { width: 38px; height: 38px; border-radius: 50%; background: transparent; border: none;
+    display: flex; align-items: center; justify-content: center; }
+  .top-pill svg { width: 17px; height: 17px; stroke: var(--text); stroke-width: 1.8; fill: none; }
+  .scroll { flex: 1; overflow: hidden; padding: 8px 24px 16px; display: flex; flex-direction: column; gap: 15px; }
+  .home-indicator { width: 128px; height: 5px; background: var(--text); border-radius: 3px;
+    margin: 2px auto 8px; flex-shrink: 0; opacity: .85; }
+
+  .p-eyebrow { font-size: 12.5px; color: var(--text-muted); }
+  .p-title { font-size: 26px; font-weight: 700; letter-spacing: -0.03em; line-height: 1.15; color: var(--text); }
+  .pill-green { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 600;
+    color: var(--success); background: var(--green-bg); border-radius: 999px; padding: 3px 10px; }
+  .pill-green::before { content: ''; width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+  .meta-wrap { display: flex; flex-wrap: wrap; gap: 6px; background: var(--surface); border-radius: 14px; padding: 10px; }
+  .meta-chip { background: var(--bg); border-radius: 999px; padding: 6px 10px; font-size: 12.5px; font-weight: 500; color: var(--text); }
+  .services { display: flex; flex-wrap: wrap; gap: 8px; }
+  .svc { display: inline-flex; align-items: center; gap: 7px; border: 1px solid var(--surface-2);
+    border-radius: 12px; padding: 9px 14px; font-size: 13px; font-weight: 600; color: var(--text); background: transparent; }
+  .svc.primary { background: var(--text); color: var(--bg); border-color: var(--text); }
+  .svc svg { width: 14px; height: 14px; stroke: currentColor; stroke-width: 1.9; fill: none; }
+  .src-row { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--text-soft); }
+  .src-row .m { width: 22px; height: 22px; border-radius: 7px; background: var(--surface);
+    display: flex; align-items: center; justify-content: center; font-size: 11px; }
+  .eyebrow { font-size: 11px; font-weight: 600; color: var(--text-soft);
+    text-transform: uppercase; letter-spacing: 0.08em; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 9px; }
+  .chip { display: inline-flex; align-items: center; gap: 5px; background: var(--surface);
+    border-radius: 999px; padding: 6px 11px; font-size: 12.5px; color: var(--text); }
+  .quote { display: flex; gap: 12px; }
+  .quote .rail { width: 2px; border-radius: 2px; background: var(--surface-2); }
+  .quote p { flex: 1; font-size: 14.5px; line-height: 1.5; color: var(--text); }
+  .bare { font-size: 14.5px; line-height: 1.55; color: var(--text-soft); }
+
+  .sk { border-radius: 5px; background: var(--surface-2); position: relative; overflow: hidden; }
+  .sk::after { content: ''; position: absolute; inset: 0; transform: translateX(-100%);
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.6), transparent);
+    animation: shimmer 1.4s linear infinite; }
+  body.dark .sk::after { background: linear-gradient(90deg, transparent, rgba(255,255,255,0.07), transparent); }
+  @keyframes shimmer { 100% { transform: translateX(100%); } }
+  @keyframes rot { 100% { transform: rotate(360deg); } }
+  .sk.h10 { height: 10px; } .sk.h12 { height: 12px; } .sk.h14 { height: 14px; } .sk.h22 { height: 22px; }
+  .sk.chip { height: 30px; border-radius: 999px; }
+  .sk.svc { height: 38px; border-radius: 12px; }
+  .meta-wrap .sk { background: var(--bg); }
+  .frozen { opacity: .45; } .frozen .sk::after { animation: none; opacity: 0; }
+  .spin { width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--surface-2);
+    border-top-color: var(--text-muted); animation: rot .8s linear infinite; }
+  .center { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 13px; text-align: center; padding: 0 26px 80px; }
+  .center .t { font-size: 16px; font-weight: 600; color: var(--text); }
+  .center .h { font-size: 13px; color: var(--text-muted); line-height: 1.5; }
+  .btn-outline { border: 1px solid var(--surface-2); background: transparent; border-radius: 12px;
+    padding: 9px 16px; font-family: inherit; font-size: 13px; font-weight: 600; color: var(--text); }
+  .err-inline { display: flex; align-items: center; gap: 9px; padding: 2px; }
+  .err-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--danger); flex-shrink: 0; }
+  .err-txt { font-size: 12.5px; color: var(--text-muted); flex: 1; line-height: 1.4; }
+  .err-txt b { color: var(--text); font-weight: 600; }
+  .retry { background: transparent; border: none; font-family: inherit; font-size: 13px;
+    font-weight: 600; color: var(--text); padding: 2px 6px; }
+  .toast-wrap { position: absolute; left: 0; right: 0; bottom: 40px; display: flex; justify-content: center; }
+  .toast { display: flex; align-items: center; gap: 10px; background: var(--text); color: var(--bg);
+    border-radius: 999px; padding: 11px 8px 11px 16px; max-width: 280px; font-size: 13px; font-weight: 500; }
+  .toast button { background: transparent; border: none; font-family: inherit; font-size: 13px;
+    font-weight: 600; color: var(--bg); padding: 2px 10px; }
+
+  .verdict { margin-top: 44px; border: 1px solid var(--surface-2); border-radius: 16px;
+    padding: 22px 24px; background: var(--surface); max-width: 1000px; }
+  .verdict h3 { font-size: 14px; font-weight: 700; margin-bottom: 10px; }
+  .verdict p { font-size: 13px; color: var(--text-muted); line-height: 1.68; }
+  .verdict p + p { margin-top: 10px; }
+  .verdict b { color: var(--page-ink); font-weight: 600; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="header">
+    <div>
+      <h1>place — loading, empty, error</h1>
+      <div class="meta">kebi-app · apps/mobile/src/app/place.tsx · ADR-151 · applies the kernel</div>
+      <p class="lede">
+        The place page is reached two ways, and they are not the same problem. From a <b>library card, a
+        home stash row or a chat card</b>, the caller <code>placeDetail.set(view)</code>s first — the screen
+        already holds the name, emoji, pills and detail line and <b>paints instantly</b>, then refreshes.
+        From a <b>deep link, the share extension, or a back-stack entry</b>, it opens cold with only an
+        <code>id</code>.
+        <br><br>
+        Today both go through the same branch: <code>status !== 'ready'</code> → centred spinner, or one
+        grey line for any failure with no retry. The seeded case throws away data it already has.
+      </p>
+    </div>
+    <div class="theme-toggle">
+      <button class="active" data-theme="light">light</button>
+      <button data-theme="dark">dark</button>
+    </div>
+  </div>
+
+  <!-- 1 LOADING -->
+  <div class="section-head">
+    <span class="section-title">1 · opening a place</span>
+    <span class="section-q">seeded and cold are different waits</span>
+  </div>
+  <p class="section-desc">
+    Nine out of ten opens are seeded. Showing a spinner over data we're already holding is the single
+    biggest wasted opportunity on this screen.
+  </p>
+
+  <div class="row-of">
+
+    <div class="col">
+      <span class="tag cur">today · both paths</span>
+      <h2>a · centred spinner</h2>
+      <div class="phone">
+        <div class="status-bar"><span>9:41</span><div class="batt"></div></div>
+        <div class="top-bar"><button class="icon-btn"><svg viewBox="0 0 24 24"><polyline points="15 6 9 12 15 18"/></svg></button></div>
+        <div class="scroll"><div class="center"><div class="spin"></div></div></div>
+        <div class="home-indicator"></div>
+      </div>
+      <p class="note">
+        Tapping a card you can read hides it behind a spinner. The top pill (edit + •••) is missing too, so
+        even the affordances flash in late.
+      </p>
+    </div>
+
+    <div class="col">
+      <span class="tag rec">recommended · seeded</span>
+      <h2>b · seeded paints, the rest fills</h2>
+      <div class="phone">
+        <div class="status-bar"><span>9:41</span><div class="batt"></div></div>
+        <div class="top-bar">
+          <button class="icon-btn"><svg viewBox="0 0 24 24"><polyline points="15 6 9 12 15 18"/></svg></button>
+          <div class="top-pill">
+            <button><svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></svg></button>
+            <button><svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.6" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.6" fill="currentColor" stroke="none"/></svg></button>
+          </div>
+        </div>
+        <div class="scroll">
+          <div class="p-eyebrow">udon · ¥¥ · nezu</div>
+          <div class="p-title">🍜 Kamachiku</div>
+          <div><span class="pill-green">been there</span></div>
+          <div class="meta-wrap"><div class="sk chip" style="width:104px"></div><div class="sk chip" style="width:82px"></div></div>
+          <div class="services">
+            <div class="sk svc" style="width:106px"></div>
+            <div class="sk svc" style="width:96px"></div>
+          </div>
+          <div class="src-row"><div class="m">◎</div><span>@onlyfoodsushi</span></div>
+          <div>
+            <div class="eyebrow">atmosphere</div>
+            <div class="chips"><div class="sk chip" style="width:92px"></div><div class="sk chip" style="width:78px"></div><div class="sk chip" style="width:110px"></div></div>
+          </div>
+          <div>
+            <div class="eyebrow">features</div>
+            <div class="chips"><div class="sk chip" style="width:104px"></div><div class="sk chip" style="width:86px"></div></div>
+          </div>
+        </div>
+        <div class="home-indicator"></div>
+      </div>
+      <p class="note">
+        <b>Everything the card already knew is real on frame one</b> — eyebrow, emoji + name, status pill,
+        source, and the top pill's actions. Only what the card never carried (tags, service buttons, notes)
+        shimmers. The screen never looks like it's loading a different place than the one you tapped, and
+        the refresh usually swaps in before you finish reading the title.
+      </p>
+    </div>
+
+    <div class="col">
+      <span class="tag rec">recommended · cold</span>
+      <h2>c · cold open, full skeleton</h2>
+      <div class="phone">
+        <div class="status-bar"><span>9:41</span><div class="batt"></div></div>
+        <div class="top-bar"><button class="icon-btn"><svg viewBox="0 0 24 24"><polyline points="15 6 9 12 15 18"/></svg></button></div>
+        <div class="scroll">
+          <div><div class="sk h10" style="width:44%"></div></div>
+          <div><div class="sk h22" style="width:68%"></div></div>
+          <div class="meta-wrap"><div class="sk chip" style="width:104px"></div><div class="sk chip" style="width:82px"></div></div>
+          <div class="services"><div class="sk svc" style="width:112px"></div><div class="sk svc" style="width:96px"></div><div class="sk svc" style="width:88px"></div></div>
+          <div>
+            <div class="eyebrow">atmosphere</div>
+            <div class="chips"><div class="sk chip" style="width:92px"></div><div class="sk chip" style="width:78px"></div><div class="sk chip" style="width:110px"></div></div>
+          </div>
+          <div>
+            <div class="eyebrow">features</div>
+            <div class="chips"><div class="sk chip" style="width:104px"></div><div class="sk chip" style="width:86px"></div></div>
+          </div>
+        </div>
+        <div class="home-indicator"></div>
+      </div>
+      <p class="note">
+        A deep link or the share extension has only an <code>id</code>, so the title shimmers too — unlike
+        area, where the link always carries the name. Same section eyebrows stay solid. <b>No top pill</b>
+        until we know whether this place is saved: drawing edit + ••• and then removing them would be worse
+        than adding them late.
+      </p>
+    </div>
+
+  </div>
+
+  <!-- 2 EMPTY / THIN -->
+  <div class="section-head">
+    <span class="section-title">2 · a place with almost nothing on it</span>
+    <span class="section-q">already half-solved — finish it</span>
+  </div>
+  <p class="section-desc">
+    A place kebi just discovered arrives <b>bare</b>: a provider catalog row with no tags, no notes, no
+    source. Every section hides itself when empty, which used to leave the screen looking broken — so
+    <code>isBare(view)</code> already prints one honest line. The open question is the <b>middle</b> case:
+    some sections filled, others not.
+  </p>
+
+  <div class="row-of">
+
+    <div class="col">
+      <span class="tag cur">today · already right</span>
+      <h2>a · bare place says so</h2>
+      <div class="phone">
+        <div class="status-bar"><span>9:41</span><div class="batt"></div></div>
+        <div class="top-bar"><button class="icon-btn"><svg viewBox="0 0 24 24"><polyline points="15 6 9 12 15 18"/></svg></button></div>
+        <div class="scroll">
+          <div class="p-eyebrow">coffee · tomigaya</div>
+          <div class="p-title">☕ Fuglen</div>
+          <div class="meta-wrap"><span class="meta-chip">coffee</span><span class="meta-chip">¥¥</span></div>
+          <div class="services">
+            <button class="svc primary"><svg viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/></svg>save</button>
+            <button class="svc"><svg viewBox="0 0 24 24"><circle cx="12" cy="10" r="3"/><path d="M12 2a8 8 0 00-8 8c0 6 8 12 8 12s8-6 8-12a8 8 0 00-8-8z"/></svg>map</button>
+          </div>
+          <div class="bare">kebi just found this one. tags and notes fill in as it learns more.</div>
+        </div>
+        <div class="home-indicator"></div>
+      </div>
+      <p class="note">
+        Already built, and it's the right instinct — <b>name the newness instead of rendering a hollow
+        page</b>. It stays as is. Note the save button: the only screen where a filled primary is correct,
+        because saving is unambiguously this screen's one action.
+      </p>
+    </div>
+
+    <div class="col">
+      <span class="tag rec">recommended</span>
+      <h2>b · half-filled — nothing extra</h2>
+      <div class="phone">
+        <div class="status-bar"><span>9:41</span><div class="batt"></div></div>
+        <div class="top-bar">
+          <button class="icon-btn"><svg viewBox="0 0 24 24"><polyline points="15 6 9 12 15 18"/></svg></button>
+          <div class="top-pill">
+            <button><svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></svg></button>
+            <button><svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.6" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.6" fill="currentColor" stroke="none"/></svg></button>
+          </div>
+        </div>
+        <div class="scroll">
+          <div class="p-eyebrow">udon · ¥¥ · nezu</div>
+          <div class="p-title">🍜 Kamachiku</div>
+          <div><span class="pill-green">saved</span></div>
+          <div class="meta-wrap"><span class="meta-chip">udon</span><span class="meta-chip">¥¥</span></div>
+          <div class="services">
+            <button class="svc"><svg viewBox="0 0 24 24"><circle cx="12" cy="10" r="3"/><path d="M12 2a8 8 0 00-8 8c0 6 8 12 8 12s8-6 8-12a8 8 0 00-8-8z"/></svg>map</button>
+            <button class="svc"><svg viewBox="0 0 24 24"><path d="M4 12v7a2 2 0 002 2h12a2 2 0 002-2v-7"/><path d="M16 6l-4-4-4 4M12 2v13"/></svg>share</button>
+          </div>
+          <div class="src-row"><div class="m">◎</div><span>@onlyfoodsushi</span></div>
+          <div>
+            <div class="eyebrow">atmosphere</div>
+            <div class="chips"><span class="chip">🕯️ intimate</span><span class="chip">🪵 old wood</span></div>
+          </div>
+        </div>
+        <div class="home-indicator"></div>
+      </div>
+      <p class="note">
+        Atmosphere exists, features don't — and the features section is simply <b>absent</b>. No "no
+        features yet", no empty group, no placeholder. A missing section on a page of optional sections is
+        not an empty state, it's just a shorter page. <b>The rule: only the whole page gets an empty
+        state, never an individual tag section.</b>
+      </p>
+    </div>
+
+    <div class="col">
+      <span class="tag">rejected</span>
+      <h2>c · empty rows per section</h2>
+      <div class="phone">
+        <div class="status-bar"><span>9:41</span><div class="batt"></div></div>
+        <div class="top-bar">
+          <button class="icon-btn"><svg viewBox="0 0 24 24"><polyline points="15 6 9 12 15 18"/></svg></button>
+          <div class="top-pill">
+            <button><svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></svg></button>
+            <button><svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.6" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.6" fill="currentColor" stroke="none"/></svg></button>
+          </div>
+        </div>
+        <div class="scroll">
+          <div class="p-eyebrow">udon · ¥¥ · nezu</div>
+          <div class="p-title">🍜 Kamachiku</div>
+          <div><span class="pill-green">saved</span></div>
+          <div>
+            <div class="eyebrow">atmosphere</div>
+            <div class="chips"><span class="chip">🕯️ intimate</span><span class="chip">🪵 old wood</span></div>
+          </div>
+          <div>
+            <div class="eyebrow">features</div>
+            <div style="font-size:13px;color:var(--text-soft);margin-top:9px">nothing here yet</div>
+          </div>
+          <div>
+            <div class="eyebrow">notes</div>
+            <div style="font-size:13px;color:var(--text-soft);margin-top:9px">nothing here yet</div>
+          </div>
+          <div>
+            <div class="eyebrow">good to know</div>
+            <div style="font-size:13px;color:var(--text-soft);margin-top:9px">nothing here yet</div>
+          </div>
+        </div>
+        <div class="home-indicator"></div>
+      </div>
+      <p class="note">
+        Shown so it's clearly rejected. Four headers with "nothing here yet" under them turn a healthy
+        place into a list of everything the app <i>doesn't</i> know. It makes every place feel incomplete
+        forever, because most places will never have all four.
+      </p>
+    </div>
+
+  </div>
+
+  <!-- 3 ERROR -->
+  <div class="section-head">
+    <span class="section-title">3 · failures</span>
+    <span class="section-q">a refresh that fails is not the same as a place that's gone</span>
+  </div>
+  <p class="section-desc">
+    Three distinct failures, one grey line for all of them today: the refresh of a <b>seeded</b> place
+    failed (we still have the card's data), a <b>cold</b> open failed (we have nothing), or the place
+    <b>doesn't exist</b> — a forgotten place reached from an old chat link or a stale back-stack entry.
+  </p>
+
+  <div class="row-of">
+
+    <div class="col">
+      <span class="tag rec">recommended</span>
+      <h2>a · seeded refresh failed → toast</h2>
+      <div class="phone">
+        <div class="status-bar"><span>9:41</span><div class="batt"></div></div>
+        <div class="top-bar">
+          <button class="icon-btn"><svg viewBox="0 0 24 24"><polyline points="15 6 9 12 15 18"/></svg></button>
+          <div class="top-pill">
+            <button><svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></svg></button>
+            <button><svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.6" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.6" fill="currentColor" stroke="none"/></svg></button>
+          </div>
+        </div>
+        <div class="scroll">
+          <div class="p-eyebrow">udon · ¥¥ · nezu</div>
+          <div class="p-title">🍜 Kamachiku</div>
+          <div><span class="pill-green">been there</span></div>
+          <div class="meta-wrap"><span class="meta-chip">udon</span><span class="meta-chip">¥¥</span></div>
+          <div class="services">
+            <button class="svc"><svg viewBox="0 0 24 24"><circle cx="12" cy="10" r="3"/><path d="M12 2a8 8 0 00-8 8c0 6 8 12 8 12s8-6 8-12a8 8 0 00-8-8z"/></svg>map</button>
+            <button class="svc"><svg viewBox="0 0 24 24"><path d="M4 12v7a2 2 0 002 2h12a2 2 0 002-2v-7"/><path d="M16 6l-4-4-4 4M12 2v13"/></svg>share</button>
+          </div>
+          <div class="src-row"><div class="m">◎</div><span>@onlyfoodsushi</span></div>
+        </div>
+        <div class="toast-wrap"><div class="toast">couldn't refresh<button>retry</button></div></div>
+        <div class="home-indicator"></div>
+      </div>
+      <p class="note">
+        The seed is real data, so the page stays exactly as it was and the failure is a 5s toast. Nothing
+        shimmers forever, nothing is replaced. <b>The map and share buttons still work</b> — they only need
+        what we already have.
+      </p>
+    </div>
+
+    <div class="col">
+      <span class="tag rec">recommended</span>
+      <h2>b · cold open failed</h2>
+      <div class="phone">
+        <div class="status-bar"><span>9:41</span><div class="batt"></div></div>
+        <div class="top-bar"><button class="icon-btn"><svg viewBox="0 0 24 24"><polyline points="15 6 9 12 15 18"/></svg></button></div>
+        <div class="scroll">
+          <div class="err-inline"><span class="err-dot"></span><span class="err-txt"><b>couldn't load this place.</b> nothing lost.</span><button class="retry">retry</button></div>
+          <div class="frozen">
+            <div><div class="sk h10" style="width:44%"></div></div>
+            <div style="margin-top:15px"><div class="sk h22" style="width:68%"></div></div>
+            <div class="meta-wrap" style="margin-top:15px"><div class="sk chip" style="width:104px"></div><div class="sk chip" style="width:82px"></div></div>
+            <div class="services" style="margin-top:15px"><div class="sk svc" style="width:112px"></div><div class="sk svc" style="width:96px"></div></div>
+            <div style="margin-top:15px">
+              <div class="eyebrow">atmosphere</div>
+              <div class="chips"><div class="sk chip" style="width:92px"></div><div class="sk chip" style="width:78px"></div></div>
+            </div>
+          </div>
+        </div>
+        <div class="home-indicator"></div>
+      </div>
+      <p class="note">
+        The kernel: the cold skeleton freezes and dims under a retry line. We can't name the place —
+        we never knew it — so the sentence stays generic. This is the only place-page failure that takes
+        over the screen, and it's the only one where there's nothing to take over.
+      </p>
+    </div>
+
+    <div class="col">
+      <span class="tag rec">recommended</span>
+      <h2>c · the place is gone</h2>
+      <div class="phone">
+        <div class="status-bar"><span>9:41</span><div class="batt"></div></div>
+        <div class="top-bar"><button class="icon-btn"><svg viewBox="0 0 24 24"><polyline points="15 6 9 12 15 18"/></svg></button></div>
+        <div class="scroll">
+          <div class="center">
+            <div style="font-size:28px">📍</div>
+            <div class="t">this place isn't in your stash</div>
+            <div class="h">you may have forgotten it, or the link is old.</div>
+            <button class="btn-outline">back</button>
+          </div>
+        </div>
+        <div class="home-indicator"></div>
+      </div>
+      <p class="note">
+        A 404 or a forgotten place. <b>No retry</b> — nothing about tapping again will bring it back — just
+        an explanation and a way out. Distinct from b, which is worth retrying. Today these two print the
+        identical grey sentence, so the user retries something that can never work.
+      </p>
+    </div>
+
+    <div class="col">
+      <span class="tag rec">settled</span>
+      <h2>d · an action failed</h2>
+      <div class="phone">
+        <div class="status-bar"><span>9:41</span><div class="batt"></div></div>
+        <div class="top-bar">
+          <button class="icon-btn"><svg viewBox="0 0 24 24"><polyline points="15 6 9 12 15 18"/></svg></button>
+          <div class="top-pill">
+            <button><svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></svg></button>
+            <button><svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.6" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.6" fill="currentColor" stroke="none"/></svg></button>
+          </div>
+        </div>
+        <div class="scroll">
+          <div class="p-eyebrow">udon · ¥¥ · nezu</div>
+          <div class="p-title">🍜 Kamachiku</div>
+          <div><span class="pill-green">saved</span></div>
+          <div class="meta-wrap"><span class="meta-chip">udon</span><span class="meta-chip">¥¥</span></div>
+          <div class="quote"><div class="rail"></div><p>ask for the counter seats, the ones by the window get cold in winter.</p></div>
+        </div>
+        <div class="toast-wrap"><div class="toast">couldn't mark that<button>retry</button></div></div>
+        <div class="home-indicator"></div>
+      </div>
+      <p class="note">
+        "been there", "i like this one", a note edit, a forget — all optimistic per the design system. The
+        pill flips immediately; if the write fails it <b>flips back</b> and a toast carries the retry. No
+        section of the page is ever replaced by an action's failure. Already the rule — listed so place's
+        set is complete.
+      </p>
+    </div>
+
+  </div>
+
+  <div class="verdict">
+    <h3>place, decided</h3>
+    <p>
+      <b>1b + 1c</b> — split the two entrances. Seeded: paint everything the card already knew (eyebrow,
+      emoji + name, pill, source, top pill) and shimmer only what it never carried. Cold: full skeleton
+      including the title, and no top pill until we know whether the place is saved.
+    </p>
+    <p>
+      <b>2a + 2b</b> — keep the bare-place line, and add nothing else. An individual tag section that has
+      no content <b>disappears</b>; it never draws a header with "nothing here yet" under it.
+    </p>
+    <p>
+      <b>3a–3d</b> — four failures, four different answers: a seeded refresh is a toast over live content,
+      a cold open freezes its skeleton under a retry, a gone place gets a plain explanation and no retry,
+      and an optimistic action that fails reverts and toasts. The one thing they share is that
+      <b>none of them is a grey sentence you can't act on.</b>
+    </p>
+  </div>
+
+</div>
+<script>
+  document.querySelectorAll('.theme-toggle button').forEach(function (b) {
+    b.addEventListener('click', function () {
+      document.querySelectorAll('.theme-toggle button').forEach(function (x) { x.classList.remove('active'); });
+      b.classList.add('active');
+      document.body.classList.toggle('dark', b.dataset.theme === 'dark');
+    });
+  });
+</script>
+</body>
+</html>

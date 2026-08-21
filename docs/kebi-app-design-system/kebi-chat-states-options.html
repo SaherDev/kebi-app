@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Kebi Chat — empty / failed turn</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #FAFAF9; --surface: #F1F1EF; --surface-2: #E8E8E5;
+    --text: #1A1A1A; --text-muted: #8A8A87; --text-soft: #B5B5B1;
+    --danger: #D14343; --like: #C2410C; --warn: #B45309; --success: #4A7C3A;
+    --tag: #D4B891; --tag-rec: #A7C7A0; --tag-cur: #C9C9C4;
+    --page: #FAFAF9; --page-ink: #1A1A1A;
+  }
+  body.dark {
+    --bg: #13110F; --surface: #1C1A17; --surface-2: #26231F;
+    --text: #F5F1EA; --text-muted: #9A938A; --text-soft: #6E6862;
+    --danger: #E89090; --like: #E8A87C; --warn: #D9B45F; --success: #7FB08C;
+    --tag-cur: #45413B; --page: #0A0908; --page-ink: #F5F1EA;
+  }
+  html, body { background: var(--page); color: var(--page-ink);
+    font-family: 'Inter', system-ui, sans-serif; -webkit-font-smoothing: antialiased; min-height: 100vh; }
+  .page { max-width: 1800px; margin: 0 auto; padding: 52px 36px 120px; }
+  .header { display: flex; align-items: flex-start; justify-content: space-between;
+    padding-bottom: 26px; border-bottom: 1px solid var(--surface-2); }
+  h1 { font-size: 25px; font-weight: 700; letter-spacing: -0.028em; }
+  .meta { font-size: 12px; color: var(--text-muted); margin-top: 5px; }
+  .lede { font-size: 14px; color: var(--text-muted); line-height: 1.65; max-width: 880px; margin-top: 14px; }
+  .lede b { color: var(--page-ink); font-weight: 600; }
+  .lede code, .section-desc code, .note code, .verdict code { font-size: 12px;
+    background: var(--surface-2); border-radius: 5px; padding: 1px 6px; }
+  .theme-toggle { display: flex; background: var(--surface); border-radius: 999px; padding: 3px; flex-shrink: 0; }
+  .theme-toggle button { padding: 6px 14px; background: transparent; border: none; border-radius: 999px;
+    font-family: inherit; font-size: 12px; font-weight: 500; color: var(--text-muted); cursor: pointer; }
+  .theme-toggle button.active { background: var(--page-ink); color: var(--page); }
+  .section-head { display: flex; align-items: baseline; justify-content: space-between;
+    margin: 46px 0 12px; padding-bottom: 12px; border-bottom: 1px solid var(--surface-2); }
+  .section-title { font-size: 11px; font-weight: 600; color: var(--text-soft);
+    text-transform: uppercase; letter-spacing: 0.08em; }
+  .section-q { font-size: 12px; color: var(--text-soft); }
+  .section-desc { font-size: 14px; color: var(--text-muted); line-height: 1.6; max-width: 880px; margin-bottom: 24px; }
+  .section-desc b { color: var(--page-ink); font-weight: 600; }
+  .row-of { display: flex; flex-wrap: wrap; gap: 34px; align-items: flex-start; }
+  .col { width: 390px; display: flex; flex-direction: column; gap: 10px; }
+  .col h2 { font-size: 15px; font-weight: 700; letter-spacing: -0.02em; }
+  .note { font-size: 11.5px; color: var(--text-muted); line-height: 1.55; }
+  .note b { color: var(--page-ink); font-weight: 600; }
+  .tag { display: inline-block; align-self: flex-start; font-size: 10px; font-weight: 700;
+    letter-spacing: .08em; text-transform: uppercase; color: #1A1A1A; background: var(--tag);
+    border-radius: 999px; padding: 3px 10px; }
+  .tag.rec { background: var(--tag-rec); }
+  .tag.cur { background: var(--tag-cur); color: var(--page-ink); }
+
+  .phone { width: 390px; height: 720px; background: var(--bg); border-radius: 44px; overflow: hidden;
+    position: relative; box-shadow: 0 0 0 10px #111, 0 0 0 12px var(--page), 0 24px 50px rgba(0,0,0,0.28);
+    display: flex; flex-direction: column; }
+  .status-bar { height: 44px; padding: 15px 30px 0; display: flex; justify-content: space-between;
+    align-items: center; font-size: 14px; font-weight: 600; color: var(--text); flex-shrink: 0; }
+  .batt { width: 22px; height: 11px; border: 1px solid var(--text); border-radius: 3px; position: relative; }
+  .batt::before { content: ''; position: absolute; inset: 1.5px; background: var(--text); border-radius: 1px; }
+  .top-bar { padding: 12px 16px 8px; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
+  .icon-btn { width: 36px; height: 36px; border-radius: 50%; background: var(--surface);
+    display: flex; align-items: center; justify-content: center; border: none; flex-shrink: 0; }
+  .icon-btn svg { width: 16px; height: 16px; stroke: var(--text); stroke-width: 1.8; fill: none; }
+  .title-pill { display: flex; align-items: center; gap: 8px; background: var(--surface);
+    border-radius: 999px; padding: 7px 14px 7px 8px; font-size: 14px; font-weight: 600; color: var(--text); }
+  .title-pill .m { width: 22px; height: 22px; border-radius: 6px; overflow: hidden; }
+  .right-pair { display: flex; align-items: center; gap: 8px; }
+  .thread { flex: 1; overflow: hidden; padding: 10px 24px 8px; display: flex; flex-direction: column; gap: 18px; }
+  .composer { margin: 0 16px 8px; background: var(--surface); border-radius: 22px;
+    padding: 12px 10px 12px 16px; display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+  .composer .ph { flex: 1; font-size: 15px; color: var(--text-soft); }
+  .composer .ph.typed { color: var(--text); }
+  .orb { width: 34px; height: 34px; border-radius: 50%; background: var(--surface-2);
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .orb.ink { background: var(--text); }
+  .orb svg { width: 15px; height: 15px; stroke: var(--text-muted); stroke-width: 2; fill: none; }
+  .orb.ink svg { stroke: var(--bg); }
+  .home-indicator { width: 128px; height: 5px; background: var(--text); border-radius: 3px;
+    margin: 2px auto 8px; flex-shrink: 0; opacity: .85; }
+
+  .eyebrow { font-size: 11px; font-weight: 600; color: var(--text-soft);
+    text-transform: uppercase; letter-spacing: 0.08em; }
+  .turn { display: flex; flex-direction: column; gap: 7px; }
+  .turn-head { display: flex; align-items: center; gap: 8px; }
+  .turn-head .tm { font-size: 11px; color: var(--text-soft); }
+  .user-line { font-size: 16px; color: var(--text); letter-spacing: -0.01em; line-height: 1.4; }
+  .answer { font-size: 15.5px; line-height: 24px; color: var(--text); letter-spacing: -0.005em; }
+  .answer .lnk { color: var(--text); font-weight: 600; border-bottom: 1px solid var(--surface-2); }
+  .fold { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--text-soft); }
+  .fold svg { width: 10px; height: 10px; stroke: currentColor; stroke-width: 2.4; fill: none; }
+  .livedot { width: 6px; height: 6px; border-radius: 50%; background: var(--text-soft);
+    animation: pulse 1.6s ease-in-out infinite; }
+  @keyframes pulse { 0%,100% { opacity: 1 } 50% { opacity: .3 } }
+  .chip-work { display: inline-flex; align-items: center; gap: 7px; background: var(--surface);
+    border-radius: 999px; padding: 6px 12px; font-size: 12.5px; color: var(--text-muted); align-self: flex-start; }
+  .rail { display: flex; gap: 6px; flex-wrap: wrap; }
+  .rail .r { display: inline-flex; align-items: center; gap: 6px; background: var(--surface);
+    border-radius: 999px; padding: 6px 11px; font-size: 12.5px; color: var(--text); }
+  .prompts { display: flex; flex-direction: column; gap: 12px; }
+  .prompt { font-size: 15px; color: var(--text-muted); }
+  .quiet { font-size: 13.5px; color: var(--text-muted); line-height: 1.5; }
+
+  .sk { border-radius: 5px; background: var(--surface-2); position: relative; overflow: hidden; }
+  .sk::after { content: ''; position: absolute; inset: 0; transform: translateX(-100%);
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.6), transparent);
+    animation: shimmer 1.4s linear infinite; }
+  body.dark .sk::after { background: linear-gradient(90deg, transparent, rgba(255,255,255,0.07), transparent); }
+  @keyframes shimmer { 100% { transform: translateX(100%); } }
+  .sk.h14 { height: 14px; }
+
+  .err-line { font-size: 15px; color: var(--danger); line-height: 1.45; }
+  .err-row { display: flex; align-items: flex-start; gap: 9px; }
+  .err-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--danger);
+    flex-shrink: 0; margin-top: 7px; }
+  .err-body { flex: 1; }
+  .err-body .t { font-size: 14.5px; color: var(--text); line-height: 1.45; }
+  .err-body .s { font-size: 12.5px; color: var(--text-muted); margin-top: 3px; }
+  .actions { display: flex; gap: 6px; margin-top: 9px; }
+  .act { background: transparent; border: none; font-family: inherit; font-size: 13px;
+    font-weight: 600; color: var(--text); padding: 5px 10px; border-radius: 8px; }
+  .act.sub { color: var(--text-muted); }
+  .act.box { border: 1px solid var(--surface-2); }
+  .mascot { animation: breathe 3.2s ease-in-out infinite; transform-origin: 50% 60%; }
+  @keyframes breathe { 0%,100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+  .center { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 14px; text-align: center; padding: 0 30px 40px; }
+
+  .verdict { margin-top: 44px; border: 1px solid var(--surface-2); border-radius: 16px;
+    padding: 22px 24px; background: var(--surface); max-width: 1000px; }
+  .verdict h3 { font-size: 14px; font-weight: 700; margin-bottom: 10px; }
+  .verdict p { font-size: 13px; color: var(--text-muted); line-height: 1.68; }
+  .verdict p + p { margin-top: 10px; }
+  .verdict b { color: var(--page-ink); font-weight: 600; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="header">
+    <div>
+      <h1>chat — empty, failed turn, limits</h1>
+      <div class="meta">kebi-app · components/chat-screen.tsx · ADR-055 / ADR-136 · applies the kernel</div>
+      <p class="lede">
+        Chat's <b>loading</b> state is the best-designed thing in the app and isn't in question here: the
+        interleaved process, the work chips, the fold into <code>▸ thought for 12s</code>. What's missing is
+        at the two ends. A first open with no transcript is a <b>blank canvas</b> — the mascot button opens
+        onto nothing but a composer. And a turn that fails prints
+        <code>&lt;Text className="text-danger"&gt;</code> — <b>one red sentence with nothing to tap</b>, on
+        the one screen where the failed thing (your question) is still sitting right above it.
+      </p>
+    </div>
+    <div class="theme-toggle">
+      <button class="active" data-theme="light">light</button>
+      <button data-theme="dark">dark</button>
+    </div>
+  </div>
+
+  <!-- 1 EMPTY -->
+  <div class="section-head">
+    <span class="section-title">1 · opening chat with nothing in it</span>
+    <span class="section-q">what fills the canvas before the first question?</span>
+  </div>
+  <p class="section-desc">
+    The transcript survives close→reopen, so this is a first open or a cleared history. Note that home
+    <b>already</b> has quick-prompt chips — anything offered here has to not duplicate them, and has to
+    survive the fact that most opens arrive with a seed already sent.
+  </p>
+
+  <div class="row-of">
+
+    <div class="col">
+      <span class="tag cur">today</span>
+      <h2>a · blank canvas</h2>
+      <div class="phone">
+        <div class="status-bar"><span>9:41</span><div class="batt"></div></div>
+        <div class="top-bar">
+          <button class="icon-btn"><svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+          <div class="title-pill"><div class="m"><svg viewBox="0 0 64 64"><ellipse cx="32" cy="38" rx="20" ry="20" fill="#D4B891"/><ellipse cx="32" cy="42" rx="13" ry="13" fill="#F5EBD3"/><circle cx="25" cy="30" r="3.5" fill="white"/><circle cx="39" cy="30" r="3.5" fill="white"/><circle cx="25" cy="30" r="1.7" fill="#1A1A1A"/><circle cx="39" cy="30" r="1.7" fill="#1A1A1A"/></svg></div>kebi</div>
+          <div class="right-pair">
+            <button class="icon-btn"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 013.9-1.6c1.3.9 1 2.4 0 3-.7.5-1.4.9-1.4 1.9"/><circle cx="12" cy="17" r=".8" fill="currentColor"/></svg></button>
+            <button class="icon-btn"><svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.6" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.6" fill="currentColor" stroke="none"/></svg></button>
+          </div>
+        </div>
+        <div class="thread"></div>
+        <div class="composer"><span class="ph">ask kebi anything</span>
+          <div class="orb"><svg viewBox="0 0 24 24"><path d="M12 15a3 3 0 003-3V6a3 3 0 00-6 0v6a3 3 0 003 3z"/><path d="M19 11a7 7 0 01-14 0M12 18v3"/></svg></div>
+          <div class="orb"><svg viewBox="0 0 24 24"><path d="M12 19V5M5 12l7-7 7 7"/></svg></div>
+        </div>
+        <div class="home-indicator"></div>
+      </div>
+      <p class="note">
+        Honest — it's a prompt box. But the mascot button is the app's most inviting affordance, and it
+        opens onto nothing, which makes the first tap feel like a mistake.
+      </p>
+    </div>
+
+    <div class="col">
+      <span class="tag rec">recommended</span>
+      <h2>b · kebi speaks first</h2>
+      <div class="phone">
+        <div class="status-bar"><span>9:41</span><div class="batt"></div></div>
+        <div class="top-bar">
+          <button class="icon-btn"><svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+          <div class="title-pill"><div class="m"><svg viewBox="0 0 64 64"><ellipse cx="32" cy="38" rx="20" ry="20" fill="#D4B891"/><ellipse cx="32" cy="42" rx="13" ry="13" fill="#F5EBD3"/><circle cx="25" cy="30" r="3.5" fill="white"/><circle cx="39" cy="30" r="3.5" fill="white"/><circle cx="25" cy="30" r="1.7" fill="#1A1A1A"/><circle cx="39" cy="30" r="1.7" fill="#1A1A1A"/></svg></div>kebi</div>
+          <div class="right-pair">
+            <button class="icon-btn"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 013.9-1.6c1.3.9 1 2.4 0 3-.7.5-1.4.9-1.4 1.9"/><circle cx="12" cy="17" r=".8" fill="currentColor"/></svg></button>
+            <button class="icon-btn"><svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.6" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.6" fill="currentColor" stroke="none"/></svg></button>
+          </div>
+        </div>
+        <div class="thread" style="justify-content:flex-end">
+          <div class="turn">
+            <div class="turn-head"><span class="eyebrow">kebi</span></div>
+            <div class="answer">what are you in the mood for?</div>
+          </div>
+          <div class="prompts">
+            <div class="prompt">somewhere i've been that i'd go back to</div>
+            <div class="prompt">a place for four people, tonight</div>
+            <div class="prompt">what's good near me right now</div>
+          </div>
+        </div>
+        <div class="composer"><span class="ph">ask kebi anything</span>
+          <div class="orb"><svg viewBox="0 0 24 24"><path d="M12 15a3 3 0 003-3V6a3 3 0 00-6 0v6a3 3 0 003 3z"/><path d="M19 11a7 7 0 01-14 0M12 18v3"/></svg></div>
+          <div class="orb"><svg viewBox="0 0 24 24"><path d="M12 19V5M5 12l7-7 7 7"/></svg></div>
+        </div>
+        <div class="home-indicator"></div>
+      </div>
+      <p class="note">
+        A real first turn — <b>kebi eyebrow, one short question</b>, then three prompts in the same plain
+        style home uses. Bottom-aligned, so it sits where the conversation will be and gets pushed up by
+        the first answer rather than vanishing. The prompts are <b>capability examples, not the home
+        chips</b>: they show what chat can do that a chip can't (multiple people, memory, "near me").
+      </p>
+    </div>
+
+    <div class="col">
+      <span class="tag">warmest</span>
+      <h2>c · idle mascot</h2>
+      <div class="phone">
+        <div class="status-bar"><span>9:41</span><div class="batt"></div></div>
+        <div class="top-bar">
+          <button class="icon-btn"><svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+          <div class="title-pill"><div class="m"><svg viewBox="0 0 64 64"><ellipse cx="32" cy="38" rx="20" ry="20" fill="#D4B891"/><ellipse cx="32" cy="42" rx="13" ry="13" fill="#F5EBD3"/><circle cx="25" cy="30" r="3.5" fill="white"/><circle cx="39" cy="30" r="3.5" fill="white"/><circle cx="25" cy="30" r="1.7" fill="#1A1A1A"/><circle cx="39" cy="30" r="1.7" fill="#1A1A1A"/></svg></div>kebi</div>
+          <div class="right-pair">
+            <button class="icon-btn"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 013.9-1.6c1.3.9 1 2.4 0 3-.7.5-1.4.9-1.4 1.9"/><circle cx="12" cy="17" r=".8" fill="currentColor"/></svg></button>
+            <button class="icon-btn"><svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.6" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.6" fill="currentColor" stroke="none"/></svg></button>
+          </div>
+        </div>
+        <div class="thread">
+          <div class="center">
+            <svg class="mascot" width="76" height="76" viewBox="0 0 64 64"><ellipse cx="32" cy="38" rx="20" ry="20" fill="#D4B891"/><ellipse cx="32" cy="42" rx="13" ry="13" fill="#F5EBD3"/><ellipse cx="13" cy="34" rx="3.5" ry="6" fill="#A89070" transform="rotate(-25 13 34)"/><ellipse cx="51" cy="34" rx="3.5" ry="6" fill="#A89070" transform="rotate(25 51 34)"/><circle cx="25" cy="30" r="3.5" fill="white"/><circle cx="39" cy="30" r="3.5" fill="white"/><circle cx="25" cy="30" r="1.7" fill="#1A1A1A"/><circle cx="39" cy="30" r="1.7" fill="#1A1A1A"/><path d="M30 33 L34 33 L32 36 Z" fill="#C87A4A"/></svg>
+            <div class="quiet">ask me anything about where to go.</div>
+          </div>
+        </div>
+        <div class="composer"><span class="ph">ask kebi anything</span>
+          <div class="orb"><svg viewBox="0 0 24 24"><path d="M12 15a3 3 0 003-3V6a3 3 0 00-6 0v6a3 3 0 003 3z"/><path d="M19 11a7 7 0 01-14 0M12 18v3"/></svg></div>
+          <div class="orb"><svg viewBox="0 0 24 24"><path d="M12 19V5M5 12l7-7 7 7"/></svg></div>
+        </div>
+        <div class="home-indicator"></div>
+      </div>
+      <p class="note">
+        Charming, and it's the mascot's natural home. But it's centred in dead space, teaches nothing about
+        what to ask, and you just watched this exact mascot expand out of the button — showing it again,
+        bigger, is a beat of nothing.
+      </p>
+    </div>
+
+  </div>
+
+  <!-- 2 FAILED TURN -->
+  <div class="section-head">
+    <span class="section-title">2 · a turn that failed</span>
+    <span class="section-q">your question is still on screen — use it</span>
+  </div>
+  <p class="section-desc">
+    Unique to chat: the failed input is <b>right there</b>, one line above. Every other screen has to
+    describe what failed; this one can just point at it. Two flavours — a generic reach failure, and a
+    <b>429 rate limit</b>, which is not a failure at all but a plan boundary and already has an upgrade
+    toast wired (<code>useUpgradeToast</code>).
+  </p>
+
+  <div class="row-of">
+
+    <div class="col">
+      <span class="tag cur">today</span>
+      <h2>a · a red sentence</h2>
+      <div class="phone">
+        <div class="status-bar"><span>9:41</span><div class="batt"></div></div>
+        <div class="top-bar">
+          <button class="icon-btn"><svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+          <div class="title-pill"><div class="m"><svg viewBox="0 0 64 64"><ellipse cx="32" cy="38" rx="20" ry="20" fill="#D4B891"/><ellipse cx="32" cy="42" rx="13" ry="13" fill="#F5EBD3"/><circle cx="25" cy="30" r="3.5" fill="white"/><circle cx="39" cy="30" r="3.5" fill="white"/><circle cx="25" cy="30" r="1.7" fill="#1A1A1A"/><circle cx="39" cy="30" r="1.7" fill="#1A1A1A"/></svg></div>kebi</div>
+          <div class="right-pair">
+            <button class="icon-btn"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 013.9-1.6c1.3.9 1 2.4 0 3-.7.5-1.4.9-1.4 1.9"/><circle cx="12" cy="17" r=".8" fill="currentColor"/></svg></button>
+            <button class="icon-btn"><svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.6" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.6" fill="currentColor" stroke="none"/></svg></button>
+          </div>
+        </div>
+        <div class="thread" style="justify-content:flex-end">
+          <div class="turn">
+            <div class="turn-head"><span class="eyebrow">you</span><span class="tm">9:41</span></div>
+            <div class="user-line">somewhere quiet for dinner, walking distance</div>
+          </div>
+          <div class="turn">
+            <div class="turn-head"><span class="eyebrow">kebi</span><span class="tm">9:41</span></div>
+            <div class="fold"><svg viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>thought for 3s</div>
+            <div class="err-line">something went wrong. try again.</div>
+          </div>
+        </div>
+        <div class="composer"><span class="ph">ask kebi anything</span>
+          <div class="orb"><svg viewBox="0 0 24 24"><path d="M12 15a3 3 0 003-3V6a3 3 0 00-6 0v6a3 3 0 003 3z"/><path d="M19 11a7 7 0 01-14 0M12 18v3"/></svg></div>
+          <div class="orb"><svg viewBox="0 0 24 24"><path d="M12 19V5M5 12l7-7 7 7"/></svg></div>
+        </div>
+        <div class="home-indicator"></div>
+      </div>
+      <p class="note">
+        "try again" — but there is nothing to tap, so trying again means retyping the question you can see
+        two lines above. Red body text is also the only place in the app where <code>--danger</code> is
+        used for prose.
+      </p>
+    </div>
+
+    <div class="col">
+      <span class="tag rec">recommended</span>
+      <h2>b · the turn offers the retry</h2>
+      <div class="phone">
+        <div class="status-bar"><span>9:41</span><div class="batt"></div></div>
+        <div class="top-bar">
+          <button class="icon-btn"><svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+          <div class="title-pill"><div class="m"><svg viewBox="0 0 64 64"><ellipse cx="32" cy="38" rx="20" ry="20" fill="#D4B891"/><ellipse cx="32" cy="42" rx="13" ry="13" fill="#F5EBD3"/><circle cx="25" cy="30" r="3.5" fill="white"/><circle cx="39" cy="30" r="3.5" fill="white"/><circle cx="25" cy="30" r="1.7" fill="#1A1A1A"/><circle cx="39" cy="30" r="1.7" fill="#1A1A1A"/></svg></div>kebi</div>
+          <div class="right-pair">
+            <button class="icon-btn"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 013.9-1.6c1.3.9 1 2.4 0 3-.7.5-1.4.9-1.4 1.9"/><circle cx="12" cy="17" r=".8" fill="currentColor"/></svg></button>
+            <button class="icon-btn"><svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.6" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.6" fill="currentColor" stroke="none"/></svg></button>
+          </div>
+        </div>
+        <div class="thread" style="justify-content:flex-end">
+          <div class="turn">
+            <div class="turn-head"><span class="eyebrow">you</span><span class="tm">9:41</span></div>
+            <div class="user-line">somewhere quiet for dinner, walking distance</div>
+          </div>
+          <div class="turn">
+            <div class="turn-head"><span class="eyebrow">kebi</span><span class="tm">9:41</span></div>
+            <div class="fold"><svg viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>thought for 3s</div>
+            <div class="err-row">
+              <span class="err-dot"></span>
+              <div class="err-body">
+                <div class="t">couldn't finish that one.</div>
+                <div class="s">your question is still here — nothing to retype.</div>
+                <div class="actions"><button class="act box">ask again</button></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="composer"><span class="ph">ask kebi anything</span>
+          <div class="orb"><svg viewBox="0 0 24 24"><path d="M12 15a3 3 0 003-3V6a3 3 0 00-6 0v6a3 3 0 003 3z"/><path d="M19 11a7 7 0 01-14 0M12 18v3"/></svg></div>
+          <div class="orb"><svg viewBox="0 0 24 24"><path d="M12 19V5M5 12l7-7 7 7"/></svg></div>
+        </div>
+        <div class="home-indicator"></div>
+      </div>
+      <p class="note">
+        Same error-row language as every other screen (dot, sentence, action) but in the turn's own slot,
+        under its <code>thought for 3s</code> fold — so the process it <i>did</i> complete stays readable.
+        <b>"ask again" resends the same question</b> as a new turn; the failed one stays in the transcript
+        rather than being rewritten, so the history doesn't lie about what happened.
+      </p>
+    </div>
+
+    <div class="col">
+      <span class="tag rec">recommended</span>
+      <h2>c · daily limit reached (429)</h2>
+      <div class="phone">
+        <div class="status-bar"><span>9:41</span><div class="batt"></div></div>
+        <div class="top-bar">
+          <button class="icon-btn"><svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+          <div class="title-pill"><div class="m"><svg viewBox="0 0 64 64"><ellipse cx="32" cy="38" rx="20" ry="20" fill="#D4B891"/><ellipse cx="32" cy="42" rx="13" ry="13" fill="#F5EBD3"/><circle cx="25" cy="30" r="3.5" fill="white"/><circle cx="39" cy="30" r="3.5" fill="white"/><circle cx="25" cy="30" r="1.7" fill="#1A1A1A"/><circle cx="39" cy="30" r="1.7" fill="#1A1A1A"/></svg></div>kebi</div>
+          <div class="right-pair">
+            <button class="icon-btn"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 013.9-1.6c1.3.9 1 2.4 0 3-.7.5-1.4.9-1.4 1.9"/><circle cx="12" cy="17" r=".8" fill="currentColor"/></svg></button>
+            <button class="icon-btn"><svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.6" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.6" fill="currentColor" stroke="none"/></svg></button>
+          </div>
+        </div>
+        <div class="thread" style="justify-content:flex-end">
+          <div class="turn">
+            <div class="turn-head"><span class="eyebrow">you</span><span class="tm">9:41</span></div>
+            <div class="user-line">one more — dessert somewhere near here</div>
+          </div>
+          <div class="turn">
+            <div class="turn-head"><span class="eyebrow">kebi</span><span class="tm">9:41</span></div>
+            <div class="err-row">
+              <span class="err-dot" style="background:var(--warn)"></span>
+              <div class="err-body">
+                <div class="t">that's your questions for today.</div>
+                <div class="s">resets at midnight. explorer gets 50 a day.</div>
+                <div class="actions"><button class="act box">see plans</button><button class="act sub">not now</button></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="composer"><span class="ph">ask kebi anything</span>
+          <div class="orb"><svg viewBox="0 0 24 24"><path d="M12 15a3 3 0 003-3V6a3 3 0 00-6 0v6a3 3 0 003 3z"/><path d="M19 11a7 7 0 01-14 0M12 18v3"/></svg></div>
+          <div class="orb"><svg viewBox="0 0 24 24"><path d="M12 19V5M5 12l7-7 7 7"/></svg></div>
+        </div>
+        <div class="home-indicator"></div>
+      </div>
+      <p class="note">
+        A 429 is <b>not an error</b> — nothing broke, you hit a plan boundary — so it takes the
+        <code>--warn</code> dot, not <code>--danger</code>, and offers no retry (retrying is guaranteed to
+        fail). It says <b>when it resets</b> and what the next tier gives, with an explicit "not now" so the
+        upsell has a door out. This is the one error-shaped thing in the app allowed to mention a plan.
+      </p>
+    </div>
+
+  </div>
+
+  <!-- 3 EDGES -->
+  <div class="section-head">
+    <span class="section-title">3 · the other two edges</span>
+    <span class="section-q">stopped early, and no connection</span>
+  </div>
+
+  <div class="row-of">
+
+    <div class="col">
+      <span class="tag rec">settled</span>
+      <h2>a · you stopped it</h2>
+      <div class="phone">
+        <div class="status-bar"><span>9:41</span><div class="batt"></div></div>
+        <div class="top-bar">
+          <button class="icon-btn"><svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+          <div class="title-pill"><div class="m"><svg viewBox="0 0 64 64"><ellipse cx="32" cy="38" rx="20" ry="20" fill="#D4B891"/><ellipse cx="32" cy="42" rx="13" ry="13" fill="#F5EBD3"/><circle cx="25" cy="30" r="3.5" fill="white"/><circle cx="39" cy="30" r="3.5" fill="white"/><circle cx="25" cy="30" r="1.7" fill="#1A1A1A"/><circle cx="39" cy="30" r="1.7" fill="#1A1A1A"/></svg></div>kebi</div>
+          <div class="right-pair">
+            <button class="icon-btn"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 013.9-1.6c1.3.9 1 2.4 0 3-.7.5-1.4.9-1.4 1.9"/><circle cx="12" cy="17" r=".8" fill="currentColor"/></svg></button>
+            <button class="icon-btn"><svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.6" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.6" fill="currentColor" stroke="none"/></svg></button>
+          </div>
+        </div>
+        <div class="thread" style="justify-content:flex-end">
+          <div class="turn">
+            <div class="turn-head"><span class="eyebrow">you</span><span class="tm">9:41</span></div>
+            <div class="user-line">somewhere quiet for dinner, walking distance</div>
+          </div>
+          <div class="turn">
+            <div class="turn-head"><span class="eyebrow">kebi</span><span class="tm">9:41</span></div>
+            <div class="fold"><svg viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>stopped after 4s</div>
+            <div class="answer">there's a small place two streets over that stays quiet after nine —</div>
+            <div class="actions" style="margin-top:2px"><button class="act box">ask again</button></div>
+          </div>
+        </div>
+        <div class="composer"><span class="ph">ask kebi anything</span>
+          <div class="orb"><svg viewBox="0 0 24 24"><path d="M12 15a3 3 0 003-3V6a3 3 0 00-6 0v6a3 3 0 003 3z"/><path d="M19 11a7 7 0 01-14 0M12 18v3"/></svg></div>
+          <div class="orb"><svg viewBox="0 0 24 24"><path d="M12 19V5M5 12l7-7 7 7"/></svg></div>
+        </div>
+        <div class="home-indicator"></div>
+      </div>
+      <p class="note">
+        Already built (<code>stopTurn</code> + the <code>stopped after</code> header). The partial answer
+        <b>stays</b> — you asked it to stop, you didn't ask it to disappear — and it gets the same
+        "ask again" as a failure. No error colour anywhere: this was your decision, not a fault.
+      </p>
+    </div>
+
+    <div class="col">
+      <span class="tag rec">recommended</span>
+      <h2>b · no connection when you send</h2>
+      <div class="phone">
+        <div class="status-bar"><span>9:41</span><div class="batt"></div></div>
+        <div class="top-bar">
+          <button class="icon-btn"><svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+          <div class="title-pill"><div class="m"><svg viewBox="0 0 64 64"><ellipse cx="32" cy="38" rx="20" ry="20" fill="#D4B891"/><ellipse cx="32" cy="42" rx="13" ry="13" fill="#F5EBD3"/><circle cx="25" cy="30" r="3.5" fill="white"/><circle cx="39" cy="30" r="3.5" fill="white"/><circle cx="25" cy="30" r="1.7" fill="#1A1A1A"/><circle cx="39" cy="30" r="1.7" fill="#1A1A1A"/></svg></div>kebi</div>
+          <div class="right-pair">
+            <button class="icon-btn"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 013.9-1.6c1.3.9 1 2.4 0 3-.7.5-1.4.9-1.4 1.9"/><circle cx="12" cy="17" r=".8" fill="currentColor"/></svg></button>
+            <button class="icon-btn"><svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.6" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.6" fill="currentColor" stroke="none"/></svg></button>
+          </div>
+        </div>
+        <div class="thread" style="justify-content:flex-end">
+          <div class="turn">
+            <div class="turn-head"><span class="eyebrow">you</span><span class="tm">9:41</span></div>
+            <div class="user-line">somewhere quiet for dinner, walking distance</div>
+          </div>
+          <div class="turn">
+            <div class="turn-head"><span class="eyebrow">kebi</span><span class="tm">9:41</span></div>
+            <div class="err-row">
+              <span class="err-dot" style="background:var(--warn)"></span>
+              <div class="err-body">
+                <div class="t">you're offline.</div>
+                <div class="s">i'll need a connection for this one.</div>
+                <div class="actions"><button class="act box">ask again</button></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="composer"><span class="ph">ask kebi anything</span>
+          <div class="orb"><svg viewBox="0 0 24 24"><path d="M12 15a3 3 0 003-3V6a3 3 0 00-6 0v6a3 3 0 003 3z"/><path d="M19 11a7 7 0 01-14 0M12 18v3"/></svg></div>
+          <div class="orb"><svg viewBox="0 0 24 24"><path d="M12 19V5M5 12l7-7 7 7"/></svg></div>
+        </div>
+        <div class="home-indicator"></div>
+      </div>
+      <p class="note">
+        Offline is a condition, so it's warn-toned like the limit — but unlike the limit it <b>is</b> worth
+        retrying, so it keeps "ask again". Kebi speaks in first person here because the turn is kebi's
+        slot; the sentence belongs to it, not to the app chrome.
+      </p>
+    </div>
+
+    <div class="col">
+      <span class="tag rec">settled</span>
+      <h2>c · thinking (unchanged)</h2>
+      <div class="phone">
+        <div class="status-bar"><span>9:41</span><div class="batt"></div></div>
+        <div class="top-bar">
+          <button class="icon-btn"><svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+          <div class="title-pill"><div class="m"><svg viewBox="0 0 64 64"><ellipse cx="32" cy="38" rx="20" ry="20" fill="#D4B891"/><ellipse cx="32" cy="42" rx="13" ry="13" fill="#F5EBD3"/><circle cx="25" cy="30" r="3.5" fill="white"/><circle cx="39" cy="30" r="3.5" fill="white"/><circle cx="25" cy="30" r="1.7" fill="#1A1A1A"/><circle cx="39" cy="30" r="1.7" fill="#1A1A1A"/></svg></div>kebi</div>
+          <div class="right-pair">
+            <button class="icon-btn"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 013.9-1.6c1.3.9 1 2.4 0 3-.7.5-1.4.9-1.4 1.9"/><circle cx="12" cy="17" r=".8" fill="currentColor"/></svg></button>
+            <button class="icon-btn"><svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.6" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.6" fill="currentColor" stroke="none"/></svg></button>
+          </div>
+        </div>
+        <div class="thread" style="justify-content:flex-end">
+          <div class="turn">
+            <div class="turn-head"><span class="eyebrow">you</span><span class="tm">9:41</span></div>
+            <div class="user-line">somewhere quiet for dinner, walking distance</div>
+          </div>
+          <div class="turn">
+            <div class="turn-head"><span class="eyebrow">kebi</span><span class="tm">9:41</span>
+              <span class="livedot"></span></div>
+            <div class="answer" style="color:var(--text-muted)">checking what's near you and still open…</div>
+            <div class="chip-work">🔎 searching your stash</div>
+            <div><div class="sk h14" style="width:88%"></div><div class="sk h14" style="width:64%;margin-top:8px"></div></div>
+          </div>
+        </div>
+        <div class="composer"><span class="ph typed">somewhere quiet for dinner</span>
+          <div class="orb ink"><svg viewBox="0 0 24 24"><rect x="8" y="8" width="8" height="8" rx="1.5" fill="currentColor" stroke="none"/></svg></div>
+        </div>
+        <div class="home-indicator"></div>
+      </div>
+      <p class="note">
+        For contrast, not for decision. The live process is <b>already the kernel done right</b> —
+        interleaved prose and work chips, shimmer bars where text is still streaming, and the send orb
+        turned into a stop. Nothing in this pass changes it.
+      </p>
+    </div>
+
+  </div>
+
+  <div class="verdict">
+    <h3>chat, decided</h3>
+    <p>
+      <b>1b</b> — kebi speaks first: one short question plus three capability prompts, bottom-aligned so the
+      first real turn pushes them up. Not the home chips repeated; examples of what chat can do that a chip
+      can't.
+    </p>
+    <p>
+      <b>2b + 2c</b> — a failed turn gets the app's standard error row inside its own slot, keeps its
+      <code>thought for 3s</code> fold, and offers <b>"ask again"</b> that resends the question already on
+      screen. A 429 is warn-toned, retry-less, says when it resets, and is the only error-shaped surface
+      allowed to name a plan.
+    </p>
+    <p>
+      <b>3a–3c</b> — a stopped turn keeps its partial answer and gains "ask again"; offline is warn-toned
+      but retryable; the streaming process is untouched. And one rule for the whole screen:
+      <b><code>--danger</code> stops being a body-text colour.</b> It's a 6px dot, and the sentence is
+      ordinary text — same as everywhere else in the app.
+    </p>
+  </div>
+
+</div>
+<script>
+  document.querySelectorAll('.theme-toggle button').forEach(function (b) {
+    b.addEventListener('click', function () {
+      document.querySelectorAll('.theme-toggle button').forEach(function (x) { x.classList.remove('active'); });
+      b.classList.add('active');
+      document.body.classList.toggle('dark', b.dataset.theme === 'dark');
+    });
+  });
+</script>
+</body>
+</html>

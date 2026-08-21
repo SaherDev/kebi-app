@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Kebi login / verify — errors and waits</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #FAFAF9; --surface: #F1F1EF; --surface-2: #E8E8E5;
+    --text: #1A1A1A; --text-muted: #8A8A87; --text-soft: #B5B5B1;
+    --success: #4A7C3A; --danger: #D14343; --warn: #B45309;
+    --tag: #D4B891; --tag-rec: #A7C7A0; --tag-cur: #C9C9C4;
+    --page: #FAFAF9; --page-ink: #1A1A1A;
+  }
+  body.dark {
+    --bg: #13110F; --surface: #1C1A17; --surface-2: #26231F;
+    --text: #F5F1EA; --text-muted: #9A938A; --text-soft: #6E6862;
+    --success: #7FB08C; --danger: #E89090; --warn: #D9B45F; --tag-cur: #45413B;
+    --page: #0A0908; --page-ink: #F5F1EA;
+  }
+  html, body { background: var(--page); color: var(--page-ink);
+    font-family: 'Inter', system-ui, sans-serif; -webkit-font-smoothing: antialiased; min-height: 100vh; }
+  .page { max-width: 1800px; margin: 0 auto; padding: 52px 36px 120px; }
+  .header { display: flex; align-items: flex-start; justify-content: space-between;
+    padding-bottom: 26px; border-bottom: 1px solid var(--surface-2); }
+  h1 { font-size: 25px; font-weight: 700; letter-spacing: -0.028em; }
+  .meta { font-size: 12px; color: var(--text-muted); margin-top: 5px; }
+  .lede { font-size: 14px; color: var(--text-muted); line-height: 1.65; max-width: 880px; margin-top: 14px; }
+  .lede b { color: var(--page-ink); font-weight: 600; }
+  .lede code, .section-desc code, .note code, .verdict code { font-size: 12px;
+    background: var(--surface-2); border-radius: 5px; padding: 1px 6px; }
+  .theme-toggle { display: flex; background: var(--surface); border-radius: 999px; padding: 3px; flex-shrink: 0; }
+  .theme-toggle button { padding: 6px 14px; background: transparent; border: none; border-radius: 999px;
+    font-family: inherit; font-size: 12px; font-weight: 500; color: var(--text-muted); cursor: pointer; }
+  .theme-toggle button.active { background: var(--page-ink); color: var(--page); }
+  .section-head { display: flex; align-items: baseline; justify-content: space-between;
+    margin: 46px 0 12px; padding-bottom: 12px; border-bottom: 1px solid var(--surface-2); }
+  .section-title { font-size: 11px; font-weight: 600; color: var(--text-soft);
+    text-transform: uppercase; letter-spacing: 0.08em; }
+  .section-q { font-size: 12px; color: var(--text-soft); }
+  .section-desc { font-size: 14px; color: var(--text-muted); line-height: 1.6; max-width: 880px; margin-bottom: 24px; }
+  .section-desc b { color: var(--page-ink); font-weight: 600; }
+  .row-of { display: flex; flex-wrap: wrap; gap: 34px; align-items: flex-start; }
+  .col { width: 390px; display: flex; flex-direction: column; gap: 10px; }
+  .col h2 { font-size: 15px; font-weight: 700; letter-spacing: -0.02em; }
+  .note { font-size: 11.5px; color: var(--text-muted); line-height: 1.55; }
+  .note b { color: var(--page-ink); font-weight: 600; }
+  .tag { display: inline-block; align-self: flex-start; font-size: 10px; font-weight: 700;
+    letter-spacing: .08em; text-transform: uppercase; color: #1A1A1A; background: var(--tag);
+    border-radius: 999px; padding: 3px 10px; }
+  .tag.rec { background: var(--tag-rec); }
+  .tag.cur { background: var(--tag-cur); color: var(--page-ink); }
+
+  .phone { width: 390px; height: 700px; background: var(--bg); border-radius: 44px; overflow: hidden;
+    position: relative; box-shadow: 0 0 0 10px #111, 0 0 0 12px var(--page), 0 24px 50px rgba(0,0,0,0.28);
+    display: flex; flex-direction: column; }
+  .status-bar { height: 44px; padding: 15px 30px 0; display: flex; justify-content: space-between;
+    align-items: center; font-size: 14px; font-weight: 600; color: var(--text); flex-shrink: 0; }
+  .batt { width: 22px; height: 11px; border: 1px solid var(--text); border-radius: 3px; position: relative; }
+  .batt::before { content: ''; position: absolute; inset: 1.5px; background: var(--text); border-radius: 1px; }
+  .top-bar { padding: 12px 16px 8px; display: flex; align-items: center; flex-shrink: 0; }
+  .icon-btn { width: 38px; height: 38px; border-radius: 50%; background: var(--surface);
+    display: flex; align-items: center; justify-content: center; border: none; }
+  .icon-btn svg { width: 17px; height: 17px; stroke: var(--text); stroke-width: 1.8; fill: none; }
+  .body { flex: 1; padding: 20px 24px 16px; display: flex; flex-direction: column; gap: 16px; }
+  .home-indicator { width: 128px; height: 5px; background: var(--text); border-radius: 3px;
+    margin: 2px auto 8px; flex-shrink: 0; opacity: .85; }
+
+  .hero { font-size: 30px; font-weight: 700; letter-spacing: -0.03em; line-height: 1.12; color: var(--text); }
+  .sub { font-size: 13.5px; color: var(--text-muted); line-height: 1.5; }
+  .field { background: var(--surface); border-radius: 14px; padding: 14px;
+    font-size: 16px; color: var(--text); }
+  .field.ph { color: var(--text-soft); }
+  .field.bad { border: 1px solid var(--danger); }
+  .cta { background: var(--text); color: var(--bg); border: none; font-family: inherit;
+    border-radius: 14px; padding: 14px; text-align: center; font-size: 15px; font-weight: 600; }
+  .cta.dim { opacity: .6; }
+  .cta-row { display: flex; align-items: center; justify-content: center; gap: 9px; }
+  .spin { width: 15px; height: 15px; border-radius: 50%; border: 2px solid rgba(255,255,255,.25);
+    border-top-color: var(--bg); animation: rot .8s linear infinite; }
+  body.dark .spin { border-color: rgba(0,0,0,.25); border-top-color: var(--bg); }
+  @keyframes rot { 100% { transform: rotate(360deg); } }
+  .msg { font-size: 13px; line-height: 1.5; }
+  .msg.danger { color: var(--danger); }
+  .msg.muted { color: var(--text-muted); }
+  .msg-row { display: flex; align-items: flex-start; gap: 9px; }
+  .msg-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; margin-top: 6px; }
+  .msg-dot.danger { background: var(--danger); }
+  .msg-dot.warn { background: var(--warn); }
+  .msg-body { flex: 1; }
+  .msg-body .t { font-size: 14px; color: var(--text); line-height: 1.45; }
+  .msg-body .s { font-size: 12.5px; color: var(--text-muted); margin-top: 2px; }
+  .otp { display: flex; gap: 9px; }
+  .otp span { flex: 1; height: 56px; border-radius: 14px; background: var(--surface);
+    display: flex; align-items: center; justify-content: center; font-size: 22px;
+    font-weight: 600; color: var(--text); }
+  .otp span.bad { border: 1px solid var(--danger); }
+  .otp span.empty { color: var(--text-soft); }
+  .social { display: flex; flex-direction: column; gap: 10px; }
+  .social button { display: flex; align-items: center; justify-content: center; gap: 9px;
+    background: var(--surface); border: none; border-radius: 14px; padding: 13px;
+    font-family: inherit; font-size: 14.5px; font-weight: 600; color: var(--text); }
+  .divider { display: flex; align-items: center; gap: 10px; color: var(--text-soft); font-size: 12px; }
+  .divider::before, .divider::after { content: ''; height: 1px; background: var(--surface-2); flex: 1; }
+  .resend { font-size: 13px; color: var(--text-muted); text-align: center; }
+  .resend b { color: var(--text); font-weight: 600; }
+  .mascot { align-self: center; animation: breathe 3.2s ease-in-out infinite; transform-origin: 50% 60%; }
+  @keyframes breathe { 0%,100% { transform: scale(1); } 50% { transform: scale(1.045); } }
+
+  .verdict { margin-top: 44px; border: 1px solid var(--surface-2); border-radius: 16px;
+    padding: 22px 24px; background: var(--surface); max-width: 1000px; }
+  .verdict h3 { font-size: 14px; font-weight: 700; margin-bottom: 10px; }
+  .verdict p { font-size: 13px; color: var(--text-muted); line-height: 1.68; }
+  .verdict p + p { margin-top: 10px; }
+  .verdict b { color: var(--page-ink); font-weight: 600; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="header">
+    <div>
+      <h1>login · verify — errors and waits</h1>
+      <div class="meta">kebi-app · app/(auth)/login.tsx + verify.tsx · kebi-auth-flow.md · applies the kernel</div>
+      <p class="lede">
+        These two are the app's <b>best-handled screens</b> already: an in-flight "sending code" with a
+        spinner, a shake for invalid input, inline messages rather than toasts (correct — a toast on a
+        keyboard-covered screen is invisible), an expired-code path and a 60s resend cooldown.
+        <br><br>
+        What's missing is what happens when the problem is <b>not the user's input</b>: no connection, or
+        the provider being down. Today both fall through to the same generic line, which invites the user
+        to keep retyping an address that was never wrong. There is also no empty or loading state to
+        design — nothing is fetched before you sign in — so this file is about the failure vocabulary
+        only.
+      </p>
+    </div>
+    <div class="theme-toggle">
+      <button class="active" data-theme="light">light</button>
+      <button data-theme="dark">dark</button>
+    </div>
+  </div>
+
+  <div class="section-head">
+    <span class="section-title">1 · login</span>
+    <span class="section-q">your fault, or ours?</span>
+  </div>
+  <p class="section-desc">
+    The shake is for input the client can reject locally. Everything that comes back from the network
+    needs to say <b>whose problem it is</b>, because the recovery is completely different: fix the
+    address, or wait.
+  </p>
+
+  <div class="row-of">
+
+    <div class="col">
+      <span class="tag cur">today · keep</span>
+      <h2>a · sending, and a bad address</h2>
+      <div class="phone">
+        <div class="status-bar"><span>9:41</span><div class="batt"></div></div>
+        <div class="top-bar"></div>
+        <div class="body">
+          <svg class="mascot" width="64" height="64" viewBox="0 0 64 64"><ellipse cx="32" cy="38" rx="20" ry="20" fill="#D4B891"/><ellipse cx="32" cy="42" rx="13" ry="13" fill="#F5EBD3"/><ellipse cx="13" cy="34" rx="3.5" ry="6" fill="#A89070" transform="rotate(-25 13 34)"/><ellipse cx="51" cy="34" rx="3.5" ry="6" fill="#A89070" transform="rotate(25 51 34)"/><circle cx="25" cy="30" r="3.5" fill="white"/><circle cx="39" cy="30" r="3.5" fill="white"/><circle cx="25" cy="30" r="1.7" fill="#1A1A1A"/><circle cx="39" cy="30" r="1.7" fill="#1A1A1A"/><path d="M30 33 L34 33 L32 36 Z" fill="#C87A4A"/></svg>
+          <div class="hero">let's get you in</div>
+          <div class="field bad">+62 812</div>
+          <div class="msg danger">that number needs its country code</div>
+          <button class="cta"><span class="cta-row"><span class="spin"></span>sending code</span></button>
+          <div class="divider">or</div>
+          <div class="social">
+            <button>continue with google</button>
+            <button>continue with apple</button>
+          </div>
+        </div>
+        <div class="home-indicator"></div>
+      </div>
+      <p class="note">
+        Already built and already right: a red-bordered field, one inline sentence, a shake, and a button
+        that says it's working. <b>Unchanged.</b> Shown so the two new cases below have something to
+        match.
+      </p>
+    </div>
+
+    <div class="col">
+      <span class="tag rec">recommended</span>
+      <h2>b · no connection</h2>
+      <div class="phone">
+        <div class="status-bar"><span>9:41</span><div class="batt"></div></div>
+        <div class="top-bar"></div>
+        <div class="body">
+          <svg class="mascot" width="64" height="64" viewBox="0 0 64 64"><ellipse cx="32" cy="38" rx="20" ry="20" fill="#D4B891"/><ellipse cx="32" cy="42" rx="13" ry="13" fill="#F5EBD3"/><ellipse cx="13" cy="34" rx="3.5" ry="6" fill="#A89070" transform="rotate(-25 13 34)"/><ellipse cx="51" cy="34" rx="3.5" ry="6" fill="#A89070" transform="rotate(25 51 34)"/><circle cx="25" cy="30" r="3.5" fill="white"/><circle cx="39" cy="30" r="3.5" fill="white"/><circle cx="25" cy="30" r="1.7" fill="#1A1A1A"/><circle cx="39" cy="30" r="1.7" fill="#1A1A1A"/><path d="M30 33 L34 33 L32 36 Z" fill="#C87A4A"/></svg>
+          <div class="hero">let's get you in</div>
+          <div class="field">saher@example.com</div>
+          <div class="msg-row">
+            <span class="msg-dot warn"></span>
+            <div class="msg-body">
+              <div class="t">you're offline.</div>
+              <div class="s">your address is fine — this needs a connection.</div>
+            </div>
+          </div>
+          <button class="cta">try again</button>
+          <div class="divider">or</div>
+          <div class="social">
+            <button>continue with google</button>
+            <button>continue with apple</button>
+          </div>
+        </div>
+        <div class="home-indicator"></div>
+      </div>
+      <p class="note">
+        <b>Warn-toned, no red field, no shake</b> — nothing the user typed is wrong, and marking it wrong
+        would send them editing a correct address. The second line says so explicitly. The button becomes
+        "try again" so the same control retries.
+      </p>
+    </div>
+
+    <div class="col">
+      <span class="tag rec">recommended</span>
+      <h2>c · we can't send codes right now</h2>
+      <div class="phone">
+        <div class="status-bar"><span>9:41</span><div class="batt"></div></div>
+        <div class="top-bar"></div>
+        <div class="body">
+          <svg class="mascot" width="64" height="64" viewBox="0 0 64 64"><ellipse cx="32" cy="38" rx="20" ry="20" fill="#D4B891"/><ellipse cx="32" cy="42" rx="13" ry="13" fill="#F5EBD3"/><ellipse cx="13" cy="34" rx="3.5" ry="6" fill="#A89070" transform="rotate(-25 13 34)"/><ellipse cx="51" cy="34" rx="3.5" ry="6" fill="#A89070" transform="rotate(25 51 34)"/><circle cx="25" cy="30" r="3.5" fill="white"/><circle cx="39" cy="30" r="3.5" fill="white"/><circle cx="25" cy="30" r="1.7" fill="#1A1A1A"/><circle cx="39" cy="30" r="1.7" fill="#1A1A1A"/><path d="M30 33 L34 33 L32 36 Z" fill="#C87A4A"/></svg>
+          <div class="hero">let's get you in</div>
+          <div class="field">saher@example.com</div>
+          <div class="msg-row">
+            <span class="msg-dot danger"></span>
+            <div class="msg-body">
+              <div class="t">couldn't send a code just now.</div>
+              <div class="s">not you — try again in a minute, or use google below.</div>
+            </div>
+          </div>
+          <button class="cta">try again</button>
+          <div class="divider">or</div>
+          <div class="social">
+            <button>continue with google</button>
+            <button>continue with apple</button>
+          </div>
+        </div>
+        <div class="home-indicator"></div>
+      </div>
+      <p class="note">
+        A 5xx from the OTP provider. Says <b>"not you"</b> in as many words, and points at the social
+        buttons — the one screen in the app with a genuinely different second route in. Danger-toned,
+        because something did break.
+      </p>
+    </div>
+
+  </div>
+
+  <div class="section-head">
+    <span class="section-title">2 · verify</span>
+    <span class="section-q">three different wrongs</span>
+  </div>
+  <p class="section-desc">
+    The code screen has three failures the code already distinguishes internally
+    (<code>expired</code>, an invalid code, and rate limiting) — the question is whether the copy does
+    too, and what the boxes do while it checks.
+  </p>
+
+  <div class="row-of">
+
+    <div class="col">
+      <span class="tag rec">recommended</span>
+      <h2>a · checking</h2>
+      <div class="phone">
+        <div class="status-bar"><span>9:41</span><div class="batt"></div></div>
+        <div class="top-bar"><button class="icon-btn"><svg viewBox="0 0 24 24"><polyline points="15 6 9 12 15 18"/></svg></button></div>
+        <div class="body">
+          <div class="hero">check your messages</div>
+          <div class="sub">we sent a code to saher@example.com</div>
+          <div class="otp"><span>4</span><span>1</span><span>8</span><span>2</span><span>0</span><span>6</span></div>
+          <div class="msg-row" style="justify-content:center">
+            <span class="spin" style="border-color:var(--surface-2);border-top-color:var(--text-muted)"></span>
+            <span class="msg muted">checking</span>
+          </div>
+          <div class="resend">resend in <b>0:47</b></div>
+        </div>
+        <div class="home-indicator"></div>
+      </div>
+      <p class="note">
+        The sixth digit fires the check automatically, so there is no button to put a spinner in. The
+        boxes <b>lock</b> (no editing mid-check) and one muted line under them says "checking" — a
+        half-second of silence here reads as a dead app.
+      </p>
+    </div>
+
+    <div class="col">
+      <span class="tag rec">recommended</span>
+      <h2>b · wrong code</h2>
+      <div class="phone">
+        <div class="status-bar"><span>9:41</span><div class="batt"></div></div>
+        <div class="top-bar"><button class="icon-btn"><svg viewBox="0 0 24 24"><polyline points="15 6 9 12 15 18"/></svg></button></div>
+        <div class="body">
+          <div class="hero">check your messages</div>
+          <div class="sub">we sent a code to saher@example.com</div>
+          <div class="otp"><span class="bad">4</span><span class="bad">1</span><span class="bad">8</span><span class="bad">2</span><span class="bad">0</span><span class="bad">7</span></div>
+          <div class="msg danger">that code isn't right. check the last one we sent.</div>
+          <div class="resend">resend in <b>0:31</b></div>
+        </div>
+        <div class="home-indicator"></div>
+      </div>
+      <p class="note">
+        Shake + red boxes, and the copy carries the <b>most common actual cause</b>: they typed an older
+        code from a previous message. The digits stay so the user can see what they entered — clearing
+        them is the fastest way to make someone retype a correct code wrongly.
+      </p>
+    </div>
+
+    <div class="col">
+      <span class="tag rec">recommended</span>
+      <h2>c · expired</h2>
+      <div class="phone">
+        <div class="status-bar"><span>9:41</span><div class="batt"></div></div>
+        <div class="top-bar"><button class="icon-btn"><svg viewBox="0 0 24 24"><polyline points="15 6 9 12 15 18"/></svg></button></div>
+        <div class="body">
+          <div class="hero">check your messages</div>
+          <div class="sub">we sent a code to saher@example.com</div>
+          <div class="otp"><span class="empty">–</span><span class="empty">–</span><span class="empty">–</span><span class="empty">–</span><span class="empty">–</span><span class="empty">–</span></div>
+          <div class="msg-row">
+            <span class="msg-dot warn"></span>
+            <div class="msg-body">
+              <div class="t">that code has expired.</div>
+              <div class="s">they only last a few minutes.</div>
+            </div>
+          </div>
+          <button class="cta">send a new code</button>
+        </div>
+        <div class="home-indicator"></div>
+      </div>
+      <p class="note">
+        Expiry is <b>not a typo</b> — warn tone, boxes cleared (the code is dead, keeping it invites
+        another attempt with it), and the cooldown is <b>skipped</b>: the resend button is the primary
+        action, because waiting 47 seconds to fix our expiry is our problem, not theirs.
+      </p>
+    </div>
+
+    <div class="col">
+      <span class="tag rec">recommended</span>
+      <h2>d · too many tries</h2>
+      <div class="phone">
+        <div class="status-bar"><span>9:41</span><div class="batt"></div></div>
+        <div class="top-bar"><button class="icon-btn"><svg viewBox="0 0 24 24"><polyline points="15 6 9 12 15 18"/></svg></button></div>
+        <div class="body">
+          <div class="hero">check your messages</div>
+          <div class="sub">we sent a code to saher@example.com</div>
+          <div class="otp" style="opacity:.45"><span class="empty">–</span><span class="empty">–</span><span class="empty">–</span><span class="empty">–</span><span class="empty">–</span><span class="empty">–</span></div>
+          <div class="msg-row">
+            <span class="msg-dot warn"></span>
+            <div class="msg-body">
+              <div class="t">too many tries.</div>
+              <div class="s">give it a minute, then ask for a new code.</div>
+            </div>
+          </div>
+          <div class="resend">resend in <b>0:58</b></div>
+        </div>
+        <div class="home-indicator"></div>
+      </div>
+      <p class="note">
+        Rate limiting is a boundary, not a fault: warn-toned, boxes disabled rather than red, and the
+        cooldown becomes the only path forward — no retry button, because there is nothing to retry until
+        the clock runs out. Same rule as chat's daily limit.
+      </p>
+    </div>
+
+  </div>
+
+  <div class="verdict">
+    <h3>login and verify, recommended</h3>
+    <p>
+      <b>Keep everything that exists</b> — the shake, the red field, the inline messages, the sending
+      state, the cooldown. This screen pair was built right.
+    </p>
+    <p>
+      <b>1b + 1c</b> — split the network failures out of the generic line: offline is warn-toned and says
+      the address is fine; a provider failure says "not you" and points at the social buttons. Neither
+      shakes the field, because nothing the user typed is wrong.
+    </p>
+    <p>
+      <b>2a–2d</b> — four distinct outcomes with four sentences: "checking" while the auto-submitted code
+      is in flight, a wrong code in red keeping the digits, an expired code in warn with the boxes cleared
+      and <b>the cooldown waived</b>, and rate limiting in warn with the countdown as the only way
+      forward.
+    </p>
+  </div>
+
+</div>
+<script>
+  document.querySelectorAll('.theme-toggle button').forEach(function (b) {
+    b.addEventListener('click', function () {
+      document.querySelectorAll('.theme-toggle button').forEach(function (x) { x.classList.remove('active'); });
+      b.classList.add('active');
+      document.body.classList.toggle('dark', b.dataset.theme === 'dark');
+    });
+  });
+</script>
+</body>
+</html>

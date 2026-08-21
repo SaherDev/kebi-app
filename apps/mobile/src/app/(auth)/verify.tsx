@@ -5,6 +5,7 @@ import { useRouter } from 'expo-router';
 import { Mascot } from '../../components/mascot';
 import { IconButton } from '../../components/icon-button';
 import { OtpInput, type OtpInputHandle } from '../../components/auth/otp-input';
+import { Spinner } from '../../components/spinner';
 import { AUTH } from '../../auth/constants';
 import { useAuth, type AuthErrorReason } from '../../auth/auth-context';
 import { useTranslation } from '../../i18n/context';
@@ -33,7 +34,11 @@ export default function VerifyScreen() {
   const [cooldown, setCooldown] = useState<number>(AUTH.resendCooldownSec);
   const [lockedUntilReset, setLockedUntilReset] = useState(false);
   // Inline message shown on-screen (no toasts on the auth screens).
-  const [message, setMessage] = useState<{ text: string; tone: 'danger' | 'muted' } | null>(null);
+  const [message, setMessage] = useState<{
+    text: string;
+    /** `warn` is a boundary rather than a fault — an expired code, a rate limit. */
+    tone: 'danger' | 'warn' | 'muted';
+  } | null>(null);
 
   // No pending request (e.g. opened directly / after sign-out) → back to login.
   useEffect(() => {
@@ -49,22 +54,31 @@ export default function VerifyScreen() {
 
   const reportError = useCallback(
     (reason: AuthErrorReason) => {
+      // Four outcomes, four sentences (ADR-056). Only a wrong code is the
+      // user's mistake — the rest are conditions, and marking them in red sends
+      // people re-checking a code that was fine.
       switch (reason) {
         case 'expired':
-          setMessage({ text: t('auth.errExpired'), tone: 'danger' });
+          setMessage({ text: t('auth.errExpired'), tone: 'warn' });
+          // Our expiry, our wait: the cooldown is waived so "send a new code"
+          // is available immediately rather than 47 seconds from now.
+          setCooldown(0);
+          otpRef.current?.shakeAndClear();
           break;
         case 'too_many':
-          setMessage({ text: t('auth.errTooMany'), tone: 'danger' });
+          setMessage({ text: t('auth.errTooMany'), tone: 'warn' });
           setLockedUntilReset(true);
           setCooldown(AUTH.resendCooldownSec);
+          otpRef.current?.shakeAndClear();
           break;
         case 'network':
-          setMessage({ text: t('auth.errNetwork'), tone: 'danger' });
+          setMessage({ text: t('auth.errNetwork'), tone: 'warn' });
+          // Nothing was wrong with what they typed — leave it be.
           break;
         default:
           setMessage({ text: t('auth.errWrongCode'), tone: 'danger' });
+          otpRef.current?.shakeAndClear();
       }
-      otpRef.current?.shakeAndClear();
     },
     [t],
   );
@@ -130,16 +144,27 @@ export default function VerifyScreen() {
         {/* Code boxes (auto-submit on fill) */}
         <OtpInput ref={otpRef} onComplete={handleComplete} disabled={verifying || lockedUntilReset} />
 
-        {/* Inline message (errors / info) — no toasts on the auth screens */}
-        {message && (
+        {/* The sixth digit auto-submits, so there is no button to hold the
+            in-flight state — a beat of silence here reads as a dead app. */}
+        {verifying ? (
+          <View className="flex-row items-center justify-center gap-2">
+            <Spinner size={13} />
+            <Text className="text-small text-text-muted">{t('auth.checking')}</Text>
+          </View>
+        ) : message ? (
+          /* Inline message (errors / info) — no toasts on the auth screens */
           <Text
             className={`text-center text-small ${
-              message.tone === 'danger' ? 'text-danger' : 'text-text-muted'
+              message.tone === 'danger'
+                ? 'text-danger'
+                : message.tone === 'warn'
+                  ? 'text-warn'
+                  : 'text-text-muted'
             }`}
           >
             {message.text}
           </Text>
-        )}
+        ) : null}
 
         {/* Resend + change */}
         <View className="items-center gap-3.5">

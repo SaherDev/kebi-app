@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Kebi boot — slow session, dead routes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #FAFAF9; --surface: #F1F1EF; --surface-2: #E8E8E5;
+    --text: #1A1A1A; --text-muted: #8A8A87; --text-soft: #B5B5B1;
+    --success: #4A7C3A; --danger: #D14343; --warn: #B45309;
+    --tag: #D4B891; --tag-rec: #A7C7A0; --tag-cur: #C9C9C4;
+    --page: #FAFAF9; --page-ink: #1A1A1A;
+  }
+  body.dark {
+    --bg: #13110F; --surface: #1C1A17; --surface-2: #26231F;
+    --text: #F5F1EA; --text-muted: #9A938A; --text-soft: #6E6862;
+    --success: #7FB08C; --danger: #E89090; --warn: #D9B45F; --tag-cur: #45413B;
+    --page: #0A0908; --page-ink: #F5F1EA;
+  }
+  html, body { background: var(--page); color: var(--page-ink);
+    font-family: 'Inter', system-ui, sans-serif; -webkit-font-smoothing: antialiased; min-height: 100vh; }
+  .page { max-width: 1800px; margin: 0 auto; padding: 52px 36px 120px; }
+  .header { display: flex; align-items: flex-start; justify-content: space-between;
+    padding-bottom: 26px; border-bottom: 1px solid var(--surface-2); }
+  h1 { font-size: 25px; font-weight: 700; letter-spacing: -0.028em; }
+  .meta { font-size: 12px; color: var(--text-muted); margin-top: 5px; }
+  .lede { font-size: 14px; color: var(--text-muted); line-height: 1.65; max-width: 880px; margin-top: 14px; }
+  .lede b { color: var(--page-ink); font-weight: 600; }
+  .lede code, .section-desc code, .note code, .verdict code { font-size: 12px;
+    background: var(--surface-2); border-radius: 5px; padding: 1px 6px; }
+  .theme-toggle { display: flex; background: var(--surface); border-radius: 999px; padding: 3px; flex-shrink: 0; }
+  .theme-toggle button { padding: 6px 14px; background: transparent; border: none; border-radius: 999px;
+    font-family: inherit; font-size: 12px; font-weight: 500; color: var(--text-muted); cursor: pointer; }
+  .theme-toggle button.active { background: var(--page-ink); color: var(--page); }
+  .section-head { display: flex; align-items: baseline; justify-content: space-between;
+    margin: 46px 0 12px; padding-bottom: 12px; border-bottom: 1px solid var(--surface-2); }
+  .section-title { font-size: 11px; font-weight: 600; color: var(--text-soft);
+    text-transform: uppercase; letter-spacing: 0.08em; }
+  .section-q { font-size: 12px; color: var(--text-soft); }
+  .section-desc { font-size: 14px; color: var(--text-muted); line-height: 1.6; max-width: 880px; margin-bottom: 24px; }
+  .section-desc b { color: var(--page-ink); font-weight: 600; }
+  .row-of { display: flex; flex-wrap: wrap; gap: 34px; align-items: flex-start; }
+  .col { width: 390px; display: flex; flex-direction: column; gap: 10px; }
+  .col h2 { font-size: 15px; font-weight: 700; letter-spacing: -0.02em; }
+  .note { font-size: 11.5px; color: var(--text-muted); line-height: 1.55; }
+  .note b { color: var(--page-ink); font-weight: 600; }
+  .tag { display: inline-block; align-self: flex-start; font-size: 10px; font-weight: 700;
+    letter-spacing: .08em; text-transform: uppercase; color: #1A1A1A; background: var(--tag);
+    border-radius: 999px; padding: 3px 10px; }
+  .tag.rec { background: var(--tag-rec); }
+  .tag.cur { background: var(--tag-cur); color: var(--page-ink); }
+  .tag.bad { background: var(--danger); color: #fff; }
+
+  .phone { width: 390px; height: 700px; background: var(--bg); border-radius: 44px; overflow: hidden;
+    position: relative; box-shadow: 0 0 0 10px #111, 0 0 0 12px var(--page), 0 24px 50px rgba(0,0,0,0.28);
+    display: flex; flex-direction: column; }
+  .status-bar { height: 44px; padding: 15px 30px 0; display: flex; justify-content: space-between;
+    align-items: center; font-size: 14px; font-weight: 600; color: var(--text); flex-shrink: 0; }
+  .batt { width: 22px; height: 11px; border: 1px solid var(--text); border-radius: 3px; position: relative; }
+  .batt::before { content: ''; position: absolute; inset: 1.5px; background: var(--text); border-radius: 1px; }
+  .top-bar { padding: 12px 16px 8px; display: flex; align-items: center; flex-shrink: 0; }
+  .icon-btn { width: 38px; height: 38px; border-radius: 50%; background: var(--surface);
+    display: flex; align-items: center; justify-content: center; border: none; }
+  .icon-btn svg { width: 17px; height: 17px; stroke: var(--text); stroke-width: 1.8; fill: none; }
+  .center { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 14px; text-align: center; padding: 0 32px 60px; }
+  .home-indicator { width: 128px; height: 5px; background: var(--text); border-radius: 3px;
+    margin: 2px auto 8px; flex-shrink: 0; opacity: .85; }
+
+  .wordmark { font-size: 28px; font-weight: 800; letter-spacing: -0.03em; color: var(--text); }
+  .tagline { font-size: 13.5px; color: var(--text-muted); }
+  .status-line { font-size: 13px; color: var(--text-muted); }
+  .t { font-size: 16px; font-weight: 600; color: var(--text); }
+  .h { font-size: 13px; color: var(--text-muted); line-height: 1.5; }
+  .btn { border: 1px solid var(--surface-2); background: transparent; border-radius: 12px;
+    padding: 10px 18px; font-family: inherit; font-size: 13.5px; font-weight: 600; color: var(--text); }
+  .btn.ink { background: var(--text); color: var(--bg); border-color: var(--text); }
+  .mascot { animation: breathe 3.2s ease-in-out infinite; transform-origin: 50% 60%; }
+  @keyframes breathe { 0%,100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+  .dots { display: flex; gap: 6px; }
+  .dots span { width: 6px; height: 6px; border-radius: 50%; background: var(--text-soft);
+    animation: blink 1.4s ease-in-out infinite; }
+  .dots span:nth-child(2) { animation-delay: .18s; }
+  .dots span:nth-child(3) { animation-delay: .36s; }
+  @keyframes blink { 0%,100% { opacity: 1 } 50% { opacity: .3 } }
+  .rn-error { background: #b91c1c; color: #fff; font-family: ui-monospace, monospace;
+    font-size: 11px; padding: 12px; line-height: 1.5; border-radius: 8px; margin: 16px; }
+  .rn-error b { display: block; font-size: 13px; margin-bottom: 6px; }
+
+  .verdict { margin-top: 44px; border: 1px solid var(--surface-2); border-radius: 16px;
+    padding: 22px 24px; background: var(--surface); max-width: 1000px; }
+  .verdict h3 { font-size: 14px; font-weight: 700; margin-bottom: 10px; }
+  .verdict p { font-size: 13px; color: var(--text-muted); line-height: 1.68; }
+  .verdict p + p { margin-top: 10px; }
+  .verdict b { color: var(--page-ink); font-weight: 600; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="header">
+    <div>
+      <h1>boot · dead routes — the two states with nowhere to live</h1>
+      <div class="meta">kebi-app · app/_layout.tsx + components/splash.tsx + the missing +not-found · applies the kernel</div>
+      <p class="lede">
+        Two edges that belong to no screen. First, the <b>splash</b> holds for a fixed 2.6s and hands off
+        to home regardless — so a session restore that takes longer, or fails, lands the user on a home
+        screen that quietly can't fetch anything, or bounces them to login. Second, there is
+        <b>no <code>+not-found</code> route</b>: any URL that doesn't match renders expo-router's stock
+        "Unmatched Route" screen — framework chrome, in a app that otherwise never shows any.
+        <br><br>
+        The second one is not hypothetical: <code>+native-intent.ts</code> exists specifically to redirect
+        one such URL away from that screen.
+      </p>
+    </div>
+    <div class="theme-toggle">
+      <button class="active" data-theme="light">light</button>
+      <button data-theme="dark">dark</button>
+    </div>
+  </div>
+
+  <div class="section-head">
+    <span class="section-title">1 · a session that takes too long</span>
+    <span class="section-q">what happens after the splash's 2.6 seconds?</span>
+  </div>
+  <p class="section-desc">
+    The splash is a fixed timeline, not a progress bar — by design (§ performance budgets: splash to home,
+    2.5s max, regardless of network). The question is only what the user sees when auth <i>hasn't</i>
+    resolved by the time it ends.
+  </p>
+
+  <div class="row-of">
+
+    <div class="col">
+      <span class="tag cur">today</span>
+      <h2>a · hand off anyway</h2>
+      <div class="phone">
+        <div class="status-bar"><span>9:41</span><div class="batt"></div></div>
+        <div class="top-bar"></div>
+        <div class="center">
+          <div style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text-soft);align-self:flex-start">kebi</div>
+          <div style="align-self:flex-start;width:100%;height:26px;background:var(--surface-2);border-radius:6px"></div>
+          <div style="align-self:flex-start;width:54%;height:26px;background:var(--surface-2);border-radius:6px"></div>
+        </div>
+        <div class="home-indicator"></div>
+      </div>
+      <p class="note">
+        Home mounts and starts fetching with no session, so its reads fail; a moment later the gate
+        decides and may replace the screen with login. The user watches a screen build itself and then
+        get taken away.
+      </p>
+    </div>
+
+    <div class="col">
+      <span class="tag rec">recommended</span>
+      <h2>b · hold the splash, then say so</h2>
+      <div class="phone">
+        <div class="status-bar"><span>9:41</span><div class="batt"></div></div>
+        <div class="center">
+          <svg class="mascot" width="120" height="120" viewBox="0 0 64 64"><ellipse cx="32" cy="38" rx="20" ry="20" fill="#D4B891"/><ellipse cx="32" cy="42" rx="13" ry="13" fill="#F5EBD3"/><ellipse cx="13" cy="34" rx="3.5" ry="6" fill="#A89070" transform="rotate(-25 13 34)"/><ellipse cx="51" cy="34" rx="3.5" ry="6" fill="#A89070" transform="rotate(25 51 34)"/><circle cx="25" cy="30" r="3.5" fill="white"/><circle cx="39" cy="30" r="3.5" fill="white"/><circle cx="25" cy="30" r="1.7" fill="#1A1A1A"/><circle cx="39" cy="30" r="1.7" fill="#1A1A1A"/><path d="M30 33 L34 33 L32 36 Z" fill="#C87A4A"/><path d="M30 14 Q32 10 34 14" stroke="#8B7355" stroke-width="1.6" fill="none" stroke-linecap="round"/></svg>
+          <div class="wordmark">kebi</div>
+          <div class="status-line">still waking up…</div>
+          <div class="dots"><span></span><span></span><span></span></div>
+        </div>
+        <div class="home-indicator"></div>
+      </div>
+      <p class="note">
+        The splash <b>stays</b> while auth is unresolved rather than handing off on a timer, and after 5s
+        the line changes from the tagline to a status. This is the design system's reusable
+        <b>loading screen</b>, which already specifies exactly this: mascot breathing, cycling status,
+        reassurance at 5s. It exists on paper and has never been used.
+      </p>
+    </div>
+
+    <div class="col">
+      <span class="tag rec">recommended</span>
+      <h2>c · it isn't coming back</h2>
+      <div class="phone">
+        <div class="status-bar"><span>9:41</span><div class="batt"></div></div>
+        <div class="center">
+          <svg class="mascot" width="96" height="96" viewBox="0 0 64 64"><ellipse cx="32" cy="38" rx="20" ry="20" fill="#D4B891"/><ellipse cx="32" cy="42" rx="13" ry="13" fill="#F5EBD3"/><ellipse cx="13" cy="34" rx="3.5" ry="6" fill="#A89070" transform="rotate(-25 13 34)"/><ellipse cx="51" cy="34" rx="3.5" ry="6" fill="#A89070" transform="rotate(25 51 34)"/><circle cx="25" cy="30" r="3.5" fill="white"/><circle cx="39" cy="30" r="3.5" fill="white"/><circle cx="25" cy="30" r="1.7" fill="#1A1A1A"/><circle cx="39" cy="30" r="1.7" fill="#1A1A1A"/><path d="M30 33 L34 33 L32 36 Z" fill="#C87A4A"/></svg>
+          <div class="t">can't reach kebi</div>
+          <div class="h">check your connection — your places are safe.</div>
+          <button class="btn">try again</button>
+        </div>
+        <div class="home-indicator"></div>
+      </div>
+      <p class="note">
+        After ~15s (the loading screen's cancel threshold) the wait becomes a statement with a retry —
+        outlined, like every other full-screen dead end in the app.
+        <b>"your places are safe"</b> is the line that matters: a boot failure is the moment a user most
+        suspects they've lost everything. No stack trace, no code.
+      </p>
+    </div>
+
+  </div>
+
+  <div class="section-head">
+    <span class="section-title">2 · a route that doesn't exist</span>
+    <span class="section-q">the only screen that isn't ours</span>
+  </div>
+  <p class="section-desc">
+    An old deep link, a share-extension URL that changed shape, a stale back-stack entry after an update.
+    Rare individually, and the only place the app can show <b>framework chrome</b> — which is why it's
+    worth thirty lines.
+  </p>
+
+  <div class="row-of">
+
+    <div class="col">
+      <span class="tag bad">today</span>
+      <h2>a · expo-router's unmatched route</h2>
+      <div class="phone">
+        <div class="status-bar"><span>9:41</span><div class="batt"></div></div>
+        <div class="center" style="justify-content:flex-start;padding-top:40px">
+          <div class="rn-error">
+            <b>Unmatched Route</b>
+            Page could not be found. &lt;Redirect /&gt; or &lt;Link /&gt; to a valid route.
+            <br><br>
+            kebi://place?id=old-id
+          </div>
+          <button class="btn">Go back</button>
+        </div>
+        <div class="home-indicator"></div>
+      </div>
+      <p class="note">
+        Developer text, a raw URL, and a system font, in an app that is otherwise entirely its own. It
+        also tells the user nothing they can act on.
+      </p>
+    </div>
+
+    <div class="col">
+      <span class="tag rec">recommended</span>
+      <h2>b · kebi's own dead end</h2>
+      <div class="phone">
+        <div class="status-bar"><span>9:41</span><div class="batt"></div></div>
+        <div class="top-bar"><button class="icon-btn"><svg viewBox="0 0 24 24"><polyline points="15 6 9 12 15 18"/></svg></button></div>
+        <div class="center">
+          <div style="font-size:30px">🧭</div>
+          <div class="t">that link goes nowhere</div>
+          <div class="h">it may be from an older version of the app.</div>
+          <button class="btn">take me home</button>
+        </div>
+        <div class="home-indicator"></div>
+      </div>
+      <p class="note">
+        The same shape <b>and the same button</b> as the two dead ends already shipped (a gone place, a
+        gone area): an emoji, one sentence naming the cause, and one way out — <b>outlined, never
+        filled</b>. A filled slab is the app's heaviest ink and would make a dead end look like the most
+        important screen in the app. No retry: a route that doesn't exist never will. "take me home"
+        rather than "go back", since the back stack may itself be the problem.
+      </p>
+    </div>
+
+    <div class="col">
+      <span class="tag">alternative</span>
+      <h2>c · redirect silently home</h2>
+      <div class="phone">
+        <div class="status-bar"><span>9:41</span><div class="batt"></div></div>
+        <div class="top-bar">
+          <div style="flex:1;font-size:13px;color:var(--text-muted)">📍 shimokitazawa</div>
+        </div>
+        <div class="center" style="justify-content:flex-start;align-items:flex-start;text-align:left;padding:8px 24px">
+          <div style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text-soft)">kebi</div>
+          <div style="font-size:28px;font-weight:700;letter-spacing:-0.03em;color:var(--text)">morning. coffee first?</div>
+        </div>
+        <div class="home-indicator"></div>
+      </div>
+      <p class="note">
+        `redirectSystemPath` already does exactly this for the share-extension URL, so extending it to
+        everything is one line. But a user who tapped a link and silently landed on home has no idea why
+        — and we'd lose the one signal that tells us a link shape broke.
+      </p>
+    </div>
+
+  </div>
+
+  <div class="section-head">
+    <span class="section-title">3 · the dead end's action</span>
+    <span class="section-q">outlined is still a button on a screen that failed</span>
+  </div>
+  <p class="section-desc">
+    This treatment appears on <b>three</b> screens — a gone place, a gone area, an unmatched route — so
+    it is worth settling once. The filled slab is already out. The question is whether a dead end needs a
+    button at all, given every one of these screens already has a back arrow in the top bar.
+  </p>
+
+  <div class="row-of">
+
+    <div class="col">
+      <span class="tag cur">shipped</span>
+      <h2>a · outlined pill</h2>
+      <div class="phone" style="height:420px">
+        <div class="top-bar"><button class="icon-btn"><svg viewBox="0 0 24 24"><polyline points="15 6 9 12 15 18"/></svg></button></div>
+        <div class="center" style="padding-bottom:20px">
+          <div style="font-size:30px">🧭</div>
+          <div class="t">that link goes nowhere</div>
+          <div class="h">it may be from an older version of the app.</div>
+          <button class="btn">take me home</button>
+        </div>
+      </div>
+      <p class="note">
+        Unmissable and unmistakably tappable. But it is still a bordered box on a screen whose whole
+        message is "nothing here" — and it duplicates the back arrow two inches above it.
+      </p>
+    </div>
+
+    <div class="col">
+      <span class="tag rec">recommended</span>
+      <h2>b · borderless text action</h2>
+      <div class="phone" style="height:420px">
+        <div class="top-bar"><button class="icon-btn"><svg viewBox="0 0 24 24"><polyline points="15 6 9 12 15 18"/></svg></button></div>
+        <div class="center" style="padding-bottom:20px">
+          <div style="font-size:30px">🧭</div>
+          <div class="t">that link goes nowhere</div>
+          <div class="h">it may be from an older version of the app.</div>
+          <button style="background:none;border:none;font-family:inherit;font-size:14px;font-weight:600;color:var(--text);padding:6px 10px;display:inline-flex;align-items:center;gap:6px">
+            take me home
+            <svg viewBox="0 0 24 24" style="width:12px;height:12px;stroke:currentColor;stroke-width:2.4;fill:none"><polyline points="9 6 15 12 9 18"/></svg>
+          </button>
+        </div>
+      </div>
+      <p class="note">
+        The app's <b>existing</b> action language — the same transparent 13–14px/600 the toast uses for
+        retry and undo, and the error row uses everywhere else in this pass. Nothing new is introduced,
+        the weight matches the news, and the chevron says it goes somewhere. One vocabulary for every
+        recovery in the app.
+      </p>
+    </div>
+
+    <div class="col">
+      <span class="tag">quietest</span>
+      <h2>c · no action, point at the arrow</h2>
+      <div class="phone" style="height:420px">
+        <div class="top-bar"><button class="icon-btn"><svg viewBox="0 0 24 24"><polyline points="15 6 9 12 15 18"/></svg></button></div>
+        <div class="center" style="padding-bottom:20px">
+          <div style="font-size:30px">🧭</div>
+          <div class="t">that link goes nowhere</div>
+          <div class="h">head back with the arrow up top — it may be from an older version of the app.</div>
+        </div>
+      </div>
+      <p class="note">
+        Nothing new on screen at all. But the design system requires every error to <b>offer a next
+        action</b>, and a sentence pointing at a control 300px away is the weakest possible version of
+        one — the same objection that killed the bookmark-ring-only empty state.
+      </p>
+    </div>
+
+    <div class="col">
+      <span class="tag">list-shaped</span>
+      <h2>d · a row, like the empty state's</h2>
+      <div class="phone" style="height:420px">
+        <div class="top-bar"><button class="icon-btn"><svg viewBox="0 0 24 24"><polyline points="15 6 9 12 15 18"/></svg></button></div>
+        <div class="center" style="padding-bottom:20px">
+          <div style="font-size:30px">🧭</div>
+          <div class="t">that link goes nowhere</div>
+          <div class="h">it may be from an older version of the app.</div>
+          <div style="display:flex;align-items:center;gap:11px;border:1px dashed var(--surface-2);border-radius:14px;padding:12px 14px;margin-top:4px">
+            <div style="width:34px;height:34px;border-radius:9px;border:1px dashed var(--text-soft);display:flex;align-items:center;justify-content:center;color:var(--text-muted);font-size:15px">🏠</div>
+            <div style="font-size:14px;font-weight:600;color:var(--text-muted)">take me home</div>
+          </div>
+        </div>
+      </div>
+      <p class="note">
+        Matches the empty state's add-row exactly. But that row works because it <i>is</i> the next row of
+        a list; here there is no list, so a dashed card floating in the middle of a centred layout reads
+        as a component that lost its context.
+      </p>
+    </div>
+
+  </div>
+
+  <div class="verdict">
+    <h3>boot and dead routes, recommended</h3>
+    <p>
+      <b>1b + 1c</b> — the splash holds while auth is unresolved instead of handing off on a timer, using
+      the loading screen the design system already specifies (mascot, cycling status at 5s, a way out at
+      15s). The failure says <b>"your places are safe"</b>, because a failed boot is when a user most
+      fears otherwise.
+    </p>
+    <p>
+      <b>2b + 3b</b> — add the <code>+not-found</code> route the app has never had, one sentence and one
+      way home, no retry. The action is the <b>borderless text action</b> the toast and the error row
+      already use, not a button: same vocabulary for every recovery in the app, and no bordered box on a
+      screen that exists to say "nothing here". This applies to all three dead ends — a gone place, a
+      gone area, an unmatched route — so the two already shipped get updated with it. Keep
+      <code>redirectSystemPath</code> doing its one specific job rather than swallowing every bad URL,
+      so a broken link shape stays visible instead of silently becoming a home screen.
+    </p>
+  </div>
+
+</div>
+<script>
+  document.querySelectorAll('.theme-toggle button').forEach(function (b) {
+    b.addEventListener('click', function () {
+      document.querySelectorAll('.theme-toggle button').forEach(function (x) { x.classList.remove('active'); });
+      b.classList.add('active');
+      document.body.classList.toggle('dark', b.dataset.theme === 'dark');
+    });
+  });
+</script>
+</body>
+</html>

@@ -23,6 +23,8 @@ export interface UseLibrarySearch {
   loading: boolean;
   loadingMore: boolean;
   error: boolean;
+  /** A paged read failed while matches were already on screen (ADR-056). */
+  moreError: boolean;
   /** Matches across the whole library; `null` until the first response. */
   filteredTotal: number | null;
   loadMore: () => void;
@@ -39,6 +41,7 @@ export function useLibrarySearch(query: string): UseLibrarySearch {
   const [loading, setLoading] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState(false);
+  const [moreError, setMoreError] = useState(false);
   const [filteredTotal, setFilteredTotal] = useState<number | null>(null);
 
   const cursorRef = useRef<string | null>(null);
@@ -58,6 +61,7 @@ export function useLibrarySearch(query: string): UseLibrarySearch {
       busyRef.current = true;
       setLoadingMore(true);
     }
+    setMoreError(false);
     try {
       const res = await getLibrary(clientRef.current, {
         q,
@@ -70,7 +74,10 @@ export function useLibrarySearch(query: string): UseLibrarySearch {
       setRows((prev) => (mode === 'append' ? [...prev, ...res.places] : res.places));
     } catch {
       if (id !== reqId.current) return;
+      // A failed first page replaces the list; a failed continuation must not
+      // — it says so at the tail and keeps the matches already shown.
       if (mode === 'replace') setError(true);
+      else setMoreError(true);
     } finally {
       if (id === reqId.current) {
         setLoading(false);
@@ -89,6 +96,7 @@ export function useLibrarySearch(query: string): UseLibrarySearch {
       setFilteredTotal(null);
       setLoading(false);
       setError(false);
+      setMoreError(false);
       return;
     }
     setLoading(true);
@@ -109,5 +117,5 @@ export function useLibrarySearch(query: string): UseLibrarySearch {
     void run('replace');
   }, [run]);
 
-  return { rows, loading, loadingMore, error, filteredTotal, loadMore, retry };
+  return { rows, loading, loadingMore, error, moreError, filteredTotal, loadMore, retry };
 }

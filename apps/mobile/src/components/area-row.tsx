@@ -78,7 +78,14 @@ export function AreaChildRow({ area }: { area: AreaSubArea }) {
       trailing={area.saved_count > 0 ? String(area.saved_count) : undefined}
       // Push, always: a drill-down the user can retrace is worth more than a
       // shallow stack, and the same key opening twice is a path they chose.
-      onPress={() => router.push({ pathname: '/area', params: { id } })}
+      // The row already holds the name and emoji — hand them over so the area
+      // screen's title is real from its first frame (ADR-056).
+      onPress={() =>
+        router.push({
+          pathname: '/area',
+          params: { id, name: area.name, icon: area.icon ?? '' },
+        })
+      }
     />
   );
 }

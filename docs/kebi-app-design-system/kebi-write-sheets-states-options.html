@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Kebi write sheets — save, curate, note</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #FAFAF9; --surface: #F1F1EF; --surface-2: #E8E8E5;
+    --text: #1A1A1A; --text-muted: #8A8A87; --text-soft: #B5B5B1;
+    --success: #4A7C3A; --green-bg: rgba(74,124,58,.14);
+    --danger: #D14343; --warn: #B45309;
+    --tag: #D4B891; --tag-rec: #A7C7A0; --tag-cur: #C9C9C4;
+    --page: #FAFAF9; --page-ink: #1A1A1A;
+  }
+  body.dark {
+    --bg: #13110F; --surface: #1C1A17; --surface-2: #26231F;
+    --text: #F5F1EA; --text-muted: #9A938A; --text-soft: #6E6862;
+    --success: #7FB08C; --green-bg: rgba(127,176,140,.16);
+    --danger: #E89090; --warn: #D9B45F; --tag-cur: #45413B;
+    --page: #0A0908; --page-ink: #F5F1EA;
+  }
+  html, body { background: var(--page); color: var(--page-ink);
+    font-family: 'Inter', system-ui, sans-serif; -webkit-font-smoothing: antialiased; min-height: 100vh; }
+  .page { max-width: 1800px; margin: 0 auto; padding: 52px 36px 120px; }
+  .header { display: flex; align-items: flex-start; justify-content: space-between;
+    padding-bottom: 26px; border-bottom: 1px solid var(--surface-2); }
+  h1 { font-size: 25px; font-weight: 700; letter-spacing: -0.028em; }
+  .meta { font-size: 12px; color: var(--text-muted); margin-top: 5px; }
+  .lede { font-size: 14px; color: var(--text-muted); line-height: 1.65; max-width: 880px; margin-top: 14px; }
+  .lede b { color: var(--page-ink); font-weight: 600; }
+  .lede code, .section-desc code, .note code, .verdict code { font-size: 12px;
+    background: var(--surface-2); border-radius: 5px; padding: 1px 6px; }
+  .theme-toggle { display: flex; background: var(--surface); border-radius: 999px; padding: 3px; flex-shrink: 0; }
+  .theme-toggle button { padding: 6px 14px; background: transparent; border: none; border-radius: 999px;
+    font-family: inherit; font-size: 12px; font-weight: 500; color: var(--text-muted); cursor: pointer; }
+  .theme-toggle button.active { background: var(--page-ink); color: var(--page); }
+  .section-head { display: flex; align-items: baseline; justify-content: space-between;
+    margin: 46px 0 12px; padding-bottom: 12px; border-bottom: 1px solid var(--surface-2); }
+  .section-title { font-size: 11px; font-weight: 600; color: var(--text-soft);
+    text-transform: uppercase; letter-spacing: 0.08em; }
+  .section-q { font-size: 12px; color: var(--text-soft); }
+  .section-desc { font-size: 14px; color: var(--text-muted); line-height: 1.6; max-width: 880px; margin-bottom: 24px; }
+  .section-desc b { color: var(--page-ink); font-weight: 600; }
+  .row-of { display: flex; flex-wrap: wrap; gap: 34px; align-items: flex-start; }
+  .col { width: 390px; display: flex; flex-direction: column; gap: 10px; }
+  .col h2 { font-size: 15px; font-weight: 700; letter-spacing: -0.02em; }
+  .note { font-size: 11.5px; color: var(--text-muted); line-height: 1.55; }
+  .note b { color: var(--page-ink); font-weight: 600; }
+  .tag { display: inline-block; align-self: flex-start; font-size: 10px; font-weight: 700;
+    letter-spacing: .08em; text-transform: uppercase; color: #1A1A1A; background: var(--tag);
+    border-radius: 999px; padding: 3px 10px; }
+  .tag.rec { background: var(--tag-rec); }
+  .tag.cur { background: var(--tag-cur); color: var(--page-ink); }
+
+  .phone { width: 390px; height: 620px; background: var(--bg); border-radius: 44px; overflow: hidden;
+    position: relative; box-shadow: 0 0 0 10px #111, 0 0 0 12px var(--page), 0 24px 50px rgba(0,0,0,0.28);
+    display: flex; flex-direction: column; }
+  .behind { flex: 1; padding: 44px 24px 0; display: flex; flex-direction: column; gap: 14px; }
+  .b-hero { font-size: 26px; font-weight: 700; letter-spacing: -0.03em; color: var(--text); opacity: .5; }
+  .b-row { height: 54px; border-radius: 14px; background: var(--surface); opacity: .5; }
+  .scrim { position: absolute; inset: 0; background: rgba(15,13,10,0.45); }
+  .sheet { position: absolute; left: 0; right: 0; bottom: 0; background: var(--bg);
+    border-radius: 22px 22px 0 0; padding: 10px 20px 24px; display: flex; flex-direction: column; gap: 13px; }
+  .grab { width: 36px; height: 4px; border-radius: 2px; background: var(--surface-2); align-self: center; }
+  .eyebrow { font-size: 11px; font-weight: 600; color: var(--text-soft);
+    text-transform: uppercase; letter-spacing: 0.08em; }
+  .sheet h3 { font-size: 17px; font-weight: 700; letter-spacing: -0.02em; }
+  .field { background: var(--surface); border-radius: 14px; padding: 13px 14px;
+    font-size: 15px; color: var(--text); min-height: 84px; }
+  .field.ph { color: var(--text-soft); }
+  .hint { font-size: 12px; color: var(--text-soft); line-height: 1.5; }
+  .cta { background: var(--text); color: var(--bg); border: none; font-family: inherit;
+    border-radius: 14px; padding: 13px; text-align: center; font-size: 14px; font-weight: 600; }
+  .cta.dim { opacity: .35; }
+  .cta-row { display: flex; align-items: center; justify-content: center; gap: 9px; }
+  .spin { width: 15px; height: 15px; border-radius: 50%; border: 2px solid rgba(255,255,255,.25);
+    border-top-color: var(--bg); animation: rot .8s linear infinite; }
+  body.dark .spin { border-color: rgba(0,0,0,.25); border-top-color: var(--bg); }
+  @keyframes rot { 100% { transform: rotate(360deg); } }
+  .err-inline { display: flex; align-items: center; gap: 9px; }
+  .err-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--danger); flex-shrink: 0; }
+  .err-txt { font-size: 12.5px; color: var(--text-muted); flex: 1; line-height: 1.4; }
+  .err-txt b { color: var(--text); font-weight: 600; }
+  .toast-wrap { position: absolute; left: 0; right: 0; bottom: 30px; display: flex; justify-content: center; }
+  .toast { display: flex; align-items: center; gap: 10px; background: var(--text); color: var(--bg);
+    border-radius: 999px; padding: 11px 8px 11px 16px; max-width: 300px; font-size: 13px; font-weight: 500; }
+  .toast button { background: transparent; border: none; font-family: inherit; font-size: 13px;
+    font-weight: 600; color: var(--bg); padding: 2px 10px; }
+  .anchor { display: inline-flex; align-items: center; gap: 7px; background: var(--surface);
+    border-radius: 999px; padding: 6px 12px; font-size: 12.5px; color: var(--text); align-self: flex-start; }
+  .quote { display: flex; gap: 12px; }
+  .quote .rail { width: 2px; border-radius: 2px; background: var(--surface-2); }
+  .quote p { flex: 1; font-size: 14.5px; line-height: 1.5; color: var(--text); }
+  .draft-chip { display: inline-flex; align-items: center; gap: 7px; background: var(--surface);
+    border-radius: 999px; padding: 7px 13px; font-size: 12.5px; color: var(--text-muted); align-self: flex-start; }
+  .draft-chip b { color: var(--text); font-weight: 600; }
+
+  .verdict { margin-top: 44px; border: 1px solid var(--surface-2); border-radius: 16px;
+    padding: 22px 24px; background: var(--surface); max-width: 1000px; }
+  .verdict h3 { font-size: 14px; font-weight: 700; margin-bottom: 10px; }
+  .verdict p { font-size: 13px; color: var(--text-muted); line-height: 1.68; }
+  .verdict p + p { margin-top: 10px; }
+  .verdict b { color: var(--page-ink); font-weight: 600; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="header">
+    <div>
+      <h1>write sheets — save · curate · note</h1>
+      <div class="meta">kebi-app · save-sheet · curate-sheet · note-sheet (+ their contexts) · applies the kernel</div>
+      <p class="lede">
+        Three sheets that take typed words and send them somewhere. All three <b>close optimistically</b>
+        and report the outcome as a toast, which is right — you should be able to save a place and keep
+        moving. The question is only what happens when the write fails after the sheet is gone.
+        <br><br>
+        The save sheet already answers it well: its failure toast carries <b>try again</b>, which reopens
+        the sheet with the text still in it. Curate and note don't. Curate <i>does</i> keep the draft
+        (<code>// Clear only on success, so a failed write leaves the prose recoverable</code>) — but
+        nothing tells the user, and nothing offers the way back, so a recoverable draft is recoverable
+        only by accident.
+      </p>
+    </div>
+    <div class="theme-toggle">
+      <button class="active" data-theme="light">light</button>
+      <button data-theme="dark">dark</button>
+    </div>
+  </div>
+
+  <div class="section-head">
+    <span class="section-title">1 · a write that failed after the sheet closed</span>
+    <span class="section-q">the draft survives — say so</span>
+  </div>
+  <p class="section-desc">
+    Shown for the curate sheet, where the loss would be worst: an insider's prose, with no receipt
+    anywhere until it appears in "what you've added".
+  </p>
+
+  <div class="row-of">
+
+    <div class="col">
+      <span class="tag cur">today</span>
+      <h2>a · a toast with nothing to tap</h2>
+      <div class="phone">
+        <div class="behind">
+          <div class="b-hero">🍜 Kamachiku</div>
+          <div class="b-row"></div>
+          <div class="b-row"></div>
+        </div>
+        <div class="toast-wrap"><div class="toast">⚠️ couldn't add that</div></div>
+      </div>
+      <p class="note">
+        Three seconds, then gone. The prose is still saved locally but the user has no way to know that
+        and no route back to it — they either retype it or assume it's lost.
+      </p>
+    </div>
+
+    <div class="col">
+      <span class="tag rec">recommended</span>
+      <h2>b · the toast carries the way back</h2>
+      <div class="phone">
+        <div class="behind">
+          <div class="b-hero">🍜 Kamachiku</div>
+          <div class="b-row"></div>
+          <div class="b-row"></div>
+        </div>
+        <div class="toast-wrap">
+          <div class="toast">couldn't add that — kept<button>try again</button></div>
+        </div>
+      </div>
+      <p class="note">
+        Exactly what the save sheet already does. <b>"kept"</b> is the word that matters — it says the
+        writing survived — and <b>try again</b> reopens the sheet with the prose in the field, on the
+        same anchor. 5s, because it carries an action. One vocabulary across all three sheets.
+      </p>
+    </div>
+
+    <div class="col">
+      <span class="tag">most visible</span>
+      <h2>c · reopen the sheet immediately</h2>
+      <div class="phone">
+        <div class="behind">
+          <div class="b-hero">🍜 Kamachiku</div>
+          <div class="b-row"></div>
+        </div>
+        <div class="scrim"></div>
+        <div class="sheet">
+          <div class="grab"></div>
+          <div class="anchor">🍜 kamachiku</div>
+          <div class="field">the counter seats are the good ones — the window gets cold in winter.</div>
+          <div class="err-inline">
+            <span class="err-dot"></span>
+            <span class="err-txt"><b>couldn't add that.</b> nothing lost.</span>
+          </div>
+          <button class="cta">try again</button>
+        </div>
+      </div>
+      <p class="note">
+        Impossible to miss, and the draft is visibly intact — the filled button is legitimate here,
+        it's the sheet's one action. But it <b>undoes the point of an optimistic close</b> — you moved on, and the app drags you back into a form. Right for a failure the user
+        must act on; too much for one that can wait.
+      </p>
+    </div>
+
+    <div class="col">
+      <span class="tag">alternative</span>
+      <h2>d · a draft chip where the work was</h2>
+      <div class="phone">
+        <div class="behind">
+          <div class="b-hero">🍜 Kamachiku</div>
+          <div class="b-row"></div>
+          <div class="b-row"></div>
+          <div class="draft-chip">✍️ <b>unsent note</b> · tap to finish</div>
+        </div>
+      </div>
+      <p class="note">
+        The draft becomes a small persistent chip on the place it was about, surviving until it's sent.
+        Strongest guarantee — nothing depends on catching a toast — but it's <b>a new component and a new
+        piece of state</b> for a rare failure, and it needs its own rules for where it lives and when it
+        expires. Worth it only if we see this fail often.
+      </p>
+    </div>
+
+  </div>
+
+  <div class="section-head">
+    <span class="section-title">2 · the note sheet's own failure</span>
+    <span class="section-q">an edit that silently reverted</span>
+  </div>
+  <p class="section-desc">
+    A note edit goes through the optimistic <code>update</code> path: the text flips on screen, then
+    rolls back if the write fails, with a generic <code>library.toast.updateFailed</code>. The rollback
+    is correct; the message isn't — it doesn't say <i>what</i> reverted, and the typed note is gone with
+    the sheet.
+  </p>
+
+  <div class="row-of">
+
+    <div class="col">
+      <span class="tag cur">today</span>
+      <h2>a · generic failure, note lost</h2>
+      <div class="phone">
+        <div class="behind">
+          <div class="b-hero">🍜 Kamachiku</div>
+          <div class="b-row"></div>
+        </div>
+        <div class="toast-wrap"><div class="toast">couldn't update that</div></div>
+      </div>
+      <p class="note">
+        "that" is doing a lot of work — this same line covers a note, a like, a "been there". The note's
+        text is gone: the sheet closed and the rollback restored the old value.
+      </p>
+    </div>
+
+    <div class="col">
+      <span class="tag rec">recommended</span>
+      <h2>b · name it, keep it, offer it</h2>
+      <div class="phone">
+        <div class="behind">
+          <div class="b-hero">🍜 Kamachiku</div>
+          <div class="b-row"></div>
+        </div>
+        <div class="toast-wrap">
+          <div class="toast">couldn't save your note — kept<button>try again</button></div>
+        </div>
+      </div>
+      <p class="note">
+        The note keeps its own sentence, the draft is held like curate's, and retry reopens the note
+        sheet with the text. The other optimistic actions (like, been there) keep the short generic
+        line — they have nothing to lose, so there is nothing to keep.
+      </p>
+    </div>
+
+    <div class="col">
+      <span class="tag rec">settled</span>
+      <h2>c · the save sheet, unchanged</h2>
+      <div class="phone">
+        <div class="behind">
+          <div class="b-hero">your stash</div>
+          <div class="b-row"></div>
+          <div class="b-row"></div>
+        </div>
+        <div class="toast-wrap">
+          <div class="toast">couldn't read that link<button>try again</button></div>
+        </div>
+      </div>
+      <p class="note">
+        Already right and not changing: the failure names the cause, <b>try again</b> reopens the sheet
+        pre-filled, and a save that outlives the sheet keeps running in the background. This is the model
+        the other two are being brought up to.
+      </p>
+    </div>
+
+    <div class="col">
+      <span class="tag rec">settled</span>
+      <h2>d · saving, and backgrounded</h2>
+      <div class="phone">
+        <div class="behind">
+          <div class="b-hero">your stash</div>
+          <div class="b-row"></div>
+        </div>
+        <div class="scrim"></div>
+        <div class="sheet">
+          <div class="grab"></div>
+          <div class="eyebrow">save a place</div>
+          <div class="field">vt.tiktok.com/ZSVSnKYxm/</div>
+          <div class="hint">kebi figures out the rest. you can fix anything later.</div>
+          <button class="cta"><span class="cta-row"><span class="spin"></span>saving</span></button>
+        </div>
+      </div>
+      <p class="note">
+        The save sheet's three states — empty, filled, saving — plus the backgrounded meta row, all
+        already built and matching the kernel (a spinner inside a button is an action in flight, not
+        content on its way). Shown for completeness; nothing changes.
+      </p>
+    </div>
+
+  </div>
+
+  <div class="verdict">
+    <h3>write sheets, recommended</h3>
+    <p>
+      <b>1b + 2b</b> — every failed write says <b>"kept"</b> and carries <b>try again</b> that reopens
+      its sheet with the text intact, on the same anchor. Curate already preserves the draft in code;
+      note needs to start, and both need to say so. That makes one vocabulary across all three sheets,
+      with the save sheet — which got there first — as the model.
+    </p>
+    <p>
+      Not doing <b>1c</b> (auto-reopen): it cancels the optimistic close, which is the reason these
+      sheets feel fast. Not doing <b>1d</b> (draft chip) yet: a new component and a new lifetime for a
+      failure we have no evidence is common. If the retry toast turns out to get missed, that's the
+      next step.
+    </p>
+  </div>
+
+</div>
+<script>
+  document.querySelectorAll('.theme-toggle button').forEach(function (b) {
+    b.addEventListener('click', function () {
+      document.querySelectorAll('.theme-toggle button').forEach(function (x) { x.classList.remove('active'); });
+      b.classList.add('active');
+      document.body.classList.toggle('dark', b.dataset.theme === 'dark');
+    });
+  });
+</script>
+</body>
+</html>

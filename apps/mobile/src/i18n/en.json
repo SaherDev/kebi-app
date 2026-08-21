@@ -8,7 +8,9 @@
     "more": "more",
     "edit": "edit",
     "search": "search",
-    "close": "close"
+    "close": "close",
+    "retry": "retry",
+    "failedGeneric": "couldn't do that."
   },
   "nav": {
     "savePlace": "save a place",
@@ -35,6 +37,17 @@
       "nearby": "somewhere nearby",
       "dinner": "good for dinner",
       "surprise": "surprise me"
+    },
+    "stashFailed": "couldn't load your stash.",
+    "recallFailed": "couldn't load what you asked for.",
+    "nothingLost": "nothing lost.",
+    "saveFirst": "save your first place",
+    "saveFirstSub": "paste a link, or just name it",
+    "ghost": {
+      "first": "the ramen place you sent yourself",
+      "firstMeta": "udon · ¥¥ · nezu",
+      "second": "that café from the reel",
+      "secondMeta": "coffee · ¥¥ · tomigaya"
     }
   },
   "placeMenu": {
@@ -48,7 +61,10 @@
     "toast": {
       "approved": "noted",
       "liked": "liked",
-      "been": "marked as been"
+      "been": "marked as been",
+      "approveFailed": "couldn't approve that one",
+      "likeFailed": "couldn't mark that one",
+      "beenFailed": "couldn't mark that one"
     }
   },
   "note": {
@@ -58,12 +74,13 @@
     "placeholder": "what do you want to remember about this place?",
     "cta": "save",
     "toast": {
-      "saved": "note saved"
+      "saved": "note saved",
+      "saveFailed": "couldn't save your note — kept"
     }
   },
   "place": {
     "empty": "no place to show",
-    "loadFailed": "couldn't open that place",
+    "loadFailed": "couldn't load this place.",
     "approve": "approve?",
     "addNote": "add a note",
     "save": "save",
@@ -97,12 +114,16 @@
       "title": "show on",
       "google": "google maps",
       "apple": "apple maps",
-      "waze": "waze"
-    }
+      "waze": "waze",
+      "nothingToOpen": "kebi doesn't have an address for this one yet. it fills in as it learns more."
+    },
+    "refreshFailed": "couldn't refresh",
+    "gone": "this place isn't in your stash",
+    "goneHint": "you may have forgotten it, or the link is old."
   },
   "area": {
     "empty": "no area to show",
-    "loadFailed": "couldn't open that area",
+    "loadFailed": "couldn't load this area.",
     "saved": "{{count}} saved",
     "bestFor": "best for",
     "level": {
@@ -115,7 +136,11 @@
       "saved": "where you've saved",
       "savedPlaces": "your places here",
       "worthKnowing": "worth knowing"
-    }
+    },
+    "loadFailedNamed": "couldn't load {{name}}.",
+    "gone": "that area isn't there",
+    "goneHint": "the link may be old. head back and try from your library.",
+    "nothingHere": "nothing saved in {{name}} yet. share a place and it lands here."
   },
   "toast": {
     "undo": "undo",
@@ -162,8 +187,10 @@
       "kebi": "kebi found this"
     },
     "empty": {
-      "title": "your stash is empty",
-      "hint": "tap the bookmark up top to save your first place. paste a link or just name it."
+      "hero": "nothing",
+      "heroSuffix": " saved yet",
+      "save": "save your first place",
+      "saveSub": "paste a link, or just name it"
     },
     "toast": {
       "updateFailed": "couldn't update that — try again",
@@ -171,14 +198,17 @@
     },
     "matchCount": "{{count}} of {{total}}",
     "elsewhere": "elsewhere",
-    "here": "you're here"
+    "here": "you're here",
+    "moreFailed": "couldn't load more",
+    "refreshFailed": "couldn't refresh",
+    "searchFailed": "search didn't go through."
   },
   "chat": {
-    "greeting": "what's the move?",
+    "greeting": "what are you in the mood for?",
     "placeholder": "tell me what you want...",
     "you": "you",
     "kebi": "kebi",
-    "error": "couldn't reach kebi — try again",
+    "error": "couldn't finish that one.",
     "rateLimited": "too many asks — give it a sec",
     "send": "send",
     "stop": "stop",
@@ -200,6 +230,17 @@
     "help": "help",
     "entityMenu": {
       "open": "open"
+    },
+    "askAgain": "ask again",
+    "notNow": "not now",
+    "offline": "you're offline.",
+    "offlineDetail": "i'll need a connection for this one.",
+    "errorDetail": "your question is still here — nothing to retype.",
+    "limitDetail": "resets at midnight.",
+    "opener": {
+      "first": "somewhere i've been that i'd go back to",
+      "second": "a place for four people, tonight",
+      "third": "what's good near me right now"
     }
   },
   "save": {
@@ -275,7 +316,12 @@
     "addWhatYouKnowSub": "a place, an area, anything",
     "insider": "insider",
     "whatYouveAdded": "what you've added",
-    "whatYouveAddedSub": "every note you wrote"
+    "whatYouveAddedSub": "every note you wrote",
+    "unknownValue": "—",
+    "summaryFailed": "couldn't check these.",
+    "summaryFailedDetail": "your answers are safe.",
+    "nuking": "nuking",
+    "nukeFailedDetail": "nothing was deleted."
   },
   "plans": {
     "eyebrow": "plans",
@@ -338,7 +384,10 @@
     "limitReached": {
       "save": "you've hit your save limit",
       "daily": "you've used all your asks today"
-    }
+    },
+    "switching": "switching",
+    "planUnknown": "couldn't check your plan.",
+    "planUnknownDetail": "nothing has changed."
   },
   "auth": {
     "introLead": "save places from tiktok, instagram, wherever. tell me what you want — i find the match.",
@@ -368,10 +417,13 @@
     "resendInLabel": "resend in",
     "resendCta": "resend",
     "codeResent": "sent a new code",
-    "errWrongCode": "that's not the code",
-    "errExpired": "code expired — tap resend",
-    "errTooMany": "too many tries — wait a minute",
-    "errNetwork": "couldn't reach us — try again"
+    "errWrongCode": "that code isn't right — check the last one we sent",
+    "errExpired": "that code has expired — they only last a few minutes",
+    "errTooMany": "too many tries — give it a minute, then ask for a new code",
+    "errNetwork": "couldn't reach us — try again",
+    "errOffline": "you're offline — your address is fine, this just needs a connection",
+    "errProvider": "couldn't send a code just now — not you. try again in a minute, or use google",
+    "checking": "checking"
   },
   "help": {
     "eyebrow": "help",
@@ -415,7 +467,13 @@
     "sheetMessagePlaceholder": "a question, an idea, anything else...",
     "sheetMessageNote": "goes straight to the team. replies go to your account email",
     "toastSent": "sent. this is how kebi gets better",
-    "toastError": "couldn't send — try again"
+    "toastError": "couldn't send — try again",
+    "sending": "sending",
+    "sendRetry": "try again",
+    "sendFailed": "couldn't send that.",
+    "sendFailedDetail": "your words are still here.",
+    "rowWrongAttach": "attaches your last conversation",
+    "rowSaveAttach": "attaches your recent saves"
   },
   "aboutYou": {
     "eyebrow": "about you",
@@ -437,7 +495,9 @@
     "save": "save",
     "saved": "kebi knows",
     "saveFailed": "couldn't save that — try again",
-    "loadFailed": "couldn't load what kebi knows — try again"
+    "loadFailed": "couldn't load your answers.",
+    "loadFailedDetail": "they're safe — this form just can't show them yet.",
+    "saving": "saving…"
   },
   "gettingAround": {
     "eyebrow": "getting around",
@@ -465,7 +525,9 @@
     "save": "save",
     "saved": "kebi will search like that",
     "saveFailed": "couldn't save that — try again",
-    "loadFailed": "couldn't load how you get around — try again"
+    "loadFailed": "couldn't load how you get around.",
+    "loadFailedDetail": "it's safe — this form just can't show it yet.",
+    "saving": "saving…"
   },
   "curate": {
     "about": "about",
@@ -485,7 +547,7 @@
       "added": "added {{count}} notes",
       "addedOne": "added 1 note",
       "nothingNew": "kebi already knew that",
-      "failed": "couldn't send that — your text is still there"
+      "failed": "couldn't add that — kept"
     },
     "thisArea": "this area"
   },
@@ -493,12 +555,18 @@
     "hero": "what you've added",
     "subtitle": "{{notes}} notes across {{places}} places",
     "empty": "nothing yet — write something and it shows up here",
-    "loadFailed": "couldn't load your notes",
+    "loadFailed": "couldn't load your notes.",
     "remove": "remove this note",
     "toast": {
       "removed": "note removed",
       "removeFailed": "couldn't remove that one"
-    }
+    },
+    "loadFailedDetail": "they're still there — this is the list, not the writing.",
+    "emptySub": "nothing yet — this is where it lands.",
+    "ghostAnchor": "🍜 kamachiku",
+    "ghostNote": "ask for the counter seats, the ones by the window get cold in winter.",
+    "writeFirst": "write your first note",
+    "writeFirstSub": "about a place, an area, or anything"
   },
   "countries": {
     "ac": "Ascension Island",
@@ -805,6 +873,32 @@
       "saved": "{{count}} saved",
       "failed": "{{count}} didn't",
       "working": "{{count}} saving"
+    },
+    "emptySub": "nothing yet — this is where shared links land.",
+    "emptyHow": "share a link from tiktok, instagram or maps, pick kebi, and it lands here.",
+    "ghost": {
+      "heading": "11:20 pm · vt.tiktok.com/ZSVSnKYxm/",
+      "second": "the café next door to it",
+      "secondMeta": "coffee · ¥¥ · nezu"
     }
+  },
+  "billing": {
+    "emptySub": "nothing to show yet — there's been nothing to bill.",
+    "coming": {
+      "receipts": "receipts and invoices",
+      "method": "payment method",
+      "renews": "when your plan renews"
+    },
+    "emptyHow": "this fills in once there is something to bill. change your plan from"
+  },
+  "boot": {
+    "waking": "still waking up…",
+    "stalled": "can't reach kebi",
+    "stalledHint": "check your connection — your places are safe."
+  },
+  "notFound": {
+    "title": "that link goes nowhere",
+    "hint": "it may be from an older version of the app.",
+    "home": "take me home"
   }
 }

@@ -159,7 +159,10 @@ describe('CurateSheetProvider', () => {
       submit('hard-won prose');
 
       await waitFor(() => expect(mockShow).toHaveBeenCalled());
-      expect(mockShow.mock.calls[0][0].text).toContain("couldn't send");
+      expect(mockShow.mock.calls[0][0].text).toContain("couldn't add that");
+      // The draft surviving is only useful if the user is told and given the
+      // way back to it (ADR-056) — a retry that reopens the composer.
+      expect(mockShow.mock.calls[0][0].action).toMatchObject({ label: 'try again' });
 
       fireEvent.press(screen.getByText('open'));
       expect(sheetProps.value).toBe('hard-won prose');

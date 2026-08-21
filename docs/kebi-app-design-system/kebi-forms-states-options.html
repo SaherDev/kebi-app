@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Kebi about you / getting around — loading, error</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #FAFAF9; --surface: #F1F1EF; --surface-2: #E8E8E5;
+    --text: #1A1A1A; --text-muted: #8A8A87; --text-soft: #B5B5B1;
+    --success: #4A7C3A; --green-bg: rgba(74,124,58,.14);
+    --danger: #D14343; --warn: #B45309;
+    --tag: #D4B891; --tag-rec: #A7C7A0; --tag-cur: #C9C9C4;
+    --page: #FAFAF9; --page-ink: #1A1A1A;
+  }
+  body.dark {
+    --bg: #13110F; --surface: #1C1A17; --surface-2: #26231F;
+    --text: #F5F1EA; --text-muted: #9A938A; --text-soft: #6E6862;
+    --success: #7FB08C; --green-bg: rgba(127,176,140,.16);
+    --danger: #E89090; --warn: #D9B45F; --tag-cur: #45413B;
+    --page: #0A0908; --page-ink: #F5F1EA;
+  }
+  html, body { background: var(--page); color: var(--page-ink);
+    font-family: 'Inter', system-ui, sans-serif; -webkit-font-smoothing: antialiased; min-height: 100vh; }
+  .page { max-width: 1800px; margin: 0 auto; padding: 52px 36px 120px; }
+  .header { display: flex; align-items: flex-start; justify-content: space-between;
+    padding-bottom: 26px; border-bottom: 1px solid var(--surface-2); }
+  h1 { font-size: 25px; font-weight: 700; letter-spacing: -0.028em; }
+  .meta { font-size: 12px; color: var(--text-muted); margin-top: 5px; }
+  .lede { font-size: 14px; color: var(--text-muted); line-height: 1.65; max-width: 880px; margin-top: 14px; }
+  .lede b { color: var(--page-ink); font-weight: 600; }
+  .lede code, .section-desc code, .note code, .verdict code { font-size: 12px;
+    background: var(--surface-2); border-radius: 5px; padding: 1px 6px; }
+  .theme-toggle { display: flex; background: var(--surface); border-radius: 999px; padding: 3px; flex-shrink: 0; }
+  .theme-toggle button { padding: 6px 14px; background: transparent; border: none; border-radius: 999px;
+    font-family: inherit; font-size: 12px; font-weight: 500; color: var(--text-muted); cursor: pointer; }
+  .theme-toggle button.active { background: var(--page-ink); color: var(--page); }
+  .section-head { display: flex; align-items: baseline; justify-content: space-between;
+    margin: 46px 0 12px; padding-bottom: 12px; border-bottom: 1px solid var(--surface-2); }
+  .section-title { font-size: 11px; font-weight: 600; color: var(--text-soft);
+    text-transform: uppercase; letter-spacing: 0.08em; }
+  .section-q { font-size: 12px; color: var(--text-soft); }
+  .section-desc { font-size: 14px; color: var(--text-muted); line-height: 1.6; max-width: 880px; margin-bottom: 24px; }
+  .section-desc b { color: var(--page-ink); font-weight: 600; }
+  .row-of { display: flex; flex-wrap: wrap; gap: 34px; align-items: flex-start; }
+  .col { width: 390px; display: flex; flex-direction: column; gap: 10px; }
+  .col h2 { font-size: 15px; font-weight: 700; letter-spacing: -0.02em; }
+  .note { font-size: 11.5px; color: var(--text-muted); line-height: 1.55; }
+  .note b { color: var(--page-ink); font-weight: 600; }
+  .tag { display: inline-block; align-self: flex-start; font-size: 10px; font-weight: 700;
+    letter-spacing: .08em; text-transform: uppercase; color: #1A1A1A; background: var(--tag);
+    border-radius: 999px; padding: 3px 10px; }
+  .tag.rec { background: var(--tag-rec); }
+  .tag.cur { background: var(--tag-cur); color: var(--page-ink); }
+  .tag.bad { background: var(--danger); color: #fff; }
+
+  .phone { width: 390px; height: 740px; background: var(--bg); border-radius: 44px; overflow: hidden;
+    position: relative; box-shadow: 0 0 0 10px #111, 0 0 0 12px var(--page), 0 24px 50px rgba(0,0,0,0.28);
+    display: flex; flex-direction: column; }
+  .status-bar { height: 44px; padding: 15px 30px 0; display: flex; justify-content: space-between;
+    align-items: center; font-size: 14px; font-weight: 600; color: var(--text); flex-shrink: 0; }
+  .batt { width: 22px; height: 11px; border: 1px solid var(--text); border-radius: 3px; position: relative; }
+  .batt::before { content: ''; position: absolute; inset: 1.5px; background: var(--text); border-radius: 1px; }
+  .top-bar { padding: 12px 16px 8px; display: flex; align-items: center; flex-shrink: 0; }
+  .icon-btn { width: 38px; height: 38px; border-radius: 50%; background: var(--surface);
+    display: flex; align-items: center; justify-content: center; border: none; }
+  .icon-btn svg { width: 17px; height: 17px; stroke: var(--text); stroke-width: 1.8; fill: none; }
+  .scroll { flex: 1; overflow: hidden; padding: 8px 24px 16px; display: flex; flex-direction: column; gap: 20px; }
+  .home-indicator { width: 128px; height: 5px; background: var(--text); border-radius: 3px;
+    margin: 2px auto 8px; flex-shrink: 0; opacity: .85; }
+
+  .eyebrow { font-size: 11px; font-weight: 600; color: var(--text-soft);
+    text-transform: uppercase; letter-spacing: 0.08em; }
+  .hero { font-size: 28px; font-weight: 700; letter-spacing: -0.03em; color: var(--text); margin-top: 4px; }
+  .lede-s { font-size: 12.5px; line-height: 1.5; color: var(--text-muted); margin-top: 6px; }
+  .field { background: var(--surface); border-radius: 14px; padding: 13px 14px; font-size: 15px; color: var(--text); }
+  .field.ph { color: var(--text-soft); }
+  .field.tall { min-height: 92px; }
+  .field.row { display: flex; align-items: center; justify-content: space-between; }
+  .field.row svg { width: 12px; height: 12px; stroke: var(--text-soft); stroke-width: 2.2; fill: none; }
+  .fl { display: flex; flex-direction: column; gap: 8px; }
+  .opt { display: flex; align-items: center; gap: 11px; background: var(--surface);
+    border-radius: 14px; padding: 13px 14px; }
+  .opt .em { font-size: 17px; }
+  .opt .tx { flex: 1; }
+  .opt .nm { font-size: 14.5px; font-weight: 500; color: var(--text); }
+  .opt .sb { font-size: 11.5px; color: var(--text-soft); margin-top: 2px; }
+  .radio { width: 18px; height: 18px; border-radius: 50%; border: 1.5px solid var(--surface-2); flex-shrink: 0; }
+  .radio.on { border-color: var(--text); background: var(--text); box-shadow: inset 0 0 0 3px var(--bg); }
+  .btn { border: none; font-family: inherit; font-size: 14px; font-weight: 600;
+    padding: 13px 18px; border-radius: 14px; background: var(--text); color: var(--bg); text-align: center; }
+  .btn.dim { opacity: .35; }
+  .btn.out { background: transparent; color: var(--text); border: 1px solid var(--surface-2); }
+
+  .sk { border-radius: 5px; background: var(--surface-2); position: relative; overflow: hidden; }
+  .sk::after { content: ''; position: absolute; inset: 0; transform: translateX(-100%);
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.6), transparent);
+    animation: shimmer 1.4s linear infinite; }
+  body.dark .sk::after { background: linear-gradient(90deg, transparent, rgba(255,255,255,0.07), transparent); }
+  @keyframes shimmer { 100% { transform: translateX(100%); } }
+  @keyframes rot { 100% { transform: rotate(360deg); } }
+  .sk.f { height: 48px; border-radius: 14px; }
+  .sk.ftall { height: 92px; border-radius: 14px; }
+  .sk.h10 { height: 10px; }
+  .frozen { opacity: .45; } .frozen .sk::after { animation: none; opacity: 0; }
+  .spin { width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--surface-2);
+    border-top-color: var(--text-muted); animation: rot .8s linear infinite; }
+  .spin.sm { width: 15px; height: 15px; border-width: 2px; border-top-color: var(--bg);
+    border-color: rgba(255,255,255,.25); border-top-color: var(--bg); }
+  .center { flex: 1; display: flex; align-items: center; justify-content: center; }
+  .err-inline { display: flex; align-items: center; gap: 9px; }
+  .err-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--warn); flex-shrink: 0; }
+  .err-txt { font-size: 12.5px; color: var(--text-muted); flex: 1; line-height: 1.4; }
+  .err-txt b { color: var(--text); font-weight: 600; }
+  .retry { background: transparent; border: none; font-family: inherit; font-size: 13px;
+    font-weight: 600; color: var(--text); padding: 2px 6px; }
+  .toast-wrap { position: absolute; left: 0; right: 0; bottom: 40px; display: flex; justify-content: center; }
+  .toast { display: flex; align-items: center; gap: 10px; background: var(--text); color: var(--bg);
+    border-radius: 999px; padding: 11px 8px 11px 16px; max-width: 290px; font-size: 13px; font-weight: 500; }
+  .toast button { background: transparent; border: none; font-family: inherit; font-size: 13px;
+    font-weight: 600; color: var(--bg); padding: 2px 10px; }
+  .btn-row { display: flex; align-items: center; justify-content: center; gap: 9px; }
+
+  .verdict { margin-top: 44px; border: 1px solid var(--surface-2); border-radius: 16px;
+    padding: 22px 24px; background: var(--surface); max-width: 1000px; }
+  .verdict h3 { font-size: 14px; font-weight: 700; margin-bottom: 10px; }
+  .verdict p { font-size: 13px; color: var(--text-muted); line-height: 1.68; }
+  .verdict p + p { margin-top: 10px; }
+  .verdict b { color: var(--page-ink); font-weight: 600; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="header">
+    <div>
+      <h1>about you · getting around — loading, error</h1>
+      <div class="meta">kebi-app · about-you.tsx + getting-around.tsx · ADR-054 · applies the kernel</div>
+      <p class="lede">
+        The two form screens share one shape (read on mount → edit → save → <code>refreshSession</code>) and
+        one <b>real hazard</b>. Their load already fails soft with a toast, and the code says why:
+        <br><br>
+        <code>// Fail soft: an empty form that saves would erase a block we failed to read</code>
+        <br><br>
+        The comment is right, but the screen doesn't act on it. After a failed read you get an <b>empty,
+        fully editable form with a live save button</b> — so one tap writes emptiness over data that was
+        never actually gone. And these blocks feed the chat's reasoning, so wiping them degrades every
+        answer afterwards.
+      </p>
+    </div>
+    <div class="theme-toggle">
+      <button class="active" data-theme="light">light</button>
+      <button data-theme="dark">dark</button>
+    </div>
+  </div>
+
+  <!-- 1 LOADING -->
+  <div class="section-head">
+    <span class="section-title">1 · opening the form</span>
+    <span class="section-q">the last spinner in the app</span>
+  </div>
+  <p class="section-desc">
+    Both screens render <code>&lt;ActivityIndicator /&gt;</code> centred over an otherwise blank page while
+    the read runs, so the hero and lede arrive late too — even though they're static text.
+  </p>
+
+  <div class="row-of">
+
+    <div class="col">
+      <span class="tag cur">today</span>
+      <h2>a · centred activity indicator</h2>
+      <div class="phone">
+        <div class="status-bar"><span>9:41</span><div class="batt"></div></div>
+        <div class="top-bar"><button class="icon-btn"><svg viewBox="0 0 24 24"><polyline points="15 6 9 12 15 18"/></svg></button></div>
+        <div class="center"><div class="spin"></div></div>
+        <div class="home-indicator"></div>
+      </div>
+      <p class="note">
+        A blank page with a spinner, then a whole form at once. Also the last surviving iOS
+        <code>ActivityIndicator</code> in the app.
+      </p>
+    </div>
+
+    <div class="col">
+      <span class="tag rec">recommended</span>
+      <h2>b · copy stays, fields shimmer</h2>
+      <div class="phone">
+        <div class="status-bar"><span>9:41</span><div class="batt"></div></div>
+        <div class="top-bar"><button class="icon-btn"><svg viewBox="0 0 24 24"><polyline points="15 6 9 12 15 18"/></svg></button></div>
+        <div class="scroll">
+          <div><div class="eyebrow">what kebi knows</div><div class="hero">about you</div>
+            <div class="lede-s">the more kebi knows, the less you have to explain every time.</div></div>
+          <div>
+            <div class="eyebrow" style="padding-inline-start:4px">call me</div>
+            <div class="sk f" style="margin-top:8px"></div>
+          </div>
+          <div>
+            <div class="eyebrow" style="padding-inline-start:4px">home country</div>
+            <div class="sk f" style="margin-top:8px"></div>
+          </div>
+          <div>
+            <div class="eyebrow" style="padding-inline-start:4px">anything else</div>
+            <div class="sk ftall" style="margin-top:8px"></div>
+          </div>
+        </div>
+        <div class="home-indicator"></div>
+      </div>
+      <p class="note">
+        <b>Hero, lede and every field label are static</b> — they never wait. Three shimmer blocks in the
+        exact height of the inputs they'll become, so the form doesn't reflow when values land. The save
+        button is <b>absent</b> while loading rather than dimmed: there is nothing valid to save yet, and a
+        dimmed button invites a tap.
+      </p>
+    </div>
+
+    <div class="col">
+      <span class="tag">alternative</span>
+      <h2>c · real fields, disabled</h2>
+      <div class="phone">
+        <div class="status-bar"><span>9:41</span><div class="batt"></div></div>
+        <div class="top-bar"><button class="icon-btn"><svg viewBox="0 0 24 24"><polyline points="15 6 9 12 15 18"/></svg></button></div>
+        <div class="scroll">
+          <div><div class="eyebrow">what kebi knows</div><div class="hero">about you</div>
+            <div class="lede-s">the more kebi knows, the less you have to explain every time.</div></div>
+          <div class="frozen" style="display:flex;flex-direction:column;gap:20px">
+            <div><div class="eyebrow" style="padding-inline-start:4px">call me</div>
+              <div class="field ph" style="margin-top:8px">…</div></div>
+            <div><div class="eyebrow" style="padding-inline-start:4px">home country</div>
+              <div class="field row" style="margin-top:8px"><span class="ph" style="color:var(--text-soft)">…</span>
+                <svg viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></div></div>
+            <div><div class="eyebrow" style="padding-inline-start:4px">anything else</div>
+              <div class="field tall ph" style="margin-top:8px">…</div></div>
+          </div>
+        </div>
+        <div class="home-indicator"></div>
+      </div>
+      <p class="note">
+        Real inputs at reduced opacity, not tappable. Honest about the layout, but a dimmed <i>editable</i>
+        control reads as "broken" rather than "coming", and there's no motion to say anything is happening.
+        The shimmer in b says "wait" without saying "disabled".
+      </p>
+    </div>
+
+  </div>
+
+  <!-- 2 LOAD FAILED -->
+  <div class="section-head">
+    <span class="section-title">2 · the read failed</span>
+    <span class="section-q">the one that can destroy data</span>
+  </div>
+  <p class="section-desc">
+    Same user, same filled-in profile, one dropped request. What the screen does next decides whether their
+    answers survive.
+  </p>
+
+  <div class="row-of">
+
+    <div class="col">
+      <span class="tag bad">today · data loss risk</span>
+      <h2>a · empty form, live save</h2>
+      <div class="phone">
+        <div class="status-bar"><span>9:41</span><div class="batt"></div></div>
+        <div class="top-bar"><button class="icon-btn"><svg viewBox="0 0 24 24"><polyline points="15 6 9 12 15 18"/></svg></button></div>
+        <div class="scroll">
+          <div><div class="eyebrow">what kebi knows</div><div class="hero">about you</div></div>
+          <div><div class="eyebrow" style="padding-inline-start:4px">call me</div>
+            <div class="field ph" style="margin-top:8px">what should kebi call you?</div></div>
+          <div><div class="eyebrow" style="padding-inline-start:4px">home country</div>
+            <div class="field row" style="margin-top:8px"><span style="color:var(--text-soft)">pick one</span>
+              <svg viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></div></div>
+          <div><div class="eyebrow" style="padding-inline-start:4px">anything else</div>
+            <div class="field tall ph" style="margin-top:8px">allergies, hates, habits…</div></div>
+          <div class="btn">save</div>
+        </div>
+        <div class="toast-wrap"><div class="toast">couldn't load your answers</div></div>
+        <div class="home-indicator"></div>
+      </div>
+      <p class="note">
+        The toast fades in 3s. What's left is an empty form that looks like a profile the user never filled
+        in, with an <b>active save button</b>. One tap and three real fields are overwritten with empty
+        strings — and the chat gets worse from then on, silently.
+      </p>
+    </div>
+
+    <div class="col">
+      <span class="tag rec">recommended</span>
+      <h2>b · frozen fields, save withheld</h2>
+      <div class="phone">
+        <div class="status-bar"><span>9:41</span><div class="batt"></div></div>
+        <div class="top-bar"><button class="icon-btn"><svg viewBox="0 0 24 24"><polyline points="15 6 9 12 15 18"/></svg></button></div>
+        <div class="scroll">
+          <div><div class="eyebrow">what kebi knows</div><div class="hero">about you</div></div>
+          <div class="err-inline">
+            <span class="err-dot"></span>
+            <span class="err-txt"><b>couldn't load your answers.</b> they're safe — this form just can't show them yet.</span>
+            <button class="retry">retry</button>
+          </div>
+          <div class="frozen" style="display:flex;flex-direction:column;gap:20px">
+            <div><div class="eyebrow" style="padding-inline-start:4px">call me</div><div class="sk f" style="margin-top:8px"></div></div>
+            <div><div class="eyebrow" style="padding-inline-start:4px">home country</div><div class="sk f" style="margin-top:8px"></div></div>
+            <div><div class="eyebrow" style="padding-inline-start:4px">anything else</div><div class="sk ftall" style="margin-top:8px"></div></div>
+          </div>
+        </div>
+        <div class="home-indicator"></div>
+      </div>
+      <p class="note">
+        The kernel, and the <b>only</b> option that closes the hole: fields stay frozen skeletons (not empty
+        inputs), <b>nothing is editable and there is no save button</b>, and the line says the answers are
+        safe. You cannot overwrite what was never loaded. Retry refetches; success turns the skeletons into
+        the real values.
+      </p>
+    </div>
+
+    <div class="col">
+      <span class="tag">middle</span>
+      <h2>c · editable, but save blocked</h2>
+      <div class="phone">
+        <div class="status-bar"><span>9:41</span><div class="batt"></div></div>
+        <div class="top-bar"><button class="icon-btn"><svg viewBox="0 0 24 24"><polyline points="15 6 9 12 15 18"/></svg></button></div>
+        <div class="scroll">
+          <div><div class="eyebrow">what kebi knows</div><div class="hero">about you</div></div>
+          <div class="err-inline">
+            <span class="err-dot"></span>
+            <span class="err-txt"><b>couldn't load your answers.</b> saving is off until they load.</span>
+            <button class="retry">retry</button>
+          </div>
+          <div><div class="eyebrow" style="padding-inline-start:4px">call me</div>
+            <div class="field ph" style="margin-top:8px">what should kebi call you?</div></div>
+          <div><div class="eyebrow" style="padding-inline-start:4px">home country</div>
+            <div class="field row" style="margin-top:8px"><span style="color:var(--text-soft)">pick one</span>
+              <svg viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></div></div>
+          <div class="btn dim">save</div>
+        </div>
+        <div class="home-indicator"></div>
+      </div>
+      <p class="note">
+        Safe, but cruel: you can type a whole profile and then discover you can't keep it. If the fields
+        can't be trusted, they shouldn't accept input at all — which is exactly what b does.
+      </p>
+    </div>
+
+  </div>
+
+  <!-- 3 SAVING -->
+  <div class="section-head">
+    <span class="section-title">3 · saving</span>
+    <span class="section-q">getting around, and what a failed save leaves behind</span>
+  </div>
+  <p class="section-desc">
+    <code>getting-around</code> is the same screen with radio options instead of text. Its save is slower
+    than it looks — it PATCHes, then <code>refreshSession</code>s to re-stamp the token — so the in-flight
+    state matters.
+  </p>
+
+  <div class="row-of">
+
+    <div class="col">
+      <span class="tag rec">recommended</span>
+      <h2>a · saving in progress</h2>
+      <div class="phone">
+        <div class="status-bar"><span>9:41</span><div class="batt"></div></div>
+        <div class="top-bar"><button class="icon-btn"><svg viewBox="0 0 24 24"><polyline points="15 6 9 12 15 18"/></svg></button></div>
+        <div class="scroll">
+          <div><div class="eyebrow">what kebi knows</div><div class="hero">getting around</div>
+            <div class="lede-s">how far you'll go changes what counts as "nearby".</div></div>
+          <div class="fl">
+            <div class="opt"><span class="em">🚶</span><div class="tx"><div class="nm">on foot</div><div class="sb">10 minutes is far</div></div><div class="radio"></div></div>
+            <div class="opt"><span class="em">🛵</span><div class="tx"><div class="nm">scooter</div><div class="sb">anywhere in the city</div></div><div class="radio on"></div></div>
+            <div class="opt"><span class="em">🚆</span><div class="tx"><div class="nm">transit</div><div class="sb">a few stops is fine</div></div><div class="radio"></div></div>
+          </div>
+          <div class="btn"><span class="btn-row"><span class="spin sm"></span>saving</span></div>
+        </div>
+        <div class="home-indicator"></div>
+      </div>
+      <p class="note">
+        The button becomes <b>spinner + "saving"</b> and the options stop responding — the same language the
+        save sheet already uses for its saving state. A spinner is allowed <i>inside</i> a button: it marks
+        an action in flight, not content on its way, which is the distinction the ban is actually about.
+      </p>
+    </div>
+
+    <div class="col">
+      <span class="tag rec">settled</span>
+      <h2>b · save failed</h2>
+      <div class="phone">
+        <div class="status-bar"><span>9:41</span><div class="batt"></div></div>
+        <div class="top-bar"><button class="icon-btn"><svg viewBox="0 0 24 24"><polyline points="15 6 9 12 15 18"/></svg></button></div>
+        <div class="scroll">
+          <div><div class="eyebrow">what kebi knows</div><div class="hero">getting around</div></div>
+          <div class="fl">
+            <div class="opt"><span class="em">🚶</span><div class="tx"><div class="nm">on foot</div><div class="sb">10 minutes is far</div></div><div class="radio"></div></div>
+            <div class="opt"><span class="em">🛵</span><div class="tx"><div class="nm">scooter</div><div class="sb">anywhere in the city</div></div><div class="radio on"></div></div>
+            <div class="opt"><span class="em">🚆</span><div class="tx"><div class="nm">transit</div><div class="sb">a few stops is fine</div></div><div class="radio"></div></div>
+          </div>
+          <div class="btn">save</div>
+        </div>
+        <div class="toast-wrap"><div class="toast">couldn't save that<button>retry</button></div></div>
+        <div class="home-indicator"></div>
+      </div>
+      <p class="note">
+        Already the behaviour, with one addition: the toast gains a <b>retry</b>. The screen <b>does not
+        navigate back</b> (a successful save does), your choice stays selected, and nothing is lost. Because
+        the form still holds everything, retry is free.
+      </p>
+    </div>
+
+    <div class="col">
+      <span class="tag rec">settled</span>
+      <h2>c · saved</h2>
+      <div class="phone">
+        <div class="status-bar"><span>9:41</span><div class="batt"></div></div>
+        <div class="top-bar"><button class="icon-btn"><svg viewBox="0 0 24 24"><polyline points="15 6 9 12 15 18"/></svg></button></div>
+        <div class="scroll">
+          <div><div class="eyebrow">settings</div><div class="hero">you, basically</div></div>
+          <div style="background:var(--surface);border-radius:14px;padding:2px 12px">
+            <div style="display:flex;align-items:center;gap:11px;padding:12px 2px">
+              <span style="width:26px;text-align:center;font-size:16px">👋</span>
+              <div style="flex:1"><div style="font-size:14.5px;font-weight:500">about you</div></div>
+              <span style="font-size:12.5px;color:var(--success)">set</span>
+            </div>
+            <div style="height:1px;background:var(--surface-2)"></div>
+            <div style="display:flex;align-items:center;gap:11px;padding:12px 2px">
+              <span style="width:26px;text-align:center;font-size:16px">🛵</span>
+              <div style="flex:1"><div style="font-size:14.5px;font-weight:500">getting around</div></div>
+              <span style="font-size:12.5px;color:var(--success)">set</span>
+            </div>
+          </div>
+        </div>
+        <div class="toast-wrap"><div class="toast">saved</div></div>
+        <div class="home-indicator"></div>
+      </div>
+      <p class="note">
+        The success path, shown because it's where the toast lands: save → <code>refreshSession</code> →
+        <code>router.back()</code>, so the confirmation appears on <b>settings</b>, with the row already
+        flipped to "set". That flip is the real receipt — the toast just carries you there.
+      </p>
+    </div>
+
+  </div>
+
+  <div class="verdict">
+    <h3>the two forms, decided</h3>
+    <p>
+      <b>1b</b> — hero, lede and field labels never wait; three shimmer blocks in the inputs' exact
+      heights; no save button until there's something valid to save. Retires the app's last
+      <code>ActivityIndicator</code>.
+    </p>
+    <p>
+      <b>2b</b> — and this one is a <b>bug fix, not a polish pass</b>. A failed read must leave frozen
+      skeletons, no editable fields and no save button, with "they're safe — this form just can't show them
+      yet" and a retry. Today's empty-but-saveable form can silently overwrite a real profile, and because
+      these blocks feed chat, every answer afterwards quietly gets worse.
+    </p>
+    <p>
+      <b>3a–3c</b> — the button becomes spinner + "saving" while the PATCH and the token refresh run (a
+      spinner inside a button is fine: it marks an action, not content), a failed save keeps the form and
+      adds retry to its toast, and the success confirmation lands on settings where the row has already
+      flipped to "set".
+    </p>
+  </div>
+
+</div>
+<script>
+  document.querySelectorAll('.theme-toggle button').forEach(function (b) {
+    b.addEventListener('click', function () {
+      document.querySelectorAll('.theme-toggle button').forEach(function (x) { x.classList.remove('active'); });
+      b.classList.add('active');
+      document.body.classList.toggle('dark', b.dataset.theme === 'dark');
+    });
+  });
+</script>
+</body>
+</html>

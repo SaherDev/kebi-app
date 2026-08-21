@@ -204,9 +204,22 @@ export function CountryPickerSheet({
               index,
             })}
             ListEmptyComponent={
-              <Text className="px-2 py-6 text-center text-small text-text-muted">
-                {t('aboutYou.countryEmpty')}
-              </Text>
+              /*
+                A filtered empty reads the same wherever the user meets it
+                (ADR-056): echo the query, offer the undo, nothing else — the
+                words library-search-empty.tsx uses.
+              */
+              <View className="items-center gap-1.5 px-6 py-8">
+                <Text className="text-center text-body font-semibold text-text" numberOfLines={2}>
+                  {t('library.search.noMatches', { query })}
+                </Text>
+                <Text className="text-center text-small text-text-muted">
+                  {t('library.search.tryAgain')}{' '}
+                  <Text className="font-semibold text-like" onPress={() => setQuery('')}>
+                    {t('library.search.clear')}
+                  </Text>
+                </Text>
+              </View>
             }
           />
         </Animated.View>
