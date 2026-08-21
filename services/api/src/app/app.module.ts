@@ -4,6 +4,7 @@ import {
   NestModule,
 } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { resolveSchemaSynchronize } from '../common/deployment';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import * as path from 'path';
 import * as yaml from 'yaml';
@@ -43,17 +44,6 @@ function loadAppYaml(): Record<string, unknown> {
   throw new Error(`config/app.yaml not found. Tried: ${candidates.join(', ')}`);
 }
 
-/**
- * Whether TypeORM should auto-sync the gateway schema on boot (ADR-035). Sole
- * control is the `DB_SYNCHRONIZE` env var — per-environment by nature (dev sets
- * it in `.env.local`, Railway injects it for prod), so it stays off by default
- * and can't leak a committed `true` into production. Off unless explicitly
- * `"true"`.
- */
-function resolveSynchronize(config: ConfigService): boolean {
-  return config.get<string>('DB_SYNCHRONIZE') === 'true';
-}
-
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -72,8 +62,9 @@ function resolveSynchronize(config: ConfigService): boolean {
         entities: [UserEntity, UserSettingsEntity],
         // Product tables (users, user_settings) are owned here; TypeORM keeps the
         // schema in sync. AI tables are owned by kebi (Alembic) and never touched.
-        // Sync is opt-in via the DB_SYNCHRONIZE env var only (ADR-035).
-        synchronize: resolveSynchronize(config),
+        // Sync is opt-in via the DB_SYNCHRONIZE env var, local dev only —
+        // refused outright when running deployed (ADR-035).
+        synchronize: resolveSchemaSynchronize(config),
       }),
     }),
     DatabaseModule,
