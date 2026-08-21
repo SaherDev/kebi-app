@@ -1,7 +1,13 @@
 # Identity write integrity — corrupted internal_id repair and prevention
 
 **Date:** 2026-08-22
-**Status:** in progress
+**Status:** done — code merged to dev (PR #51 to main pending); production account
+repaired and verified 2026-08-22; SHARE_TOKEN_SECRET rotated; DB_SYNCHRONIZE=false
+set on Railway. Inventory found zero rows under the bad id (FKs rejected every
+write), so the purge step was a no-op. Blob-era settings edits (curator grant,
+newer about-me) were deliberately NOT restored — owner chose the pre-corruption
+row as truth. Railway cannot alert on log content; a project webhook to
+Slack/Discord (crashes + failed deploys) awaits the owner's webhook URL.
 
 ## Problem
 
