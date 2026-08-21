@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Kebi Area — loading / empty / error</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #FAFAF9; --surface: #F1F1EF; --surface-2: #E8E8E5;
+    --text: #1A1A1A; --text-muted: #8A8A87; --text-soft: #B5B5B1;
+    --success: #4A7C3A; --like: #C2410C; --danger: #D14343; --warn: #B45309;
+    --tag: #D4B891; --tag-rec: #A7C7A0; --tag-cur: #C9C9C4;
+    --page: #FAFAF9; --page-ink: #1A1A1A;
+  }
+  body.dark {
+    --bg: #13110F; --surface: #1C1A17; --surface-2: #26231F;
+    --text: #F5F1EA; --text-muted: #9A938A; --text-soft: #6E6862;
+    --success: #7FB08C; --like: #E8A87C; --danger: #E89090; --warn: #D9B45F;
+    --tag-cur: #45413B; --page: #0A0908; --page-ink: #F5F1EA;
+  }
+  html, body { background: var(--page); color: var(--page-ink);
+    font-family: 'Inter', system-ui, sans-serif; -webkit-font-smoothing: antialiased; min-height: 100vh; }
+  .page { max-width: 1800px; margin: 0 auto; padding: 52px 36px 120px; }
+
+  .header { display: flex; align-items: flex-start; justify-content: space-between;
+    padding-bottom: 26px; border-bottom: 1px solid var(--surface-2); }
+  h1 { font-size: 25px; font-weight: 700; letter-spacing: -0.028em; }
+  .meta { font-size: 12px; color: var(--text-muted); margin-top: 5px; }
+  .lede { font-size: 14px; color: var(--text-muted); line-height: 1.65; max-width: 880px; margin-top: 14px; }
+  .lede b { color: var(--page-ink); font-weight: 600; }
+  .lede code, .section-desc code, .note code, .verdict code { font-size: 12px;
+    background: var(--surface-2); border-radius: 5px; padding: 1px 6px; }
+  .theme-toggle { display: flex; background: var(--surface); border-radius: 999px; padding: 3px; flex-shrink: 0; }
+  .theme-toggle button { padding: 6px 14px; background: transparent; border: none; border-radius: 999px;
+    font-family: inherit; font-size: 12px; font-weight: 500; color: var(--text-muted); cursor: pointer; }
+  .theme-toggle button.active { background: var(--page-ink); color: var(--page); }
+
+  .section-head { display: flex; align-items: baseline; justify-content: space-between;
+    margin: 46px 0 12px; padding-bottom: 12px; border-bottom: 1px solid var(--surface-2); }
+  .section-title { font-size: 11px; font-weight: 600; color: var(--text-soft);
+    text-transform: uppercase; letter-spacing: 0.08em; }
+  .section-q { font-size: 12px; color: var(--text-soft); }
+  .section-desc { font-size: 14px; color: var(--text-muted); line-height: 1.6; max-width: 880px; margin-bottom: 24px; }
+  .section-desc b { color: var(--page-ink); font-weight: 600; }
+
+  .row-of { display: flex; flex-wrap: wrap; gap: 34px; align-items: flex-start; }
+  .col { width: 390px; display: flex; flex-direction: column; gap: 10px; }
+  .col h2 { font-size: 15px; font-weight: 700; letter-spacing: -0.02em; }
+  .note { font-size: 11.5px; color: var(--text-muted); line-height: 1.55; }
+  .note b { color: var(--page-ink); font-weight: 600; }
+  .tag { display: inline-block; align-self: flex-start; font-size: 10px; font-weight: 700;
+    letter-spacing: .08em; text-transform: uppercase; color: #1A1A1A; background: var(--tag);
+    border-radius: 999px; padding: 3px 10px; }
+  .tag.rec { background: var(--tag-rec); }
+  .tag.cur { background: var(--tag-cur); color: var(--page-ink); }
+
+  .phone { width: 390px; height: 760px; background: var(--bg); border-radius: 44px; overflow: hidden;
+    position: relative; box-shadow: 0 0 0 10px #111, 0 0 0 12px var(--page), 0 24px 50px rgba(0,0,0,0.28);
+    display: flex; flex-direction: column; }
+  .status-bar { height: 44px; padding: 15px 30px 0; display: flex; justify-content: space-between;
+    align-items: center; font-size: 14px; font-weight: 600; color: var(--text); flex-shrink: 0; }
+  .batt { width: 22px; height: 11px; border: 1px solid var(--text); border-radius: 3px; position: relative; }
+  .batt::before { content: ''; position: absolute; inset: 1.5px; background: var(--text); border-radius: 1px; }
+  .top-bar { padding: 12px 16px 8px; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
+  .icon-btn { width: 38px; height: 38px; border-radius: 50%; background: var(--surface);
+    display: flex; align-items: center; justify-content: center; border: none; }
+  .icon-btn svg { width: 17px; height: 17px; stroke: var(--text); stroke-width: 1.8; fill: none; }
+  .scroll { flex: 1; overflow: hidden; padding: 8px 24px 16px; display: flex; flex-direction: column; gap: 16px; }
+  .tab-bar { padding: 0 16px 8px; display: flex; justify-content: flex-end; flex-shrink: 0; }
+  .kebi-ai-btn { width: 56px; height: 56px; border-radius: 50%; background: white;
+    border: 1px solid var(--surface-2); display: flex; align-items: center; justify-content: center; }
+  body.dark .kebi-ai-btn { background: #F5EBD3; border: none; }
+  .kebi-ai-btn svg { width: 36px; height: 36px; }
+  .home-indicator { width: 128px; height: 5px; background: var(--text); border-radius: 3px;
+    margin: 2px auto 8px; flex-shrink: 0; opacity: .85; }
+
+  /* area content */
+  .crumbs { display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--text-muted); }
+  .crumbs a { color: var(--text-muted); text-decoration: underline; }
+  .crumbs .sep { color: var(--text-soft); text-decoration: none; }
+  .area-title { font-size: 26px; font-weight: 700; letter-spacing: -0.03em; line-height: 1.15; color: var(--text); }
+  .meta-wrap { display: flex; flex-wrap: wrap; gap: 6px; background: var(--surface);
+    border-radius: 14px; padding: 10px; }
+  .meta-chip { background: var(--bg); border-radius: 999px; padding: 6px 10px;
+    font-size: 12.5px; font-weight: 500; color: var(--text); }
+  .summary { font-size: 16px; line-height: 25px; letter-spacing: -0.01em; color: var(--text); }
+  .eyebrow { font-size: 11px; font-weight: 600; color: var(--text-soft);
+    text-transform: uppercase; letter-spacing: 0.08em; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 9px; }
+  .chip { display: inline-flex; align-items: center; gap: 5px; background: var(--surface);
+    border-radius: 999px; padding: 6px 11px; font-size: 12.5px; color: var(--text); }
+  .rows { margin-top: 9px; }
+  .a-row { display: flex; align-items: center; gap: 11px; padding: 11px 2px;
+    border-bottom: 1px solid var(--surface-2); }
+  .a-av { width: 32px; height: 32px; border-radius: 9px; background: var(--surface);
+    display: flex; align-items: center; justify-content: center; font-size: 15px; flex-shrink: 0; }
+  .a-body { flex: 1; min-width: 0; }
+  .a-nm { font-size: 14px; font-weight: 600; color: var(--text); letter-spacing: -0.01em; }
+  .a-sub { font-size: 11.5px; color: var(--text-soft); margin-top: 2px; }
+  .a-chev { width: 11px; height: 11px; stroke: var(--text-soft); stroke-width: 2.2; fill: none; flex-shrink: 0; }
+
+  .sk { border-radius: 5px; background: var(--surface-2); position: relative; overflow: hidden; }
+  .sk::after { content: ''; position: absolute; inset: 0; transform: translateX(-100%);
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.6), transparent);
+    animation: shimmer 1.4s linear infinite; }
+  body.dark .sk::after { background: linear-gradient(90deg, transparent, rgba(255,255,255,0.07), transparent); }
+  @keyframes shimmer { 100% { transform: translateX(100%); } }
+  @keyframes rot { 100% { transform: rotate(360deg); } }
+  .sk.h10 { height: 10px; } .sk.h12 { height: 12px; } .sk.h14 { height: 14px; } .sk.h22 { height: 22px; }
+  .sk.chip { height: 28px; border-radius: 999px; }
+  .sk.av { width: 32px; height: 32px; border-radius: 9px; }
+  .meta-wrap .sk { background: var(--bg); }
+  .frozen { opacity: .45; } .frozen .sk::after { animation: none; opacity: 0; }
+  .spin { width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--surface-2);
+    border-top-color: var(--text-muted); animation: rot .8s linear infinite; }
+  .center { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 13px; text-align: center; padding: 0 26px 90px; }
+  .center .t { font-size: 15px; font-weight: 600; color: var(--text); }
+  .center .h { font-size: 13px; color: var(--text-muted); line-height: 1.5; }
+  .err-inline { display: flex; align-items: center; gap: 9px; padding: 2px 2px; }
+  .err-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--danger); flex-shrink: 0; }
+  .err-txt { font-size: 12.5px; color: var(--text-muted); flex: 1; line-height: 1.4; }
+  .err-txt b { color: var(--text); font-weight: 600; }
+  .retry { background: transparent; border: none; font-family: inherit; font-size: 13px;
+    font-weight: 600; color: var(--text); padding: 2px 6px; cursor: pointer; }
+  .quiet-line { font-size: 13px; color: var(--text-muted); padding: 2px 2px; }
+
+  .verdict { margin-top: 44px; border: 1px solid var(--surface-2); border-radius: 16px;
+    padding: 22px 24px; background: var(--surface); max-width: 1000px; }
+  .verdict h3 { font-size: 14px; font-weight: 700; margin-bottom: 10px; }
+  .verdict p { font-size: 13px; color: var(--text-muted); line-height: 1.68; }
+  .verdict p + p { margin-top: 10px; }
+  .verdict b { color: var(--page-ink); font-weight: 600; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="header">
+    <div>
+      <h1>area — loading, empty, error</h1>
+      <div class="meta">kebi-app · apps/mobile/src/app/area.tsx · ADR-153 · applies the kernel</div>
+      <p class="lede">
+        The area screen is read-only and arrives from a link — a chat rail chip or a library section header.
+        That matters for its states: <b>you tapped a name and expect that name</b>, so the wait should show
+        the name's frame, and a failure must not leave you on a screen with no idea what you tapped.
+        <br><br>
+        Today it is one <code>if</code>: <code>status !== 'ready'</code> renders a centred spinner, or one
+        line of muted grey text for <i>every</i> failure with <b>no retry at all</b>. The body section is
+        hidden whenever it's empty, so a real area with nothing saved in it just ends after the chips.
+      </p>
+    </div>
+    <div class="theme-toggle">
+      <button class="active" data-theme="light">light</button>
+      <button data-theme="dark">dark</button>
+    </div>
+  </div>
+
+  <!-- 1 LOADING -->
+  <div class="section-head">
+    <span class="section-title">1 · opening an area</span>
+    <span class="section-q">a spinner, or the frame of the thing you tapped?</span>
+  </div>
+  <p class="section-desc">
+    Both halves of the response arrive together (<code>useAreaView</code>), and the summary can come on a
+    second pass — so the screen has a known shape: breadcrumb, emoji + name, meta chips, summary paragraph,
+    best-for chips, rows.
+  </p>
+
+  <div class="row-of">
+
+    <div class="col">
+      <span class="tag cur">today</span>
+      <h2>a · centred spinner</h2>
+      <div class="phone">
+        <div class="status-bar"><span>9:41</span><div class="batt"></div></div>
+        <div class="top-bar"><button class="icon-btn"><svg viewBox="0 0 24 24"><polyline points="15 6 9 12 15 18"/></svg></button></div>
+        <div class="scroll"><div class="center"><div class="spin"></div></div></div>
+        <div class="tab-bar"><div class="kebi-ai-btn"><svg viewBox="0 0 64 64"><ellipse cx="32" cy="38" rx="20" ry="20" fill="#D4B891"/><ellipse cx="32" cy="42" rx="13" ry="13" fill="#F5EBD3"/><circle cx="25" cy="30" r="3.5" fill="white"/><circle cx="39" cy="30" r="3.5" fill="white"/><circle cx="25" cy="30" r="1.7" fill="#1A1A1A"/><circle cx="39" cy="30" r="1.7" fill="#1A1A1A"/><path d="M30 33 L34 33 L32 36 Z" fill="#C87A4A"/></svg></div></div>
+        <div class="home-indicator"></div>
+      </div>
+      <p class="note">
+        You tapped <b>canggu</b> and got an anonymous grey screen. Nothing confirms the tap landed on the
+        right thing, and the whole page assembles in one jump.
+      </p>
+    </div>
+
+    <div class="col">
+      <span class="tag rec">recommended</span>
+      <h2>b · the name lands first</h2>
+      <div class="phone">
+        <div class="status-bar"><span>9:41</span><div class="batt"></div></div>
+        <div class="top-bar"><button class="icon-btn"><svg viewBox="0 0 24 24"><polyline points="15 6 9 12 15 18"/></svg></button></div>
+        <div class="scroll">
+          <div class="crumbs"><div class="sk h10" style="width:56px"></div><span class="sep">›</span><div class="sk h10" style="width:38px"></div></div>
+          <div class="area-title">📍 canggu</div>
+          <div class="meta-wrap"><div class="sk chip" style="width:96px"></div><div class="sk chip" style="width:74px"></div></div>
+          <div>
+            <div class="sk h14" style="width:100%"></div>
+            <div class="sk h14" style="width:96%;margin-top:9px"></div>
+            <div class="sk h14" style="width:62%;margin-top:9px"></div>
+          </div>
+          <div>
+            <div class="eyebrow">best for</div>
+            <div class="chips"><div class="sk chip" style="width:88px"></div><div class="sk chip" style="width:112px"></div><div class="sk chip" style="width:76px"></div></div>
+          </div>
+          <div>
+            <div class="eyebrow">what you have here</div>
+            <div class="rows">
+              <div class="a-row"><div class="sk av"></div><div class="a-body"><div class="sk h12" style="width:52%"></div><div class="sk h10" style="width:34%;margin-top:7px"></div></div></div>
+              <div class="a-row"><div class="sk av"></div><div class="a-body"><div class="sk h12" style="width:64%"></div><div class="sk h10" style="width:28%;margin-top:7px"></div></div></div>
+            </div>
+          </div>
+        </div>
+        <div class="tab-bar"><div class="kebi-ai-btn"><svg viewBox="0 0 64 64"><ellipse cx="32" cy="38" rx="20" ry="20" fill="#D4B891"/><ellipse cx="32" cy="42" rx="13" ry="13" fill="#F5EBD3"/><circle cx="25" cy="30" r="3.5" fill="white"/><circle cx="39" cy="30" r="3.5" fill="white"/><circle cx="25" cy="30" r="1.7" fill="#1A1A1A"/><circle cx="39" cy="30" r="1.7" fill="#1A1A1A"/><path d="M30 33 L34 33 L32 36 Z" fill="#C87A4A"/></svg></div></div>
+        <div class="home-indicator"></div>
+      </div>
+      <p class="note">
+        <b>The title is real from the first frame</b> — the link you tapped already carried the area's name
+        and emoji, so there is no reason to shimmer it. Everything the server still owes (crumbs, chips,
+        summary, rows) shimmers in its own slot. Section eyebrows stay solid: they're static labels, not
+        data. Confirms the tap instantly and reads as one screen filling in.
+      </p>
+    </div>
+
+    <div class="col">
+      <span class="tag">stricter</span>
+      <h2>c · everything shimmers, title too</h2>
+      <div class="phone">
+        <div class="status-bar"><span>9:41</span><div class="batt"></div></div>
+        <div class="top-bar"><button class="icon-btn"><svg viewBox="0 0 24 24"><polyline points="15 6 9 12 15 18"/></svg></button></div>
+        <div class="scroll">
+          <div class="crumbs"><div class="sk h10" style="width:56px"></div><span class="sep">›</span><div class="sk h10" style="width:38px"></div></div>
+          <div><div class="sk h22" style="width:58%"></div></div>
+          <div class="meta-wrap"><div class="sk chip" style="width:96px"></div><div class="sk chip" style="width:74px"></div></div>
+          <div>
+            <div class="sk h14" style="width:100%"></div>
+            <div class="sk h14" style="width:96%;margin-top:9px"></div>
+            <div class="sk h14" style="width:62%;margin-top:9px"></div>
+          </div>
+          <div>
+            <div class="eyebrow">best for</div>
+            <div class="chips"><div class="sk chip" style="width:88px"></div><div class="sk chip" style="width:112px"></div></div>
+          </div>
+          <div>
+            <div class="eyebrow">what you have here</div>
+            <div class="rows">
+              <div class="a-row"><div class="sk av"></div><div class="a-body"><div class="sk h12" style="width:52%"></div><div class="sk h10" style="width:34%;margin-top:7px"></div></div></div>
+              <div class="a-row"><div class="sk av"></div><div class="a-body"><div class="sk h12" style="width:64%"></div><div class="sk h10" style="width:28%;margin-top:7px"></div></div></div>
+            </div>
+          </div>
+        </div>
+        <div class="tab-bar"><div class="kebi-ai-btn"><svg viewBox="0 0 64 64"><ellipse cx="32" cy="38" rx="20" ry="20" fill="#D4B891"/><ellipse cx="32" cy="42" rx="13" ry="13" fill="#F5EBD3"/><circle cx="25" cy="30" r="3.5" fill="white"/><circle cx="39" cy="30" r="3.5" fill="white"/><circle cx="25" cy="30" r="1.7" fill="#1A1A1A"/><circle cx="39" cy="30" r="1.7" fill="#1A1A1A"/><path d="M30 33 L34 33 L32 36 Z" fill="#C87A4A"/></svg></div></div>
+        <div class="home-indicator"></div>
+      </div>
+      <p class="note">
+        Purer — nothing on screen until the server confirms it. But it throws away a name we already hold,
+        and the screen stays anonymous for the whole wait. Only right if we decide a link's name can be
+        stale enough to mislead.
+      </p>
+    </div>
+
+  </div>
+
+  <!-- 2 EMPTY -->
+  <div class="section-head">
+    <span class="section-title">2 · an area with nothing of yours in it</span>
+    <span class="section-q">a body section that renders nothing</span>
+  </div>
+  <p class="section-desc">
+    <code>Body</code> returns <code>null</code> when the section is empty or absent — so an area you've
+    never saved in ends abruptly after the chips. The server does try to fill the gap (a
+    <code>worth_knowing</code> section of notable children), but it can't always: at a leaf-level
+    neighbourhood with no saves and nothing notable, there's simply nothing to draw. <b>Area has no save
+    trigger</b> (read-only, no top pill), so the kernel's add-row has nowhere to go.
+  </p>
+
+  <div class="row-of">
+
+    <div class="col">
+      <span class="tag cur">today</span>
+      <h2>a · the page just stops</h2>
+      <div class="phone">
+        <div class="status-bar"><span>9:41</span><div class="batt"></div></div>
+        <div class="top-bar"><button class="icon-btn"><svg viewBox="0 0 24 24"><polyline points="15 6 9 12 15 18"/></svg></button></div>
+        <div class="scroll">
+          <div class="crumbs"><a>indonesia</a><span class="sep">›</span><a>bali</a></div>
+          <div class="area-title">🏄 canggu</div>
+          <div class="meta-wrap"><span class="meta-chip">neighbourhood</span></div>
+          <div class="summary">surf-town sprawl that turned into a café belt — rice fields on one side, espresso and laptops on the other. busy from sunrise, loudest at sunset.</div>
+          <div>
+            <div class="eyebrow">best for</div>
+            <div class="chips"><span class="chip">🏄 surf</span><span class="chip">☕ long coffee</span><span class="chip">🌅 sunset</span></div>
+          </div>
+        </div>
+        <div class="tab-bar"><div class="kebi-ai-btn"><svg viewBox="0 0 64 64"><ellipse cx="32" cy="38" rx="20" ry="20" fill="#D4B891"/><ellipse cx="32" cy="42" rx="13" ry="13" fill="#F5EBD3"/><circle cx="25" cy="30" r="3.5" fill="white"/><circle cx="39" cy="30" r="3.5" fill="white"/><circle cx="25" cy="30" r="1.7" fill="#1A1A1A"/><circle cx="39" cy="30" r="1.7" fill="#1A1A1A"/><path d="M30 33 L34 33 L32 36 Z" fill="#C87A4A"/></svg></div></div>
+        <div class="home-indicator"></div>
+      </div>
+      <p class="note">
+        Not broken — the summary and chips carry the screen. But the user can't tell whether they have
+        nothing saved here or whether the list failed to load. <b>Same ambiguity as home's silent failure.</b>
+      </p>
+    </div>
+
+    <div class="col">
+      <span class="tag rec">recommended</span>
+      <h2>b · say it, in the section's own slot</h2>
+      <div class="phone">
+        <div class="status-bar"><span>9:41</span><div class="batt"></div></div>
+        <div class="top-bar"><button class="icon-btn"><svg viewBox="0 0 24 24"><polyline points="15 6 9 12 15 18"/></svg></button></div>
+        <div class="scroll">
+          <div class="crumbs"><a>indonesia</a><span class="sep">›</span><a>bali</a></div>
+          <div class="area-title">🏄 canggu</div>
+          <div class="meta-wrap"><span class="meta-chip">neighbourhood</span></div>
+          <div class="summary">surf-town sprawl that turned into a café belt — rice fields on one side, espresso and laptops on the other. busy from sunrise, loudest at sunset.</div>
+          <div>
+            <div class="eyebrow">best for</div>
+            <div class="chips"><span class="chip">🏄 surf</span><span class="chip">☕ long coffee</span><span class="chip">🌅 sunset</span></div>
+          </div>
+          <div>
+            <div class="eyebrow">what you have here</div>
+            <div class="quiet-line" style="margin-top:9px">nothing saved here yet. share a place and it lands in canggu.</div>
+          </div>
+        </div>
+        <div class="tab-bar"><div class="kebi-ai-btn"><svg viewBox="0 0 64 64"><ellipse cx="32" cy="38" rx="20" ry="20" fill="#D4B891"/><ellipse cx="32" cy="42" rx="13" ry="13" fill="#F5EBD3"/><circle cx="25" cy="30" r="3.5" fill="white"/><circle cx="39" cy="30" r="3.5" fill="white"/><circle cx="25" cy="30" r="1.7" fill="#1A1A1A"/><circle cx="39" cy="30" r="1.7" fill="#1A1A1A"/><path d="M30 33 L34 33 L32 36 Z" fill="#C87A4A"/></svg></div></div>
+        <div class="home-indicator"></div>
+      </div>
+      <p class="note">
+        The section header stays and one muted line fills it — <b>the kernel's quiet-line empty, not the
+        ghost</b>, because this screen has no save action to point the ghost's <code>+</code> row at, and
+        faking place rows for an area you've never been to would invent content. Naming the area in the
+        sentence makes it a statement about <i>this</i> place rather than boilerplate. Now "empty" and
+        "failed" look different, which is the whole point.
+      </p>
+    </div>
+
+    <div class="col">
+      <span class="tag">no id / bad link</span>
+      <h2>c · the area doesn't exist</h2>
+      <div class="phone">
+        <div class="status-bar"><span>9:41</span><div class="batt"></div></div>
+        <div class="top-bar"><button class="icon-btn"><svg viewBox="0 0 24 24"><polyline points="15 6 9 12 15 18"/></svg></button></div>
+        <div class="scroll">
+          <div class="center">
+            <div style="font-size:30px">🗺️</div>
+            <div class="t">that area isn't there</div>
+            <div class="h">the link may be old. head back and try from your library.</div>
+            <button class="retry" style="border:1px solid var(--surface-2);border-radius:12px;padding:9px 16px">back</button>
+          </div>
+        </div>
+        <div class="tab-bar"><div class="kebi-ai-btn"><svg viewBox="0 0 64 64"><ellipse cx="32" cy="38" rx="20" ry="20" fill="#D4B891"/><ellipse cx="32" cy="42" rx="13" ry="13" fill="#F5EBD3"/><circle cx="25" cy="30" r="3.5" fill="white"/><circle cx="39" cy="30" r="3.5" fill="white"/><circle cx="25" cy="30" r="1.7" fill="#1A1A1A"/><circle cx="39" cy="30" r="1.7" fill="#1A1A1A"/><path d="M30 33 L34 33 L32 36 Z" fill="#C87A4A"/></svg></div></div>
+        <div class="home-indicator"></div>
+      </div>
+      <p class="note">
+        A missing <code>id</code> or a 404 is not a network failure — retrying will never fix it, so it gets
+        <b>no retry button</b>, just a way out. Today both this and a network blip print the same grey line.
+        Splitting them is the only way either sentence can be true.
+      </p>
+    </div>
+
+  </div>
+
+  <!-- 3 ERROR -->
+  <div class="section-head">
+    <span class="section-title">3 · the fetch failed</span>
+    <span class="section-q">one grey line with nothing to tap</span>
+  </div>
+  <p class="section-desc">
+    Today: <code>{t('area.loadFailed')}</code> centred in grey. No retry, no back affordance beyond the
+    system arrow, and no clue which area failed. A network blip on a chat link ends the journey.
+  </p>
+
+  <div class="row-of">
+
+    <div class="col">
+      <span class="tag cur">today</span>
+      <h2>a · a grey sentence</h2>
+      <div class="phone">
+        <div class="status-bar"><span>9:41</span><div class="batt"></div></div>
+        <div class="top-bar"><button class="icon-btn"><svg viewBox="0 0 24 24"><polyline points="15 6 9 12 15 18"/></svg></button></div>
+        <div class="scroll"><div class="center"><div style="font-size:14px;color:var(--text-muted)">couldn't load this area</div></div></div>
+        <div class="tab-bar"><div class="kebi-ai-btn"><svg viewBox="0 0 64 64"><ellipse cx="32" cy="38" rx="20" ry="20" fill="#D4B891"/><ellipse cx="32" cy="42" rx="13" ry="13" fill="#F5EBD3"/><circle cx="25" cy="30" r="3.5" fill="white"/><circle cx="39" cy="30" r="3.5" fill="white"/><circle cx="25" cy="30" r="1.7" fill="#1A1A1A"/><circle cx="39" cy="30" r="1.7" fill="#1A1A1A"/><path d="M30 33 L34 33 L32 36 Z" fill="#C87A4A"/></svg></div></div>
+        <div class="home-indicator"></div>
+      </div>
+      <p class="note">
+        A dead end. The one thing the design system requires of every error — <b>always offer a next
+        action</b> — is missing.
+      </p>
+    </div>
+
+    <div class="col">
+      <span class="tag rec">recommended</span>
+      <h2>b · keep the name, freeze the frame</h2>
+      <div class="phone">
+        <div class="status-bar"><span>9:41</span><div class="batt"></div></div>
+        <div class="top-bar"><button class="icon-btn"><svg viewBox="0 0 24 24"><polyline points="15 6 9 12 15 18"/></svg></button></div>
+        <div class="scroll">
+          <div class="crumbs"><div class="sk h10 frozen" style="width:56px"></div></div>
+          <div class="area-title">📍 canggu</div>
+          <div class="err-inline"><span class="err-dot"></span><span class="err-txt"><b>couldn't load canggu.</b> nothing lost.</span><button class="retry">retry</button></div>
+          <div class="frozen">
+            <div class="meta-wrap"><div class="sk chip" style="width:96px"></div><div class="sk chip" style="width:74px"></div></div>
+            <div style="margin-top:16px">
+              <div class="sk h14" style="width:100%"></div>
+              <div class="sk h14" style="width:96%;margin-top:9px"></div>
+              <div class="sk h14" style="width:62%;margin-top:9px"></div>
+            </div>
+            <div style="margin-top:16px">
+              <div class="rows">
+                <div class="a-row"><div class="sk av"></div><div class="a-body"><div class="sk h12" style="width:52%"></div><div class="sk h10" style="width:34%;margin-top:7px"></div></div></div>
+                <div class="a-row"><div class="sk av"></div><div class="a-body"><div class="sk h12" style="width:64%"></div><div class="sk h10" style="width:28%;margin-top:7px"></div></div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="tab-bar"><div class="kebi-ai-btn"><svg viewBox="0 0 64 64"><ellipse cx="32" cy="38" rx="20" ry="20" fill="#D4B891"/><ellipse cx="32" cy="42" rx="13" ry="13" fill="#F5EBD3"/><circle cx="25" cy="30" r="3.5" fill="white"/><circle cx="39" cy="30" r="3.5" fill="white"/><circle cx="25" cy="30" r="1.7" fill="#1A1A1A"/><circle cx="39" cy="30" r="1.7" fill="#1A1A1A"/><path d="M30 33 L34 33 L32 36 Z" fill="#C87A4A"/></svg></div></div>
+        <div class="home-indicator"></div>
+      </div>
+      <p class="note">
+        The title stayed real through the load, so it stays real through the failure — and the error can
+        <b>name the area that failed</b>. The rest of the frame freezes and dims under a one-line retry, so
+        a successful retry fills the same shape instead of rebuilding the screen. The failure reads as
+        temporary, which it is.
+      </p>
+    </div>
+
+    <div class="col">
+      <span class="tag rec">settled</span>
+      <h2>c · the summary is late (not failed)</h2>
+      <div class="phone">
+        <div class="status-bar"><span>9:41</span><div class="batt"></div></div>
+        <div class="top-bar"><button class="icon-btn"><svg viewBox="0 0 24 24"><polyline points="15 6 9 12 15 18"/></svg></button></div>
+        <div class="scroll">
+          <div class="crumbs"><a>indonesia</a><span class="sep">›</span><a>bali</a></div>
+          <div class="area-title">🏄 canggu</div>
+          <div class="meta-wrap"><span class="meta-chip">neighbourhood</span><span class="meta-chip">4 saved</span></div>
+          <div>
+            <div class="sk h14" style="width:100%"></div>
+            <div class="sk h14" style="width:88%;margin-top:9px"></div>
+          </div>
+          <div>
+            <div class="eyebrow">what you have here</div>
+            <div class="rows">
+              <div class="a-row"><div class="a-av">🍜</div><div class="a-body"><div class="a-nm">Kamachiku</div><div class="a-sub">udon · ¥¥</div></div><svg class="a-chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></div>
+              <div class="a-row"><div class="a-av">☕</div><div class="a-body"><div class="a-nm">Fuglen</div><div class="a-sub">coffee · ¥¥</div></div><svg class="a-chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></div>
+            </div>
+          </div>
+        </div>
+        <div class="tab-bar"><div class="kebi-ai-btn"><svg viewBox="0 0 64 64"><ellipse cx="32" cy="38" rx="20" ry="20" fill="#D4B891"/><ellipse cx="32" cy="42" rx="13" ry="13" fill="#F5EBD3"/><circle cx="25" cy="30" r="3.5" fill="white"/><circle cx="39" cy="30" r="3.5" fill="white"/><circle cx="25" cy="30" r="1.7" fill="#1A1A1A"/><circle cx="39" cy="30" r="1.7" fill="#1A1A1A"/><path d="M30 33 L34 33 L32 36 Z" fill="#C87A4A"/></svg></div></div>
+        <div class="home-indicator"></div>
+      </div>
+      <p class="note">
+        A real case the code already handles: the summary is <b>absent on a thin first open</b> and
+        <code>useAreaView</code> refetches once for it. Everything else is live while two shimmer lines hold
+        the paragraph's space — so the text drops in without pushing the rows down. If the second pass comes
+        back empty too, the block disappears with a fade rather than leaving a permanent skeleton.
+      </p>
+    </div>
+
+  </div>
+
+  <div class="verdict">
+    <h3>area, decided</h3>
+    <p>
+      <b>1b</b> — the title is real from frame one (the link already carries name + emoji), everything the
+      server owes shimmers in place, static eyebrows stay solid.
+    </p>
+    <p>
+      <b>2b + 2c</b> — an area with nothing of yours keeps its section header and states it in one muted
+      line naming the area; a dead link gets its own screen with a way back and <b>no retry</b>, because
+      retrying a 404 is a lie.
+    </p>
+    <p>
+      <b>3b + 3c</b> — a failed load keeps the title, names the area in the error, and freezes the frame
+      under a retry line. A late summary is not an error and never renders one.
+    </p>
+    <p>
+      One new rule falls out of this screen and generalises: <b>never let "empty", "failed" and "still
+      loading" collapse into the same pixels.</b> That's the actual bug on area today — all three are the
+      absence of content.
+    </p>
+  </div>
+
+</div>
+<script>
+  document.querySelectorAll('.theme-toggle button').forEach(function (b) {
+    b.addEventListener('click', function () {
+      document.querySelectorAll('.theme-toggle button').forEach(function (x) { x.classList.remove('active'); });
+      b.classList.add('active');
+      document.body.classList.toggle('dark', b.dataset.theme === 'dark');
+    });
+  });
+</script>
+</body>
+</html>

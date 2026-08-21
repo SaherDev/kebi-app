@@ -17,7 +17,8 @@ import { TopBar } from '../components/top-bar';
 import { TopPill } from '../components/top-pill';
 import { IconButton } from '../components/icon-button';
 import { Icon, type IconName } from '../components/icon';
-import { Spinner } from '../components/spinner';
+import { PlaceSkeleton } from '../components/place-skeleton';
+import { ErrorRow } from '../components/error-row';
 import { StatusPill } from '../components/status-pill';
 import { PlaceMetaWrapper } from '../components/place-meta-wrapper';
 import { PlaceTagSection } from '../components/place-tag-section';
@@ -116,23 +117,58 @@ export default function PlaceScreen() {
   const { t } = useTranslation();
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id?: string }>();
-  const { state, save, saving } = usePlaceView(id);
+  const { state, retry, save, saving } = usePlaceView(id);
   useReturnToChat();
 
   const back = <IconButton icon="back" label={t('common.back')} onPress={() => router.back()} />;
 
-  if (state.status !== 'ready') {
+  if (state.status === 'loading') {
     return (
       <ScreenScaffold topBar={<TopBar left={back} />}>
-        <View className="flex-1 items-center justify-center px-6 pb-24">
-          {state.status === 'loading' ? (
-            <Spinner />
-          ) : (
-            <Text className="text-body text-text-muted">
-              {id ? t('place.loadFailed') : t('place.empty')}
+        <PlaceSkeleton />
+      </ScreenScaffold>
+    );
+  }
+
+  if (state.status === 'failed') {
+    // A place that is gone — forgotten, or an old chat link — cannot be
+    // retried into existence, so it gets an explanation and a way out
+    // (ADR-056). A blip gets the frozen frame and a retry.
+    if (!state.retryable) {
+      return (
+        <ScreenScaffold topBar={<TopBar left={back} />}>
+          <View className="flex-1 items-center justify-center gap-3 px-8 pb-24">
+            <Text className="text-[28px]">{'\u{1F4CD}'}</Text>
+            <Text className="text-center text-body font-semibold text-text">{t('place.gone')}</Text>
+            <Text className="text-center text-small leading-5 text-text-muted">
+              {t('place.goneHint')}
             </Text>
-          )}
-        </View>
+            <Pressable
+              onPress={() => router.back()}
+              accessibilityRole="button"
+              accessibilityLabel={t('common.back')}
+              className={`mt-1 rounded-card border border-surface-2 px-4 py-2.5 ${PRESS}`}
+            >
+              <Text className="text-small font-semibold text-text">{t('common.back')}</Text>
+            </Pressable>
+          </View>
+        </ScreenScaffold>
+      );
+    }
+
+    return (
+      <ScreenScaffold topBar={<TopBar left={back} />}>
+        <PlaceSkeleton
+          frozen
+          error={
+            <ErrorRow
+              text={t('place.loadFailed')}
+              detail={t('home.nothingLost')}
+              actionLabel={t('common.retry')}
+              onAction={retry}
+            />
+          }
+        />
       </ScreenScaffold>
     );
   }

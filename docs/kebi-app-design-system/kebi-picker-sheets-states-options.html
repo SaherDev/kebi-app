@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Kebi picker sheets — country, maps</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #FAFAF9; --surface: #F1F1EF; --surface-2: #E8E8E5;
+    --text: #1A1A1A; --text-muted: #8A8A87; --text-soft: #B5B5B1;
+    --success: #4A7C3A; --danger: #D14343; --warn: #B45309; --like: #C2410C;
+    --tag: #D4B891; --tag-rec: #A7C7A0; --tag-cur: #C9C9C4;
+    --page: #FAFAF9; --page-ink: #1A1A1A;
+  }
+  body.dark {
+    --bg: #13110F; --surface: #1C1A17; --surface-2: #26231F;
+    --text: #F5F1EA; --text-muted: #9A938A; --text-soft: #6E6862;
+    --success: #7FB08C; --danger: #E89090; --warn: #D9B45F; --like: #E8A87C;
+    --tag-cur: #45413B; --page: #0A0908; --page-ink: #F5F1EA;
+  }
+  html, body { background: var(--page); color: var(--page-ink);
+    font-family: 'Inter', system-ui, sans-serif; -webkit-font-smoothing: antialiased; min-height: 100vh; }
+  .page { max-width: 1800px; margin: 0 auto; padding: 52px 36px 120px; }
+  .header { display: flex; align-items: flex-start; justify-content: space-between;
+    padding-bottom: 26px; border-bottom: 1px solid var(--surface-2); }
+  h1 { font-size: 25px; font-weight: 700; letter-spacing: -0.028em; }
+  .meta { font-size: 12px; color: var(--text-muted); margin-top: 5px; }
+  .lede { font-size: 14px; color: var(--text-muted); line-height: 1.65; max-width: 880px; margin-top: 14px; }
+  .lede b { color: var(--page-ink); font-weight: 600; }
+  .lede code, .section-desc code, .note code, .verdict code { font-size: 12px;
+    background: var(--surface-2); border-radius: 5px; padding: 1px 6px; }
+  .theme-toggle { display: flex; background: var(--surface); border-radius: 999px; padding: 3px; flex-shrink: 0; }
+  .theme-toggle button { padding: 6px 14px; background: transparent; border: none; border-radius: 999px;
+    font-family: inherit; font-size: 12px; font-weight: 500; color: var(--text-muted); cursor: pointer; }
+  .theme-toggle button.active { background: var(--page-ink); color: var(--page); }
+  .section-head { display: flex; align-items: baseline; justify-content: space-between;
+    margin: 46px 0 12px; padding-bottom: 12px; border-bottom: 1px solid var(--surface-2); }
+  .section-title { font-size: 11px; font-weight: 600; color: var(--text-soft);
+    text-transform: uppercase; letter-spacing: 0.08em; }
+  .section-q { font-size: 12px; color: var(--text-soft); }
+  .section-desc { font-size: 14px; color: var(--text-muted); line-height: 1.6; max-width: 880px; margin-bottom: 24px; }
+  .section-desc b { color: var(--page-ink); font-weight: 600; }
+  .row-of { display: flex; flex-wrap: wrap; gap: 34px; align-items: flex-start; }
+  .col { width: 390px; display: flex; flex-direction: column; gap: 10px; }
+  .col h2 { font-size: 15px; font-weight: 700; letter-spacing: -0.02em; }
+  .note { font-size: 11.5px; color: var(--text-muted); line-height: 1.55; }
+  .note b { color: var(--page-ink); font-weight: 600; }
+  .tag { display: inline-block; align-self: flex-start; font-size: 10px; font-weight: 700;
+    letter-spacing: .08em; text-transform: uppercase; color: #1A1A1A; background: var(--tag);
+    border-radius: 999px; padding: 3px 10px; }
+  .tag.rec { background: var(--tag-rec); }
+  .tag.cur { background: var(--tag-cur); color: var(--page-ink); }
+
+  .phone { width: 390px; height: 620px; background: var(--bg); border-radius: 44px; overflow: hidden;
+    position: relative; box-shadow: 0 0 0 10px #111, 0 0 0 12px var(--page), 0 24px 50px rgba(0,0,0,0.28);
+    display: flex; flex-direction: column; }
+  .behind { flex: 1; padding: 44px 24px 0; display: flex; flex-direction: column; gap: 14px; }
+  .b-hero { font-size: 26px; font-weight: 700; letter-spacing: -0.03em; color: var(--text); opacity: .5; }
+  .b-row { height: 54px; border-radius: 14px; background: var(--surface); opacity: .5; }
+  .scrim { position: absolute; inset: 0; background: rgba(15,13,10,0.45); }
+  .sheet { position: absolute; left: 0; right: 0; bottom: 0; background: var(--bg);
+    border-radius: 22px 22px 0 0; padding: 10px 20px 24px; display: flex; flex-direction: column; gap: 13px; }
+  .sheet.tall { top: 90px; }
+  .grab { width: 36px; height: 4px; border-radius: 2px; background: var(--surface-2); align-self: center; }
+  .eyebrow { font-size: 11px; font-weight: 600; color: var(--text-soft);
+    text-transform: uppercase; letter-spacing: 0.08em; }
+  .sheet h3 { font-size: 17px; font-weight: 700; letter-spacing: -0.02em; }
+  .search { background: var(--surface); border-radius: 14px; padding: 12px 14px;
+    font-size: 15px; color: var(--text); display: flex; align-items: center; gap: 9px; }
+  .search svg { width: 15px; height: 15px; stroke: var(--text-soft); stroke-width: 2; fill: none; }
+  .search .ph { color: var(--text-soft); flex: 1; }
+  .list { flex: 1; overflow: hidden; }
+  .c-row { display: flex; align-items: center; gap: 12px; padding: 11px 2px; }
+  .c-row .flag { font-size: 20px; }
+  .c-row .nm { flex: 1; font-size: 15px; color: var(--text); }
+  .c-row .tick { width: 14px; height: 14px; stroke: var(--text); stroke-width: 2.4; fill: none; }
+  .rule { height: 1px; background: var(--surface-2); }
+  .m-row { display: flex; align-items: center; gap: 12px; padding: 13px 2px; }
+  .m-icon { width: 34px; height: 34px; border-radius: 9px; background: var(--surface);
+    display: flex; align-items: center; justify-content: center; font-size: 17px; }
+  .m-row .nm { flex: 1; font-size: 15px; font-weight: 500; color: var(--text); }
+  .quiet { font-size: 13.5px; color: var(--text-muted); line-height: 1.55; }
+  .quiet b { color: var(--text); font-weight: 600; }
+  .center-empty { padding: 34px 6px 10px; text-align: center; }
+  .center-empty .t { font-size: 15px; font-weight: 600; color: var(--text); }
+  .center-empty .s { font-size: 12.5px; color: var(--text-muted); margin-top: 6px; }
+  .clear { color: var(--like); font-weight: 600; }
+  .act { background: transparent; border: none; font-family: inherit; font-size: 13.5px;
+    font-weight: 600; color: var(--text); padding: 6px 10px; align-self: center; }
+
+  .verdict { margin-top: 44px; border: 1px solid var(--surface-2); border-radius: 16px;
+    padding: 22px 24px; background: var(--surface); max-width: 1000px; }
+  .verdict h3 { font-size: 14px; font-weight: 700; margin-bottom: 10px; }
+  .verdict p { font-size: 13px; color: var(--text-muted); line-height: 1.68; }
+  .verdict p + p { margin-top: 10px; }
+  .verdict b { color: var(--page-ink); font-weight: 600; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="header">
+    <div>
+      <h1>picker sheets — country · maps</h1>
+      <div class="meta">kebi-app · country-picker-sheet · maps-chooser-sheet · applies the kernel</div>
+      <p class="lede">
+        Two sheets that offer a list of choices. Neither loads anything — the country list is a shared
+        constant, the maps targets are built from the place we already hold — so <b>neither has a loading
+        or a failed state</b>, which is worth stating rather than designing.
+        <br><br>
+        Between them they have one built empty state and one missing one: the country picker already
+        answers a search with no matches (<code>aboutYou.countryEmpty</code>), while the maps chooser has
+        no answer at all for a place with nothing to open — no coordinates, no address, no provider id.
+        <code>buildMapsTargets</code> returns an empty array and the sheet renders an empty box.
+      </p>
+    </div>
+    <div class="theme-toggle">
+      <button class="active" data-theme="light">light</button>
+      <button data-theme="dark">dark</button>
+    </div>
+  </div>
+
+  <div class="section-head">
+    <span class="section-title">1 · country picker</span>
+    <span class="section-q">a filtered empty that already exists</span>
+  </div>
+  <p class="section-desc">
+    The kernel's filtered-empty rule: echo the query, offer the undo, nothing else — no ghost rows, no
+    mascot. The picker is close already; the question is whether it says the same words the library's
+    search empty does.
+  </p>
+
+  <div class="row-of">
+
+    <div class="col">
+      <span class="tag cur">today</span>
+      <h2>a · one muted line</h2>
+      <div class="phone">
+        <div class="behind"><div class="b-hero">about you</div><div class="b-row"></div></div>
+        <div class="scrim"></div>
+        <div class="sheet tall">
+          <div class="grab"></div>
+          <h3>where are you from?</h3>
+          <div class="search">
+            <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <span style="flex:1">zzz</span>
+          </div>
+          <div class="list">
+            <div class="quiet" style="padding:18px 2px">no country by that name</div>
+          </div>
+        </div>
+      </div>
+      <p class="note">
+        Accurate, and mercifully short. But it doesn't echo what was typed and offers no way back to the
+        full list except deleting characters — and it phrases the same situation differently from the
+        library's search empty.
+      </p>
+    </div>
+
+    <div class="col">
+      <span class="tag rec">recommended</span>
+      <h2>b · the library's words, here too</h2>
+      <div class="phone">
+        <div class="behind"><div class="b-hero">about you</div><div class="b-row"></div></div>
+        <div class="scrim"></div>
+        <div class="sheet tall">
+          <div class="grab"></div>
+          <h3>where are you from?</h3>
+          <div class="search">
+            <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <span style="flex:1">zzz</span>
+          </div>
+          <div class="list">
+            <div class="center-empty">
+              <div class="t">nothing matches “zzz”</div>
+              <div class="s">try a shorter word, or <span class="clear">clear search</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p class="note">
+        The same shape and the same sentence as <code>library-search-empty.tsx</code>: query echoed,
+        <b>clear search</b> as the undo. A filtered empty should read identically wherever the user meets
+        it — that's the point of having one rule for it.
+      </p>
+    </div>
+
+    <div class="col">
+      <span class="tag rec">settled</span>
+      <h2>c · no loading, no failure</h2>
+      <div class="phone">
+        <div class="behind"><div class="b-hero">about you</div><div class="b-row"></div></div>
+        <div class="scrim"></div>
+        <div class="sheet tall">
+          <div class="grab"></div>
+          <h3>where are you from?</h3>
+          <div class="search">
+            <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <span class="ph">search countries</span>
+          </div>
+          <div class="list">
+            <div class="c-row"><span class="flag">🇮🇩</span><span class="nm">Indonesia</span>
+              <svg class="tick" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+            <div class="rule"></div>
+            <div class="c-row"><span class="flag">🇯🇵</span><span class="nm">Japan</span></div>
+            <div class="rule"></div>
+            <div class="c-row"><span class="flag">🇵🇹</span><span class="nm">Portugal</span></div>
+            <div class="rule"></div>
+            <div class="c-row"><span class="flag">🇹🇭</span><span class="nm">Thailand</span></div>
+          </div>
+        </div>
+      </div>
+      <p class="note">
+        The list is a shared constant — complete on the first frame, so a skeleton would flash for
+        nothing and there is no request to fail. Same call as the share history: <b>the honest answer to
+        "what's the loading state?" is that there isn't one.</b>
+      </p>
+    </div>
+
+  </div>
+
+  <div class="section-head">
+    <span class="section-title">2 · maps chooser</span>
+    <span class="section-q">a place with nowhere to open</span>
+  </div>
+  <p class="section-desc">
+    <code>buildMapsTargets</code> needs coordinates, an address or a provider id. A place kebi just
+    discovered can arrive with none — and the place page's <b>map</b> button is hidden in that case,
+    which is correct — but the sheet itself still has no answer if it ever opens empty, and no answer
+    for the app the user picked not being installed.
+  </p>
+
+  <div class="row-of">
+
+    <div class="col">
+      <span class="tag cur">today</span>
+      <h2>a · the list, when it has entries</h2>
+      <div class="phone">
+        <div class="behind"><div class="b-hero">🍜 Kamachiku</div><div class="b-row"></div></div>
+        <div class="scrim"></div>
+        <div class="sheet">
+          <div class="grab"></div>
+          <div class="eyebrow">open in</div>
+          <div>
+            <div class="m-row"><div class="m-icon">🗺️</div><span class="nm">apple maps</span></div>
+            <div class="rule"></div>
+            <div class="m-row"><div class="m-icon">📍</div><span class="nm">google maps</span></div>
+            <div class="rule"></div>
+            <div class="m-row"><div class="m-icon">🚕</div><span class="nm">grab</span></div>
+          </div>
+        </div>
+      </div>
+      <p class="note">
+        The normal case, unchanged. The sheet is presentational and the place page already hides its
+        trigger when there are no targets — so this is the only state it has today.
+      </p>
+    </div>
+
+    <div class="col">
+      <span class="tag rec">recommended</span>
+      <h2>b · nothing to open</h2>
+      <div class="phone">
+        <div class="behind"><div class="b-hero">☕ Fuglen</div><div class="b-row"></div></div>
+        <div class="scrim"></div>
+        <div class="sheet">
+          <div class="grab"></div>
+          <div class="eyebrow">open in</div>
+          <div class="quiet" style="padding:6px 2px 2px">
+            kebi doesn't have an address for this one yet. it fills in as it learns more.
+          </div>
+        </div>
+      </div>
+      <p class="note">
+        A safety net rather than a screen anyone should reach: the trigger is already hidden without
+        targets, but a sheet that <i>can</i> render empty must not render blank. Same sentence family as
+        the place page's bare-place line, because it is the same fact — <b>kebi just found this one</b>.
+      </p>
+    </div>
+
+    <div class="col">
+      <span class="tag rec">recommended</span>
+      <h2>c · that app isn't installed</h2>
+      <div class="phone">
+        <div class="behind"><div class="b-hero">🍜 Kamachiku</div><div class="b-row"></div></div>
+        <div class="behind" style="flex:0"></div>
+        <div class="scrim"></div>
+        <div class="sheet">
+          <div class="grab"></div>
+          <div class="eyebrow">open in</div>
+          <div>
+            <div class="m-row"><div class="m-icon">🗺️</div><span class="nm">apple maps</span></div>
+            <div class="rule"></div>
+            <div class="m-row"><div class="m-icon">📍</div><span class="nm">google maps</span></div>
+          </div>
+        </div>
+      </div>
+      <p class="note">
+        <b>Filter the list to what's actually installed</b> (<code>canOpenURL</code>) rather than
+        offering an app that silently does nothing when tapped. A row that can't work shouldn't be in the
+        list — the same reasoning as the map button hiding itself. If nothing is installed, the sheet
+        falls back to <b>b</b>.
+      </p>
+    </div>
+
+  </div>
+
+  <div class="verdict">
+    <h3>picker sheets, recommended</h3>
+    <p>
+      <b>1b</b> — the country picker's no-match says exactly what the library's search empty says, query
+      echoed and <b>clear search</b> offered. One filtered-empty sentence for the whole app.
+    </p>
+    <p>
+      <b>1c settled</b> — neither picker has a loading or a failed state, and that is the answer, not an
+      omission: both read data the app already holds.
+    </p>
+    <p>
+      <b>2b + 2c</b> — the maps chooser filters to apps that are actually installed, and falls back to one
+      line when there is nothing to open, reusing the bare-place sentence. Neither is a state a healthy
+      place reaches; both stop a sheet from ever rendering blank.
+    </p>
+  </div>
+
+</div>
+<script>
+  document.querySelectorAll('.theme-toggle button').forEach(function (b) {
+    b.addEventListener('click', function () {
+      document.querySelectorAll('.theme-toggle button').forEach(function (x) { x.classList.remove('active'); });
+      b.classList.add('active');
+      document.body.classList.toggle('dark', b.dataset.theme === 'dark');
+    });
+  });
+</script>
+</body>
+</html>

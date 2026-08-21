@@ -61,6 +61,13 @@ interface AuthContextValue {
   signInWithGoogle: () => Promise<AuthResult>;
   signOut: () => Promise<void>;
   clearPendingOtp: () => void;
+  /**
+   * Re-read the session after a boot that never resolved (ADR-056). The launch
+   * read can hang when an expired token's refresh does — the app sits on the
+   * splash with no way forward, which is the one moment a user assumes their
+   * data is gone.
+   */
+  retryStatus: () => void;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -101,6 +108,12 @@ function reasonFromError(error: AuthError | null): AuthErrorReason {
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [status, setStatus] = useState<AuthStatus>('loading');
   const [pendingOtp, setPendingOtp] = useState<PendingOtp | null>(null);
+  const [attempt, setAttempt] = useState(0);
+
+  const retryStatus = useCallback(() => {
+    setStatus('loading');
+    setAttempt((n) => n + 1);
+  }, []);
 
   useEffect(() => {
     let mounted = true;
@@ -155,7 +168,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       mounted = false;
       sub.subscription.unsubscribe();
     };
-  }, []);
+    // `attempt` re-runs the session read when the boot screen offers a retry.
+  }, [attempt]);
 
   const sendOtp = useCallback(
     async (channel: OtpChannel, value: string): Promise<AuthResult> => {
@@ -261,8 +275,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       signInWithGoogle,
       signOut,
       clearPendingOtp,
+      retryStatus,
     }),
-    [status, pendingOtp, requestOtp, verifyOtp, resendOtp, signInWithGoogle, signOut, clearPendingOtp],
+    [
+      status,
+      pendingOtp,
+      requestOtp,
+      verifyOtp,
+      resendOtp,
+      signInWithGoogle,
+      signOut,
+      clearPendingOtp,
+      retryStatus,
+    ],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

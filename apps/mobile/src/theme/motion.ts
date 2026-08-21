@@ -186,6 +186,44 @@ export const SHAKE = {
 } as const;
 
 /**
+ * The four screen states (ADR-056, design-system § the four states of a screen).
+ * Every literal the skeleton / frozen / ghost treatments need, so no screen
+ * types an opacity or a duration inline.
+ *
+ * The mockups draw the skeleton as a sweeping highlight; on device it is an
+ * opacity loop (`animate-shimmer`) — react-native has no gradient without an
+ * extra dependency, and the loop reads the same at 1.4s linear.
+ */
+export const STATES = {
+  /** Skeleton shimmer loop: one direction of the 1.4s linear cycle. */
+  shimmerHalfMs: DURATION.shimmerHalf,
+  /** Skeleton block opacity floor at the dim end of the loop. */
+  shimmerMinOpacity: 0.45,
+  /** A failed load freezes its skeleton: animation off, whole block dimmed. */
+  frozenOpacity: 0.45,
+  /** Ghost preview rows — real content shape, faded to "this isn't yours yet". */
+  ghostOpacity: 0.38,
+  /** Sections that may resolve to nothing fade in when they land. */
+  arriveMs: DURATION.stateChange,
+} as const;
+
+/**
+ * The boot wait (ADR-056) — what the app shows when the splash's timeline ends
+ * and the session read still hasn't resolved. Thresholds come from the design
+ * system's loading screen: reassurance at 5s, a way out at 15s.
+ */
+export const BOOT_WAIT = {
+  /** Poll interval for the elapsed-time thresholds below. */
+  tickMs: 1000,
+  /** Silence is fine briefly; past this it reads as a hang. */
+  reassureMs: 5000,
+  /** Stop waiting and offer a retry. */
+  giveUpMs: 15000,
+  /** Mascot size (px) — smaller than the splash's, this is a wait not an entrance. */
+  mascotSize: 96,
+} as const;
+
+/**
  * Toast auto-dismiss durations.
  */
 export const TOAST_DISMISS_MS = {

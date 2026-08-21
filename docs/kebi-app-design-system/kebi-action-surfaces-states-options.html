@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Kebi action surfaces — confirm, menus, passive cards</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #FAFAF9; --surface: #F1F1EF; --surface-2: #E8E8E5;
+    --text: #1A1A1A; --text-muted: #8A8A87; --text-soft: #B5B5B1;
+    --success: #4A7C3A; --danger: #D14343; --warn: #B45309;
+    --tag: #D4B891; --tag-rec: #A7C7A0; --tag-cur: #C9C9C4;
+    --page: #FAFAF9; --page-ink: #1A1A1A;
+  }
+  body.dark {
+    --bg: #13110F; --surface: #1C1A17; --surface-2: #26231F;
+    --text: #F5F1EA; --text-muted: #9A938A; --text-soft: #6E6862;
+    --success: #7FB08C; --danger: #E89090; --warn: #D9B45F; --tag-cur: #45413B;
+    --page: #0A0908; --page-ink: #F5F1EA;
+  }
+  html, body { background: var(--page); color: var(--page-ink);
+    font-family: 'Inter', system-ui, sans-serif; -webkit-font-smoothing: antialiased; min-height: 100vh; }
+  .page { max-width: 1800px; margin: 0 auto; padding: 52px 36px 120px; }
+  .header { display: flex; align-items: flex-start; justify-content: space-between;
+    padding-bottom: 26px; border-bottom: 1px solid var(--surface-2); }
+  h1 { font-size: 25px; font-weight: 700; letter-spacing: -0.028em; }
+  .meta { font-size: 12px; color: var(--text-muted); margin-top: 5px; }
+  .lede { font-size: 14px; color: var(--text-muted); line-height: 1.65; max-width: 880px; margin-top: 14px; }
+  .lede b { color: var(--page-ink); font-weight: 600; }
+  .lede code, .section-desc code, .note code, .verdict code { font-size: 12px;
+    background: var(--surface-2); border-radius: 5px; padding: 1px 6px; }
+  .theme-toggle { display: flex; background: var(--surface); border-radius: 999px; padding: 3px; flex-shrink: 0; }
+  .theme-toggle button { padding: 6px 14px; background: transparent; border: none; border-radius: 999px;
+    font-family: inherit; font-size: 12px; font-weight: 500; color: var(--text-muted); cursor: pointer; }
+  .theme-toggle button.active { background: var(--page-ink); color: var(--page); }
+  .section-head { display: flex; align-items: baseline; justify-content: space-between;
+    margin: 46px 0 12px; padding-bottom: 12px; border-bottom: 1px solid var(--surface-2); }
+  .section-title { font-size: 11px; font-weight: 600; color: var(--text-soft);
+    text-transform: uppercase; letter-spacing: 0.08em; }
+  .section-q { font-size: 12px; color: var(--text-soft); }
+  .section-desc { font-size: 14px; color: var(--text-muted); line-height: 1.6; max-width: 880px; margin-bottom: 24px; }
+  .section-desc b { color: var(--page-ink); font-weight: 600; }
+  .row-of { display: flex; flex-wrap: wrap; gap: 34px; align-items: flex-start; }
+  .col { width: 390px; display: flex; flex-direction: column; gap: 10px; }
+  .col h2 { font-size: 15px; font-weight: 700; letter-spacing: -0.02em; }
+  .note { font-size: 11.5px; color: var(--text-muted); line-height: 1.55; }
+  .note b { color: var(--page-ink); font-weight: 600; }
+  .tag { display: inline-block; align-self: flex-start; font-size: 10px; font-weight: 700;
+    letter-spacing: .08em; text-transform: uppercase; color: #1A1A1A; background: var(--tag);
+    border-radius: 999px; padding: 3px 10px; }
+  .tag.rec { background: var(--tag-rec); }
+  .tag.cur { background: var(--tag-cur); color: var(--page-ink); }
+
+  .phone { width: 390px; height: 620px; background: var(--bg); border-radius: 44px; overflow: hidden;
+    position: relative; box-shadow: 0 0 0 10px #111, 0 0 0 12px var(--page), 0 24px 50px rgba(0,0,0,0.28);
+    display: flex; flex-direction: column; }
+  .behind { flex: 1; padding: 44px 24px 0; display: flex; flex-direction: column; gap: 14px; }
+  .b-hero { font-size: 26px; font-weight: 700; letter-spacing: -0.03em; color: var(--text); opacity: .5; }
+  .b-row { height: 54px; border-radius: 14px; background: var(--surface); opacity: .5; }
+  .scrim { position: absolute; inset: 0; background: rgba(15,13,10,0.45); }
+  .sheet { position: absolute; left: 0; right: 0; bottom: 0; background: var(--bg);
+    border-radius: 22px 22px 0 0; padding: 10px 20px 24px; display: flex; flex-direction: column; gap: 13px; }
+  .grab { width: 36px; height: 4px; border-radius: 2px; background: var(--surface-2); align-self: center; }
+  .eyebrow { font-size: 11px; font-weight: 600; color: var(--text-soft);
+    text-transform: uppercase; letter-spacing: 0.08em; }
+  .sheet h3 { font-size: 17px; font-weight: 700; letter-spacing: -0.02em; }
+  .sheet .body-copy { font-size: 13.5px; color: var(--text-muted); line-height: 1.55; }
+  .danger-cta { background: var(--danger); color: #fff; border: none; font-family: inherit;
+    border-radius: 14px; padding: 13px; text-align: center; font-size: 14px; font-weight: 600; }
+  .ghost-cta { background: transparent; border: none; font-family: inherit; color: var(--text-muted);
+    border-radius: 14px; padding: 11px; text-align: center; font-size: 14px; font-weight: 600; }
+  .cta-row { display: flex; align-items: center; justify-content: center; gap: 9px; }
+  .spin { width: 15px; height: 15px; border-radius: 50%; border: 2px solid rgba(255,255,255,.3);
+    border-top-color: #fff; animation: rot .8s linear infinite; }
+  @keyframes rot { 100% { transform: rotate(360deg); } }
+  .menu { background: var(--bg); border-radius: 14px; padding: 4px 12px;
+    box-shadow: 0 12px 30px rgba(0,0,0,.18); }
+  .m-item { display: flex; align-items: center; gap: 11px; padding: 11px 2px; font-size: 14.5px; color: var(--text); }
+  .m-item.danger { color: var(--danger); }
+  .rule { height: 1px; background: var(--surface-2); }
+  .card { background: var(--surface); border-radius: 14px; padding: 3px 12px; }
+  .row { display: flex; align-items: center; gap: 11px; padding: 10px 2px; }
+  .av { width: 34px; height: 34px; border-radius: 9px; background: var(--bg);
+    display: flex; align-items: center; justify-content: center; font-size: 16px; }
+  .nm { flex: 1; font-size: 14px; font-weight: 600; color: var(--text); }
+  .sb { font-size: 11.5px; color: var(--text-soft); margin-top: 2px; }
+  .fail { font-size: 11.5px; color: var(--danger); font-weight: 500; margin-top: 3px; }
+  .lifted { transform: scale(1.03); box-shadow: 0 18px 40px rgba(0,0,0,.22); }
+  .toast-wrap { position: absolute; left: 0; right: 0; bottom: 30px; display: flex; justify-content: center; }
+  .toast { display: flex; align-items: center; gap: 10px; background: var(--text); color: var(--bg);
+    border-radius: 999px; padding: 11px 8px 11px 16px; max-width: 300px; font-size: 13px; font-weight: 500; }
+  .toast button { background: transparent; border: none; font-family: inherit; font-size: 13px;
+    font-weight: 600; color: var(--bg); padding: 2px 10px; }
+  .err-inline { display: flex; align-items: center; gap: 9px; padding: 8px 2px; }
+  .err-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--danger); flex-shrink: 0; }
+  .err-txt { font-size: 12.5px; color: var(--text-muted); flex: 1; line-height: 1.4; }
+  .err-txt b { color: var(--text); font-weight: 600; }
+  .retry { background: transparent; border: none; font-family: inherit; font-size: 13px;
+    font-weight: 600; color: var(--text); padding: 2px 6px; }
+  .sk { height: 11px; border-radius: 4px; background: var(--bg); }
+
+  .verdict { margin-top: 44px; border: 1px solid var(--surface-2); border-radius: 16px;
+    padding: 22px 24px; background: var(--surface); max-width: 1000px; }
+  .verdict h3 { font-size: 14px; font-weight: 700; margin-bottom: 10px; }
+  .verdict p { font-size: 13px; color: var(--text-muted); line-height: 1.68; }
+  .verdict p + p { margin-top: 10px; }
+  .verdict b { color: var(--page-ink); font-weight: 600; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="header">
+    <div>
+      <h1>action surfaces — confirm · menus · the away card</h1>
+      <div class="meta">kebi-app · confirm-sheet · action-sheet + context-menu · while-you-were-away · share-intent-receiver</div>
+      <p class="lede">
+        Four surfaces that <b>do</b> things rather than show them. Their happy paths are built and their
+        undo paths are built; what none of them has is the moment in between — a destructive action
+        already confirmed and still in flight — or the moment after, when the action didn't take.
+        <br><br>
+        The confirm sheet is the sharpest case: <code>onConfirm</code> fires, the caller closes the sheet
+        immediately, and "nuke my data" — the least reversible thing in the app — has no visible
+        difference between "sent" and "done".
+      </p>
+    </div>
+    <div class="theme-toggle">
+      <button class="active" data-theme="light">light</button>
+      <button data-theme="dark">dark</button>
+    </div>
+  </div>
+
+  <div class="section-head">
+    <span class="section-title">1 · confirm sheet</span>
+    <span class="section-q">the gap between confirming and done</span>
+  </div>
+  <p class="section-desc">
+    Two consumers: <b>nuke my data</b> and <b>clear this history</b>. Both close on confirm and toast the
+    outcome. The nuke's request can take seconds, and during those seconds the app looks untouched.
+  </p>
+
+  <div class="row-of">
+
+    <div class="col">
+      <span class="tag cur">today</span>
+      <h2>a · close and hope</h2>
+      <div class="phone">
+        <div class="behind"><div class="b-hero">you, basically</div><div class="b-row"></div><div class="b-row"></div></div>
+        <div class="scrim"></div>
+        <div class="sheet">
+          <div class="grab"></div>
+          <h3>nuke everything?</h3>
+          <p class="body-copy">wipes your saved places, taste model, and history. your account stays. no take-backs.</p>
+          <button class="danger-cta">nuke my data</button>
+          <button class="ghost-cta">keep it</button>
+        </div>
+      </div>
+      <p class="note">
+        Tapping closes the sheet at once. For the next few seconds the settings screen still shows
+        everything, and a second tap on the row would fire a second wipe. Then a toast says it happened.
+      </p>
+    </div>
+
+    <div class="col">
+      <span class="tag rec">recommended</span>
+      <h2>b · the sheet holds until it's done</h2>
+      <div class="phone">
+        <div class="behind"><div class="b-hero">you, basically</div><div class="b-row"></div><div class="b-row"></div></div>
+        <div class="scrim"></div>
+        <div class="sheet">
+          <div class="grab"></div>
+          <h3>nuke everything?</h3>
+          <p class="body-copy">wipes your saved places, taste model, and history. your account stays. no take-backs.</p>
+          <button class="danger-cta"><span class="cta-row"><span class="spin"></span>nuking</span></button>
+          <button class="ghost-cta" style="opacity:.4">keep it</button>
+        </div>
+      </div>
+      <p class="note">
+        The confirm button becomes <b>spinner + a present-tense verb</b>, the cancel dims, and the sheet
+        can't be dismissed — the same contract the save sheet has while saving. A destructive action
+        should be visibly in progress; closing instantly is what makes a slow wipe feel like a no-op.
+      </p>
+    </div>
+
+    <div class="col">
+      <span class="tag rec">recommended</span>
+      <h2>c · it didn't go through</h2>
+      <div class="phone">
+        <div class="behind"><div class="b-hero">you, basically</div><div class="b-row"></div><div class="b-row"></div></div>
+        <div class="scrim"></div>
+        <div class="sheet">
+          <div class="grab"></div>
+          <h3>nuke everything?</h3>
+          <p class="body-copy">wipes your saved places, taste model, and history. your account stays. no take-backs.</p>
+          <div class="err-inline">
+            <span class="err-dot"></span>
+            <span class="err-txt"><b>couldn't do that.</b> nothing was deleted.</span>
+          </div>
+          <button class="danger-cta">try again</button>
+          <button class="ghost-cta">keep it</button>
+        </div>
+      </div>
+      <p class="note">
+        The sheet stays open and says <b>"nothing was deleted"</b> — with a destructive action, the state
+        of the data is the only thing the user cares about. Today this is a toast on a screen that
+        already looks unchanged, which is the most ambiguous possible way to report it.
+      </p>
+    </div>
+
+    <div class="col">
+      <span class="tag rec">settled</span>
+      <h2>d · done</h2>
+      <div class="phone">
+        <div class="behind"><div class="b-hero">you, basically</div><div class="b-row"></div><div class="b-row"></div></div>
+        <div class="toast-wrap"><div class="toast">🗑️ everything's gone</div></div>
+      </div>
+      <p class="note">
+        Success closes the sheet and confirms behind it, unchanged. The toast is right here because the
+        thing it confirms is finished and its surface is gone — the same rule as the report sheets.
+      </p>
+    </div>
+
+  </div>
+
+  <div class="section-head">
+    <span class="section-title">2 · menus, and the away card</span>
+    <span class="section-q">an action that fails after the menu closed</span>
+  </div>
+  <p class="section-desc">
+    The long-press menu and the place page's ••• sheet both run optimistic actions with an undo toast —
+    the design system's destructive contract, already built. The gap is the <b>failure</b> after the
+    optimistic flip: <code>place-actions-context</code> rolls back correctly and toasts
+    <code>library.toast.updateFailed</code>, with no retry.
+  </p>
+
+  <div class="row-of">
+
+    <div class="col">
+      <span class="tag rec">settled</span>
+      <h2>a · the menu itself</h2>
+      <div class="phone">
+        <div class="behind">
+          <div class="b-hero">your stash</div>
+          <div class="card lifted" style="opacity:1">
+            <div class="row"><div class="av">🍜</div><div><div class="nm">Kamachiku</div><div class="sb">udon · ¥¥ · nezu</div></div></div>
+          </div>
+          <div class="menu">
+            <div class="m-item">👍 looks right</div>
+            <div class="rule"></div>
+            <div class="m-item">❤️ i like this one</div>
+            <div class="rule"></div>
+            <div class="m-item">✅ been there</div>
+            <div class="rule"></div>
+            <div class="m-item danger">🗑️ forget this place</div>
+          </div>
+        </div>
+        <div class="scrim" style="background:rgba(15,13,10,0.35);z-index:-1"></div>
+      </div>
+      <p class="note">
+        Lift, blur, items, destructive last behind a divider — built, and matching the design system.
+        Nothing here changes; it's the frame for the two states beside it.
+      </p>
+    </div>
+
+    <div class="col">
+      <span class="tag rec">recommended</span>
+      <h2>b · the action didn't take</h2>
+      <div class="phone">
+        <div class="behind">
+          <div class="b-hero">your stash</div>
+          <div class="card" style="opacity:1">
+            <div class="row"><div class="av">🍜</div><div><div class="nm">Kamachiku</div><div class="sb">udon · ¥¥ · nezu</div></div></div>
+          </div>
+        </div>
+        <div class="toast-wrap">
+          <div class="toast">couldn't mark that<button>try again</button></div>
+        </div>
+      </div>
+      <p class="note">
+        The pill flipped, then flipped back — so the toast is the <b>only</b> evidence anything happened,
+        and it needs the retry the other optimistic failures now carry. One extra word beats a generic
+        line: "couldn't mark that" for a state change, "couldn't forget that one" for a delete.
+      </p>
+    </div>
+
+    <div class="col">
+      <span class="tag rec">recommended</span>
+      <h2>c · the away card's own failure</h2>
+      <div class="phone">
+        <div class="behind">
+          <div class="b-hero">it's late, drunk food?</div>
+          <div style="opacity:1">
+            <div class="eyebrow" style="padding-bottom:8px">while you were away</div>
+            <div class="card">
+              <div class="row">
+                <div style="flex:1"><div class="nm">nothing saved</div><div class="fail">couldn't read that link</div></div>
+                <button class="retry">retry</button>
+              </div>
+              <div class="rule"></div>
+              <div class="row"><div class="av">🍜</div><div style="flex:1"><div class="nm">Kamachiku</div><div class="sb">udon · ¥¥ · nezu</div></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p class="note">
+        Row-level failures are already handled here and stay. What's missing is <b>card level</b>: the
+        card reads local storage, so it can't fail to load — but if every row in it failed, the card is a
+        list of failures with no summary. Keep it as is: each row owns its own retry, which is the
+        smallest true unit.
+      </p>
+    </div>
+
+    <div class="col">
+      <span class="tag rec">recommended</span>
+      <h2>d · a share landing on a cold app</h2>
+      <div class="phone">
+        <div class="behind">
+          <div class="b-hero">good morning</div>
+        </div>
+        <div class="scrim"></div>
+        <div class="sheet">
+          <div class="grab"></div>
+          <div class="eyebrow">save a place</div>
+          <div class="card" style="background:var(--surface)">
+            <div class="row"><div style="flex:1"><div class="sk" style="width:62%"></div><div class="sk" style="width:38%;margin-top:8px"></div></div></div>
+          </div>
+          <div class="body-copy">pulling in what you shared…</div>
+        </div>
+      </div>
+      <p class="note">
+        The share extension opens the app at a URL <code>+native-intent</code> redirects home, where the
+        receiver raises a pre-filled save sheet. On a <b>cold</b> start that read isn't instant, so the
+        sheet can open with an empty field — the one moment it should hold a skeleton instead, then fill
+        with the shared link.
+      </p>
+    </div>
+
+  </div>
+
+  <div class="verdict">
+    <h3>action surfaces, recommended</h3>
+    <p>
+      <b>1b + 1c</b> — the confirm sheet holds while its action runs (spinner + present-tense verb,
+      cancel dimmed, not dismissable) and stays open on failure with <b>"nothing was deleted"</b>. For a
+      destructive action, closing instantly is what makes a slow wipe indistinguishable from a no-op, and
+      the state of the data is the only thing the sentence needs to carry.
+    </p>
+    <p>
+      <b>2b</b> — optimistic action failures get the retry the rest of the app now has, and one word of
+      specificity ("couldn't mark that", "couldn't forget that one") instead of one line for everything.
+    </p>
+    <p>
+      <b>2c + 2d</b> — the away card keeps per-row retries as the smallest true unit, and the share
+      receiver holds a skeleton in the save sheet on a cold start rather than opening an empty field.
+    </p>
+  </div>
+
+</div>
+<script>
+  document.querySelectorAll('.theme-toggle button').forEach(function (b) {
+    b.addEventListener('click', function () {
+      document.querySelectorAll('.theme-toggle button').forEach(function (x) { x.classList.remove('active'); });
+      b.classList.add('active');
+      document.body.classList.toggle('dark', b.dataset.theme === 'dark');
+    });
+  });
+</script>
+</body>
+</html>

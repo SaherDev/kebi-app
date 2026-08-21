@@ -102,17 +102,27 @@ export default function HelpScreen() {
         </View>
 
         <Group eyebrow={t('help.groupIssues')}>
+          {/*
+            A report attaches evidence — the last exchange, the recent save
+            attempts — so the sublabel says which, rather than describing the
+            row in the abstract (ADR-056). The row stays open either way: both
+            sheets were built to work with nothing attached (the save sheet
+            offers a manual link field), so dimming them would remove the only
+            way to report a failure we have no record of.
+          */}
           <SettingsRow
             emoji="🤔"
             label={t('help.rowWrong')}
-            sublabel={t('help.rowWrongSub')}
+            sublabel={exchange ? t('help.rowWrongAttach') : t('help.rowWrongSub')}
             onPress={() => setWrongOpen(true)}
             trailing={chevron}
           />
           <SettingsRow
             emoji="🔖"
             label={t('help.rowSave')}
-            sublabel={t('help.rowSaveSub')}
+            sublabel={
+              saveAttempts.length > 0 ? t('help.rowSaveAttach') : t('help.rowSaveSub')
+            }
             onPress={() => setSaveOpen(true)}
             trailing={chevron}
           />

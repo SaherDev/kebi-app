@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useUnstableNativeVariable } from 'nativewind';
 import {
@@ -13,10 +13,14 @@ import { TopBar } from '../components/top-bar';
 import { IconButton } from '../components/icon-button';
 import { Icon } from '../components/icon';
 import { CountryPickerSheet } from '../components/country-picker-sheet';
+import { ErrorRow } from '../components/error-row';
+import { FieldsSkeleton } from '../components/fields-skeleton';
+import { Spinner } from '../components/spinner';
 import { useToast } from '../components/toast-context';
 import { useApiClient } from '../api/hooks';
 import { getUserSettings, updateAboutMe } from '../api/user-settings';
 import { useTranslation } from '../i18n/context';
+import type { FormStatus } from '../lib/form-status';
 import { supabase } from '../lib/supabase';
 import { PRESS } from '../theme/motion';
 
@@ -37,7 +41,7 @@ export default function AboutYouScreen() {
   const client = useApiClient();
   const softColor = useUnstableNativeVariable('--text-soft') ?? undefined;
 
-  const [loading, setLoading] = useState(true);
+  const [status, setStatus] = useState<FormStatus>('loading');
   const [saving, setSaving] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
 
@@ -45,30 +49,29 @@ export default function AboutYouScreen() {
   const [homeCountry, setHomeCountry] = useState<string | null>(null);
   const [about, setAbout] = useState('');
 
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const settings = await getUserSettings(client);
-        if (cancelled) return;
-        setCallMe(settings.about_me?.call_me ?? '');
-        setHomeCountry(settings.about_me?.home_country ?? null);
-        setAbout(settings.about_me?.about ?? '');
-      } catch {
-        if (cancelled) return;
-        // Fail soft: an empty form that saves would erase a block we failed to
-        // read, so say so and leave the fields as they are.
-        toast.show({ tone: 'danger', icon: 'alert', text: t('aboutYou.loadFailed') });
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-    // Client identity is stable per render; run once on mount.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+  // Client identity is stable per render, so the load runs once on mount and
+  // again only when the user retries.
+  const clientRef = useRef(client);
+  clientRef.current = client;
+
+  const load = useCallback(async () => {
+    setStatus('loading');
+    try {
+      const settings = await getUserSettings(clientRef.current);
+      setCallMe(settings.about_me?.call_me ?? '');
+      setHomeCountry(settings.about_me?.home_country ?? null);
+      setAbout(settings.about_me?.about ?? '');
+      setStatus('ready');
+    } catch {
+      // A block we could not read is not a block the user cleared. The form
+      // stays unwritable until we have it — see the `failed` branch below.
+      setStatus('failed');
+    }
   }, []);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
 
   const country = countryByCode(homeCountry);
 
@@ -101,24 +104,43 @@ export default function AboutYouScreen() {
         />
       }
     >
-      {loading ? (
-        <View className="flex-1 items-center justify-center">
-          <ActivityIndicator />
+      <ScrollView
+        contentContainerClassName="gap-6 px-6 pb-8 pt-2"
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Static copy — never waits on the read (ADR-056). */}
+        <View className="gap-1">
+          <Text className="text-eyebrow font-semibold uppercase text-text-soft">
+            {t('aboutYou.eyebrow')}
+          </Text>
+          <Text className="font-bold text-hero text-text">{t('aboutYou.hero')}</Text>
+          <Text className="mt-1 text-small leading-5 text-text-muted">{t('aboutYou.lede')}</Text>
         </View>
-      ) : (
-        <ScrollView
-          contentContainerClassName="gap-6 px-6 pb-8 pt-2"
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
-        >
-          <View className="gap-1">
-            <Text className="text-eyebrow font-semibold uppercase text-text-soft">
-              {t('aboutYou.eyebrow')}
-            </Text>
-            <Text className="font-bold text-hero text-text">{t('aboutYou.hero')}</Text>
-            <Text className="mt-1 text-small leading-5 text-text-muted">{t('aboutYou.lede')}</Text>
-          </View>
 
+        {status !== 'ready' ? (
+          <>
+            {status === 'failed' ? (
+              <ErrorRow
+                text={t('aboutYou.loadFailed')}
+                detail={t('aboutYou.loadFailedDetail')}
+                actionLabel={t('common.retry')}
+                onAction={() => void load()}
+              />
+            ) : null}
+            {/*
+              No inputs and no save button until the read succeeds. This form
+              writes the block whole, so an empty field here is indistinguishable
+              from a cleared one — rendering editable blanks over a profile we
+              failed to read is how a network blip becomes data loss.
+            */}
+            <FieldsSkeleton
+              frozen={status === 'failed'}
+              labels={[t('aboutYou.callMe'), t('aboutYou.homeCountry'), t('aboutYou.gist')]}
+            />
+          </>
+        ) : (
+          <>
           {/* call me */}
           <View className="gap-2">
             <Text className="ps-1 text-eyebrow font-semibold uppercase text-text-soft">
@@ -207,12 +229,16 @@ export default function AboutYouScreen() {
             // Disabled dim via inline style — NativeWind can leave a toggled
             // opacity-* class stuck (see button.tsx).
             style={{ opacity: saving ? 0.4 : 1 }}
-            className={`items-center justify-center rounded-card bg-text px-4 py-3.5 ${PRESS}`}
+            className={`flex-row items-center justify-center gap-2 rounded-card bg-text px-4 py-3.5 ${PRESS}`}
           >
-            <Text className="text-small font-semibold text-bg">{t('aboutYou.save')}</Text>
+            {saving ? <Spinner /> : null}
+            <Text className="text-small font-semibold text-bg">
+              {saving ? t('aboutYou.saving') : t('aboutYou.save')}
+            </Text>
           </Pressable>
-        </ScrollView>
-      )}
+          </>
+        )}
+      </ScrollView>
 
       <CountryPickerSheet
         open={pickerOpen}

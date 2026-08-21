@@ -20,6 +20,8 @@ import Animated, {
 } from 'react-native-reanimated';
 import { DURATION, PRESS, SPRING_CONFIG } from '../theme/motion';
 import { triggerHaptic } from '../lib/haptics';
+import { ErrorRow } from './error-row';
+import { Spinner } from './spinner';
 import { useTranslation } from '../i18n/context';
 import { useToast } from './toast-context';
 import { Icon } from './icon';
@@ -68,6 +70,8 @@ export function FeedbackFormSheet({
   const [mounted, setMounted] = useState(open);
   const [value, setValue] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  /** The last send failed. Stated in the sheet, where the user is looking. */
+  const [failed, setFailed] = useState(false);
   const scrim = useSharedValue(0);
   const translateY = useSharedValue(height);
   const keyboard = useAnimatedKeyboard();
@@ -86,6 +90,7 @@ export function FeedbackFormSheet({
     if (open) {
       setValue('');
       setSubmitting(false);
+      setFailed(false);
     }
   }, [open]);
 
@@ -130,12 +135,16 @@ export function FeedbackFormSheet({
   const handleSend = async () => {
     if (!canSend) return;
     setSubmitting(true);
+    setFailed(false);
     try {
       await onSubmit(value.trim());
       triggerHaptic('save-sheet-confirm');
     } catch {
-      // The caller toasts; the draft survives for a retry.
+      // The draft already survived a failure; what was missing is saying so
+      // where the user is looking. A toast at the bottom of the screen is
+      // behind this sheet's own footer and gone in 3s (ADR-056).
       setSubmitting(false);
+      setFailed(true);
     }
   };
 
@@ -143,7 +152,8 @@ export function FeedbackFormSheet({
     <View style={StyleSheet.absoluteFill}>
       <AnimatedPressable
         style={[StyleSheet.absoluteFill, scrimStyle, { backgroundColor: SCRIM_COLOR }]}
-        onPress={onClose}
+        // Don't dismiss mid-send — the same rule the save sheet follows.
+        onPress={submitting ? undefined : onClose}
         accessibilityRole="button"
         accessibilityLabel={t('common.close')}
       />
@@ -174,10 +184,14 @@ export function FeedbackFormSheet({
             />
           </View>
 
-          <View className="flex-row items-start gap-2 px-1">
-            <Icon name="alert" size={13} className="mt-0.5 text-text-muted" />
-            <Text className="flex-1 text-small leading-5 text-text-muted">{note}</Text>
-          </View>
+          {failed ? (
+            <ErrorRow text={t('help.sendFailed')} detail={t('help.sendFailedDetail')} />
+          ) : (
+            <View className="flex-row items-start gap-2 px-1">
+              <Icon name="alert" size={13} className="mt-0.5 text-text-muted" />
+              <Text className="flex-1 text-small leading-5 text-text-muted">{note}</Text>
+            </View>
+          )}
 
           <Pressable
             onPress={handleSend}
@@ -190,8 +204,10 @@ export function FeedbackFormSheet({
             style={{ opacity: canSend ? 1 : 0.4 }}
             className={`flex-row items-center justify-center gap-2 rounded-card bg-text px-4 py-3.5 ${PRESS}`}
           >
-            <Icon name="send" size={14} className="text-bg" />
-            <Text className="text-small font-semibold text-bg">{t('help.send')}</Text>
+            {submitting ? <Spinner /> : <Icon name="send" size={14} className="text-bg" />}
+            <Text className="text-small font-semibold text-bg">
+              {submitting ? t('help.sending') : failed ? t('help.sendRetry') : t('help.send')}
+            </Text>
           </Pressable>
         </Animated.View>
       </GestureDetector>

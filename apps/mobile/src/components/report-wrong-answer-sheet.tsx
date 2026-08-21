@@ -22,6 +22,8 @@ import type { FeedbackCategory } from '@kebi-app/shared';
 import { FEEDBACK_CATEGORIES } from '@kebi-app/shared';
 import { DURATION, PRESS, SPRING_CONFIG } from '../theme/motion';
 import { triggerHaptic } from '../lib/haptics';
+import { ErrorRow } from './error-row';
+import { Spinner } from './spinner';
 import { useTranslation } from '../i18n/context';
 import { useToast } from './toast-context';
 import { Icon } from './icon';
@@ -72,6 +74,8 @@ export function ReportWrongAnswerSheet({
   const [value, setValue] = useState('');
   const [category, setCategory] = useState<FeedbackCategory | undefined>(undefined);
   const [submitting, setSubmitting] = useState(false);
+  /** The last send failed — stated in the sheet, not in a toast behind it. */
+  const [failed, setFailed] = useState(false);
   const scrim = useSharedValue(0);
   const translateY = useSharedValue(height);
   const keyboard = useAnimatedKeyboard();
@@ -91,6 +95,7 @@ export function ReportWrongAnswerSheet({
       setValue('');
       setCategory(undefined);
       setSubmitting(false);
+      setFailed(false);
     }
   }, [open]);
 
@@ -135,6 +140,7 @@ export function ReportWrongAnswerSheet({
   const handleSend = async () => {
     if (!canSend) return;
     setSubmitting(true);
+    setFailed(false);
     try {
       await onSubmit({ category, text: value.trim() || undefined });
       triggerHaptic('save-sheet-confirm');
@@ -231,12 +237,16 @@ export function ReportWrongAnswerSheet({
             />
           </View>
 
-          <View className="flex-row items-start gap-2 px-1">
-            <Icon name="link" size={13} className="mt-0.5 text-text-muted" />
-            <Text className="flex-1 text-small leading-5 text-text-muted">
-              {exchange ? t('help.sheetWrongNote') : t('help.sheetWrongNoteEmpty')}
-            </Text>
-          </View>
+          {failed ? (
+            <ErrorRow text={t('help.sendFailed')} detail={t('help.sendFailedDetail')} />
+          ) : (
+            <View className="flex-row items-start gap-2 px-1">
+              <Icon name="link" size={13} className="mt-0.5 text-text-muted" />
+              <Text className="flex-1 text-small leading-5 text-text-muted">
+                {exchange ? t('help.sheetWrongNote') : t('help.sheetWrongNoteEmpty')}
+              </Text>
+            </View>
+          )}
 
           <Pressable
             onPress={handleSend}
@@ -249,8 +259,10 @@ export function ReportWrongAnswerSheet({
             style={{ opacity: canSend ? 1 : 0.4 }}
             className={`flex-row items-center justify-center gap-2 rounded-card bg-text px-4 py-3.5 ${PRESS}`}
           >
-            <Icon name="send" size={14} className="text-bg" />
-            <Text className="text-small font-semibold text-bg">{t('help.send')}</Text>
+            {submitting ? <Spinner /> : <Icon name="send" size={14} className="text-bg" />}
+            <Text className="text-small font-semibold text-bg">
+              {submitting ? t('help.sending') : failed ? t('help.sendRetry') : t('help.send')}
+            </Text>
           </Pressable>
         </Animated.View>
       </GestureDetector>

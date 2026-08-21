@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Kebi My Notes — loading / empty / error</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #FAFAF9; --surface: #F1F1EF; --surface-2: #E8E8E5;
+    --text: #1A1A1A; --text-muted: #8A8A87; --text-soft: #B5B5B1;
+    --danger: #D14343; --like: #C2410C; --warn: #B45309;
+    --tag: #D4B891; --tag-rec: #A7C7A0; --tag-cur: #C9C9C4;
+    --page: #FAFAF9; --page-ink: #1A1A1A;
+  }
+  body.dark {
+    --bg: #13110F; --surface: #1C1A17; --surface-2: #26231F;
+    --text: #F5F1EA; --text-muted: #9A938A; --text-soft: #6E6862;
+    --danger: #E89090; --like: #E8A87C; --warn: #D9B45F; --tag-cur: #45413B;
+    --page: #0A0908; --page-ink: #F5F1EA;
+  }
+  html, body { background: var(--page); color: var(--page-ink);
+    font-family: 'Inter', system-ui, sans-serif; -webkit-font-smoothing: antialiased; min-height: 100vh; }
+  .page { max-width: 1800px; margin: 0 auto; padding: 52px 36px 120px; }
+  .header { display: flex; align-items: flex-start; justify-content: space-between;
+    padding-bottom: 26px; border-bottom: 1px solid var(--surface-2); }
+  h1 { font-size: 25px; font-weight: 700; letter-spacing: -0.028em; }
+  .meta { font-size: 12px; color: var(--text-muted); margin-top: 5px; }
+  .lede { font-size: 14px; color: var(--text-muted); line-height: 1.65; max-width: 880px; margin-top: 14px; }
+  .lede b { color: var(--page-ink); font-weight: 600; }
+  .lede code, .section-desc code, .note code, .verdict code { font-size: 12px;
+    background: var(--surface-2); border-radius: 5px; padding: 1px 6px; }
+  .theme-toggle { display: flex; background: var(--surface); border-radius: 999px; padding: 3px; flex-shrink: 0; }
+  .theme-toggle button { padding: 6px 14px; background: transparent; border: none; border-radius: 999px;
+    font-family: inherit; font-size: 12px; font-weight: 500; color: var(--text-muted); cursor: pointer; }
+  .theme-toggle button.active { background: var(--page-ink); color: var(--page); }
+  .section-head { display: flex; align-items: baseline; justify-content: space-between;
+    margin: 46px 0 12px; padding-bottom: 12px; border-bottom: 1px solid var(--surface-2); }
+  .section-title { font-size: 11px; font-weight: 600; color: var(--text-soft);
+    text-transform: uppercase; letter-spacing: 0.08em; }
+  .section-q { font-size: 12px; color: var(--text-soft); }
+  .section-desc { font-size: 14px; color: var(--text-muted); line-height: 1.6; max-width: 880px; margin-bottom: 24px; }
+  .section-desc b { color: var(--page-ink); font-weight: 600; }
+  .row-of { display: flex; flex-wrap: wrap; gap: 34px; align-items: flex-start; }
+  .col { width: 390px; display: flex; flex-direction: column; gap: 10px; }
+  .col h2 { font-size: 15px; font-weight: 700; letter-spacing: -0.02em; }
+  .note { font-size: 11.5px; color: var(--text-muted); line-height: 1.55; }
+  .note b { color: var(--page-ink); font-weight: 600; }
+  .tag { display: inline-block; align-self: flex-start; font-size: 10px; font-weight: 700;
+    letter-spacing: .08em; text-transform: uppercase; color: #1A1A1A; background: var(--tag);
+    border-radius: 999px; padding: 3px 10px; }
+  .tag.rec { background: var(--tag-rec); }
+  .tag.cur { background: var(--tag-cur); color: var(--page-ink); }
+
+  .phone { width: 390px; height: 700px; background: var(--bg); border-radius: 44px; overflow: hidden;
+    position: relative; box-shadow: 0 0 0 10px #111, 0 0 0 12px var(--page), 0 24px 50px rgba(0,0,0,0.28);
+    display: flex; flex-direction: column; }
+  .status-bar { height: 44px; padding: 15px 30px 0; display: flex; justify-content: space-between;
+    align-items: center; font-size: 14px; font-weight: 600; color: var(--text); flex-shrink: 0; }
+  .batt { width: 22px; height: 11px; border: 1px solid var(--text); border-radius: 3px; position: relative; }
+  .batt::before { content: ''; position: absolute; inset: 1.5px; background: var(--text); border-radius: 1px; }
+  .top-bar { padding: 12px 16px 8px; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
+  .icon-btn { width: 38px; height: 38px; border-radius: 50%; background: var(--surface);
+    display: flex; align-items: center; justify-content: center; border: none; }
+  .icon-btn svg { width: 17px; height: 17px; stroke: var(--text); stroke-width: 1.8; fill: none; }
+  .top-pill { display: flex; align-items: center; background: var(--surface); border-radius: 999px; padding: 0 3px; }
+  .top-pill button { width: 38px; height: 38px; border-radius: 50%; background: transparent; border: none;
+    display: flex; align-items: center; justify-content: center; }
+  .top-pill svg { width: 17px; height: 17px; stroke: var(--text); stroke-width: 1.8; fill: none; }
+  .scroll { flex: 1; overflow: hidden; padding: 8px 24px 16px; display: flex; flex-direction: column; gap: 20px; }
+  .home-indicator { width: 128px; height: 5px; background: var(--text); border-radius: 3px;
+    margin: 2px auto 8px; flex-shrink: 0; opacity: .85; }
+
+  .eyebrow { font-size: 11px; font-weight: 600; color: var(--text-soft);
+    text-transform: uppercase; letter-spacing: 0.08em; }
+  .hero { font-size: 28px; font-weight: 700; letter-spacing: -0.03em; line-height: 1.15;
+    color: var(--text); margin-top: 5px; }
+  .sub { font-size: 12.5px; color: var(--text-muted); margin-top: 5px; }
+  .group { display: flex; flex-direction: column; gap: 10px; }
+  .quote { display: flex; gap: 12px; }
+  .quote .rail { width: 2px; border-radius: 2px; background: var(--surface-2); flex-shrink: 0; }
+  .quote p { flex: 1; font-size: 14.5px; line-height: 1.5; color: var(--text); }
+  .quote.ghost p { color: var(--text-soft); }
+
+  .sk { border-radius: 5px; background: var(--surface-2); position: relative; overflow: hidden; }
+  .sk::after { content: ''; position: absolute; inset: 0; transform: translateX(-100%);
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.6), transparent);
+    animation: shimmer 1.4s linear infinite; }
+  body.dark .sk::after { background: linear-gradient(90deg, transparent, rgba(255,255,255,0.07), transparent); }
+  @keyframes shimmer { 100% { transform: translateX(100%); } }
+  @keyframes rot { 100% { transform: rotate(360deg); } }
+  .sk.h10 { height: 10px; } .sk.h13 { height: 13px; } .sk.h24 { height: 24px; }
+  .frozen { opacity: .45; } .frozen .sk::after { animation: none; opacity: 0; }
+  .spin { width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--surface-2);
+    border-top-color: var(--text-muted); animation: rot .8s linear infinite; }
+  .center { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 12px; text-align: center; padding: 0 26px 90px; }
+  .err-inline { display: flex; align-items: center; gap: 9px; }
+  .err-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--danger); flex-shrink: 0; }
+  .err-txt { font-size: 12.5px; color: var(--text-muted); flex: 1; line-height: 1.4; }
+  .err-txt b { color: var(--text); font-weight: 600; }
+  .retry { background: transparent; border: none; font-family: inherit; font-size: 13px;
+    font-weight: 600; color: var(--text); padding: 2px 6px; }
+  .add-row { display: flex; align-items: center; gap: 11px; }
+  .add-av { width: 32px; height: 32px; border-radius: 9px; border: 1px dashed var(--text-soft);
+    display: flex; align-items: center; justify-content: center; font-size: 17px;
+    color: var(--text-muted); flex-shrink: 0; line-height: 1; }
+  .add-lb { font-size: 14px; font-weight: 600; color: var(--text-muted); }
+  .add-sub { font-size: 11.5px; color: var(--text-soft); margin-top: 2px; }
+  .quiet { font-size: 13.5px; color: var(--text-muted); line-height: 1.5; }
+  .toast-wrap { position: absolute; left: 0; right: 0; bottom: 40px; display: flex; justify-content: center; }
+  .toast { display: flex; align-items: center; gap: 10px; background: var(--text); color: var(--bg);
+    border-radius: 999px; padding: 11px 8px 11px 16px; max-width: 280px; font-size: 13px; font-weight: 500; }
+  .toast button { background: transparent; border: none; font-family: inherit; font-size: 13px;
+    font-weight: 600; color: var(--bg); padding: 2px 10px; }
+
+  .verdict { margin-top: 44px; border: 1px solid var(--surface-2); border-radius: 16px;
+    padding: 22px 24px; background: var(--surface); max-width: 1000px; }
+  .verdict h3 { font-size: 14px; font-weight: 700; margin-bottom: 10px; }
+  .verdict p { font-size: 13px; color: var(--text-muted); line-height: 1.68; }
+  .verdict p + p { margin-top: 10px; }
+  .verdict b { color: var(--page-ink); font-weight: 600; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="header">
+    <div>
+      <h1>my notes — loading, empty, error</h1>
+      <div class="meta">kebi-app · apps/mobile/src/app/my-notes.tsx · insider-only · applies the kernel</div>
+      <p class="lede">
+        This screen is <b>load-bearing</b>: the write flow has no receipt and no review step, so it is the
+        only place an insider can ever see what their prose became. Which makes its failure state the worst
+        one in the app — <code>myClaims.loadFailed</code> renders as a single grey sentence <b>with no
+        retry</b>, and the honest reading of it is "your notes are gone".
+        <br><br>
+        It also has a state no other screen has: the <b>capability check</b>. While <code>curate</code> is
+        unresolved the screen returns a bare top bar and <code>null</code> — a blank page that means
+        "deciding whether you're allowed in here", which looks identical to a blank page that means
+        "loading" and to one that means "you've written nothing".
+      </p>
+    </div>
+    <div class="theme-toggle">
+      <button class="active" data-theme="light">light</button>
+      <button data-theme="dark">dark</button>
+    </div>
+  </div>
+
+  <!-- 1 LOADING -->
+  <div class="section-head">
+    <span class="section-title">1 · loading</span>
+    <span class="section-q">two waits stacked: permission, then notes</span>
+  </div>
+  <p class="section-desc">
+    The capability resolves first, then the claims fetch. Today both are blank-ish, and the hero + subtitle
+    only appear once <code>state.status === 'ready'</code> and the total is above zero.
+  </p>
+
+  <div class="row-of">
+
+    <div class="col">
+      <span class="tag cur">today</span>
+      <h2>a · blank, then spinner</h2>
+      <div class="phone">
+        <div class="status-bar"><span>9:41</span><div class="batt"></div></div>
+        <div class="top-bar">
+          <button class="icon-btn"><svg viewBox="0 0 24 24"><polyline points="15 6 9 12 15 18"/></svg></button>
+          <div class="top-pill"><button><svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></svg></button></div>
+        </div>
+        <div class="scroll">
+          <div><div class="eyebrow">knowledge</div><div class="hero">what you've added</div></div>
+          <div style="display:flex;justify-content:center;padding:60px 0"><div class="spin"></div></div>
+        </div>
+        <div class="home-indicator"></div>
+      </div>
+      <p class="note">
+        And before this frame, a completely empty page while the capability resolves — no hero, no top pill.
+        Two different nothings in a row.
+      </p>
+    </div>
+
+    <div class="col">
+      <span class="tag rec">recommended</span>
+      <h2>b · hero holds, notes shimmer</h2>
+      <div class="phone">
+        <div class="status-bar"><span>9:41</span><div class="batt"></div></div>
+        <div class="top-bar">
+          <button class="icon-btn"><svg viewBox="0 0 24 24"><polyline points="15 6 9 12 15 18"/></svg></button>
+          <div class="top-pill"><button><svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></svg></button></div>
+        </div>
+        <div class="scroll">
+          <div>
+            <div class="eyebrow">knowledge</div><div class="hero">what you've added</div>
+            <div style="margin-top:8px"><div class="sk h10" style="width:46%"></div></div>
+          </div>
+          <div class="group">
+            <div class="sk h10" style="width:34%"></div>
+            <div class="quote"><div class="rail"></div><div style="flex:1"><div class="sk h13" style="width:96%"></div><div class="sk h13" style="width:72%;margin-top:8px"></div></div></div>
+            <div class="quote"><div class="rail"></div><div style="flex:1"><div class="sk h13" style="width:84%"></div></div></div>
+          </div>
+          <div class="group">
+            <div class="sk h10" style="width:42%"></div>
+            <div class="quote"><div class="rail"></div><div style="flex:1"><div class="sk h13" style="width:90%"></div><div class="sk h13" style="width:56%;margin-top:8px"></div></div></div>
+          </div>
+        </div>
+        <div class="home-indicator"></div>
+      </div>
+      <p class="note">
+        <b>The hero is static text</b> — "what you've added" is true before the fetch, so it should never
+        wait. Only the count subtitle and the notes shimmer, and the shimmer keeps the quote rail so it
+        already looks like writing. Two anchor groups, two and one notes: the shape of a real page.
+      </p>
+    </div>
+
+    <div class="col">
+      <span class="tag rec">recommended</span>
+      <h2>c · while permission resolves</h2>
+      <div class="phone">
+        <div class="status-bar"><span>9:41</span><div class="batt"></div></div>
+        <div class="top-bar">
+          <button class="icon-btn"><svg viewBox="0 0 24 24"><polyline points="15 6 9 12 15 18"/></svg></button>
+        </div>
+        <div class="scroll">
+          <div>
+            <div class="eyebrow">knowledge</div><div class="hero">what you've added</div>
+          </div>
+          <div class="group">
+            <div class="sk h10" style="width:34%"></div>
+            <div class="quote"><div class="rail"></div><div style="flex:1"><div class="sk h13" style="width:96%"></div><div class="sk h13" style="width:72%;margin-top:8px"></div></div></div>
+          </div>
+        </div>
+        <div class="home-indicator"></div>
+      </div>
+      <p class="note">
+        <b>Identical to b, minus the top pill.</b> The capability wait shouldn't get its own look — the user
+        doesn't know permissions exist and shouldn't learn. The write button appears when the answer is
+        yes; if it's no, the hook navigates away and this frame is never seen for long. One nothing instead
+        of two.
+      </p>
+    </div>
+
+  </div>
+
+  <!-- 2 EMPTY -->
+  <div class="section-head">
+    <span class="section-title">2 · nothing written yet</span>
+    <span class="section-q">an insider who hasn't started</span>
+  </div>
+  <p class="section-desc">
+    Today: <code>{t('myClaims.empty')}</code> — one grey line under a hero, no subtitle, and the write
+    button sitting silently in the top pill. This is the first thing a brand-new insider sees, and it
+    teaches them nothing about what a note even is.
+  </p>
+
+  <div class="row-of">
+
+    <div class="col">
+      <span class="tag cur">today</span>
+      <h2>a · one muted line</h2>
+      <div class="phone">
+        <div class="status-bar"><span>9:41</span><div class="batt"></div></div>
+        <div class="top-bar">
+          <button class="icon-btn"><svg viewBox="0 0 24 24"><polyline points="15 6 9 12 15 18"/></svg></button>
+          <div class="top-pill"><button><svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></svg></button></div>
+        </div>
+        <div class="scroll">
+          <div><div class="eyebrow">knowledge</div><div class="hero">what you've added</div></div>
+          <div class="quiet">you haven't added anything yet.</div>
+        </div>
+        <div class="home-indicator"></div>
+      </div>
+      <p class="note">
+        True, and dead. Indistinguishable at a glance from the failed state, which says almost the same
+        thing in the same grey.
+      </p>
+    </div>
+
+    <div class="col">
+      <span class="tag rec">recommended</span>
+      <h2>b · a ghost note + the write row</h2>
+      <div class="phone">
+        <div class="status-bar"><span>9:41</span><div class="batt"></div></div>
+        <div class="top-bar">
+          <button class="icon-btn"><svg viewBox="0 0 24 24"><polyline points="15 6 9 12 15 18"/></svg></button>
+          <div class="top-pill"><button><svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></svg></button></div>
+        </div>
+        <div class="scroll">
+          <div><div class="eyebrow">knowledge</div><div class="hero">what you've added</div>
+            <div class="sub">nothing yet — this is where it lands.</div></div>
+          <div class="group">
+            <div class="eyebrow" style="opacity:.55">🍜 Kamachiku</div>
+            <div class="quote ghost" style="opacity:.45"><div class="rail"></div><p>ask for the counter seats, the ones by the window get cold in winter.</p></div>
+          </div>
+          <div class="add-row">
+            <div class="add-av">✎</div>
+            <div><div class="add-lb">write your first note</div><div class="add-sub">about a place, an area, or anything</div></div>
+          </div>
+        </div>
+        <div class="home-indicator"></div>
+      </div>
+      <p class="note">
+        The kernel's ghost, in this screen's vocabulary: <b>one faded note under a faded anchor</b>, which
+        is the only way to show someone what a note looks like before they've written one. The add-row
+        carries a <code>✎</code> rather than <code>+</code> and opens the same unanchored curate sheet the
+        top-pill button opens — so the affordance is taught in the body and kept in the pill.
+      </p>
+    </div>
+
+    <div class="col">
+      <span class="tag">alternative</span>
+      <h2>c · the subtitle does the work</h2>
+      <div class="phone">
+        <div class="status-bar"><span>9:41</span><div class="batt"></div></div>
+        <div class="top-bar">
+          <button class="icon-btn"><svg viewBox="0 0 24 24"><polyline points="15 6 9 12 15 18"/></svg></button>
+          <div class="top-pill"><button><svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></svg></button></div>
+        </div>
+        <div class="scroll">
+          <div><div class="eyebrow">knowledge</div><div class="hero">what you've added</div>
+            <div class="sub">nothing yet. anything you write about a place shows up here, exactly as
+              strangers see it.</div></div>
+          <div class="add-row">
+            <div class="add-av">✎</div>
+            <div><div class="add-lb">write your first note</div></div>
+          </div>
+        </div>
+        <div class="home-indicator"></div>
+      </div>
+      <p class="note">
+        No ghost — the subtitle explains and the row acts. Cleaner, and it avoids inventing a note about a
+        place the user may not have saved. But "exactly as strangers see it" is a claim the ghost
+        <i>shows</i> in one glance.
+      </p>
+    </div>
+
+  </div>
+
+  <!-- 3 ERROR -->
+  <div class="section-head">
+    <span class="section-title">3 · the fetch failed</span>
+    <span class="section-q">the worst grey line in the app</span>
+  </div>
+  <p class="section-desc">
+    On a screen whose entire purpose is to prove your writing still exists, "couldn't load" with no retry
+    reads as data loss. This one matters more than its size suggests.
+  </p>
+
+  <div class="row-of">
+
+    <div class="col">
+      <span class="tag cur">today</span>
+      <h2>a · grey line, no way back</h2>
+      <div class="phone">
+        <div class="status-bar"><span>9:41</span><div class="batt"></div></div>
+        <div class="top-bar">
+          <button class="icon-btn"><svg viewBox="0 0 24 24"><polyline points="15 6 9 12 15 18"/></svg></button>
+          <div class="top-pill"><button><svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></svg></button></div>
+        </div>
+        <div class="scroll">
+          <div><div class="eyebrow">knowledge</div><div class="hero">what you've added</div></div>
+          <div class="quiet">couldn't load your notes.</div>
+        </div>
+        <div class="home-indicator"></div>
+      </div>
+      <p class="note">
+        No retry, no reassurance, and one word away from the empty state. A user reading this has no way to
+        tell whether their writing is missing or the request is.
+      </p>
+    </div>
+
+    <div class="col">
+      <span class="tag rec">recommended</span>
+      <h2>b · frozen notes + "nothing lost"</h2>
+      <div class="phone">
+        <div class="status-bar"><span>9:41</span><div class="batt"></div></div>
+        <div class="top-bar">
+          <button class="icon-btn"><svg viewBox="0 0 24 24"><polyline points="15 6 9 12 15 18"/></svg></button>
+          <div class="top-pill"><button><svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></svg></button></div>
+        </div>
+        <div class="scroll">
+          <div><div class="eyebrow">knowledge</div><div class="hero">what you've added</div></div>
+          <div class="err-inline">
+            <span class="err-dot"></span>
+            <span class="err-txt"><b>couldn't load your notes.</b> they're still there — this is the list, not the writing.</span>
+            <button class="retry">retry</button>
+          </div>
+          <div class="frozen">
+            <div class="group">
+              <div class="sk h10" style="width:34%"></div>
+              <div class="quote"><div class="rail"></div><div style="flex:1"><div class="sk h13" style="width:96%"></div><div class="sk h13" style="width:72%;margin-top:8px"></div></div></div>
+              <div class="quote"><div class="rail"></div><div style="flex:1"><div class="sk h13" style="width:84%"></div></div></div>
+            </div>
+          </div>
+        </div>
+        <div class="home-indicator"></div>
+      </div>
+      <p class="note">
+        The kernel plus <b>one sentence this screen specifically needs</b>: the notes are fine, the
+        <i>list</i> failed. It's the only place in the app where the extra clause earns its space, because
+        it's the only screen where a failed read could plausibly mean lost work.
+      </p>
+    </div>
+
+    <div class="col">
+      <span class="tag rec">settled</span>
+      <h2>c · removing a note</h2>
+      <div class="phone">
+        <div class="status-bar"><span>9:41</span><div class="batt"></div></div>
+        <div class="top-bar">
+          <button class="icon-btn"><svg viewBox="0 0 24 24"><polyline points="15 6 9 12 15 18"/></svg></button>
+          <div class="top-pill"><button><svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></svg></button></div>
+        </div>
+        <div class="scroll">
+          <div><div class="eyebrow">knowledge</div><div class="hero">what you've added</div>
+            <div class="sub">3 notes · 2 places</div></div>
+          <div class="group">
+            <div class="eyebrow">🍜 Kamachiku</div>
+            <div class="quote"><div class="rail"></div><p>ask for the counter seats, the ones by the window get cold in winter.</p></div>
+          </div>
+          <div class="group">
+            <div class="eyebrow">🏄 canggu</div>
+            <div class="quote"><div class="rail"></div><p>the shortcut behind the temple skips the whole main-road crawl.</p></div>
+          </div>
+        </div>
+        <div class="toast-wrap"><div class="toast">note removed<button>undo</button></div></div>
+        <div class="home-indicator"></div>
+      </div>
+      <p class="note">
+        Long-press → remove is optimistic: the note disappears at once, a 5s toast holds the undo, and the
+        count in the subtitle drops with it. If the write fails the note <b>comes back where it was</b> and
+        the toast becomes "couldn't remove that one". Already the design system's rule for destructive
+        actions — nothing new here.
+      </p>
+    </div>
+
+  </div>
+
+  <div class="verdict">
+    <h3>my notes, decided</h3>
+    <p>
+      <b>1b + 1c</b> — the hero never waits (it's static text), the count subtitle and the notes shimmer in
+      the quote-rail shape, and the capability wait looks exactly like the data wait minus the write button.
+      The user should never be able to see that a permission check happened.
+    </p>
+    <p>
+      <b>2b</b> — one ghost note under a faded anchor, plus a <code>✎</code> write row. It's the only way
+      to answer "what is a note?" before the first one exists, and it matches the ghost language on home
+      and library.
+    </p>
+    <p>
+      <b>3b</b> — frozen notes under a retry line, with the extra clause <b>"they're still there — this is
+      the list, not the writing"</b>. Everywhere else "nothing lost" is enough; here the user's fear is
+      specific, so the sentence is specific.
+    </p>
+  </div>
+
+</div>
+<script>
+  document.querySelectorAll('.theme-toggle button').forEach(function (b) {
+    b.addEventListener('click', function () {
+      document.querySelectorAll('.theme-toggle button').forEach(function (x) { x.classList.remove('active'); });
+      b.classList.add('active');
+      document.body.classList.toggle('dark', b.dataset.theme === 'dark');
+    });
+  });
+</script>
+</body>
+</html>

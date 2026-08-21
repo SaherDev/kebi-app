@@ -1,5 +1,6 @@
 import { Pressable, Text } from 'react-native';
 import { PRESS } from '../theme/motion';
+import { Spinner } from './spinner';
 
 /**
  * The shared button (kebi-tokens-mockup.html `.btn` + `.btn.primary/.outlined/
@@ -19,6 +20,12 @@ interface ButtonProps {
   variant?: ButtonVariant;
   onPress?: () => void;
   disabled?: boolean;
+  /**
+   * The button's action is in flight: a spinner joins the label and presses are
+   * ignored (ADR-056). A spinner inside a button marks an action, not content —
+   * which is what the design system's no-spinner rule is actually about.
+   */
+  busy?: boolean;
 }
 
 // Per-variant token classes: [container surface/border, label tone].
@@ -28,12 +35,18 @@ const VARIANT: Record<ButtonVariant, { box: string; text: string }> = {
   danger: { box: 'bg-danger', text: 'text-white' },
 };
 
-export function Button({ label, variant = 'primary', onPress, disabled = false }: ButtonProps) {
+export function Button({
+  label,
+  variant = 'primary',
+  onPress,
+  disabled = false,
+  busy = false,
+}: ButtonProps) {
   const v = VARIANT[variant];
   return (
     <Pressable
       onPress={onPress}
-      disabled={disabled}
+      disabled={disabled || busy}
       accessibilityRole="button"
       accessibilityLabel={label}
       accessibilityState={{ disabled }}
@@ -41,8 +54,9 @@ export function Button({ label, variant = 'primary', onPress, disabled = false }
       // NativeWind doesn't reliably clear a conditionally-removed opacity utility,
       // so the button can stay stuck dim. Inline opacity always wins.
       style={{ opacity: disabled ? 0.4 : 1 }}
-      className={`items-center justify-center rounded-card px-4 py-2.5 ${PRESS} ${v.box}`}
+      className={`flex-row items-center justify-center gap-2 rounded-card px-4 py-2.5 ${PRESS} ${v.box}`}
     >
+      {busy ? <Spinner /> : null}
       <Text className={`text-small font-semibold ${v.text}`}>{label}</Text>
     </Pressable>
   );

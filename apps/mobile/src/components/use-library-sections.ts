@@ -49,6 +49,8 @@ export interface UseLibrarySections {
   refreshing: boolean;
   loadingMore: boolean;
   error: boolean;
+  /** A paged read failed while the list already had rows (ADR-056). */
+  moreError: boolean;
   /** Grand total of the caller's saves — the hero count. */
   total: number | null;
   loadMore: () => void;
@@ -76,6 +78,7 @@ export function useLibrarySections(): UseLibrarySections {
   const [refreshing, setRefreshing] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState(false);
+  const [moreError, setMoreError] = useState(false);
   const [total, setTotal] = useState<number | null>(null);
 
   const cursorRef = useRef<string | null>(null);
@@ -163,6 +166,7 @@ export function useLibrarySections(): UseLibrarySections {
     if (busyRef.current || !cursorRef.current) return;
     busyRef.current = true;
     setLoadingMore(true);
+    setMoreError(false);
     const id = reqId.current;
     void (async () => {
       try {
@@ -174,7 +178,10 @@ export function useLibrarySections(): UseLibrarySections {
         cursorRef.current = page.next_cursor;
         setRows((prev) => [...prev, ...page.places]);
       } catch {
-        // A failed page leaves the list as it was; the next scroll retries.
+        // The list keeps every row it already had — only its continuation
+        // failed, and it says so at the tail rather than silently stopping,
+        // which reads exactly like a list that ended (ADR-056).
+        if (id === reqId.current) setMoreError(true);
       } finally {
         if (id === reqId.current) setLoadingMore(false);
         busyRef.current = false;
@@ -269,6 +276,7 @@ export function useLibrarySections(): UseLibrarySections {
     refreshing,
     loadingMore,
     error,
+    moreError,
     total,
     loadMore,
     refetch,

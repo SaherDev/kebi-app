@@ -11,7 +11,8 @@ import { TopPill } from '../components/top-pill';
 import { ActionSheet } from '../components/action-sheet';
 import { areaCurateTarget, useCurateMenuItem } from '../components/use-curate-menu-item';
 import { Chip } from '../components/chip';
-import { Spinner } from '../components/spinner';
+import { AreaSkeleton } from '../components/area-skeleton';
+import { ErrorRow } from '../components/error-row';
 import { AreaChildRow, AreaPlaceRow } from '../components/area-row';
 import { useAreaView } from '../components/use-area-view';
 import { useChat } from '../components/chat-context';
@@ -76,24 +77,66 @@ function useReturnToChat() {
 export default function AreaScreen() {
   const { t } = useTranslation();
   const router = useRouter();
-  const { id } = useLocalSearchParams<{ id?: string }>();
-  const state = useAreaView(id);
+  // `name` and `icon` are what the link that opened this screen already knew
+  // (ADR-056): the title is real from the first frame, so the wait confirms the
+  // tap instead of showing an anonymous grey screen — and a failure can name
+  // the area it failed to open.
+  const { id, name, icon } = useLocalSearchParams<{ id?: string; name?: string; icon?: string }>();
+  const { state, retry } = useAreaView(id);
   useReturnToChat();
 
   const back = <IconButton icon="back" label={t('common.back')} onPress={() => router.back()} />;
 
-  if (state.status !== 'ready') {
+  if (state.status === 'loading') {
     return (
       <ScreenScaffold topBar={<TopBar left={back} />}>
-        <View className="flex-1 items-center justify-center px-6 pb-24">
-          {state.status === 'loading' ? (
-            <Spinner />
-          ) : (
-            <Text className="text-body text-text-muted">
-              {id ? t('area.loadFailed') : t('area.empty')}
+        <AreaSkeleton name={name} icon={icon} />
+      </ScreenScaffold>
+    );
+  }
+
+  if (state.status === 'failed') {
+    // A link that can never resolve is not a network failure — it gets an
+    // explanation and a way out, never a retry that is guaranteed to fail.
+    if (!state.retryable) {
+      return (
+        <ScreenScaffold topBar={<TopBar left={back} />}>
+          <View className="flex-1 items-center justify-center gap-3 px-8 pb-24">
+            <Text className="text-[28px]">{'\u{1F5FA}\u{FE0F}'}</Text>
+            <Text className="text-center text-body font-semibold text-text">
+              {t('area.gone')}
             </Text>
-          )}
-        </View>
+            <Text className="text-center text-small leading-5 text-text-muted">
+              {t('area.goneHint')}
+            </Text>
+            <Pressable
+              onPress={() => router.back()}
+              accessibilityRole="button"
+              accessibilityLabel={t('common.back')}
+              className={`mt-1 rounded-card border border-surface-2 px-4 py-2.5 ${PRESS}`}
+            >
+              <Text className="text-small font-semibold text-text">{t('common.back')}</Text>
+            </Pressable>
+          </View>
+        </ScreenScaffold>
+      );
+    }
+
+    return (
+      <ScreenScaffold topBar={<TopBar left={back} />}>
+        <AreaSkeleton
+          name={name}
+          icon={icon}
+          frozen
+          error={
+            <ErrorRow
+              text={name ? t('area.loadFailedNamed', { name }) : t('area.loadFailed')}
+              detail={t('home.nothingLost')}
+              actionLabel={t('common.retry')}
+              onAction={retry}
+            />
+          }
+        />
       </ScreenScaffold>
     );
   }
@@ -197,7 +240,7 @@ function AreaContent({ view, back }: { view: AreaScreenView; back: React.ReactNo
           </View>
         ) : null}
 
-        <Body section={view.section} />
+        <Body section={view.section} areaName={view.name} />
       </ScrollView>
     </ScreenScaffold>
   );
@@ -268,9 +311,25 @@ function MetaChip({ children }: { children: React.ReactNode }) {
  * here. Both draw the same rows — child areas above the leaf, venues at it —
  * so the section header is the only thing that changes.
  */
-function Body({ section }: { section: AreaSectionContract | null }) {
+function Body({ section, areaName }: { section: AreaSectionContract | null; areaName: string }) {
   const { t } = useTranslation();
-  if (!section || isSectionEmpty(section)) return null;
+
+  // An area you have nothing in keeps the section and says so (ADR-056) —
+  // rendering nothing made "you've saved nothing here" and "the list failed to
+  // load" the same screen. No ghost rows and no add row: this screen is
+  // read-only, so there is no action to point them at.
+  if (!section || isSectionEmpty(section)) {
+    return (
+      <View className="gap-2.5">
+        <Text className="text-eyebrow font-semibold uppercase text-text-soft">
+          {t('area.sections.savedPlaces')}
+        </Text>
+        <Text className="text-body leading-6 text-text-muted">
+          {t('area.nothingHere', { name: areaName })}
+        </Text>
+      </View>
+    );
+  }
 
   const header =
     section.kind === 'worth_knowing'

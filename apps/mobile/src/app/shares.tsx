@@ -7,6 +7,7 @@ import { IconButton } from '../components/icon-button';
 import { Icon } from '../components/icon';
 import { ConfirmSheet } from '../components/confirm-sheet';
 import { SOURCE_ICON } from '../components/source-icon';
+import { GhostPreview } from '../components/ghost-preview';
 import {
   ShareRow,
   Shimmer,
@@ -73,15 +74,15 @@ export default function SharesScreen() {
       >
         <View className="gap-1">
           <Text className="font-bold text-hero text-text">{t('share.recentActivity')}</Text>
-          {ordered.length > 0 ? (
-            <Text className="text-small text-text-muted">
-              {t('share.historySubtitle', { links: ordered.length, places })}
-            </Text>
-          ) : null}
+          <Text className="text-small text-text-muted">
+            {ordered.length > 0
+              ? t('share.historySubtitle', { links: ordered.length, places })
+              : t('share.emptySub')}
+          </Text>
         </View>
 
         {ordered.length === 0 ? (
-          <Text className="text-body text-text-muted">{t('share.historyEmpty')}</Text>
+          <ShareEmpty />
         ) : (
           ordered.map((row, i) => (
             <View key={row.id} className="gap-2">
@@ -105,12 +106,71 @@ export default function SharesScreen() {
         body={t('share.clearBody')}
         confirmLabel={t('share.clear')}
         onConfirm={() => {
+          // Local storage — instant and can't fail, so no busy or failed state
+          // to hold (ADR-056). The sheet closes the moment it's done.
           clear();
           setConfirming(false);
         }}
         onClose={() => setConfirming(false)}
       />
     </ScreenScaffold>
+  );
+}
+
+/**
+ * Nothing shared yet — reached from settings before the first share, or after
+ * SHARE_HISTORY_DAYS forgot the last one (ADR-056).
+ *
+ * The ghost does a second job here that it doesn't elsewhere: it shows that
+ * **one link can become several places**, which is the whole reason this screen
+ * groups by share. There is no add row and no button, because sharing happens
+ * in TikTok or Instagram — an affordance that can't be tapped from here would
+ * be a lie — so the action is a sentence instead.
+ */
+function ShareEmpty() {
+  const { t } = useTranslation();
+  const ghosts = [
+    { emoji: '\u{1F35C}', name: t('home.ghost.first'), meta: t('home.ghost.firstMeta') },
+    { emoji: '\u{2615}', name: t('share.ghost.second'), meta: t('share.ghost.secondMeta') },
+  ];
+
+  return (
+    <View className="gap-4">
+      <GhostPreview>
+        <View className="gap-1.5">
+          <View className="flex-row items-center gap-2 px-1">
+            <View className="size-[22px] items-center justify-center rounded-small bg-surface">
+              <Icon name={SOURCE_ICON.tiktok} size={11} className="text-text-soft" />
+            </View>
+            <Text className="flex-1 text-small text-text-muted" numberOfLines={1}>
+              {t('share.ghost.heading')}
+            </Text>
+          </View>
+          <View className="rounded-large bg-surface px-3">
+            {ghosts.map((ghost, i) => (
+              <View key={ghost.name}>
+                {i > 0 ? <View className="h-px bg-surface-2" /> : null}
+                <View className="flex-row items-center gap-3 py-2.5">
+                  <View className="size-9 items-center justify-center rounded-small bg-bg">
+                    <Text className="text-[17px]">{ghost.emoji}</Text>
+                  </View>
+                  <View className="flex-1">
+                    <Text className="text-body font-semibold text-text" numberOfLines={1}>
+                      {ghost.name}
+                    </Text>
+                    <Text className="mt-0.5 text-small text-text-soft" numberOfLines={1}>
+                      {ghost.meta}
+                    </Text>
+                  </View>
+                </View>
+              </View>
+            ))}
+          </View>
+        </View>
+      </GhostPreview>
+
+      <Text className="px-1 text-body leading-6 text-text-muted">{t('share.emptyHow')}</Text>
+    </View>
   );
 }
 

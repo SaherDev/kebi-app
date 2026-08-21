@@ -21,7 +21,13 @@ export function ShareIntentReceiver() {
     if (!hasShareIntent) return;
     // iOS delivers a shared link as `webUrl`; fall back to raw `text`.
     const shared = shareIntent.webUrl ?? shareIntent.text ?? '';
-    if (shared.trim() !== '') open(shared);
+    // On a cold start the flag can arrive before the payload does. Resetting
+    // here used to drop that share on the floor — silently, since the sheet
+    // never opened either. Wait instead: the effect re-runs when the payload
+    // lands (ADR-056 — a surface must not resolve to nothing without saying so,
+    // and the honest answer here is to not resolve yet).
+    if (shared.trim() === '') return;
+    open(shared);
     // Clear the intent so foreground/relaunch doesn't re-raise the sheet.
     resetShareIntent();
   }, [hasShareIntent, shareIntent, open, resetShareIntent]);

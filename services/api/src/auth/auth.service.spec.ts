@@ -21,18 +21,27 @@ describe('AuthService.provision', () => {
   let provider: IdentityProvider;
   let metadataWriter: { stamp: jest.Mock };
   let profileWriter: { setName: jest.Mock };
-  let userIdentity: { resolve: jest.Mock };
+  let userIdentity: { resolve: jest.Mock; lookup: jest.Mock };
   let userSettings: { ensureForUser: jest.Mock };
 
   function setup(settings: UserSettingsData = DEFAULT_SETTINGS) {
     provider = { name: 'supabase', verify: jest.fn() };
     metadataWriter = { stamp: jest.fn().mockResolvedValue(undefined) };
     profileWriter = { setName: jest.fn().mockResolvedValue(undefined) };
-    userIdentity = { resolve: jest.fn().mockResolvedValue('user_internal_1') };
+    userIdentity = {
+      resolve: jest.fn().mockResolvedValue('user_internal_1'),
+      // The stamper re-verifies against the mapping; provisioning just created
+      // or read it, so lookup agrees with resolve.
+      lookup: jest.fn().mockResolvedValue('user_internal_1'),
+    };
     userSettings = { ensureForUser: jest.fn().mockResolvedValue(settings) };
     service = new AuthService(
       provider,
-      new ClaimStamper(metadataWriter as unknown as IdentityMetadataWriter),
+      new ClaimStamper(
+        metadataWriter as unknown as IdentityMetadataWriter,
+        provider,
+        userIdentity as unknown as UserIdentityService,
+      ),
       profileWriter as unknown as ProfileWriter,
       userIdentity as unknown as UserIdentityService,
       userSettings as unknown as UserSettingsService,
@@ -83,6 +92,25 @@ describe('AuthService.provision', () => {
     expect(metadataWriter.stamp).toHaveBeenCalledWith(
       'ext_1',
       expect.objectContaining({ plan: 'explorer' }),
+    );
+  });
+
+  it('re-stamps the mapped id when the token claims a different internal_id (drift repair)', async () => {
+    setup();
+
+    await service.provision({
+      externalId: 'ext_1',
+      claims: {
+        internal_id: 'user_wrong',
+        plan: 'homebody',
+        ai_enabled: true,
+        can_curate: false,
+      },
+    });
+
+    expect(metadataWriter.stamp).toHaveBeenCalledWith(
+      'ext_1',
+      expect.objectContaining({ internal_id: 'user_internal_1' }),
     );
   });
 

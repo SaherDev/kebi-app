@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Kebi Settings — loading / error</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #FAFAF9; --surface: #F1F1EF; --surface-2: #E8E8E5;
+    --text: #1A1A1A; --text-muted: #8A8A87; --text-soft: #B5B5B1;
+    --success: #4A7C3A; --green-bg: rgba(74,124,58,.14);
+    --danger: #D14343; --warn: #B45309;
+    --tag: #D4B891; --tag-rec: #A7C7A0; --tag-cur: #C9C9C4;
+    --page: #FAFAF9; --page-ink: #1A1A1A;
+  }
+  body.dark {
+    --bg: #13110F; --surface: #1C1A17; --surface-2: #26231F;
+    --text: #F5F1EA; --text-muted: #9A938A; --text-soft: #6E6862;
+    --success: #7FB08C; --green-bg: rgba(127,176,140,.16);
+    --danger: #E89090; --warn: #D9B45F; --tag-cur: #45413B;
+    --page: #0A0908; --page-ink: #F5F1EA;
+  }
+  html, body { background: var(--page); color: var(--page-ink);
+    font-family: 'Inter', system-ui, sans-serif; -webkit-font-smoothing: antialiased; min-height: 100vh; }
+  .page { max-width: 1800px; margin: 0 auto; padding: 52px 36px 120px; }
+  .header { display: flex; align-items: flex-start; justify-content: space-between;
+    padding-bottom: 26px; border-bottom: 1px solid var(--surface-2); }
+  h1 { font-size: 25px; font-weight: 700; letter-spacing: -0.028em; }
+  .meta { font-size: 12px; color: var(--text-muted); margin-top: 5px; }
+  .lede { font-size: 14px; color: var(--text-muted); line-height: 1.65; max-width: 880px; margin-top: 14px; }
+  .lede b { color: var(--page-ink); font-weight: 600; }
+  .lede code, .section-desc code, .note code, .verdict code { font-size: 12px;
+    background: var(--surface-2); border-radius: 5px; padding: 1px 6px; }
+  .theme-toggle { display: flex; background: var(--surface); border-radius: 999px; padding: 3px; flex-shrink: 0; }
+  .theme-toggle button { padding: 6px 14px; background: transparent; border: none; border-radius: 999px;
+    font-family: inherit; font-size: 12px; font-weight: 500; color: var(--text-muted); cursor: pointer; }
+  .theme-toggle button.active { background: var(--page-ink); color: var(--page); }
+  .section-head { display: flex; align-items: baseline; justify-content: space-between;
+    margin: 46px 0 12px; padding-bottom: 12px; border-bottom: 1px solid var(--surface-2); }
+  .section-title { font-size: 11px; font-weight: 600; color: var(--text-soft);
+    text-transform: uppercase; letter-spacing: 0.08em; }
+  .section-q { font-size: 12px; color: var(--text-soft); }
+  .section-desc { font-size: 14px; color: var(--text-muted); line-height: 1.6; max-width: 880px; margin-bottom: 24px; }
+  .section-desc b { color: var(--page-ink); font-weight: 600; }
+  .row-of { display: flex; flex-wrap: wrap; gap: 34px; align-items: flex-start; }
+  .col { width: 390px; display: flex; flex-direction: column; gap: 10px; }
+  .col h2 { font-size: 15px; font-weight: 700; letter-spacing: -0.02em; }
+  .note { font-size: 11.5px; color: var(--text-muted); line-height: 1.55; }
+  .note b { color: var(--page-ink); font-weight: 600; }
+  .tag { display: inline-block; align-self: flex-start; font-size: 10px; font-weight: 700;
+    letter-spacing: .08em; text-transform: uppercase; color: #1A1A1A; background: var(--tag);
+    border-radius: 999px; padding: 3px 10px; }
+  .tag.rec { background: var(--tag-rec); }
+  .tag.cur { background: var(--tag-cur); color: var(--page-ink); }
+
+  .phone { width: 390px; height: 760px; background: var(--bg); border-radius: 44px; overflow: hidden;
+    position: relative; box-shadow: 0 0 0 10px #111, 0 0 0 12px var(--page), 0 24px 50px rgba(0,0,0,0.28);
+    display: flex; flex-direction: column; }
+  .status-bar { height: 44px; padding: 15px 30px 0; display: flex; justify-content: space-between;
+    align-items: center; font-size: 14px; font-weight: 600; color: var(--text); flex-shrink: 0; }
+  .batt { width: 22px; height: 11px; border: 1px solid var(--text); border-radius: 3px; position: relative; }
+  .batt::before { content: ''; position: absolute; inset: 1.5px; background: var(--text); border-radius: 1px; }
+  .top-bar { padding: 12px 16px 8px; display: flex; align-items: center; flex-shrink: 0; }
+  .icon-btn { width: 38px; height: 38px; border-radius: 50%; background: var(--surface);
+    display: flex; align-items: center; justify-content: center; border: none; }
+  .icon-btn svg { width: 17px; height: 17px; stroke: var(--text); stroke-width: 1.8; fill: none; }
+  .scroll { flex: 1; overflow: hidden; padding: 8px 24px 16px; display: flex; flex-direction: column; gap: 22px; }
+  .home-indicator { width: 128px; height: 5px; background: var(--text); border-radius: 3px;
+    margin: 2px auto 8px; flex-shrink: 0; opacity: .85; }
+
+  .eyebrow { font-size: 11px; font-weight: 600; color: var(--text-soft);
+    text-transform: uppercase; letter-spacing: 0.08em; }
+  .hero { font-size: 28px; font-weight: 700; letter-spacing: -0.03em; color: var(--text); margin-top: 4px; }
+  .profile { display: flex; align-items: center; gap: 13px; }
+  .pav { width: 52px; height: 52px; border-radius: 50%; background: var(--surface);
+    display: flex; align-items: center; justify-content: center; font-size: 19px;
+    font-weight: 700; color: var(--text-muted); flex-shrink: 0; }
+  .pname { font-size: 18px; font-weight: 700; color: var(--text); }
+  .pmail { font-size: 12.5px; color: var(--text-muted); margin-top: 3px; }
+  .insider { font-size: 10.5px; font-weight: 600; color: var(--success);
+    background: var(--green-bg); border-radius: 999px; padding: 2px 9px; }
+  .group { background: var(--surface); border-radius: 14px; padding: 2px 12px; margin-top: 9px; }
+  .srow { display: flex; align-items: center; gap: 11px; padding: 12px 2px; }
+  .sem { width: 26px; text-align: center; font-size: 16px; flex-shrink: 0; }
+  .sbody { flex: 1; min-width: 0; }
+  .slabel { font-size: 14.5px; font-weight: 500; color: var(--text); }
+  .ssub { font-size: 11.5px; color: var(--text-soft); margin-top: 2px; }
+  .strail { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+  .sval { font-size: 12.5px; color: var(--text-muted); }
+  .sval.set { color: var(--success); }
+  .chev { width: 12px; height: 12px; stroke: var(--text-soft); stroke-width: 2.2; fill: none; }
+  .rule { height: 1px; background: var(--surface-2); }
+  .refresh { background: transparent; border: none; padding: 2px; display: flex; }
+  .refresh svg { width: 14px; height: 14px; stroke: var(--text-muted); stroke-width: 2; fill: none; }
+
+  .sk { border-radius: 5px; background: var(--surface-2); position: relative; overflow: hidden; }
+  .sk::after { content: ''; position: absolute; inset: 0; transform: translateX(-100%);
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.6), transparent);
+    animation: shimmer 1.4s linear infinite; }
+  body.dark .sk::after { background: linear-gradient(90deg, transparent, rgba(255,255,255,0.07), transparent); }
+  @keyframes shimmer { 100% { transform: translateX(100%); } }
+  .group .sk { background: var(--bg); }
+  .sk.h10 { height: 10px; } .sk.h13 { height: 13px; } .sk.h18 { height: 18px; }
+  .sk.av { width: 52px; height: 52px; border-radius: 50%; }
+  .frozen { opacity: .45; } .frozen .sk::after { animation: none; opacity: 0; }
+  .err-inline { display: flex; align-items: center; gap: 9px; padding: 10px 2px; }
+  .err-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--warn); flex-shrink: 0; }
+  .err-txt { font-size: 12.5px; color: var(--text-muted); flex: 1; line-height: 1.4; }
+  .err-txt b { color: var(--text); font-weight: 600; }
+  .retry { background: transparent; border: none; font-family: inherit; font-size: 13px;
+    font-weight: 600; color: var(--text); padding: 2px 6px; }
+  .toast-wrap { position: absolute; left: 0; right: 0; bottom: 40px; display: flex; justify-content: center; }
+  .toast { display: flex; align-items: center; gap: 10px; background: var(--text); color: var(--bg);
+    border-radius: 999px; padding: 11px 8px 11px 16px; max-width: 280px; font-size: 13px; font-weight: 500; }
+  .toast button { background: transparent; border: none; font-family: inherit; font-size: 13px;
+    font-weight: 600; color: var(--bg); padding: 2px 10px; }
+
+  .verdict { margin-top: 44px; border: 1px solid var(--surface-2); border-radius: 16px;
+    padding: 22px 24px; background: var(--surface); max-width: 1000px; }
+  .verdict h3 { font-size: 14px; font-weight: 700; margin-bottom: 10px; }
+  .verdict p { font-size: 13px; color: var(--text-muted); line-height: 1.68; }
+  .verdict p + p { margin-top: 10px; }
+  .verdict b { color: var(--page-ink); font-weight: 600; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="header">
+    <div>
+      <h1>settings — loading, error</h1>
+      <div class="meta">kebi-app · apps/mobile/src/app/settings.tsx · ADR-054 · applies the kernel</div>
+      <p class="lede">
+        Settings has no empty state (every row always exists) but it does have <b>the most dangerous
+        failure in the app</b>. The screen re-reads <code>getUserSettings</code> on focus, and the catch
+        block does this:
+        <br><br>
+        <code>// Non-fatal: the rows fall back to "not set" rather than blocking</code>
+        <br><br>
+        So a failed read renders <b>"not set"</b> next to "about you" and "getting around" — for a user who
+        filled both in months ago. It isn't a missing state, it's a <b>wrong statement about their data</b>,
+        and the obvious response is to go and re-enter everything.
+      </p>
+    </div>
+    <div class="theme-toggle">
+      <button class="active" data-theme="light">light</button>
+      <button data-theme="dark">dark</button>
+    </div>
+  </div>
+
+  <!-- 1 LOADING -->
+  <div class="section-head">
+    <span class="section-title">1 · opening settings</span>
+    <span class="section-q">the rows exist — only their values don't yet</span>
+  </div>
+  <p class="section-desc">
+    Two reads land here: the <b>profile</b> (name, email, plan) and the <b>settings summary</b> (whether
+    about-you and getting-around are filled). Both are fast, and neither should ever move the layout — the
+    rows are fixed furniture.
+  </p>
+
+  <div class="row-of">
+
+    <div class="col">
+      <span class="tag cur">today</span>
+      <h2>a · everything pops in</h2>
+      <div class="phone">
+        <div class="status-bar"><span>9:41</span><div class="batt"></div></div>
+        <div class="top-bar"><button class="icon-btn"><svg viewBox="0 0 24 24"><polyline points="15 6 9 12 15 18"/></svg></button></div>
+        <div class="scroll">
+          <div><div class="eyebrow">settings</div><div class="hero">you, basically</div></div>
+          <div class="profile">
+            <div class="pav"></div>
+            <div><div class="pname" style="color:var(--text-soft)">add your name</div></div>
+          </div>
+          <div>
+            <div class="eyebrow">what kebi knows</div>
+            <div class="group">
+              <div class="srow"><div class="sem">👋</div><div class="sbody"><div class="slabel">about you</div><div class="ssub">who you are, what you like</div></div>
+                <div class="strail"><span class="sval">not set</span><svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></div></div>
+              <div class="rule"></div>
+              <div class="srow"><div class="sem">🛵</div><div class="sbody"><div class="slabel">getting around</div><div class="ssub">how far you'll go</div></div>
+                <div class="strail"><span class="sval">not set</span><svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></div></div>
+            </div>
+          </div>
+        </div>
+        <div class="home-indicator"></div>
+      </div>
+      <p class="note">
+        The empty avatar, "add your name" and two "not set"s are what you see for the first few hundred
+        milliseconds <b>every time</b> — and they're all claims about you that are probably false. Then
+        they silently correct themselves.
+      </p>
+    </div>
+
+    <div class="col">
+      <span class="tag rec">recommended</span>
+      <h2>b · values shimmer, rows don't</h2>
+      <div class="phone">
+        <div class="status-bar"><span>9:41</span><div class="batt"></div></div>
+        <div class="top-bar"><button class="icon-btn"><svg viewBox="0 0 24 24"><polyline points="15 6 9 12 15 18"/></svg></button></div>
+        <div class="scroll">
+          <div><div class="eyebrow">settings</div><div class="hero">you, basically</div></div>
+          <div class="profile">
+            <div class="sk av"></div>
+            <div style="flex:1"><div class="sk h18" style="width:52%"></div><div class="sk h10" style="width:66%;margin-top:8px"></div></div>
+          </div>
+          <div>
+            <div class="eyebrow">what kebi knows</div>
+            <div class="group">
+              <div class="srow"><div class="sem">👋</div><div class="sbody"><div class="slabel">about you</div><div class="ssub">who you are, what you like</div></div>
+                <div class="strail"><div class="sk h10" style="width:44px"></div><svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></div></div>
+              <div class="rule"></div>
+              <div class="srow"><div class="sem">🛵</div><div class="sbody"><div class="slabel">getting around</div><div class="ssub">how far you'll go</div></div>
+                <div class="strail"><div class="sk h10" style="width:44px"></div><svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></div></div>
+            </div>
+          </div>
+          <div>
+            <div class="eyebrow">your plan</div>
+            <div class="group">
+              <div class="srow"><div class="sem">✦</div><div class="sbody"><div class="slabel">plan</div></div>
+                <div class="strail"><div class="sk h10" style="width:56px"></div><svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></div></div>
+            </div>
+          </div>
+        </div>
+        <div class="home-indicator"></div>
+      </div>
+      <p class="note">
+        <b>The furniture is static — labels, emoji, chevrons, group boxes never wait.</b> Only the four
+        things that come from the server shimmer: the avatar, the name/email, and the two status values.
+        Every row stays tappable throughout, because navigating to "about you" doesn't need the summary.
+      </p>
+    </div>
+
+    <div class="col">
+      <span class="tag">stricter</span>
+      <h2>c · whole rows shimmer</h2>
+      <div class="phone">
+        <div class="status-bar"><span>9:41</span><div class="batt"></div></div>
+        <div class="top-bar"><button class="icon-btn"><svg viewBox="0 0 24 24"><polyline points="15 6 9 12 15 18"/></svg></button></div>
+        <div class="scroll">
+          <div><div class="eyebrow">settings</div><div class="hero">you, basically</div></div>
+          <div class="profile">
+            <div class="sk av"></div>
+            <div style="flex:1"><div class="sk h18" style="width:52%"></div><div class="sk h10" style="width:66%;margin-top:8px"></div></div>
+          </div>
+          <div>
+            <div class="eyebrow">what kebi knows</div>
+            <div class="group">
+              <div class="srow"><div class="sk" style="width:22px;height:22px;border-radius:7px"></div>
+                <div class="sbody"><div class="sk h13" style="width:44%"></div><div class="sk h10" style="width:66%;margin-top:7px"></div></div>
+                <div class="sk h10" style="width:44px"></div></div>
+              <div class="rule"></div>
+              <div class="srow"><div class="sk" style="width:22px;height:22px;border-radius:7px"></div>
+                <div class="sbody"><div class="sk h13" style="width:56%"></div><div class="sk h10" style="width:48%;margin-top:7px"></div></div>
+                <div class="sk h10" style="width:44px"></div></div>
+            </div>
+          </div>
+        </div>
+        <div class="home-indicator"></div>
+      </div>
+      <p class="note">
+        Consistent with the list screens, but wrong here: <b>"about you" is a constant</b>, not data. Hiding
+        a label we've always known behind a shimmer bar makes a fast screen feel slow, and briefly removes
+        the user's ability to aim at the row they came for.
+      </p>
+    </div>
+
+  </div>
+
+  <!-- 2 ERROR -->
+  <div class="section-head">
+    <span class="section-title">2 · the summary read failed</span>
+    <span class="section-q">the "not set" lie</span>
+  </div>
+  <p class="section-desc">
+    This user filled in both blocks last month. The network hiccuped on focus. Below: what they see today,
+    and two ways to stop telling them their data is gone.
+  </p>
+
+  <div class="row-of">
+
+    <div class="col">
+      <span class="tag cur">today · a lie</span>
+      <h2>a · silently "not set"</h2>
+      <div class="phone">
+        <div class="status-bar"><span>9:41</span><div class="batt"></div></div>
+        <div class="top-bar"><button class="icon-btn"><svg viewBox="0 0 24 24"><polyline points="15 6 9 12 15 18"/></svg></button></div>
+        <div class="scroll">
+          <div><div class="eyebrow">settings</div><div class="hero">you, basically</div></div>
+          <div class="profile">
+            <div class="pav">S</div>
+            <div><div class="pname">saher</div><div class="pmail">saher@example.com</div></div>
+          </div>
+          <div>
+            <div class="eyebrow">what kebi knows</div>
+            <div class="group">
+              <div class="srow"><div class="sem">👋</div><div class="sbody"><div class="slabel">about you</div><div class="ssub">who you are, what you like</div></div>
+                <div class="strail"><span class="sval">not set</span><svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></div></div>
+              <div class="rule"></div>
+              <div class="srow"><div class="sem">🛵</div><div class="sbody"><div class="slabel">getting around</div><div class="ssub">how far you'll go</div></div>
+                <div class="strail"><span class="sval">not set</span><svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></div></div>
+            </div>
+          </div>
+        </div>
+        <div class="home-indicator"></div>
+      </div>
+      <p class="note">
+        Indistinguishable from a genuinely empty profile. The user's next move is to open "about you" and
+        start retyping — which, if <i>that</i> screen's read also failed, saves an empty block over a real
+        one. <b>A silent fallback turned a network blip into potential data loss.</b>
+      </p>
+    </div>
+
+    <div class="col">
+      <span class="tag rec">recommended</span>
+      <h2>b · the value says it couldn't check</h2>
+      <div class="phone">
+        <div class="status-bar"><span>9:41</span><div class="batt"></div></div>
+        <div class="top-bar"><button class="icon-btn"><svg viewBox="0 0 24 24"><polyline points="15 6 9 12 15 18"/></svg></button></div>
+        <div class="scroll">
+          <div><div class="eyebrow">settings</div><div class="hero">you, basically</div></div>
+          <div class="profile">
+            <div class="pav">S</div>
+            <div><div class="pname">saher</div><div class="pmail">saher@example.com</div></div>
+          </div>
+          <div>
+            <div class="eyebrow">what kebi knows</div>
+            <div class="group">
+              <div class="err-inline">
+                <span class="err-dot"></span>
+                <span class="err-txt"><b>couldn't check these.</b> your answers are safe.</span>
+                <button class="retry">retry</button>
+              </div>
+              <div class="rule"></div>
+              <div class="srow"><div class="sem">👋</div><div class="sbody"><div class="slabel">about you</div><div class="ssub">who you are, what you like</div></div>
+                <div class="strail"><span class="sval" style="color:var(--text-soft)">—</span><svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></div></div>
+              <div class="rule"></div>
+              <div class="srow"><div class="sem">🛵</div><div class="sbody"><div class="slabel">getting around</div><div class="ssub">how far you'll go</div></div>
+                <div class="strail"><span class="sval" style="color:var(--text-soft)">—</span><svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></div></div>
+            </div>
+          </div>
+        </div>
+        <div class="home-indicator"></div>
+      </div>
+      <p class="note">
+        The status column becomes <b>—</b> ("unknown"), never "not set", and one warn-dot line at the top of
+        the group explains it with a retry. Warn, not danger: nothing broke for the user, we just don't know
+        yet. The rows still open. <b>This is the smallest change that stops the app lying about the user's
+        own data.</b>
+      </p>
+    </div>
+
+    <div class="col">
+      <span class="tag">alternative</span>
+      <h2>c · keep shimmering, retry silently</h2>
+      <div class="phone">
+        <div class="status-bar"><span>9:41</span><div class="batt"></div></div>
+        <div class="top-bar"><button class="icon-btn"><svg viewBox="0 0 24 24"><polyline points="15 6 9 12 15 18"/></svg></button></div>
+        <div class="scroll">
+          <div><div class="eyebrow">settings</div><div class="hero">you, basically</div></div>
+          <div class="profile">
+            <div class="pav">S</div>
+            <div><div class="pname">saher</div><div class="pmail">saher@example.com</div></div>
+          </div>
+          <div>
+            <div class="eyebrow">what kebi knows</div>
+            <div class="group">
+              <div class="srow"><div class="sem">👋</div><div class="sbody"><div class="slabel">about you</div><div class="ssub">who you are, what you like</div></div>
+                <div class="strail frozen"><div class="sk h10" style="width:44px"></div></div></div>
+              <div class="rule"></div>
+              <div class="srow"><div class="sem">🛵</div><div class="sbody"><div class="slabel">getting around</div><div class="ssub">how far you'll go</div></div>
+                <div class="strail frozen"><div class="sk h10" style="width:44px"></div></div></div>
+            </div>
+          </div>
+        </div>
+        <div class="toast-wrap"><div class="toast">couldn't check your setup<button>retry</button></div></div>
+        <div class="home-indicator"></div>
+      </div>
+      <p class="note">
+        Frozen value skeletons plus a toast — closest to the kernel's letter. But the toast disappears after
+        5s and leaves two permanently grey stubs with no explanation, and a user who arrives after the toast
+        has faded learns nothing. The inline line in <b>b</b> persists as long as the problem does.
+      </p>
+    </div>
+
+  </div>
+
+  <div class="verdict">
+    <h3>settings, decided</h3>
+    <p>
+      <b>1b</b> — static furniture never shimmers. Only the avatar, name, email and the two status values
+      do, and every row stays tappable while they load. The screen must never render "add your name" or
+      "not set" as a <i>loading</i> state — those are answers, and we don't have them yet.
+    </p>
+    <p>
+      <b>2b</b> — the failed read shows <b>—</b> plus one persistent warn line: "couldn't check these. your
+      answers are safe." Delete the silent <code>setSettings(null)</code> fallback; distinguish
+      <code>unknown</code> from <code>not set</code> in the state, not just in the copy.
+    </p>
+    <p>
+      This is the clearest instance of the rule area produced: <b>never let "empty", "failed" and "still
+      loading" collapse into the same pixels.</b> Here they collapse into the same two words — and those
+      words happen to be a claim about the user's data, which makes it the one worth fixing first.
+    </p>
+  </div>
+
+</div>
+<script>
+  document.querySelectorAll('.theme-toggle button').forEach(function (b) {
+    b.addEventListener('click', function () {
+      document.querySelectorAll('.theme-toggle button').forEach(function (x) { x.classList.remove('active'); });
+      b.classList.add('active');
+      document.body.classList.toggle('dark', b.dataset.theme === 'dark');
+    });
+  });
+</script>
+</body>
+</html>
