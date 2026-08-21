@@ -17,6 +17,16 @@ Format:
 
 ---
 
+## ADR-056: A screen is always in one of four states, and no two of them look alike
+
+**Date:** 2026-08-21\
+**Status:** accepted\
+**Context:** The mobile app was built screen by screen against the happy path, and the unhappy paths were filled in ad hoc or not at all: eight screens showed a centred spinner (which `design-system.md` already bans), no screen had a skeleton, two had an empty state, and one had a first-load error. The absence of a rule was not merely a polish gap — it produced wrong statements. A failed read of the settings summary rendered "not set" beside blocks the user had filled in; a failed read on the two profile forms produced an empty but *saveable* form, so one tap could overwrite real answers that were never gone; a failed stash read on home rendered nothing, making forty saves indistinguishable from none; a 404 and a network blip printed the same sentence, so users retried something that could never work. The common defect is that **loading, empty, failed and unbuilt all collapsed into the same pixels** — usually no pixels at all.\
+**Decision:** Every screen is in exactly one of **four states — loading, empty, failed, unbuilt — and no two of them may look the same**. A blank region is not a state. Three consequences are binding. **(1) A skeleton is a promise:** shimmer only what the server owes, only what is guaranteed to arrive, and never what the client already holds (a seeded navigation paints its known data on frame one). Static text is never a skeleton. **(2) A failed read may never be reported as a value:** `unknown` is a distinct state from `not set`, and a screen that can write must withhold its save affordance until the read succeeds. **(3) Failure is scoped to what failed:** content already on screen is never replaced (toast + retry), a failed first load freezes its own skeleton under a one-line retry, a failed section owns its failure inside its own card, and an outcome that retrying cannot change offers no retry. The empty state is an invitation built from the content's own geometry — a ghost preview whose action is the list's last row — not a filled call-to-action button, and never the same treatment as a filtered no-match. The full rule set lives in `design-system.md` (§ the four states of a screen, § empty states, § error handling); the per-screen decisions are recorded as `kebi-<page>-states-options.html` in the design system folder.\
+**Consequences:** Every screen gains work it did not have, and two of those are bug fixes rather than design: the profile forms stop being able to erase a profile they failed to read, and settings stops telling users their answers are missing. New screens are not "done" until all four states are answered, which makes the states part of the definition of done rather than a follow-up. The mascot keeps exactly two jobs (splash, blocking load) and stops being the generic empty-state device; `--danger` stops being a body-text colour and becomes a dot. Screens whose data is local (share history) legitimately declare "no loading state" — the rule requires an answer, not a skeleton.
+
+---
+
 ## ADR-055: The stream may say anything; only the final frame may link
 
 **Date:** 2026-08-11\

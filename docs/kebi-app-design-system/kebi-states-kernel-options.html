@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Kebi — empty / loading / error kernel</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #FAFAF9; --surface: #F1F1EF; --surface-2: #E8E8E5;
+    --text: #1A1A1A; --text-muted: #8A8A87; --text-soft: #B5B5B1;
+    --danger: #D14343; --warn: #C99A2E; --success: #4E8C5B;
+    --tag-rec: #A7C7A0; --tag: #D4B891; --tag-cur: #C9C9C4;
+  }
+  body.dark {
+    --bg: #13110F; --surface: #1C1A17; --surface-2: #26231F;
+    --text: #F5F1EA; --text-muted: #9A938A; --text-soft: #6E6862;
+    --danger: #E89090; --warn: #D9B45F; --success: #7FB08C; --tag-cur: #45413B;
+  }
+  html, body { background: var(--bg); color: var(--text); font-family: 'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased; min-height: 100vh; }
+  body.dark { background: #0A0908; }
+  .page { max-width: 1560px; margin: 0 auto; padding: 52px 32px 120px; }
+
+  .header { display: flex; align-items: flex-start; justify-content: space-between;
+    padding-bottom: 26px; border-bottom: 1px solid var(--surface-2); margin-bottom: 30px; }
+  h1 { font-size: 25px; font-weight: 700; letter-spacing: -0.028em; }
+  .meta { font-size: 12px; color: var(--text-muted); margin-top: 5px; }
+  .lede { font-size: 14px; color: var(--text-muted); line-height: 1.65; max-width: 860px; margin-top: 14px; }
+  .lede b { color: var(--text); font-weight: 600; }
+  .lede code { font-size: 12px; background: var(--surface-2); border-radius: 5px; padding: 1px 6px; }
+  .theme-toggle { display: flex; background: var(--surface); border-radius: 999px; padding: 3px; flex-shrink: 0; }
+  .theme-toggle button { padding: 6px 14px; background: transparent; border: none; border-radius: 999px;
+    font-family: inherit; font-size: 12px; font-weight: 500; color: var(--text-muted); cursor: pointer; }
+  .theme-toggle button.active { background: var(--text); color: var(--bg); }
+
+  .section-head { display: flex; align-items: baseline; justify-content: space-between;
+    margin: 44px 0 12px; padding-bottom: 12px; border-bottom: 1px solid var(--surface-2); }
+  .section-title { font-size: 11px; font-weight: 600; color: var(--text-soft);
+    text-transform: uppercase; letter-spacing: 0.08em; }
+  .section-q { font-size: 12px; color: var(--text-soft); }
+  .section-desc { font-size: 14px; color: var(--text-muted); line-height: 1.6; max-width: 860px; margin-bottom: 22px; }
+  .section-desc b { color: var(--text); font-weight: 600; }
+  .section-desc code { font-size: 12px; background: var(--surface-2); border-radius: 5px; padding: 1px 6px; }
+
+  .crops { display: flex; flex-wrap: wrap; gap: 30px; align-items: flex-start; }
+  .col { width: 336px; display: flex; flex-direction: column; gap: 10px; }
+  .col h2 { font-size: 15px; font-weight: 700; letter-spacing: -0.02em; }
+  .note { font-size: 11.5px; color: var(--text-muted); line-height: 1.55; }
+  .note b { color: var(--text); font-weight: 600; }
+  .tag { display: inline-block; align-self: flex-start; font-size: 10px; font-weight: 700;
+    letter-spacing: .08em; text-transform: uppercase; color: #1A1A1A; background: var(--tag);
+    border-radius: 999px; padding: 3px 10px; }
+  .tag.rec { background: var(--tag-rec); }
+  .tag.cur { background: var(--tag-cur); color: var(--text); }
+
+  .stage { background: var(--bg); border: 1px dashed var(--surface-2); border-radius: 12px;
+    padding: 14px 12px; min-height: 232px; }
+  .stage.tall { min-height: 330px; }
+
+  /* ---- app primitives, borrowed from kebi-tokens-mockup.html ---- */
+  .eyebrow { font-size: 11px; font-weight: 600; color: var(--text-soft);
+    text-transform: uppercase; letter-spacing: 0.08em; padding: 0 4px 10px; }
+  .group { background: var(--surface); border-radius: 14px; padding: 4px 12px; }
+  .rule { height: 1px; background: var(--surface-2); }
+  .row { display: flex; align-items: center; gap: 10px; padding: 11px 4px; }
+  .av { width: 34px; height: 34px; border-radius: 9px; background: var(--surface-2);
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 16px; }
+  .stage .group .av { background: var(--bg); }
+  .body { flex: 1; min-width: 0; }
+  .nm { font-size: 14px; font-weight: 600; letter-spacing: -0.01em;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .sub { font-size: 11.5px; color: var(--text-soft); margin-top: 2px;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .chev { width: 11px; height: 11px; stroke: var(--text-soft); stroke-width: 2.2; fill: none; flex-shrink: 0; }
+
+  .action { background: transparent; border: none; font-family: inherit;
+    font-size: 13px; font-weight: 600; color: var(--text);
+    padding: 4px 10px; border-radius: 8px; cursor: pointer; flex-shrink: 0; }
+  .btn-primary { background: var(--text); color: var(--bg); border: none; font-family: inherit;
+    font-size: 13.5px; font-weight: 600; padding: 11px 16px; border-radius: 12px; cursor: pointer; }
+  .btn-outline { background: transparent; color: var(--text); border: 1px solid var(--surface-2);
+    font-family: inherit; font-size: 13.5px; font-weight: 600; padding: 10px 16px;
+    border-radius: 12px; cursor: pointer; }
+
+  /* ---- skeleton (linear shimmer, 1.4s — the only linear easing in the app) ---- */
+  .sk { border-radius: 4px; background: var(--surface-2); position: relative; overflow: hidden; }
+  .sk::after { content: ''; position: absolute; inset: 0; transform: translateX(-100%);
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.55), transparent);
+    animation: shimmer 1.4s linear infinite; }
+  body.dark .sk::after { background: linear-gradient(90deg, transparent, rgba(255,255,255,0.07), transparent); }
+  @keyframes shimmer { 100% { transform: translateX(100%); } }
+  .sk.h9 { height: 9px; } .sk.h11 { height: 11px; } .sk.h13 { height: 13px; }
+  .sk.av { width: 34px; height: 34px; border-radius: 9px; }
+  .sk.w40 { width: 40%; } .sk.w55 { width: 55%; } .sk.w70 { width: 70%; } .sk.w85 { width: 85%; }
+
+  /* ---- pulse-only alternative (no sweep) ---- */
+  .pl { border-radius: 4px; background: var(--surface-2); animation: pulse 1.4s ease-in-out infinite; }
+  @keyframes pulse { 0%,100% { opacity: 1 } 50% { opacity: .42 } }
+  .pl.h9 { height: 9px; } .pl.h13 { height: 13px; }
+  .pl.av { width: 34px; height: 34px; border-radius: 9px; }
+  .pl.w55 { width: 55%; } .pl.w70 { width: 70%; }
+
+  /* ---- spinner (what we ship today — banned by design-system.md) ---- */
+  .spin { width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--surface-2);
+    border-top-color: var(--text-muted); animation: rot .8s linear infinite; }
+  @keyframes rot { 100% { transform: rotate(360deg); } }
+  .center { display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 14px; text-align: center; height: 100%; min-height: 190px; padding: 0 18px; }
+
+  .mascot { display: block; animation: breathe 3.2s ease-in-out infinite; transform-origin: 50% 60%; }
+  @keyframes breathe { 0%,100% { transform: scale(1); } 50% { transform: scale(1.045); } }
+
+  .title-lg { font-size: 22px; font-weight: 700; letter-spacing: -0.025em; line-height: 1.12; }
+  .hint { font-size: 13.5px; color: var(--text-muted); line-height: 1.45; max-width: 250px; }
+  .hint strong { color: var(--text); font-weight: 600; }
+  .ico { display: inline-flex; vertical-align: -3px; margin: 0 1px; }
+  .ico svg { width: 15px; height: 15px; stroke: var(--text); stroke-width: 1.9; fill: none; }
+
+  .status-cycle { font-size: 13px; color: var(--text-muted); }
+  .status-cycle span { animation: fadecycle 4.2s ease-in-out infinite; }
+  @keyframes fadecycle { 0%,22% { opacity: 1 } 30%,100% { opacity: .35 } }
+
+  /* ---- ghost preview (empty option c) ---- */
+  .ghost { background: var(--surface); border-radius: 14px; padding: 4px 12px; opacity: .55;
+    -webkit-mask-image: linear-gradient(to bottom, #000 40%, transparent 100%);
+    mask-image: linear-gradient(to bottom, #000 40%, transparent 100%); }
+
+  /* ---- empty-state action variants (section 2b) ---- */
+  .link-action { background: transparent; border: none; font-family: inherit; font-size: 13.5px;
+    font-weight: 600; color: var(--text); cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+  .link-action svg { width: 13px; height: 13px; stroke: var(--text); stroke-width: 2.2; fill: none; }
+  .add-row { display: flex; align-items: center; gap: 10px; padding: 11px 4px; cursor: pointer; }
+  .add-av { width: 34px; height: 34px; border-radius: 9px; border: 1px dashed var(--text-soft);
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    font-size: 17px; color: var(--text-muted); font-weight: 400; line-height: 1; }
+  .add-lb { font-size: 14px; font-weight: 600; color: var(--text-muted); letter-spacing: -0.01em; }
+  .pill-cue { display: inline-flex; align-items: center; gap: 7px; background: var(--surface);
+    border-radius: 999px; padding: 8px 14px 8px 10px; font-size: 13px; font-weight: 500; color: var(--text-muted); }
+  .pill-cue .ico svg { stroke: var(--text-muted); }
+  .mini-pill { display: inline-flex; align-items: center; background: var(--surface);
+    border-radius: 999px; padding: 0 3px; align-self: flex-end; }
+  .mini-pill button { width: 32px; height: 32px; border-radius: 50%; background: transparent; border: none;
+    display: flex; align-items: center; justify-content: center; cursor: pointer; }
+  .mini-pill svg { width: 15px; height: 15px; stroke: var(--text); stroke-width: 1.8; fill: none; }
+  .save-ring { position: relative; }
+  .save-ring::after { content: ''; position: absolute; inset: 2px; border-radius: 50%;
+    border: 2px solid var(--text); opacity: 0; animation: ring 2.2s ease-out infinite; }
+  @keyframes ring {
+    0% { transform: scale(0.7); opacity: .5; }
+    70%, 100% { transform: scale(1.5); opacity: 0; }
+  }
+
+  /* ---- error primitives ---- */
+  .err-inline { display: flex; align-items: center; gap: 9px; background: var(--surface);
+    border-radius: 12px; padding: 10px 12px; }
+  .err-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--danger); flex-shrink: 0; }
+  .err-txt { font-size: 12.5px; color: var(--text-muted); flex: 1; line-height: 1.4; }
+  .err-txt b { color: var(--text); font-weight: 600; }
+  .banner { display: flex; align-items: center; gap: 8px; padding: 7px 12px; border-radius: 999px;
+    background: var(--surface); font-size: 11.5px; color: var(--text-muted); font-weight: 500; }
+  .banner .d { width: 6px; height: 6px; border-radius: 50%; background: var(--warn); }
+  .toast { display: flex; align-items: center; gap: 10px; background: var(--text); color: var(--bg);
+    border-radius: 999px; padding: 11px 8px 11px 16px; max-width: 280px; font-size: 13px; font-weight: 500; }
+  .toast .toast-action { background: transparent; border: none; font-family: inherit; font-size: 13px;
+    font-weight: 600; color: var(--bg); padding: 2px 10px; cursor: pointer; }
+  .stale { opacity: .42; }
+
+  /* ---- coverage matrix ---- */
+  table { border-collapse: collapse; width: 100%; max-width: 1100px; margin-top: 8px; font-size: 12.5px; }
+  th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--surface-2); vertical-align: top; }
+  th { font-size: 10.5px; text-transform: uppercase; letter-spacing: .08em; color: var(--text-soft); font-weight: 600; }
+  td b { font-weight: 600; }
+  td.gap { color: var(--danger); }
+  td.ok { color: var(--success); }
+
+  .verdict { margin-top: 44px; border: 1px solid var(--surface-2); border-radius: 16px;
+    padding: 22px 24px; background: var(--surface); max-width: 980px; }
+  .verdict h3 { font-size: 14px; font-weight: 700; margin-bottom: 10px; }
+  .verdict p { font-size: 13px; color: var(--text-muted); line-height: 1.68; }
+  .verdict p + p { margin-top: 10px; }
+  .verdict b { color: var(--text); font-weight: 600; }
+  .verdict code { font-size: 11.5px; background: var(--bg); border-radius: 5px; padding: 1px 6px; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="header">
+    <div>
+      <h1>empty, loading, error — the kernel</h1>
+      <div class="meta">kebi-app · apps/mobile · decide once here, then every page file applies it</div>
+      <p class="lede">
+        Every mobile screen needs three states we never designed: <b>nothing yet</b>, <b>on its way</b>,
+        and <b>it broke</b>. Today most screens show a <code>&lt;Spinner /&gt;</code> — which
+        <code>design-system.md</code> explicitly bans ("spinners are for windows 95") — and a couple show a
+        bare line of muted text.
+        <br><br>
+        Rather than invent a different answer on fourteen screens, this page picks the <b>three patterns</b>
+        once. Pick one option per section below and the per-page files that follow are just those patterns
+        cut to each screen's real content shape.
+      </p>
+    </div>
+    <div class="theme-toggle">
+      <button class="active" data-theme="light">light</button>
+      <button data-theme="dark">dark</button>
+    </div>
+  </div>
+
+  <!-- ============================================================ LOADING -->
+  <div class="section-head">
+    <span class="section-title">1 · loading</span>
+    <span class="section-q">which shape does "on its way" take?</span>
+  </div>
+  <p class="section-desc">
+    The rule from <code>design-system.md</code> holds either way: <b>nothing under 1s</b>, and the splash is
+    app-boot only. This is about what fills the gap on a normal fetch (library, area, place, notes, shares).
+  </p>
+
+  <div class="crops">
+
+    <div class="col">
+      <span class="tag cur">today</span>
+      <h2>a · centred spinner</h2>
+      <div class="stage">
+        <div class="eyebrow">your stash</div>
+        <div class="center"><div class="spin"></div></div>
+      </div>
+      <p class="note">
+        What every screen ships now. Tells you nothing about what's coming, the layout jumps when content
+        lands, and the design system already rules it out. Here only as the baseline to judge against.
+      </p>
+    </div>
+
+    <div class="col">
+      <span class="tag rec">recommended</span>
+      <h2>b · skeleton in the content's shape</h2>
+      <div class="stage">
+        <div class="eyebrow">your stash</div>
+        <div class="group">
+          <div class="row"><div class="sk av"></div><div class="body"><div class="sk h13 w70"></div><div class="sk h9 w40" style="margin-top:7px"></div></div></div>
+          <div class="rule"></div>
+          <div class="row"><div class="sk av"></div><div class="body"><div class="sk h13 w55"></div><div class="sk h9 w55" style="margin-top:7px"></div></div></div>
+          <div class="rule"></div>
+          <div class="row"><div class="sk av"></div><div class="body"><div class="sk h13 w85"></div><div class="sk h9 w40" style="margin-top:7px"></div></div></div>
+        </div>
+      </div>
+      <p class="note">
+        Rows in the exact geometry of the real ones, so nothing moves when data arrives. Sweep shimmer,
+        <b>1.4s linear</b> — the one linear curve the system allows. Count is fixed per screen (3 rows),
+        never a guess at the real count.
+      </p>
+    </div>
+
+    <div class="col">
+      <span class="tag">variant of b</span>
+      <h2>c · skeleton, pulse only</h2>
+      <div class="stage">
+        <div class="eyebrow">your stash</div>
+        <div class="group">
+          <div class="row"><div class="pl av"></div><div class="body"><div class="pl h13 w70"></div><div class="pl h9 w55" style="margin-top:7px"></div></div></div>
+          <div class="rule"></div>
+          <div class="row"><div class="pl av"></div><div class="body"><div class="pl h13 w55"></div><div class="pl h9 w70" style="margin-top:7px"></div></div></div>
+          <div class="rule"></div>
+          <div class="row"><div class="pl av"></div><div class="body"><div class="pl h13 w70"></div><div class="pl h9 w55" style="margin-top:7px"></div></div></div>
+        </div>
+      </div>
+      <p class="note">
+        Same geometry, opacity breathing instead of a sweep. Cheaper on the RN thread and quieter, but it
+        reads closer to "disabled" than "loading". Pick this only if the sweep feels busy on device.
+      </p>
+    </div>
+
+    <div class="col">
+      <span class="tag">blocking only</span>
+      <h2>d · mascot + cycling status</h2>
+      <div class="stage">
+        <div class="center">
+          <svg class="mascot" width="72" height="72" viewBox="0 0 64 64">
+            <ellipse cx="32" cy="38" rx="20" ry="20" fill="#D4B891"/><ellipse cx="32" cy="42" rx="13" ry="13" fill="#F5EBD3"/>
+            <ellipse cx="13" cy="34" rx="3.5" ry="6" fill="#A89070" transform="rotate(-25 13 34)"/><ellipse cx="51" cy="34" rx="3.5" ry="6" fill="#A89070" transform="rotate(25 51 34)"/>
+            <ellipse cx="22" cy="36" rx="3" ry="2" fill="#E8B894" opacity="0.6"/><ellipse cx="42" cy="36" rx="3" ry="2" fill="#E8B894" opacity="0.6"/>
+            <circle cx="25" cy="30" r="3.5" fill="white"/><circle cx="39" cy="30" r="3.5" fill="white"/>
+            <circle cx="25" cy="30" r="1.7" fill="#1A1A1A"/><circle cx="39" cy="30" r="1.7" fill="#1A1A1A"/>
+            <circle cx="25.6" cy="29.4" r="0.6" fill="white"/><circle cx="39.6" cy="29.4" r="0.6" fill="white"/>
+            <path d="M30 33 L34 33 L32 36 Z" fill="#C87A4A"/><path d="M30 14 Q32 10 34 14" stroke="#8B7355" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+          </svg>
+          <div class="status-cycle"><span>pulling your places…</span></div>
+        </div>
+      </div>
+      <p class="note">
+        The reusable <b>loading screen</b> already in the system. Not an alternative to b — it's for
+        <b>blocking</b> waits with no shape to mimic: auth resolving, a share-extension save landing.
+        Reassurance line at 5s, cancel at 15s. Every page file says which of the two it uses.
+      </p>
+    </div>
+
+  </div>
+
+  <div class="section-head">
+    <span class="section-title">1b · loading, the other two moments</span>
+    <span class="section-q">refresh and next page</span>
+  </div>
+  <p class="section-desc">
+    A first load is not the only wait. These two are settled the same way on every screen, no options —
+    just confirming them.
+  </p>
+  <div class="crops">
+    <div class="col">
+      <span class="tag rec">settled</span>
+      <h2>pull to refresh</h2>
+      <div class="stage">
+        <div class="eyebrow">your stash</div>
+        <div class="group" style="opacity:.9">
+          <div class="row"><div class="av">🍜</div><div class="body"><div class="nm">kamachiku</div><div class="sub">udon · ¥¥ · nezu</div></div><svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></div>
+          <div class="rule"></div>
+          <div class="row"><div class="av">☕</div><div class="body"><div class="nm">fuglen</div><div class="sub">coffee · ¥¥ · tomigaya</div></div><svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></div>
+        </div>
+      </div>
+      <p class="note">
+        Native <code>RefreshControl</code>, content stays on screen, never a skeleton. Already live on
+        library — every list screen gets it. Haptic <b>Impact.Light</b> at threshold.
+      </p>
+    </div>
+    <div class="col">
+      <span class="tag rec">settled</span>
+      <h2>next page (tail)</h2>
+      <div class="stage">
+        <div class="eyebrow">your stash</div>
+        <div class="group">
+          <div class="row"><div class="av">🍜</div><div class="body"><div class="nm">kamachiku</div><div class="sub">udon · ¥¥ · nezu</div></div><svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></div>
+          <div class="rule"></div>
+          <div class="row"><div class="sk av"></div><div class="body"><div class="sk h13 w70"></div><div class="sk h9 w40" style="margin-top:7px"></div></div></div>
+        </div>
+      </div>
+      <p class="note">
+        One skeleton row pinned to the end of the list — not a footer spinner. Same shimmer as the
+        first-load skeleton, so paging reads as more of the same thing.
+      </p>
+    </div>
+  </div>
+
+  <!-- ============================================================== EMPTY -->
+  <div class="section-head">
+    <span class="section-title">2 · empty</span>
+    <span class="section-q">how loud is "nothing here yet"?</span>
+  </div>
+  <p class="section-desc">
+    Two kinds of empty, and they must not look the same. <b>Cold empty</b> — you have never had anything
+    here (a first-run stash, no notes yet) — is an invitation. <b>Filtered empty</b> — a search or an area
+    with no match — is a dead end you back out of. Pick the treatment for cold empty; filtered empty is
+    settled at the end.
+  </p>
+
+  <div class="crops">
+
+    <div class="col">
+      <span class="tag cur">today, on library only</span>
+      <h2>a · centred mascot + cue</h2>
+      <div class="stage tall">
+        <div class="eyebrow">your stash</div>
+        <div class="center">
+          <svg class="mascot" width="76" height="76" viewBox="0 0 64 64">
+            <ellipse cx="32" cy="38" rx="20" ry="20" fill="#D4B891"/><ellipse cx="32" cy="42" rx="13" ry="13" fill="#F5EBD3"/>
+            <ellipse cx="13" cy="34" rx="3.5" ry="6" fill="#A89070" transform="rotate(-25 13 34)"/><ellipse cx="51" cy="34" rx="3.5" ry="6" fill="#A89070" transform="rotate(25 51 34)"/>
+            <circle cx="25" cy="30" r="3.5" fill="white"/><circle cx="39" cy="30" r="3.5" fill="white"/>
+            <circle cx="25" cy="30" r="1.7" fill="#1A1A1A"/><circle cx="39" cy="30" r="1.7" fill="#1A1A1A"/>
+            <path d="M30 33 L34 33 L32 36 Z" fill="#C87A4A"/><path d="M30 14 Q32 10 34 14" stroke="#8B7355" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+          </svg>
+          <div class="title-lg">your stash is empty</div>
+          <div class="hint">tap the <strong>bookmark</strong> <span class="ico"><svg viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/></svg></span> up top to save your first place. paste a link or just name it.</div>
+        </div>
+      </div>
+      <p class="note">
+        The pattern already built as <code>library-empty.tsx</code>. Warm and unmistakable, but it eats the
+        whole screen — too much ceremony for a small section like "my notes" or a share history.
+      </p>
+    </div>
+
+    <div class="col">
+      <span class="tag">quietest</span>
+      <h2>b · one muted line</h2>
+      <div class="stage tall">
+        <div class="eyebrow">your stash</div>
+        <div style="padding: 26px 4px;">
+          <div class="err-txt" style="font-size:13.5px">nothing saved yet.</div>
+        </div>
+        <div class="eyebrow" style="padding-top:26px">notes</div>
+        <div style="padding: 4px;">
+          <div class="err-txt" style="font-size:13.5px">no notes yet.</div>
+        </div>
+      </div>
+      <p class="note">
+        What <code>shares.tsx</code> does today. Costs nothing, scales to any section, and stacks when a
+        screen has several. But it reads like a bug on a full screen and never tells you how to fix it.
+      </p>
+    </div>
+
+    <div class="col">
+      <span class="tag rec">recommended</span>
+      <h2>c · ghost preview + one action</h2>
+      <div class="stage tall">
+        <div class="eyebrow">your stash</div>
+        <div class="ghost">
+          <div class="row"><div class="av" style="background:var(--bg)">🍜</div><div class="body"><div class="nm" style="color:var(--text-soft)">the ramen place you sent yourself</div><div class="sub">udon · ¥¥ · nezu</div></div></div>
+          <div class="rule"></div>
+          <div class="row"><div class="av" style="background:var(--bg)">☕</div><div class="body"><div class="nm" style="color:var(--text-soft)">that café from the reel</div><div class="sub">coffee · ¥¥ · tomigaya</div></div></div>
+        </div>
+        <div style="text-align:center; padding: 20px 14px 0;">
+          <div style="font-size:14px; font-weight:600; letter-spacing:-0.015em">this is where your places land</div>
+          <div class="hint" style="margin: 7px auto 15px">paste a link, or just name a place. kebi figures out the rest.</div>
+          <button class="btn-primary">save your first place</button>
+        </div>
+      </div>
+      <p class="note">
+        Shows the shape of what's missing instead of describing it, then gives <b>one</b> primary action —
+        which on most screens opens the save sheet. Scales down: a small section uses the ghost rows and
+        drops the mascot ceremony. It also matches the skeleton geometry, so empty and loading are visibly
+        the same screen in two moods. <b>The filled button here is wrong</b> — too heavy for this
+        composition. Section 2b options what replaces it.
+      </p>
+    </div>
+
+    <div class="col">
+      <span class="tag rec">settled</span>
+      <h2>filtered empty (search / area)</h2>
+      <div class="stage tall">
+        <div class="eyebrow">search</div>
+        <div class="group" style="margin-bottom:14px">
+          <div class="row" style="padding:9px 4px"><div class="err-txt" style="font-size:13.5px">tonkatsu</div><button class="action" style="font-size:12px;color:var(--text-soft)">✕</button></div>
+        </div>
+        <div style="padding: 14px 4px; text-align:center">
+          <div style="font-size:14px; font-weight:600">nothing matches <b>tonkatsu</b></div>
+          <div class="hint" style="margin: 7px auto 14px">try a shorter word, or clear the search.</div>
+          <button class="btn-outline">clear search</button>
+        </div>
+      </div>
+      <p class="note">
+        No mascot, no ghost rows — you got here by typing, so the fix is undoing that. Echo the query back,
+        offer the undo, nothing else. Already exists as <code>library-search-empty.tsx</code>; every filtered
+        surface reuses it (area with no places, notes filtered to one place).
+      </p>
+    </div>
+
+  </div>
+
+  <div class="section-head">
+    <span class="section-title">2b · the empty state's action</span>
+    <span class="section-q">the filled slab is too loud — what replaces it?</span>
+  </div>
+  <p class="section-desc">
+    A filled black button is the heaviest object the system has, and here it lands in the softest
+    composition on the screen — faded ghost rows, muted caption. It also spends the screen's
+    <b>one primary button</b> on a screen where the top-bar bookmark is already the save trigger. Same
+    ghost preview in all four, only the action changes.
+  </p>
+
+  <div class="crops">
+
+    <div class="col">
+      <span class="tag cur">first pass</span>
+      <h2>a · filled button</h2>
+      <div class="stage tall">
+        <div class="eyebrow">your stash</div>
+        <div class="ghost">
+          <div class="row"><div class="av" style="background:var(--bg)">🍜</div><div class="body"><div class="nm" style="color:var(--text-soft)">the ramen place you sent yourself</div><div class="sub">udon · ¥¥ · nezu</div></div></div>
+          <div class="rule"></div>
+          <div class="row"><div class="av" style="background:var(--bg)">☕</div><div class="body"><div class="nm" style="color:var(--text-soft)">that café from the reel</div><div class="sub">coffee · ¥¥ · tomigaya</div></div></div>
+        </div>
+        <div style="text-align:center; padding: 20px 14px 0;">
+          <div style="font-size:14px; font-weight:600; letter-spacing:-0.015em">this is where your places land</div>
+          <div class="hint" style="margin: 7px auto 15px">paste a link, or just name a place.</div>
+          <button class="btn-primary">save your first place</button>
+        </div>
+      </div>
+      <p class="note">
+        Heaviest ink on the page sits on the emptiest screen. Reads like a paywall CTA, not like kebi.
+      </p>
+    </div>
+
+    <div class="col">
+      <span class="tag rec">recommended</span>
+      <h2>b · the ghost's last row is the action</h2>
+      <div class="stage tall">
+        <div class="eyebrow">your stash</div>
+        <div class="group">
+          <div class="row" style="opacity:.4"><div class="av" style="background:var(--bg)">🍜</div><div class="body"><div class="nm" style="color:var(--text-soft)">the ramen place you sent yourself</div><div class="sub">udon · ¥¥ · nezu</div></div></div>
+          <div class="rule"></div>
+          <div class="row" style="opacity:.4"><div class="av" style="background:var(--bg)">☕</div><div class="body"><div class="nm" style="color:var(--text-soft)">that café from the reel</div><div class="sub">coffee · ¥¥ · tomigaya</div></div></div>
+          <div class="rule"></div>
+          <div class="add-row"><div class="add-av">+</div><div class="add-lb">save your first place</div></div>
+        </div>
+        <div style="text-align:center; padding: 18px 14px 0;">
+          <div class="hint" style="margin: 0 auto">paste a link, or just name a place. kebi figures out the rest.</div>
+        </div>
+      </div>
+      <p class="note">
+        No button at all — the action is <b>the next row in the list</b>, dashed avatar where an emoji will
+        go. The ghost rows above it are the past tense of the same row. Tapping it opens the save sheet.
+        Nothing competes with the top-bar bookmark because this <i>is</i> a list row, not a CTA, and the
+        screen's one primary button stays unspent.
+      </p>
+    </div>
+
+    <div class="col">
+      <span class="tag">quietest</span>
+      <h2>c · borderless text action</h2>
+      <div class="stage tall">
+        <div class="eyebrow">your stash</div>
+        <div class="ghost">
+          <div class="row"><div class="av" style="background:var(--bg)">🍜</div><div class="body"><div class="nm" style="color:var(--text-soft)">the ramen place you sent yourself</div><div class="sub">udon · ¥¥ · nezu</div></div></div>
+          <div class="rule"></div>
+          <div class="row"><div class="av" style="background:var(--bg)">☕</div><div class="body"><div class="nm" style="color:var(--text-soft)">that café from the reel</div><div class="sub">coffee · ¥¥ · tomigaya</div></div></div>
+        </div>
+        <div style="text-align:center; padding: 20px 14px 0;">
+          <div style="font-size:14px; font-weight:600; letter-spacing:-0.015em">this is where your places land</div>
+          <div class="hint" style="margin: 7px auto 14px">paste a link, or just name a place.</div>
+          <button class="link-action">save your first place <svg viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></button>
+        </div>
+      </div>
+      <p class="note">
+        The app's existing end-of-row action language (<code>.toast-action</code> — transparent, 13.5px/600),
+        the same treatment <b>retry</b> and <b>undo</b> already use. Weightless and consistent, but on a
+        near-blank screen it can read as a caption rather than something you tap.
+      </p>
+    </div>
+
+    <div class="col">
+      <span class="tag">no action at all</span>
+      <h2>d · point at the bookmark</h2>
+      <div class="stage tall">
+        <div style="display:flex; justify-content:flex-end; padding: 0 0 8px">
+          <div class="mini-pill">
+            <button aria-label="search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></button>
+            <button class="save-ring" aria-label="save a place"><svg viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/></svg></button>
+          </div>
+        </div>
+        <div class="eyebrow">your stash</div>
+        <div class="ghost">
+          <div class="row"><div class="av" style="background:var(--bg)">🍜</div><div class="body"><div class="nm" style="color:var(--text-soft)">the ramen place you sent yourself</div><div class="sub">udon · ¥¥ · nezu</div></div></div>
+          <div class="rule"></div>
+          <div class="row"><div class="av" style="background:var(--bg)">☕</div><div class="body"><div class="nm" style="color:var(--text-soft)">that café from the reel</div><div class="sub">coffee · ¥¥ · tomigaya</div></div></div>
+        </div>
+        <div style="text-align:center; padding: 18px 14px 0;">
+          <div class="hint" style="margin: 0 auto">tap the <strong>bookmark</strong> <span class="ico"><svg viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/></svg></span> up top to save your first place.</div>
+        </div>
+      </div>
+      <p class="note">
+        Zero new affordance — the pulsing ring on the real save trigger, already built in
+        <code>kebi-library-empty-mockup.html</code>. Teaches the control the user keeps forever. The cost:
+        the thing you're told to tap is 500px away from where you're reading, and screens with no bookmark
+        in their pill (notes, shares) can't use it.
+      </p>
+    </div>
+
+  </div>
+
+  <!-- ============================================================== ERROR -->
+  <div class="section-head">
+    <span class="section-title">3 · error</span>
+    <span class="section-q">where does the failure live?</span>
+  </div>
+  <p class="section-desc">
+    <code>design-system.md</code> already fixes the tiers: <b>recoverable</b> → toast with retry,
+    <b>blocking</b> → full-screen with an action, <b>catastrophic</b> → back to splash. What it doesn't fix
+    is the recoverable case when there is <b>nothing on screen to fall back to</b> — a first load that
+    failed. That's the choice here.
+  </p>
+
+  <div class="crops">
+
+    <div class="col">
+      <span class="tag cur">today, on library only</span>
+      <h2>a · centred block + retry</h2>
+      <div class="stage tall">
+        <div class="eyebrow">your stash</div>
+        <div class="center">
+          <div style="font-size:15px; font-weight:600">couldn't load your places</div>
+          <div class="hint">check your connection and try again.</div>
+          <button class="btn-outline">try again</button>
+        </div>
+      </div>
+      <p class="note">
+        Honest and impossible to miss. The cost is that a two-second network blip takes the whole screen
+        hostage, and the retry is a full round trip from an empty page.
+      </p>
+    </div>
+
+    <div class="col">
+      <span class="tag rec">recommended</span>
+      <h2>b · skeleton holds, error on top</h2>
+      <div class="stage tall">
+        <div class="eyebrow">your stash</div>
+        <div class="err-inline" style="margin-bottom:12px">
+          <span class="err-dot"></span>
+          <span class="err-txt"><b>couldn't load your places.</b> nothing lost — try again.</span>
+          <button class="action">retry</button>
+        </div>
+        <div class="group stale">
+          <div class="row"><div class="pl av"></div><div class="body"><div class="pl h13 w70"></div><div class="pl h9 w40" style="margin-top:7px"></div></div></div>
+          <div class="rule"></div>
+          <div class="row"><div class="pl av"></div><div class="body"><div class="pl h13 w55"></div><div class="pl h9 w55" style="margin-top:7px"></div></div></div>
+        </div>
+      </div>
+      <p class="note">
+        The skeleton stops shimmering and dims, and the failure sits above it as a row you can retry
+        without leaving. The screen keeps its shape, so a retry that works just fills in — no second layout
+        jump. One line, one action, no code, per the voice rules.
+      </p>
+    </div>
+
+    <div class="col">
+      <span class="tag rec">settled</span>
+      <h2>c · content already there → toast</h2>
+      <div class="stage tall">
+        <div class="eyebrow">your stash</div>
+        <div class="group">
+          <div class="row"><div class="av">🍜</div><div class="body"><div class="nm">kamachiku</div><div class="sub">udon · ¥¥ · nezu</div></div><svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></div>
+          <div class="rule"></div>
+          <div class="row"><div class="av">☕</div><div class="body"><div class="nm">fuglen</div><div class="sub">coffee · ¥¥ · tomigaya</div></div><svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></div>
+        </div>
+        <div style="display:flex; justify-content:center; padding-top: 26px">
+          <div class="toast">couldn't refresh<button class="toast-action">retry</button></div>
+        </div>
+      </div>
+      <p class="note">
+        A refresh, a paged load, or a save that fails while the screen already has content <b>never</b>
+        replaces that content. Toast, 5s (it carries an action), stale data stays readable. This is already
+        the rule — no choice to make, listed so the set is complete.
+      </p>
+    </div>
+
+    <div class="col">
+      <span class="tag rec">settled</span>
+      <h2>d · offline + blocking</h2>
+      <div class="stage tall">
+        <div style="display:flex; justify-content:center; padding: 2px 0 16px"><div class="banner"><span class="d"></span>offline · showing what's saved</div></div>
+        <div class="group stale" style="margin-bottom:20px">
+          <div class="row"><div class="av">🍜</div><div class="body"><div class="nm">kamachiku</div><div class="sub">udon · ¥¥ · nezu</div></div></div>
+        </div>
+        <div class="rule" style="margin: 4px 0 16px"></div>
+        <div style="text-align:center; padding: 0 10px">
+          <div style="font-size:14px; font-weight:600">you're signed out</div>
+          <div class="hint" style="margin: 7px auto 13px">your session expired. sign back in to pick up where you left off.</div>
+          <button class="btn-primary">sign in</button>
+        </div>
+      </div>
+      <p class="note">
+        Top: <b>offline</b> is a condition, not an error — a quiet pill under the top bar, amber dot, no
+        retry button (it clears itself). Bottom: the <b>blocking</b> tier — auth expired or account gone.
+        Full screen, plain sentence, one primary action. Never a stack trace, never a code.
+      </p>
+    </div>
+
+  </div>
+
+  <!-- ============================================================ MATRIX -->
+  <div class="section-head">
+    <span class="section-title">4 · what this covers</span>
+    <span class="section-q">the page files that follow</span>
+  </div>
+  <p class="section-desc">
+    Once the three picks above are made, each screen gets its own options file with the pattern cut to its
+    real content. This is the queue and where each screen stands today.
+  </p>
+
+  <table>
+    <tr><th>screen</th><th>loading today</th><th>empty today</th><th>error today</th><th>what its page file decides</th></tr>
+    <tr><td><b>home</b></td><td class="gap">none — sections pop in</td><td class="gap">none</td><td class="gap">silent, section vanishes</td><td>greeting vs stash vs intents vs "while you were away" load independently — which ones may be skeletons at once</td></tr>
+    <tr><td><b>library</b></td><td class="ok">spinner</td><td class="ok">mascot empty</td><td class="ok">centred + retry</td><td>skeleton with area headers, tail paging, search-empty reuse</td></tr>
+    <tr><td><b>area</b></td><td class="gap">spinner</td><td class="gap">section hidden</td><td class="gap">none</td><td>per-section empties (a country with one area), whole-screen failure</td></tr>
+    <tr><td><b>place</b></td><td class="gap">spinner</td><td class="gap">n/a</td><td class="gap">none</td><td>hero + chips + claims skeleton, and the "place is gone" 404 case</td></tr>
+    <tr><td><b>my notes</b></td><td class="gap">spinner</td><td class="gap">none</td><td class="gap">none</td><td>cold empty vs filtered-to-one-place empty</td></tr>
+    <tr><td><b>shares</b></td><td class="gap">none</td><td class="ok">muted line</td><td class="gap">per-row only</td><td>history skeleton, the already-designed failed-row retry, cold empty</td></tr>
+    <tr><td><b>chat</b></td><td class="ok">reasoning stream</td><td class="ok">quick prompts</td><td class="gap">toast only</td><td>a turn that failed mid-stream, and a retry that keeps the question</td></tr>
+    <tr><td><b>settings / you</b></td><td class="gap">none</td><td>n/a</td><td class="gap">none</td><td>rows before the profile lands, and a failed save of a row</td></tr>
+    <tr><td><b>about you / getting around</b></td><td class="ok">flag</td><td class="gap">none</td><td class="gap">none</td><td>form skeleton and a save that failed with the text still in the box</td></tr>
+    <tr><td><b>plans / billing</b></td><td class="gap">none</td><td class="gap">none</td><td class="gap">none</td><td>plan cards loading, and a tier change that didn't take</td></tr>
+    <tr><td><b>help</b></td><td class="gap">none</td><td>n/a</td><td class="ok">toast + throw</td><td>the feedback sheet's sending / sent / failed states</td></tr>
+    <tr><td><b>login / verify</b></td><td class="ok">inline</td><td>n/a</td><td class="ok">inline</td><td>wrong code, expired code, rate limited — three different sentences</td></tr>
+  </table>
+
+  <div class="verdict">
+    <h3>what I'd pick</h3>
+    <p>
+      <b>1b · skeleton in the content's shape</b>, <b>2c · ghost preview + one action</b>, and
+      <b>3b · skeleton holds, error on top</b>.
+    </p>
+    <p>
+      They're one idea, not three: <b>the screen keeps its shape no matter what's happening to the data.</b>
+      The same row geometry shimmers while loading, sits pale and captioned when there's nothing to show,
+      and dims under a retry line when the fetch fails. Nothing jumps, nothing is a blank page, and the user
+      always sees the shape of what they're waiting for.
+    </p>
+    <p>
+      For the empty state's action (2b): <b>the ghost's last row is the action</b>. A filled button was the
+      wrong instinct — it's the heaviest ink in the system landing on the emptiest screen, and it spends the
+      one primary button on a screen whose top bar already has a save trigger. Making the action the
+      <b>next row in the list</b> keeps the whole composition one object: two rows that were, one row that
+      could be. It also works on every screen, including the ones with no bookmark in their pill.
+    </p>
+  </div>
+
+</div>
+
+<script>
+  document.querySelectorAll('.theme-toggle button').forEach(function (b) {
+    b.addEventListener('click', function () {
+      document.querySelectorAll('.theme-toggle button').forEach(function (x) { x.classList.remove('active'); });
+      b.classList.add('active');
+      document.body.classList.toggle('dark', b.dataset.theme === 'dark');
+    });
+  });
+</script>
+</body>
+</html>

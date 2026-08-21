@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Kebi Shares — loading / empty / error</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #FAFAF9; --surface: #F1F1EF; --surface-2: #E8E8E5;
+    --text: #1A1A1A; --text-muted: #8A8A87; --text-soft: #B5B5B1;
+    --danger: #D14343; --like: #C2410C; --warn: #B45309; --success: #4A7C3A;
+    --tag: #D4B891; --tag-rec: #A7C7A0; --tag-cur: #C9C9C4;
+    --page: #FAFAF9; --page-ink: #1A1A1A;
+  }
+  body.dark {
+    --bg: #13110F; --surface: #1C1A17; --surface-2: #26231F;
+    --text: #F5F1EA; --text-muted: #9A938A; --text-soft: #6E6862;
+    --danger: #E89090; --like: #E8A87C; --warn: #D9B45F; --success: #7FB08C;
+    --tag-cur: #45413B; --page: #0A0908; --page-ink: #F5F1EA;
+  }
+  html, body { background: var(--page); color: var(--page-ink);
+    font-family: 'Inter', system-ui, sans-serif; -webkit-font-smoothing: antialiased; min-height: 100vh; }
+  .page { max-width: 1800px; margin: 0 auto; padding: 52px 36px 120px; }
+  .header { display: flex; align-items: flex-start; justify-content: space-between;
+    padding-bottom: 26px; border-bottom: 1px solid var(--surface-2); }
+  h1 { font-size: 25px; font-weight: 700; letter-spacing: -0.028em; }
+  .meta { font-size: 12px; color: var(--text-muted); margin-top: 5px; }
+  .lede { font-size: 14px; color: var(--text-muted); line-height: 1.65; max-width: 880px; margin-top: 14px; }
+  .lede b { color: var(--page-ink); font-weight: 600; }
+  .lede code, .section-desc code, .note code, .verdict code { font-size: 12px;
+    background: var(--surface-2); border-radius: 5px; padding: 1px 6px; }
+  .theme-toggle { display: flex; background: var(--surface); border-radius: 999px; padding: 3px; flex-shrink: 0; }
+  .theme-toggle button { padding: 6px 14px; background: transparent; border: none; border-radius: 999px;
+    font-family: inherit; font-size: 12px; font-weight: 500; color: var(--text-muted); cursor: pointer; }
+  .theme-toggle button.active { background: var(--page-ink); color: var(--page); }
+  .section-head { display: flex; align-items: baseline; justify-content: space-between;
+    margin: 46px 0 12px; padding-bottom: 12px; border-bottom: 1px solid var(--surface-2); }
+  .section-title { font-size: 11px; font-weight: 600; color: var(--text-soft);
+    text-transform: uppercase; letter-spacing: 0.08em; }
+  .section-q { font-size: 12px; color: var(--text-soft); }
+  .section-desc { font-size: 14px; color: var(--text-muted); line-height: 1.6; max-width: 880px; margin-bottom: 24px; }
+  .section-desc b { color: var(--page-ink); font-weight: 600; }
+  .row-of { display: flex; flex-wrap: wrap; gap: 34px; align-items: flex-start; }
+  .col { width: 390px; display: flex; flex-direction: column; gap: 10px; }
+  .col h2 { font-size: 15px; font-weight: 700; letter-spacing: -0.02em; }
+  .note { font-size: 11.5px; color: var(--text-muted); line-height: 1.55; }
+  .note b { color: var(--page-ink); font-weight: 600; }
+  .tag { display: inline-block; align-self: flex-start; font-size: 10px; font-weight: 700;
+    letter-spacing: .08em; text-transform: uppercase; color: #1A1A1A; background: var(--tag);
+    border-radius: 999px; padding: 3px 10px; }
+  .tag.rec { background: var(--tag-rec); }
+  .tag.cur { background: var(--tag-cur); color: var(--page-ink); }
+
+  .phone { width: 390px; height: 700px; background: var(--bg); border-radius: 44px; overflow: hidden;
+    position: relative; box-shadow: 0 0 0 10px #111, 0 0 0 12px var(--page), 0 24px 50px rgba(0,0,0,0.28);
+    display: flex; flex-direction: column; }
+  .status-bar { height: 44px; padding: 15px 30px 0; display: flex; justify-content: space-between;
+    align-items: center; font-size: 14px; font-weight: 600; color: var(--text); flex-shrink: 0; }
+  .batt { width: 22px; height: 11px; border: 1px solid var(--text); border-radius: 3px; position: relative; }
+  .batt::before { content: ''; position: absolute; inset: 1.5px; background: var(--text); border-radius: 1px; }
+  .top-bar { padding: 12px 16px 8px; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
+  .icon-btn { width: 38px; height: 38px; border-radius: 50%; background: var(--surface);
+    display: flex; align-items: center; justify-content: center; border: none; }
+  .icon-btn svg { width: 17px; height: 17px; stroke: var(--text); stroke-width: 1.8; fill: none; }
+  .clear-btn { background: transparent; border: none; font-family: inherit; font-size: 14px;
+    font-weight: 500; color: var(--text-muted); padding: 4px; }
+  .scroll { flex: 1; overflow: hidden; padding: 8px 24px 16px; display: flex; flex-direction: column; gap: 16px; }
+  .home-indicator { width: 128px; height: 5px; background: var(--text); border-radius: 3px;
+    margin: 2px auto 8px; flex-shrink: 0; opacity: .85; }
+
+  .hero { font-size: 28px; font-weight: 700; letter-spacing: -0.03em; line-height: 1.15; color: var(--text); }
+  .sub { font-size: 12.5px; color: var(--text-muted); margin-top: 5px; }
+  .eyebrow { font-size: 11px; font-weight: 600; color: var(--text-soft);
+    text-transform: uppercase; letter-spacing: 0.08em; }
+  .share-head { display: flex; align-items: center; gap: 8px; padding: 0 4px 6px; }
+  .src-mark { width: 22px; height: 22px; border-radius: 7px; background: var(--surface);
+    display: flex; align-items: center; justify-content: center; font-size: 11px; color: var(--text-soft); }
+  .share-head .lb { flex: 1; font-size: 12.5px; color: var(--text-muted);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .card { background: var(--surface); border-radius: 14px; padding: 2px 12px; }
+  .row { display: flex; align-items: center; gap: 11px; padding: 10px 2px; }
+  .av { width: 34px; height: 34px; border-radius: 9px; background: var(--bg);
+    display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
+  .body { flex: 1; min-width: 0; }
+  .nm { font-size: 14px; font-weight: 600; color: var(--text); letter-spacing: -0.01em;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .sb { font-size: 11.5px; color: var(--text-soft); margin-top: 2px; }
+  .fail { font-size: 11.5px; color: var(--danger); font-weight: 500; margin-top: 3px; }
+  .chev { width: 11px; height: 11px; stroke: var(--text-soft); stroke-width: 2.2; fill: none; flex-shrink: 0; }
+  .rule { height: 1px; background: var(--surface-2); }
+  .icon-action { background: transparent; border: none; width: 30px; height: 30px;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .icon-action svg { width: 15px; height: 15px; stroke: var(--text-muted); stroke-width: 2; fill: none; }
+
+  .sk { border-radius: 5px; background: var(--bg); position: relative; overflow: hidden; }
+  .sk::after { content: ''; position: absolute; inset: 0; transform: translateX(-100%);
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.6), transparent);
+    animation: shimmer 1.4s linear infinite; }
+  body.dark .sk::after { background: linear-gradient(90deg, transparent, rgba(255,255,255,0.07), transparent); }
+  @keyframes shimmer { 100% { transform: translateX(100%); } }
+  .sk.h10 { height: 10px; } .sk.h13 { height: 13px; }
+  .sk.av { width: 34px; height: 34px; border-radius: 9px; }
+  .ghost { opacity: .38; }
+  .add-row { display: flex; align-items: center; gap: 11px; padding: 12px;
+    border: 1px dashed var(--surface-2); border-radius: 14px; }
+  .add-av { width: 34px; height: 34px; border-radius: 9px; border: 1px dashed var(--text-soft);
+    display: flex; align-items: center; justify-content: center; font-size: 15px;
+    color: var(--text-muted); flex-shrink: 0; line-height: 1; }
+  .add-lb { font-size: 14px; font-weight: 600; color: var(--text-muted); }
+  .add-sub { font-size: 11.5px; color: var(--text-soft); margin-top: 2px; }
+  .quiet { font-size: 13.5px; color: var(--text-muted); line-height: 1.5; }
+  .steps { display: flex; flex-direction: column; gap: 12px; }
+  .step { display: flex; gap: 11px; align-items: flex-start; }
+  .step .n { width: 20px; height: 20px; border-radius: 50%; background: var(--surface);
+    display: flex; align-items: center; justify-content: center; font-size: 11px;
+    font-weight: 700; color: var(--text-muted); flex-shrink: 0; margin-top: 1px; }
+  .step .tx { font-size: 13.5px; color: var(--text); line-height: 1.45; }
+  .step .tx b { font-weight: 600; }
+
+  .verdict { margin-top: 44px; border: 1px solid var(--surface-2); border-radius: 16px;
+    padding: 22px 24px; background: var(--surface); max-width: 1000px; }
+  .verdict h3 { font-size: 14px; font-weight: 700; margin-bottom: 10px; }
+  .verdict p { font-size: 13px; color: var(--text-muted); line-height: 1.68; }
+  .verdict p + p { margin-top: 10px; }
+  .verdict b { color: var(--page-ink); font-weight: 600; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="header">
+    <div>
+      <h1>shares — loading, empty, error</h1>
+      <div class="meta">kebi-app · apps/mobile/src/app/shares.tsx · ADR-048 · applies the kernel</div>
+      <p class="lede">
+        Shares is the <b>best-covered screen in the app</b> and needs the least from this pass. Its rows
+        already have all three states by design — <code>working</code> shimmers, <code>failed</code> shows
+        the reason plus a retry mark, <code>landed</code> becomes a place row — because that was the whole
+        point of <code>kebi-share-retry-options.html</code>.
+        <br><br>
+        Two things are missing. There is <b>no screen-level loading state</b> (rows come from local storage,
+        so they're there instantly — worth confirming, not designing), and the <b>empty state is one grey
+        line</b> on a screen most users reach before they have ever shared anything, since it's linked from
+        settings.
+      </p>
+    </div>
+    <div class="theme-toggle">
+      <button class="active" data-theme="light">light</button>
+      <button data-theme="dark">dark</button>
+    </div>
+  </div>
+
+  <!-- 1 EMPTY -->
+  <div class="section-head">
+    <span class="section-title">1 · nothing shared yet</span>
+    <span class="section-q">the only real gap on this screen</span>
+  </div>
+  <p class="section-desc">
+    Reached from settings before the first share, or after <code>SHARE_HISTORY_DAYS</code> forgets an old
+    one. There is <b>no in-app way to share into kebi</b> — it happens in TikTok or Instagram, through the
+    iOS share sheet — so this empty state has no button it could possibly offer. It can only explain.
+  </p>
+
+  <div class="row-of">
+
+    <div class="col">
+      <span class="tag cur">today</span>
+      <h2>a · one muted line</h2>
+      <div class="phone">
+        <div class="status-bar"><span>9:41</span><div class="batt"></div></div>
+        <div class="top-bar"><button class="icon-btn"><svg viewBox="0 0 24 24"><polyline points="15 6 9 12 15 18"/></svg></button></div>
+        <div class="scroll">
+          <div class="hero">recent activity</div>
+          <div class="quiet">nothing shared yet.</div>
+        </div>
+        <div class="home-indicator"></div>
+      </div>
+      <p class="note">
+        Accurate and useless. Someone who got here from settings still doesn't know that sharing a TikTok
+        into kebi is a thing the app does.
+      </p>
+    </div>
+
+    <div class="col">
+      <span class="tag rec">recommended</span>
+      <h2>b · ghost share + how it gets here</h2>
+      <div class="phone">
+        <div class="status-bar"><span>9:41</span><div class="batt"></div></div>
+        <div class="top-bar"><button class="icon-btn"><svg viewBox="0 0 24 24"><polyline points="15 6 9 12 15 18"/></svg></button></div>
+        <div class="scroll">
+          <div><div class="hero">recent activity</div>
+            <div class="sub">nothing yet — this is where shared links land.</div></div>
+          <div class="ghost">
+            <div class="share-head"><div class="src-mark">♪</div><div class="lb">11:20 pm · vt.tiktok.com/ZSVSnKYxm/</div></div>
+            <div class="card">
+              <div class="row"><div class="av">🍜</div><div class="body"><div class="nm">the ramen place from that video</div><div class="sb">udon · ¥¥ · nezu</div></div><svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></div>
+              <div class="rule"></div>
+              <div class="row"><div class="av">☕</div><div class="body"><div class="nm">the café next door to it</div><div class="sb">coffee · ¥¥ · nezu</div></div><svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></div>
+            </div>
+          </div>
+          <div class="quiet" style="padding:0 2px">
+            share a link from tiktok, instagram or maps → pick <b style="color:var(--text)">kebi</b> →
+            it lands here.
+          </div>
+        </div>
+        <div class="home-indicator"></div>
+      </div>
+      <p class="note">
+        The ghost carries a second job here that it doesn't elsewhere: it shows that <b>one share can
+        become several places</b>, which is the entire reason this screen groups by share. The line under
+        it is the instruction, since there is no in-app action to offer. <b>No add-row</b> — an affordance
+        that can't be tapped from here would be a lie.
+      </p>
+    </div>
+
+    <div class="col">
+      <span class="tag">most explicit</span>
+      <h2>c · three steps, no ghost</h2>
+      <div class="phone">
+        <div class="status-bar"><span>9:41</span><div class="batt"></div></div>
+        <div class="top-bar"><button class="icon-btn"><svg viewBox="0 0 24 24"><polyline points="15 6 9 12 15 18"/></svg></button></div>
+        <div class="scroll">
+          <div><div class="hero">recent activity</div>
+            <div class="sub">nothing shared yet.</div></div>
+          <div class="steps" style="margin-top:6px">
+            <div class="step"><div class="n">1</div><div class="tx">find a place in <b>tiktok</b>, <b>instagram</b> or <b>maps</b></div></div>
+            <div class="step"><div class="n">2</div><div class="tx">hit share, pick <b>kebi</b></div></div>
+            <div class="step"><div class="n">3</div><div class="tx">keep scrolling — it lands here, and in your stash</div></div>
+          </div>
+        </div>
+        <div class="home-indicator"></div>
+      </div>
+      <p class="note">
+        Unambiguous, and the numbered list is honest about it being an out-of-app flow. But it's a tutorial
+        on a screen that is otherwise a receipt, and it's the only numbered list in the app — a new pattern
+        for one state.
+      </p>
+    </div>
+
+  </div>
+
+  <!-- 2 ROW STATES -->
+  <div class="section-head">
+    <span class="section-title">2 · the row states</span>
+    <span class="section-q">already designed — confirming they stay</span>
+  </div>
+  <p class="section-desc">
+    These came out of <code>kebi-share-retry-options.html</code> and <code>kebi-share-landed-options.html</code>
+    and are already built. They're here so the screen's full set is in one place, and because the
+    <b>working</b> state is the one skeleton in the app that was designed before the kernel existed —
+    worth checking it still matches.
+  </p>
+
+  <div class="row-of">
+
+    <div class="col">
+      <span class="tag rec">settled</span>
+      <h2>a · working, landed, failed</h2>
+      <div class="phone">
+        <div class="status-bar"><span>9:41</span><div class="batt"></div></div>
+        <div class="top-bar">
+          <button class="icon-btn"><svg viewBox="0 0 24 24"><polyline points="15 6 9 12 15 18"/></svg></button>
+          <button class="clear-btn">clear</button>
+        </div>
+        <div class="scroll">
+          <div><div class="hero">recent activity</div><div class="sub">3 links · 4 places</div></div>
+          <div>
+            <div class="eyebrow" style="padding-bottom:8px">today</div>
+            <div class="share-head"><div class="src-mark">♪</div><div class="lb">11:20 pm · vt.tiktok.com/ZSVSnKYxm/</div></div>
+            <div class="card">
+              <div class="row"><div class="sk av"></div><div class="body"><div class="sk h13" style="width:52%"></div><div class="sk h10" style="width:34%;margin-top:7px"></div></div></div>
+            </div>
+          </div>
+          <div>
+            <div class="share-head"><div class="src-mark">◎</div><div class="lb">10:04 pm · @onlyfoodsushi</div></div>
+            <div class="card">
+              <div class="row"><div class="av">🍜</div><div class="body"><div class="nm">Kamachiku</div><div class="sb">udon · ¥¥ · nezu</div></div><svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></div>
+              <div class="rule"></div>
+              <div class="row"><div class="av">☕</div><div class="body"><div class="nm">Fuglen</div><div class="sb">coffee · ¥¥ · tomigaya</div></div><svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></div>
+            </div>
+          </div>
+          <div>
+            <div class="share-head"><div class="src-mark">▶</div><div class="lb">9:12 pm · youtu.be/8kR2vQ</div></div>
+            <div class="card">
+              <div class="row">
+                <div class="body"><div class="nm">nothing saved</div><div class="fail">couldn't read that link</div></div>
+                <button class="icon-action"><svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 11-3-6.7"/><polyline points="21 3 21 9 15 9"/></svg></button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="home-indicator"></div>
+      </div>
+      <p class="note">
+        All three, plus the day heading that only prints when the day changes. The <b>working</b> card holds
+        one skeleton row in the landed row's exact geometry — which is the kernel's rule, arrived at
+        independently. It keeps its source mark in the heading, so a slow share still says which one is
+        slow. <b>No change needed.</b>
+      </p>
+    </div>
+
+    <div class="col">
+      <span class="tag rec">settled</span>
+      <h2>b · after "clear"</h2>
+      <div class="phone">
+        <div class="status-bar"><span>9:41</span><div class="batt"></div></div>
+        <div class="top-bar"><button class="icon-btn"><svg viewBox="0 0 24 24"><polyline points="15 6 9 12 15 18"/></svg></button></div>
+        <div class="scroll">
+          <div><div class="hero">recent activity</div>
+            <div class="sub">nothing yet — this is where shared links land.</div></div>
+          <div class="ghost">
+            <div class="share-head"><div class="src-mark">♪</div><div class="lb">11:20 pm · vt.tiktok.com/ZSVSnKYxm/</div></div>
+            <div class="card">
+              <div class="row"><div class="av">🍜</div><div class="body"><div class="nm">the ramen place from that video</div><div class="sb">udon · ¥¥ · nezu</div></div><svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></div>
+            </div>
+          </div>
+          <div class="quiet" style="padding:0 2px">
+            share a link from tiktok, instagram or maps → pick <b style="color:var(--text)">kebi</b> →
+            it lands here.
+          </div>
+        </div>
+        <div class="home-indicator"></div>
+      </div>
+      <p class="note">
+        Clearing the history lands on the <b>same empty state</b> as never having shared — and that's
+        correct, because "clear" here is a real delete. The <code>clear</code> button in the top bar
+        disappears with the rows (already the behaviour), so nothing points at an action with nothing to
+        act on. <b>The saved places themselves are untouched</b> — worth a mention in the confirm sheet's
+        body, not here.
+      </p>
+    </div>
+
+    <div class="col">
+      <span class="tag rec">settled</span>
+      <h2>c · why there's no loading state</h2>
+      <div class="phone">
+        <div class="status-bar"><span>9:41</span><div class="batt"></div></div>
+        <div class="top-bar">
+          <button class="icon-btn"><svg viewBox="0 0 24 24"><polyline points="15 6 9 12 15 18"/></svg></button>
+          <button class="clear-btn">clear</button>
+        </div>
+        <div class="scroll">
+          <div><div class="hero">recent activity</div><div class="sub">2 links · 3 places</div></div>
+          <div>
+            <div class="eyebrow" style="padding-bottom:8px">today</div>
+            <div class="share-head"><div class="src-mark">◎</div><div class="lb">10:04 pm · @onlyfoodsushi</div></div>
+            <div class="card">
+              <div class="row"><div class="av">🍜</div><div class="body"><div class="nm">Kamachiku</div><div class="sb">udon · ¥¥ · nezu</div></div><svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></div>
+            </div>
+          </div>
+          <div>
+            <div class="eyebrow" style="padding-bottom:8px">yesterday</div>
+            <div class="share-head"><div class="src-mark">♪</div><div class="lb">8:40 pm · vt.tiktok.com/ZSbQ2/</div></div>
+            <div class="card">
+              <div class="row"><div class="av">🍷</div><div class="body"><div class="nm">Saint Jardim</div><div class="sb">portuguese · ¥¥¥ · shimokitazawa</div></div><svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></div>
+            </div>
+          </div>
+        </div>
+        <div class="home-indicator"></div>
+      </div>
+      <p class="note">
+        <code>useShareResults</code> reads <b>local storage</b>, not the network — the list is complete on
+        the first frame, so a skeleton would flash for nothing. This is the one screen where "don't block
+        the UI for loads under 1 second" means <b>no loading state at all</b>. Only an in-flight share
+        (row-level <code>working</code>) ever shimmers here.
+      </p>
+    </div>
+
+  </div>
+
+  <div class="verdict">
+    <h3>shares, decided</h3>
+    <p>
+      <b>1b</b> — ghost share + the one-line instruction. The ghost does double duty: it shows what a
+      landed share looks like <i>and</i> that one link can become several places, which is why this screen
+      groups the way it does. No add-row and no button, because sharing happens in another app.
+    </p>
+    <p>
+      <b>2a–2c unchanged.</b> The row states were designed properly the first time and already match the
+      kernel — the <code>working</code> skeleton sits in the landed row's exact geometry. Clearing lands on
+      the same empty state as never having shared, and there is deliberately no screen-level loading state,
+      because the data is local.
+    </p>
+    <p>
+      One thing to carry into the <b>settings</b> file: this screen is linked from there, so a user can
+      arrive having never shared. The empty state is the first thing they read about the feature — which is
+      why it explains rather than apologises.
+    </p>
+  </div>
+
+</div>
+<script>
+  document.querySelectorAll('.theme-toggle button').forEach(function (b) {
+    b.addEventListener('click', function () {
+      document.querySelectorAll('.theme-toggle button').forEach(function (x) { x.classList.remove('active'); });
+      b.classList.add('active');
+      document.body.classList.toggle('dark', b.dataset.theme === 'dark');
+    });
+  });
+</script>
+</body>
+</html>

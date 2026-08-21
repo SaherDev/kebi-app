@@ -378,18 +378,69 @@ iOS exposes three haptic families through `expo-haptics`:
 - Don't stack haptics. If multiple events fire within 200ms, only the most important one fires.
 - Don't haptic when the app is backgrounded or when reduced motion is enabled — respect the accessibility setting.
 
+### The four states of a screen
+
+Every screen is in exactly one of four states, and **no two of them may look the same**.
+This is the rule the rest of this section serves. Before building any screen, answer all four:
+
+| State | Means | Looks like |
+|---|---|---|
+| **loading** | on its way | skeleton in the content's shape |
+| **empty** | nothing here, and that's correct | ghost preview + one action, or a quiet line |
+| **failed** | we asked and didn't get it | frozen skeleton + a retry line, or a toast |
+| **unbuilt** | this screen isn't finished | names what will live here, points elsewhere |
+
+A blank area is not a state. Rendering nothing for "empty" and nothing for "failed" tells the
+user their data is gone. Visual source of truth: `kebi-states-kernel-options.html`, plus the
+per-page `kebi-<page>-states-options.html` files.
+
 ### Loading states
 
 Three loading states. Pick the right one:
 
 1. **Splash** (app boot only) — animated mascot + wordmark + tagline. ~2.5s. One screen, never reused.
 2. **Loading screen** (auth resolving, blocking syncs) — mascot breathing + cycling status text + reassurance after 5s + cancel after 15s. Reusable.
-3. **Skeleton** (mid-content) — shimmer bars matching the shape of the incoming content. Use inside place cards, chat reasoning steps, lists.
+3. **Skeleton** (everything else) — shimmer bars in the exact geometry of the incoming content.
+
+**Skeleton rules:**
+- **Only shimmer what the server owes.** Static text, labels, section eyebrows, emoji, chevrons and
+  group boxes never wait — they're constants, not data.
+- **Only shimmer what is guaranteed to arrive.** A section that may resolve to nothing must not
+  shimmer, or the user watches phantom content evaporate. It appears with a 200ms fade when it lands.
+- **Never shimmer what you already hold.** A seeded navigation (`placeDetail.set`, an area link
+  carrying its name) paints that data on frame one and shimmers only the rest.
+- Fixed counts (2–3 rows), never a guess at the real one. Sweep shimmer, `1.4s linear`.
+- Pull-to-refresh keeps content and never shows a skeleton. A paged tail shows one skeleton row.
+- A spinner **inside a button** is allowed — it marks an action in flight, not content on its way.
 
 **Don't:**
-- Don't show a spinner. Spinners are for windows 95.
+- Don't show a spinner for content. Spinners are for windows 95.
 - Don't block the UI for loads under 1 second. Show optimistic state instead.
 - Don't show the splash on every screen. It's app-boot only.
+- Don't render an answer ("not set", "add your name", "0 places") while still loading. Those are
+  claims about the user, and we don't have them yet.
+
+### Empty states
+
+Two kinds, and they must not look alike.
+
+**Cold empty** — you have never had anything here. It is an invitation:
+- The **ghost preview**: two faded rows in the real content's geometry, showing what will land there.
+- The action is the **last row of the list** — a dashed-avatar `+` row, not a button.
+- **No filled primary button** on a screen whose top bar already carries the save trigger.
+  No mascot: the mascot has two jobs, splash and blocking load.
+- Where there is no in-app action (share history, a read-only area), **drop the action** and explain
+  in one line instead. Never draw an affordance that can't be tapped from here.
+
+**Filtered empty** — a search or filter matched nothing. It is a dead end you back out of:
+- Echo the query, offer the undo (`clear search`), nothing else. No ghost, no mascot, no `+` row.
+
+An individual optional section with no content **disappears**. It never draws a header with
+"nothing here yet" under it — only the whole screen gets an empty state.
+
+**Don't:**
+- Don't reuse cold-empty ceremony for a filtered result.
+- Don't invent ghost content for something the user has no relationship with yet.
 
 ### Optimistic UI
 
@@ -415,6 +466,26 @@ Three error tiers:
 3. **Catastrophic** (app crashed) — fall back to splash, restart auth
 
 Never show stack traces. Never show error codes unless the user asks. Always offer a next action.
+
+**Which recoverable error, where:**
+
+| Situation | Treatment |
+|---|---|
+| Content already on screen (refresh, paging, an action) | **Toast + retry**, 5s. Content is never replaced. |
+| First load failed, nothing to fall back to | The **skeleton freezes** (shimmer off, 45% opacity) and a one-line error row sits on top of it |
+| One section of a multi-section screen failed | That section owns its failure, inside its own card. The rest of the screen is untouched. |
+| The thing doesn't exist (404, forgotten, dead link) | Plain explanation + a way out, and **no retry** — retrying a 404 is a lie |
+| A plan boundary (429) or offline | `--warn`, not `--danger`. Nothing broke. |
+
+**The error row** is one line everywhere: a 6px dot, one sentence, one action.
+`--danger` is a **dot colour, not a body-text colour** — the sentence is ordinary text.
+
+**A failed read may never be reported as a value.** Falling back to "not set", an empty form, or a
+missing section turns a network blip into a claim about the user's data — and, where the screen can
+save, into real data loss. Distinguish `unknown` from `not set` in state, not just in copy, and
+**withhold the save button until the read succeeds**.
+
+Every recoverable error says the same reassurance in the app's voice: *nothing lost*.
 
 ---
 
