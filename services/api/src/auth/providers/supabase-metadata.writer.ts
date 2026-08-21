@@ -18,12 +18,17 @@ import { AppMetadataCipher } from '../app-metadata.cipher';
  * Uses HttpService (like KebiHttpClient) — no Supabase SDK dependency. Fails
  * open: any missing config or HTTP error is logged and swallowed so stamping
  * never breaks the request, which still has its id from the DB fallback.
+ *
+ * Every call writes. There used to be an in-memory dedupe of the last-written
+ * claims per externalId, but it tracked what this process last wrote — not
+ * what the account actually stores — so it could silently skip the write that
+ * corrects an account someone else (another process, an older deploy) left
+ * wrong. Stamps only happen at login-out-of-sync and on settings writes, both
+ * rare; an occasional redundant Admin API PUT is the cheap side of that trade.
  */
 @Injectable()
 export class SupabaseMetadataWriter implements IdentityMetadataWriter {
   private readonly logger = new Logger(SupabaseMetadataWriter.name);
-  /** externalId → signature of the last successfully-stamped claims (dedupe). */
-  private readonly lastStamped = new Map<string, string>();
   private warnedMissingConfig = false;
 
   constructor(
@@ -33,13 +38,6 @@ export class SupabaseMetadataWriter implements IdentityMetadataWriter {
   ) {}
 
   async stamp(externalId: string, claims: StampClaims): Promise<void> {
-    // The token carries the stamped claims only after its next refresh, so the
-    // fallback path re-enters here every request until then. Dedupe by the claims
-    // themselves: skip an identical repeat, but always write when something
-    // changed (e.g. a plan switch) so the change lands in the next token.
-    const signature = this.signatureOf(claims);
-    if (this.lastStamped.get(externalId) === signature) return;
-
     const projectUrl = this.configService
       .get<string>('SUPABASE_PROJECT_URL')
       ?.replace(/\/+$/, '');
@@ -85,26 +83,13 @@ export class SupabaseMetadataWriter implements IdentityMetadataWriter {
           },
         ),
       );
-      this.lastStamped.set(externalId, signature);
       this.logger.log(
         `Stamped app_metadata for ${externalId}: internal_id=${claims.internal_id}, plan=${claims.plan ?? '—'}`,
       );
     } catch (error) {
       this.logger.error(
-        `Failed to stamp app_metadata for ${externalId}: ${error instanceof Error ? error.message : String(error)}`,
+        `[STAMP_FAILED] Failed to stamp app_metadata for ${externalId}: ${error instanceof Error ? error.message : String(error)}`,
       );
     }
-  }
-
-  /** Stable signature of the claims, so an unchanged repeat dedupes. */
-  private signatureOf(claims: StampClaims): string {
-    return JSON.stringify([
-      claims.internal_id,
-      claims.plan ?? null,
-      claims.ai_enabled ?? null,
-      claims.movement_profile ?? null,
-      claims.about_me ?? null,
-      claims.can_curate ?? null,
-    ]);
   }
 }
