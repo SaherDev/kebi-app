@@ -276,7 +276,10 @@
     "addWhatYouKnowSub": "a place, an area, anything",
     "insider": "insider",
     "whatYouveAdded": "what you've added",
-    "whatYouveAddedSub": "every note you wrote"
+    "whatYouveAddedSub": "every note you wrote",
+    "unknownValue": "—",
+    "summaryFailed": "couldn't check these.",
+    "summaryFailedDetail": "your answers are safe."
   },
   "plans": {
     "eyebrow": "plans",

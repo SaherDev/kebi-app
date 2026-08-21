@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { ScrollView, View, Text } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import Constants from 'expo-constants';
@@ -13,6 +13,8 @@ import { StatusPill } from '../components/status-pill';
 import { ProfileAvatar } from '../components/profile-avatar';
 import { SegmentedControl } from '../components/segmented-control';
 import { ConfirmSheet } from '../components/confirm-sheet';
+import { ErrorRow } from '../components/error-row';
+import { Skeleton } from '../components/skeleton';
 import { useProfile } from '../components/use-profile';
 import { useCurateSheet } from '../components/curate-sheet-context';
 import { Can } from '../capabilities';
@@ -24,6 +26,7 @@ import { getUserSettings } from '../api/user-settings';
 import type { UserSettings } from '../api/models/user-settings';
 import { useTranslation } from '../i18n/context';
 import { useAuth } from '../auth/auth-context';
+import type { FormStatus } from '../lib/form-status';
 import type { ThemeChoice } from '../lib/theme-preference';
 
 /**
@@ -47,9 +50,12 @@ export default function SettingsScreen() {
   const { t } = useTranslation();
   const router = useRouter();
   const { signOut } = useAuth();
-  const { profile, refetch } = useProfile();
+  const { profile, loading: profileLoading, refetch } = useProfile();
   const curateSheet = useCurateSheet();
+  // `unknown` is not `not set` (ADR-056): a summary we failed to read must never
+  // be reported as an answer about the user's data.
   const [settings, setSettings] = useState<UserSettings | null>(null);
+  const [summaryStatus, setSummaryStatus] = useState<FormStatus>('loading');
   // Re-read the profile when settings regains focus (e.g. returning from the
   // plans screen after a switch) so the plan row reflects the new tier.
   useFocusEffect(
@@ -67,23 +73,26 @@ export default function SettingsScreen() {
 
   // The two "what kebi knows" rows summarise these; re-read on focus so a save
   // on either screen is reflected the moment you come back.
+  const clientRef = useRef(client);
+  clientRef.current = client;
+  const loadSummary = useCallback(async () => {
+    setSummaryStatus('loading');
+    try {
+      setSettings(await getUserSettings(clientRef.current));
+      setSummaryStatus('ready');
+    } catch {
+      // Non-fatal for the screen, but the rows must say "we don't know" rather
+      // than "you haven't filled this in" — the second is a claim about the
+      // user's data, and the obvious response to it is to go and retype a
+      // profile that was never gone.
+      setSummaryStatus('failed');
+    }
+  }, []);
+
   useFocusEffect(
     useCallback(() => {
-      let cancelled = false;
-      (async () => {
-        try {
-          const next = await getUserSettings(client);
-          if (!cancelled) setSettings(next);
-        } catch {
-          // Non-fatal: the rows fall back to "not set" rather than blocking
-          // the whole screen on a summary.
-          if (!cancelled) setSettings(null);
-        }
-      })();
-      return () => {
-        cancelled = true;
-      };
-    }, [client]),
+      void loadSummary();
+    }, [loadSummary]),
   );
 
   // One name: what kebi calls you, falling back to the account name.
@@ -94,6 +103,15 @@ export default function SettingsScreen() {
   // A seeded profile is not "set" — kebi ignores its modes until a human picks
   // (kebi ADR-155), so the row would otherwise claim a choice nobody made.
   const movementSet = settings?.movement_profile?.isChosen ?? false;
+  /**
+   * What a "what kebi knows" row says on its right. Only a successful read may
+   * answer; a load in flight and a failed one both show the unknown mark, so the
+   * row never asserts something we haven't checked.
+   */
+  const summaryValue = (set: boolean) =>
+    summaryStatus === 'ready'
+      ? t(set ? 'settings.isSet' : 'settings.notSet')
+      : t('settings.unknownValue');
   const version = Constants.expoConfig?.version ?? '';
 
   const handleNuke = async () => {
@@ -134,7 +152,17 @@ export default function SettingsScreen() {
           <Text className="font-bold text-hero text-text">{t('settings.hero')}</Text>
         </View>
 
-        {/* Profile block */}
+        {/* Profile block. "add your name" is an answer, not a loading state —
+            until the read lands, the identity is a skeleton (ADR-056). */}
+        {profileLoading && !profile ? (
+          <View className="flex-row items-center gap-3.5">
+            <Skeleton height={52} width={52} radius="full" />
+            <View className="flex-1 gap-2">
+              <Skeleton height={18} width="52%" />
+              <Skeleton height={11} width="66%" />
+            </View>
+          </View>
+        ) : (
         <View className="flex-row items-center gap-3.5">
           <ProfileAvatar name={name} email={email} />
           <View className="flex-1 gap-1">
@@ -155,9 +183,24 @@ export default function SettingsScreen() {
             {email ? <Text className="text-small text-text-muted">{email}</Text> : null}
           </View>
         </View>
+        )}
 
         {/* What kebi knows — the two things it reasons with (ADR-054). */}
         <Group eyebrow={t('settings.whatKebiKnows')}>
+          {/*
+            A failed summary read is stated once, above the rows it affects, and
+            stays until it's fixed — a toast would fade and leave two unexplained
+            dashes behind. Warn, not danger: nothing broke for the user.
+          */}
+          {summaryStatus === 'failed' ? (
+            <ErrorRow
+              tone="warn"
+              text={t('settings.summaryFailed')}
+              detail={t('settings.summaryFailedDetail')}
+              actionLabel={t('common.retry')}
+              onAction={() => void loadSummary()}
+            />
+          ) : null}
           <SettingsRow
             emoji="👋"
             label={t('settings.aboutYou')}
@@ -166,7 +209,7 @@ export default function SettingsScreen() {
             trailing={
               <View className="flex-row items-center gap-2">
                 <Text className="text-small text-text-muted">
-                  {aboutMeSet ? t('settings.isSet') : t('settings.notSet')}
+                  {summaryValue(aboutMeSet)}
                 </Text>
                 <Icon name="chevron-right" size={14} className="text-text-soft" />
               </View>
@@ -180,7 +223,7 @@ export default function SettingsScreen() {
             trailing={
               <View className="flex-row items-center gap-2">
                 <Text className="text-small text-text-muted">
-                  {movementSet ? t('settings.isSet') : t('settings.notSet')}
+                  {summaryValue(movementSet)}
                 </Text>
                 <Icon name="chevron-right" size={14} className="text-text-soft" />
               </View>
