@@ -32,7 +32,11 @@ export default function LoginScreen() {
   const [sending, setSending] = useState(false);
   const [googleBusy, setGoogleBusy] = useState(false);
   // Inline message shown on-screen (no toasts on the auth screens).
-  const [message, setMessage] = useState<{ text: string; tone: 'danger' | 'muted' } | null>(null);
+  const [message, setMessage] = useState<{
+    text: string;
+    /** `warn` is a condition, not a fault — offline, where the address is fine. */
+    tone: 'danger' | 'warn' | 'muted';
+  } | null>(null);
   const inputRef = useRef<SmartInputHandle>(null);
   const scrollRef = useRef<ScrollView>(null);
   // Live mirror of `identifier` so an in-flight send can detect that the user
@@ -88,8 +92,14 @@ export default function LoginScreen() {
       inputRef.current?.shake();
     } else if (result.reason === 'too_many') {
       setMessage({ text: t('auth.errTooMany'), tone: 'danger' });
+    } else if (result.reason === 'network') {
+      // Nothing the user typed is wrong, so no shake and no red field — marking
+      // a correct address as bad sends them editing it (ADR-056).
+      setMessage({ text: t('auth.errOffline'), tone: 'warn' });
     } else {
-      setMessage({ text: t('auth.errNetwork'), tone: 'danger' });
+      // The provider is down. Say whose fault it is, and point at the buttons
+      // that take a different route in.
+      setMessage({ text: t('auth.errProvider'), tone: 'danger' });
     }
   };
 
@@ -101,7 +111,10 @@ export default function LoginScreen() {
     setGoogleBusy(false);
     // Success → the route guard redirects home. Ignore a user-cancelled browser.
     if (!result.ok && result.reason !== 'cancelled') {
-      setMessage({ text: t('auth.errNetwork'), tone: 'danger' });
+      setMessage({
+        text: result.reason === 'network' ? t('auth.errOffline') : t('auth.errNetwork'),
+        tone: result.reason === 'network' ? 'warn' : 'danger',
+      });
     }
   };
 
@@ -187,7 +200,11 @@ export default function LoginScreen() {
         {message && (
           <Text
             className={`text-center text-small ${
-              message.tone === 'danger' ? 'text-danger' : 'text-text-muted'
+              message.tone === 'danger'
+                ? 'text-danger'
+                : message.tone === 'warn'
+                  ? 'text-warn'
+                  : 'text-text-muted'
             }`}
           >
             {message.text}

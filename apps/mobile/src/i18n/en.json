@@ -409,10 +409,13 @@
     "resendInLabel": "resend in",
     "resendCta": "resend",
     "codeResent": "sent a new code",
-    "errWrongCode": "that's not the code",
-    "errExpired": "code expired — tap resend",
-    "errTooMany": "too many tries — wait a minute",
-    "errNetwork": "couldn't reach us — try again"
+    "errWrongCode": "that code isn't right — check the last one we sent",
+    "errExpired": "that code has expired — they only last a few minutes",
+    "errTooMany": "too many tries — give it a minute, then ask for a new code",
+    "errNetwork": "couldn't reach us — try again",
+    "errOffline": "you're offline — your address is fine, this just needs a connection",
+    "errProvider": "couldn't send a code just now — not you. try again in a minute, or use google",
+    "checking": "checking"
   },
   "help": {
     "eyebrow": "help",
