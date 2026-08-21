@@ -208,6 +208,22 @@ export const STATES = {
 } as const;
 
 /**
+ * The boot wait (ADR-056) — what the app shows when the splash's timeline ends
+ * and the session read still hasn't resolved. Thresholds come from the design
+ * system's loading screen: reassurance at 5s, a way out at 15s.
+ */
+export const BOOT_WAIT = {
+  /** Poll interval for the elapsed-time thresholds below. */
+  tickMs: 1000,
+  /** Silence is fine briefly; past this it reads as a hang. */
+  reassureMs: 5000,
+  /** Stop waiting and offer a retry. */
+  giveUpMs: 15000,
+  /** Mascot size (px) — smaller than the splash's, this is a wait not an entrance. */
+  mascotSize: 96,
+} as const;
+
+/**
  * Toast auto-dismiss durations.
  */
 export const TOAST_DISMISS_MS = {

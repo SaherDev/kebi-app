@@ -36,6 +36,7 @@ import { ChatTranscriptProvider } from "../components/chat-transcript-context";
 import { ContextMenuProvider } from "../components/context-menu/context-menu-context";
 import { ShareIntentReceiver } from "../components/share-intent-receiver";
 import { Splash } from "../components/splash";
+import { BootWait } from "../components/boot-wait";
 import { AuthProvider, useAuth } from "../auth/auth-context";
 import { CapabilitiesProvider } from "../capabilities";
 import { getStoredTheme } from "../lib/theme-preference";
@@ -65,6 +66,17 @@ function AuthGate() {
   }, [status, segments, router]);
 
   return null;
+}
+
+/**
+ * Renders the boot wait while (and only while) auth is unresolved. A component
+ * rather than an inline check so it sits under AuthProvider — the layout body
+ * itself is above it.
+ */
+function BootHold() {
+  const { status, retryStatus } = useAuth();
+  if (status !== "loading") return null;
+  return <BootWait onRetry={retryStatus} />;
 }
 
 export default function RootLayout() {
@@ -168,6 +180,10 @@ export default function RootLayout() {
                   {/* Above the Stack, matching --bg, so the native splash hands off
                       without a flash; fades out to reveal home, then unmounts. */}
                   {!splashDone && <Splash onDone={() => setSplashDone(true)} />}
+                  {/* The splash hands off on a timer; if auth still hasn't
+                      resolved, hold the boot here rather than dropping the user
+                      onto a home screen that can't fetch anything (ADR-056). */}
+                  {splashDone && <BootHold />}
                 </SaveSheetProvider>
                 </NoteSheetProvider>
                 </CurateSheetProvider>

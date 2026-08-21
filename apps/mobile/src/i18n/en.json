@@ -882,5 +882,15 @@
       "renews": "when your plan renews"
     },
     "emptyHow": "this fills in once there is something to bill. change your plan from"
+  },
+  "boot": {
+    "waking": "still waking up…",
+    "stalled": "can't reach kebi",
+    "stalledHint": "check your connection — your places are safe."
+  },
+  "notFound": {
+    "title": "that link goes nowhere",
+    "hint": "it may be from an older version of the app.",
+    "home": "take me home"
   }
 }
