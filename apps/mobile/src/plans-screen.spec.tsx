@@ -5,9 +5,16 @@ import PlansScreen from './app/plans';
 // src/ (not src/app/) so expo-router's require.context doesn't bundle the test.
 // jest.mock factories may only reference `mock`-prefixed outer variables.
 const mockPush = jest.fn();
+const mockParams: { from?: string } = {};
 jest.mock('expo-router', () => ({
   useRouter: () => ({ push: mockPush, back: jest.fn() }),
+  useLocalSearchParams: () => mockParams,
 }));
+
+// Plans reopens the chat when it was opened from one (the daily-limit turn's
+// "see plans"), the same way place and area do.
+const mockOpenChat = jest.fn();
+jest.mock('./components/chat-context', () => ({ useChat: () => ({ open: mockOpenChat }) }));
 
 const mockSetLocalPlan = jest.fn();
 jest.mock('./components/use-profile', () => ({
@@ -38,6 +45,8 @@ describe('PlansScreen', () => {
     mockPush.mockClear();
     mockSetLocalPlan.mockClear();
     mockChangePlan.mockClear();
+    mockOpenChat.mockClear();
+    delete mockParams.from;
     mockRefreshSession.mockClear();
   });
 
@@ -76,5 +85,22 @@ describe('PlansScreen', () => {
     expect(mockSetLocalPlan).toHaveBeenCalledWith('local_legend'); // optimistic
     await waitFor(() => expect(mockSetLocalPlan).toHaveBeenLastCalledWith('homebody')); // rollback
     expect(mockRefreshSession).not.toHaveBeenCalled();
+  });
+
+  it('raises the chat again when it was opened from one', () => {
+    mockParams.from = 'chat';
+    const { unmount } = render(<PlansScreen />);
+
+    // Chat is an overlay above the router: without this, backing out of plans
+    // lands on home with the conversation off screen (ADR-056).
+    expect(mockOpenChat).not.toHaveBeenCalled();
+    unmount();
+    expect(mockOpenChat).toHaveBeenCalledTimes(1);
+  });
+
+  it('leaves the chat alone when it was reached from settings', () => {
+    const { unmount } = render(<PlansScreen />);
+    unmount();
+    expect(mockOpenChat).not.toHaveBeenCalled();
   });
 });

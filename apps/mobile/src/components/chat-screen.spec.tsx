@@ -348,7 +348,50 @@ describe('ChatScreen', () => {
     const { submit, getByText } = renderChat();
     submit('hey');
 
-    await waitFor(() => expect(getByText("couldn't reach kebi — try again")).toBeTruthy());
+    await waitFor(() => expect(getByText("couldn't finish that one.")).toBeTruthy());
+  });
+
+  it('offers to send the failed question again, rather than asking for a retype', async () => {
+    // The question is still one row above — chat is the only screen where the
+    // failed input is on screen, so the recovery uses it (ADR-056).
+    scriptStream([frame('error', { detail: 'agent disabled' })]);
+
+    const { submit, getByLabelText } = renderChat();
+    submit('somewhere quiet for dinner');
+
+    await waitFor(() => expect(getByLabelText('ask again')).toBeTruthy());
+
+    mockedStreamChat.mockClear();
+    scriptStream([
+      frame('message', { content: 'try this one', entities: [] }),
+      frame('done', { tool_calls_used: 0 }),
+    ]);
+    fireEvent.press(getByLabelText('ask again'));
+
+    await waitFor(() => expect(mockedStreamChat).toHaveBeenCalled());
+    // The same question goes out again, as a new turn — the failed one stays in
+    // the transcript rather than being rewritten.
+    expect(mockedStreamChat.mock.calls[0][1]).toBe('somewhere quiet for dinner');
+  });
+
+  it('sends you to plans from a daily-limit turn, and marks it so chat comes back', async () => {
+    // A 429 is a plan boundary, not a failure: no retry (it would fail again),
+    // and the way forward is the plans screen. Chat is an overlay, so the push
+    // carries `from=chat` — otherwise backing out lands on home with the
+    // conversation gone (ADR-056).
+    scriptStream([frame('error', { detail: 'daily_limit_reached' })]);
+
+    const { submit, getByLabelText, queryByLabelText } = renderChat();
+    submit('one more');
+
+    await waitFor(() => expect(getByLabelText('see plans')).toBeTruthy());
+    expect(queryByLabelText('ask again')).toBeNull();
+
+    fireEvent.press(getByLabelText('see plans'));
+    expect(mockPush).toHaveBeenCalledWith({
+      pathname: '/plans',
+      params: { from: 'chat' },
+    });
   });
 
   it('auto-sends a seed message once on mount', async () => {

@@ -26,13 +26,14 @@ import { ReasoningBlock } from './reasoning-block';
 import { ChatAnswer } from './chat-answer';
 import { TurnProcess } from './turn-process';
 import { ChatEntityRail } from './chat-entity-rail';
-import { useOpenChatEntity } from './use-open-chat-entity';
+import { useOpenChatEntity, PLACE_ORIGIN_CHAT } from './use-open-chat-entity';
 import type { ChatEntity } from '@kebi-app/shared';
 import {
   useChatTranscript,
   type ChatTranscriptValue,
   type ChatTurn,
   type KebiTurn,
+  type TurnErrorKind,
   type UserTurn,
 } from './chat-transcript-context';
 import { useApiClient } from '../api/hooks';
@@ -108,6 +109,23 @@ export function ChatScreen({ onClose, seed }: ChatScreenProps) {
   // Route toasts to the top while chat is open — the bottom spot is covered by
   // the composer and (often) the keyboard, so a bottom toast would be hidden.
   useEffect(() => reserveTopAnchor(), [reserveTopAnchor]);
+
+  /** Resend the question a failed or stopped turn was answering. */
+  const askAgainFor = useCallback(
+    (previous: ChatTurn | undefined) =>
+      previous?.role === 'you' ? () => void submit(previous.text) : undefined,
+    // `submit` is declared below and stable for the life of the screen.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [],
+  );
+
+  // Chat is an overlay, not a route, so closing it and pushing plans would put
+  // the conversation off screen — backing out of plans would land on home. The
+  // same `from=chat` marker the place and area screens use brings it back.
+  const openPlans = useCallback(() => {
+    onClose();
+    router.push({ pathname: '/plans', params: { from: PLACE_ORIGIN_CHAT } });
+  }, [onClose, router]);
 
   // Auto-send a seed message once — a home quick-prompt chip or a "what you
   // wanted" row opens the chat with an intent already in hand. `seededRef`
@@ -256,8 +274,7 @@ export function ChatScreen({ onClose, seed }: ChatScreenProps) {
           case 'error':
             if (ev.data.detail === 'daily_limit_reached') {
               // Daily consult quota spent (ADR-112) — fail the turn and point to plans.
-              failTurn(kebiKey, t('plans.limitReached.daily'));
-              showUpgrade(t('plans.limitReached.daily'));
+              failTurn(kebiKey, t('plans.limitReached.daily'), 'rate_limit');
             } else {
               // The frame's `detail` is an internal log string — show a generic line.
               failTurn(kebiKey, t('chat.error'));
@@ -271,7 +288,8 @@ export function ChatScreen({ onClose, seed }: ChatScreenProps) {
       if (!controller.signal.aborted) {
         // Log the real cause to Metro so a failing turn is diagnosable.
         console.warn('[chat] stream failed', err);
-        failTurn(kebiKey, errorMessage(err, t));
+        const failure = errorMessage(err, t);
+        failTurn(kebiKey, failure.detail, failure.kind);
         finished = true;
       }
     } finally {
@@ -324,15 +342,23 @@ export function ChatScreen({ onClose, seed }: ChatScreenProps) {
           ref={listRef}
           data={turns}
           keyExtractor={(turn) => turn.key}
-          renderItem={({ item }) => (
+          renderItem={({ item, index }) => (
             <TurnRow
               turn={item}
               labels={turnLabels}
               onToggle={toggleCollapse}
               onOpenEntity={openEntity}
+              // The question that produced this turn is the row right above it,
+              // so a failed turn can offer to send it again rather than asking
+              // the user to retype what they can still see (ADR-056).
+              onAskAgain={askAgainFor(turns[index - 1])}
+              onSeePlans={openPlans}
             />
           )}
-          contentContainerClassName="gap-6 px-6 pb-6 pt-2"
+          // Bottom-aligned while empty so the opener sits where the
+          // conversation will be and gets pushed up by the first answer.
+          contentContainerClassName={`gap-6 px-6 pb-6 pt-2 ${turns.length === 0 ? 'grow justify-end' : ''}`}
+          ListEmptyComponent={<ChatOpener onSelect={(text) => void submit(text)} />}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
           onScroll={onScroll}
@@ -439,6 +465,14 @@ interface TurnLabels {
   interrupted: string;
   /** Eyebrow over the entity rail — everywhere this turn named, area or venue. */
   mentioned: string;
+  /** Resends the question already on screen after a failure or a stop. */
+  askAgain: string;
+  /** Opens the plans screen when a turn hit the daily limit. */
+  seePlans: string;
+  notNow: string;
+  limitDetail: string;
+  offlineDetail: string;
+  errorDetail: string;
 }
 
 function labels(t: (k: string) => string): TurnLabels {
@@ -451,6 +485,12 @@ function labels(t: (k: string) => string): TurnLabels {
     stopped: t('chat.stopped'),
     interrupted: t('chat.interrupted'),
     mentioned: t('chat.mentioned'),
+    askAgain: t('chat.askAgain'),
+    seePlans: t('plans.upgradeAction'),
+    notNow: t('chat.notNow'),
+    limitDetail: t('chat.limitDetail'),
+    offlineDetail: t('chat.offlineDetail'),
+    errorDetail: t('chat.errorDetail'),
   };
 }
 
@@ -494,16 +534,28 @@ const TurnRow = memo(function TurnRow({
   labels: l,
   onToggle,
   onOpenEntity,
+  onAskAgain,
+  onSeePlans,
 }: {
   turn: ChatTurn;
   labels: TurnLabels;
   onToggle: ChatTranscriptValue['toggleCollapse'];
   onOpenEntity: (entity: ChatEntity) => void;
+  /** Resend this turn's question — undefined when we can't recover its text. */
+  onAskAgain?: () => void;
+  onSeePlans: () => void;
 }) {
   return turn.role === 'you' ? (
     <UserTurnRow turn={turn} label={l.you} />
   ) : (
-    <KebiTurnRow turn={turn} labels={l} onToggle={onToggle} onOpenEntity={onOpenEntity} />
+    <KebiTurnRow
+      turn={turn}
+      labels={l}
+      onToggle={onToggle}
+      onOpenEntity={onOpenEntity}
+      onAskAgain={onAskAgain}
+      onSeePlans={onSeePlans}
+    />
   );
 });
 
@@ -525,9 +577,13 @@ function KebiTurnRow({
   labels: l,
   onToggle,
   onOpenEntity,
+  onAskAgain,
+  onSeePlans,
 }: {
   turn: KebiTurn;
   labels: TurnLabels;
+  onAskAgain?: () => void;
+  onSeePlans: () => void;
   onToggle: ChatTranscriptValue['toggleCollapse'];
   onOpenEntity: (entity: ChatEntity) => void;
 }) {
@@ -582,25 +638,152 @@ function KebiTurnRow({
       ) : null}
 
       {turn.status === 'error' ? (
-        // The localized line set by the send handler (rate-limit vs generic).
-        <Text className="text-[15px] text-danger">{turn.errorDetail ?? l.error}</Text>
+        <TurnFailure
+          kind={turn.errorKind ?? 'generic'}
+          detail={turn.errorDetail ?? l.error}
+          labels={l}
+          onAskAgain={onAskAgain}
+          onSeePlans={onSeePlans}
+        />
+      ) : null}
+
+      {/* A turn you stopped keeps what it said — you asked it to stop, not to
+          disappear — and gets the same way back in as a failure. */}
+      {turn.stopped && onAskAgain ? (
+        <Pressable
+          onPress={onAskAgain}
+          accessibilityRole="button"
+          accessibilityLabel={l.askAgain}
+          className={`mt-1 self-start rounded-medium border border-surface-2 px-3 py-2 ${PRESS}`}
+        >
+          <Text className="text-small font-semibold text-text">{l.askAgain}</Text>
+        </Pressable>
       ) : null}
     </View>
   );
 }
 
 /**
- * Map a stream failure to a user-facing line. A 429 is the gateway's per-plan AI
- * rate limit (RateLimitGuard, ADR-016/022) — surface a "slow down" message;
- * everything else is a generic reach error. Duck-types `status` so the chat
- * screen needn't import the transport's HttpError (keeps the ./api seam clean).
+ * The chat with nothing in it (ADR-056). The mascot button is the app's most
+ * inviting affordance and used to open onto a bare composer, which made the
+ * first tap feel like a mistake.
+ *
+ * Kebi asks first, then three prompts. Deliberately **not** the home chips:
+ * these show what chat can do that a chip can't — several people, memory of
+ * where you've been, right now — so they earn their place next to home's row.
  */
-function errorMessage(err: unknown, t: (key: string) => string): string {
+function ChatOpener({ onSelect }: { onSelect: (text: string) => void }) {
+  const { t } = useTranslation();
+  const prompts = [t('chat.opener.first'), t('chat.opener.second'), t('chat.opener.third')];
+
+  return (
+    <View className="gap-6">
+      <View className="gap-1.5">
+        <Text className="text-eyebrow font-semibold uppercase text-text-soft">
+          {t('chat.kebi')}
+        </Text>
+        <Text className="text-[17px] leading-relaxed text-text">{t('chat.greeting')}</Text>
+      </View>
+      <View className="gap-3">
+        {prompts.map((prompt) => (
+          <Pressable
+            key={prompt}
+            onPress={() => onSelect(prompt)}
+            accessibilityRole="button"
+            accessibilityLabel={prompt}
+            className={`self-start ${PRESS}`}
+          >
+            <Text className="text-[15px] text-text-muted">{prompt}</Text>
+          </Pressable>
+        ))}
+      </View>
+    </View>
+  );
+}
+
+/**
+ * A turn that ended without an answer (ADR-056). Unique to chat: the failed
+ * input is still on screen one line above, so the recovery is "ask again"
+ * rather than a description of what broke.
+ *
+ * `--danger` is the dot, never the sentence — a failed turn reads as a remark
+ * in the transcript, not an alarm. A rate limit is warn-toned and offers the
+ * plans screen instead of a retry that is guaranteed to fail.
+ */
+function TurnFailure({
+  kind,
+  detail,
+  labels: l,
+  onAskAgain,
+  onSeePlans,
+}: {
+  kind: TurnErrorKind;
+  detail: string;
+  labels: TurnLabels;
+  onAskAgain?: () => void;
+  onSeePlans: () => void;
+}) {
+  const limited = kind === 'rate_limit';
+  const sub = limited ? l.limitDetail : kind === 'offline' ? l.offlineDetail : l.errorDetail;
+
+  return (
+    <View className="flex-row items-start gap-2.5">
+      <View
+        className={`mt-2 size-1.5 rounded-full ${limited || kind === 'offline' ? 'bg-warn' : 'bg-danger'}`}
+      />
+      <View className="flex-1">
+        <Text className="text-body leading-6 text-text">{detail}</Text>
+        <Text className="mt-0.5 text-small text-text-muted">{sub}</Text>
+        <View className="mt-2 flex-row gap-2">
+          {limited ? (
+            <>
+              <Pressable
+                onPress={onSeePlans}
+                accessibilityRole="button"
+                accessibilityLabel={l.seePlans}
+                className={`rounded-medium border border-surface-2 px-3 py-2 ${PRESS}`}
+              >
+                <Text className="text-small font-semibold text-text">{l.seePlans}</Text>
+              </Pressable>
+              <View className="justify-center px-1">
+                <Text className="text-small text-text-soft">{l.notNow}</Text>
+              </View>
+            </>
+          ) : onAskAgain ? (
+            <Pressable
+              onPress={onAskAgain}
+              accessibilityRole="button"
+              accessibilityLabel={l.askAgain}
+              className={`rounded-medium border border-surface-2 px-3 py-2 ${PRESS}`}
+            >
+              <Text className="text-small font-semibold text-text">{l.askAgain}</Text>
+            </Pressable>
+          ) : null}
+        </View>
+      </View>
+    </View>
+  );
+}
+
+/**
+ * Map a stream failure to a user-facing line **and its kind** (ADR-056). A 429 is
+ * the gateway's per-plan AI rate limit (RateLimitGuard, ADR-016/022) — nothing
+ * broke, so it is warn-toned and retry-less; a transport failure with no status
+ * never reached the network at all, which reads as offline. Duck-types `status`
+ * so the chat screen needn't import the transport's HttpError (keeps the ./api
+ * seam clean).
+ */
+function errorMessage(
+  err: unknown,
+  t: (key: string) => string,
+): { detail: string; kind: TurnErrorKind } {
   const status =
     err && typeof err === 'object' && 'status' in err
       ? (err as { status?: number }).status
       : undefined;
-  return status === 429 ? t('chat.rateLimited') : t('chat.error');
+  if (status === 429) return { detail: t('chat.rateLimited'), kind: 'rate_limit' };
+  if (status === undefined) return { detail: t('chat.offline'), kind: 'offline' };
+  return { detail: t('chat.error'), kind: 'generic' };
 }
 
 /** "9:38 pm" from an epoch — delegates to the shared lowercase, Intl-free clock. */

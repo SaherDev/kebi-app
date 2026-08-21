@@ -198,11 +198,11 @@
     "searchFailed": "search didn't go through."
   },
   "chat": {
-    "greeting": "what's the move?",
+    "greeting": "what are you in the mood for?",
     "placeholder": "tell me what you want...",
     "you": "you",
     "kebi": "kebi",
-    "error": "couldn't reach kebi — try again",
+    "error": "couldn't finish that one.",
     "rateLimited": "too many asks — give it a sec",
     "send": "send",
     "stop": "stop",
@@ -224,6 +224,17 @@
     "help": "help",
     "entityMenu": {
       "open": "open"
+    },
+    "askAgain": "ask again",
+    "notNow": "not now",
+    "offline": "you're offline.",
+    "offlineDetail": "i'll need a connection for this one.",
+    "errorDetail": "your question is still here — nothing to retype.",
+    "limitDetail": "resets at midnight.",
+    "opener": {
+      "first": "somewhere i've been that i'd go back to",
+      "second": "a place for four people, tonight",
+      "third": "what's good near me right now"
     }
   },
   "save": {

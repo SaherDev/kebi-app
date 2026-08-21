@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ScrollView, View, Text } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { PLAN_TIERS, type PlanTier } from '@kebi-app/shared';
 import { ScreenScaffold } from '../components/screen-scaffold';
 import { TopBar } from '../components/top-bar';
@@ -9,6 +9,8 @@ import { BillingToggle } from '../components/billing-toggle';
 import { PlanCard } from '../components/plan-card';
 import { PLAN_CONTENT, type BillingCycle } from '../components/plans-content';
 import { useProfile } from '../components/use-profile';
+import { useChat } from '../components/chat-context';
+import { PLACE_ORIGIN_CHAT } from '../components/use-open-chat-entity';
 import { useToast } from '../components/toast-context';
 import { useApiClient } from '../api/hooks';
 import { changePlan } from '../api/plan';
@@ -23,12 +25,31 @@ import { supabase } from '../lib/supabase';
  * the next token refresh. Optimistic like the settings name-edit — update the
  * view, PATCH, then `refreshSession`; roll back on failure. No billing/checkout.
  */
+/**
+ * Raise the chat again when plans was opened *from* it — the daily-limit turn
+ * offers "see plans", and chat is an overlay rather than a route, so popping
+ * this screen would otherwise land on home with the conversation off screen.
+ * Identical to the place and area screens' return path, keyed to unmount so the
+ * iOS swipe-back gesture is covered too.
+ */
+function useReturnToChat() {
+  const { from } = useLocalSearchParams<{ from?: string }>();
+  const { open } = useChat();
+
+  useEffect(() => {
+    if (from !== PLACE_ORIGIN_CHAT) return;
+    return () => open();
+  }, [from, open]);
+}
+
 export default function PlansScreen() {
   const { t } = useTranslation();
   const router = useRouter();
   const { profile, setLocalPlan } = useProfile();
   const toast = useToast();
   const client = useApiClient();
+
+  useReturnToChat();
 
   const [cycle, setCycle] = useState<BillingCycle>('monthly');
   const [busy, setBusy] = useState(false);
