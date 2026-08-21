@@ -21,6 +21,8 @@ import Animated, {
 import type { FeedbackSaveAttempt } from '@kebi-app/shared';
 import { DURATION, PRESS, SPRING_CONFIG } from '../theme/motion';
 import { triggerHaptic } from '../lib/haptics';
+import { ErrorRow } from './error-row';
+import { Spinner } from './spinner';
 import { useTranslation } from '../i18n/context';
 import { useToast } from './toast-context';
 import { Icon } from './icon';
@@ -61,6 +63,8 @@ export function ReportSaveSheet({ open, onClose, onSubmit, latest }: ReportSaveS
   const [value, setValue] = useState('');
   const [input, setInput] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  /** The last send failed — stated in the sheet, not in a toast behind it. */
+  const [failed, setFailed] = useState(false);
   const scrim = useSharedValue(0);
   const translateY = useSharedValue(height);
   const keyboard = useAnimatedKeyboard();
@@ -80,6 +84,7 @@ export function ReportSaveSheet({ open, onClose, onSubmit, latest }: ReportSaveS
       setValue('');
       setInput('');
       setSubmitting(false);
+      setFailed(false);
     }
   }, [open]);
 
@@ -124,6 +129,7 @@ export function ReportSaveSheet({ open, onClose, onSubmit, latest }: ReportSaveS
   const handleSend = async () => {
     if (!canSend) return;
     setSubmitting(true);
+    setFailed(false);
     try {
       await onSubmit({ text: value.trim(), input: input.trim() || undefined });
       triggerHaptic('save-sheet-confirm');
@@ -204,12 +210,16 @@ export function ReportSaveSheet({ open, onClose, onSubmit, latest }: ReportSaveS
             />
           </View>
 
-          <View className="flex-row items-start gap-2 px-1">
-            <Icon name="link" size={13} className="mt-0.5 text-text-muted" />
-            <Text className="flex-1 text-small leading-5 text-text-muted">
-              {latest ? t('help.sheetSaveNote') : t('help.sheetSaveNoteEmpty')}
-            </Text>
-          </View>
+          {failed ? (
+            <ErrorRow text={t('help.sendFailed')} detail={t('help.sendFailedDetail')} />
+          ) : (
+            <View className="flex-row items-start gap-2 px-1">
+              <Icon name="link" size={13} className="mt-0.5 text-text-muted" />
+              <Text className="flex-1 text-small leading-5 text-text-muted">
+                {latest ? t('help.sheetSaveNote') : t('help.sheetSaveNoteEmpty')}
+              </Text>
+            </View>
+          )}
 
           <Pressable
             onPress={handleSend}
@@ -222,8 +232,10 @@ export function ReportSaveSheet({ open, onClose, onSubmit, latest }: ReportSaveS
             style={{ opacity: canSend ? 1 : 0.4 }}
             className={`flex-row items-center justify-center gap-2 rounded-card bg-text px-4 py-3.5 ${PRESS}`}
           >
-            <Icon name="send" size={14} className="text-bg" />
-            <Text className="text-small font-semibold text-bg">{t('help.send')}</Text>
+            {submitting ? <Spinner /> : <Icon name="send" size={14} className="text-bg" />}
+            <Text className="text-small font-semibold text-bg">
+              {submitting ? t('help.sending') : failed ? t('help.sendRetry') : t('help.send')}
+            </Text>
           </Pressable>
         </Animated.View>
       </GestureDetector>

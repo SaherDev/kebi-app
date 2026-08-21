@@ -456,7 +456,13 @@
     "sheetMessagePlaceholder": "a question, an idea, anything else...",
     "sheetMessageNote": "goes straight to the team. replies go to your account email",
     "toastSent": "sent. this is how kebi gets better",
-    "toastError": "couldn't send — try again"
+    "toastError": "couldn't send — try again",
+    "sending": "sending",
+    "sendRetry": "try again",
+    "sendFailed": "couldn't send that.",
+    "sendFailedDetail": "your words are still here.",
+    "rowWrongAttach": "attaches your last conversation",
+    "rowSaveAttach": "attaches your recent saves"
   },
   "aboutYou": {
     "eyebrow": "about you",
