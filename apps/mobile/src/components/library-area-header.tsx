@@ -73,7 +73,14 @@ export function LibraryAreaHeader({ group, tappable, here, label }: LibraryAreaH
 
   return (
     <Pressable
-      onPress={() => router.push({ pathname: '/area', params: { id: areaId } })}
+      // Name and icon ride along so the area screen paints its title
+      // immediately rather than shimmering something we already know (ADR-056).
+      onPress={() =>
+        router.push({
+          pathname: '/area',
+          params: { id: areaId, name, icon: group.icon ?? '' },
+        })
+      }
       accessibilityRole="link"
       accessibilityLabel={name}
       className={PRESS}

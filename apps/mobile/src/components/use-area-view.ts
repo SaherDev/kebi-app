@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useApiClient } from '../api/hooks';
 import { getArea } from '../api/area';
 import type { AreaScreenView } from '../api/models/area';
@@ -25,15 +25,23 @@ const PROFILE_RETRY_MS = 3000;
 export type AreaViewState =
   | { status: 'loading'; view: null }
   | { status: 'ready'; view: AreaScreenView }
-  | { status: 'failed'; view: null };
+  /** Nothing to show: the read failed, or there was never an id to read. */
+  | { status: 'failed'; view: null; /** A retry can only help the first. */ retryable: boolean };
 
-export function useAreaView(areaId: string | undefined): AreaViewState {
+export interface UseAreaView {
+  state: AreaViewState;
+  /** Re-read the area after a failure (ADR-056 — every error offers a next step). */
+  retry: () => void;
+}
+
+export function useAreaView(areaId: string | undefined): UseAreaView {
   const client = useApiClient();
   const clientRef = useRef(client);
   clientRef.current = client;
 
   const [view, setView] = useState<AreaScreenView | null>(null);
   const [failed, setFailed] = useState(false);
+  const [attempt, setAttempt] = useState(0);
   // Whether anything has painted for *this* area. A ref, not the `view` state:
   // the effect would read a stale copy of state through its closure, and adding
   // `view` to the deps would restart the fetch on every load.
@@ -41,6 +49,7 @@ export function useAreaView(areaId: string | undefined): AreaViewState {
 
   useEffect(() => {
     if (!areaId) return;
+    setFailed(false);
     let live = true;
     let timer: ReturnType<typeof setTimeout> | undefined;
     painted.current = false;
@@ -72,12 +81,22 @@ export function useAreaView(areaId: string | undefined): AreaViewState {
       live = false;
       if (timer) clearTimeout(timer);
     };
-  }, [areaId]);
+  }, [areaId, attempt]);
+
+  const retry = useCallback(() => setAttempt((n) => n + 1), []);
 
   // A cold start onto a bare `/area` can never resolve, so it reads as failed
   // rather than spinning forever.
-  if (view) return { status: 'ready', view };
-  return failed || !areaId
-    ? { status: 'failed', view: null }
-    : { status: 'loading', view: null };
+  // A cold start onto a bare `/area`, or a link to an area that no longer
+  // exists, can never resolve — so it is failed but **not retryable**: tapping
+  // again could not change the answer (ADR-056).
+  const state: AreaViewState = view
+    ? { status: 'ready', view }
+    : !areaId
+      ? { status: 'failed', view: null, retryable: false }
+      : failed
+        ? { status: 'failed', view: null, retryable: true }
+        : { status: 'loading', view: null };
+
+  return { state, retry };
 }

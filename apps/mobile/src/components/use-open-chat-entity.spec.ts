@@ -62,7 +62,9 @@ describe('useOpenChatEntity', () => {
     // whether or not the caller saved it (ADR-151).
     expect(mockPush).toHaveBeenCalledWith({
       pathname: '/place',
-      params: { id: 'vault-id', from: 'chat' },
+      // Name and icon ride along so a destination that has no seed can paint
+      // its title on the first frame (ADR-056).
+      params: expect.objectContaining({ id: 'vault-id', from: 'chat' }),
     });
   });
 
@@ -72,8 +74,11 @@ describe('useOpenChatEntity', () => {
     // `key` is `id/bali/canggu` — a slash path no endpoint takes (ADR-153).
     expect(mockPush).toHaveBeenCalledWith({
       pathname: '/area',
-      params: { id: 'aWQvYmFsaS9jYW5nZ3U', from: 'chat' },
+      params: expect.objectContaining({ id: 'aWQvYmFsaS9jYW5nZ3U', from: 'chat' }),
     });
+    // The chip already knew what it was pointing at — the area screen shows
+    // that name while it fetches, instead of an anonymous grey screen.
+    expect(mockPush.mock.calls[0][0].params).toMatchObject({ name: 'Canggu' });
   });
 
   it('leaves chat open when an entity carries no id to open', () => {

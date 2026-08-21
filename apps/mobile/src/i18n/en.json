@@ -114,7 +114,7 @@
   },
   "area": {
     "empty": "no area to show",
-    "loadFailed": "couldn't open that area",
+    "loadFailed": "couldn't load this area.",
     "saved": "{{count}} saved",
     "bestFor": "best for",
     "level": {
@@ -127,7 +127,11 @@
       "saved": "where you've saved",
       "savedPlaces": "your places here",
       "worthKnowing": "worth knowing"
-    }
+    },
+    "loadFailedNamed": "couldn't load {{name}}.",
+    "gone": "that area isn't there",
+    "goneHint": "the link may be old. head back and try from your library.",
+    "nothingHere": "nothing saved in {{name}} yet. share a place and it lands here."
   },
   "toast": {
     "undo": "undo",
