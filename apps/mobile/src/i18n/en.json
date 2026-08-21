@@ -75,7 +75,7 @@
   },
   "place": {
     "empty": "no place to show",
-    "loadFailed": "couldn't open that place",
+    "loadFailed": "couldn't load this place.",
     "approve": "approve?",
     "addNote": "add a note",
     "save": "save",
@@ -110,7 +110,10 @@
       "google": "google maps",
       "apple": "apple maps",
       "waze": "waze"
-    }
+    },
+    "refreshFailed": "couldn't refresh",
+    "gone": "this place isn't in your stash",
+    "goneHint": "you may have forgotten it, or the link is old."
   },
   "area": {
     "empty": "no area to show",

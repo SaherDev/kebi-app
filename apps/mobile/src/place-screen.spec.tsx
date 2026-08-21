@@ -311,13 +311,41 @@ describe('PlaceScreen', () => {
       expect(getByText(/Saint Jardim/)).toBeTruthy();
     });
 
-    it('says so when there is no seed and the fetch fails', async () => {
+    it('toasts when a seeded screen fails to refresh, and keeps the place', async () => {
+      mockParams.id = 'p1';
+      mockedGetPlace.mockRejectedValue(new Error('offline'));
+
+      renderPlace(makeView());
+
+      await waitFor(() => expect(mockToast).toHaveBeenCalled());
+      // Content already on screen is never replaced by a failure (ADR-056) —
+      // the failure travels as a toast that carries the retry.
+      expect(mockToast.mock.calls[0][0]).toMatchObject({
+        text: "couldn't refresh",
+        action: { label: 'retry' },
+      });
+    });
+
+    it('offers a retry over a frozen frame when a cold open fails', async () => {
+      mockParams.id = 'unseeded';
+      mockedGetPlace.mockRejectedValue(new Error('offline'));
+
+      const { findByText, getByLabelText } = renderPlace(null);
+
+      expect(await findByText("couldn't load this place.")).toBeTruthy();
+      expect(getByLabelText('retry')).toBeTruthy();
+    });
+
+    it('does not offer a retry for a place that is gone', async () => {
+      // Retrying a 404 can never change the answer, so the screen explains and
+      // offers a way out instead (ADR-056).
       mockParams.id = 'gone';
-      mockedGetPlace.mockRejectedValue(new Error('404'));
+      mockedGetPlace.mockRejectedValue(Object.assign(new Error('404'), { status: 404 }));
 
-      const { findByText } = renderPlace(null);
+      const { findByText, queryByLabelText } = renderPlace(null);
 
-      expect(await findByText("couldn't open that place")).toBeTruthy();
+      expect(await findByText("this place isn't in your stash")).toBeTruthy();
+      expect(queryByLabelText('retry')).toBeNull();
     });
   });
 
