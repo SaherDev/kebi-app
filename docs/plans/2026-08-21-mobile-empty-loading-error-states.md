@@ -46,9 +46,9 @@ load · a spinner inside a button is fine (an action in flight, not content on i
 
 ## Pages
 
-> **Status 2026-08-21:** sections A and B are **built** on `feature/mobile-states` — all 15 screens,
-> plus the three bug fixes. Section C (overlays and sheets) is still open, minus the three report
-> sheets, which shipped with help.
+> **Status:** **all three sections are built** on `feature/mobile-states` — 15 screens, 9 overlays,
+> and the three bug fixes. Options files exist for every one of them. What's left is a device pass
+> and the merge to `dev`.
 
 ### A. Designed — mockups exist, options chosen, **built**
 
@@ -74,24 +74,26 @@ load · a spinner inside a button is fine (an action in flight, not content on i
 | 14 | splash / auth gate | `kebi-boot-states-options.html` | the boot holds while auth is unresolved instead of handing off on a timer — status at 5s, a retry at 15s, "your places are safe" |
 | 27 | `+not-found` | `kebi-boot-states-options.html` | the route the app never had. Until now an unmatched URL rendered expo-router's own error screen |
 
-### C. Still to design — overlays and sheets
+### C. Overlays and sheets — **built**
 
-Not routes, but each is a surface a user waits on, and none has a failure state today.
+Not routes, but each is a surface a user waits on. Mockups:
+`kebi-write-sheets-states-options.html` · `kebi-picker-sheets-states-options.html` ·
+`kebi-action-surfaces-states-options.html`.
 
 | # | Surface | Component | Why it needs one |
 |---|---|---|---|
-| 15 | save sheet | `save-sheet.tsx` | has empty/filled/saving already; needs **failed** (and it's the app's main write path) |
-| 16 | curate sheet | `curate-sheet.tsx` | insider write with no receipt — a failed submit must keep the prose |
-| 17 | note sheet | `note-sheet.tsx` | same: a note that fails to save must not vanish |
+| 15 | save sheet | `save-sheet.tsx` | unchanged — its failure toast already reopens the sheet pre-filled. The model the other two were brought up to. |
+| 16 | curate sheet | `curate-sheet.tsx` | kept the draft in code but told nobody; now says "kept" and carries a retry that reopens the composer on the same anchor |
+| 17 | note sheet | `note-sheet.tsx` | now holds its draft through a failed write, with its own sentence instead of the shared "couldn't update that" |
 | ~~18~~ | ~~report sheets~~ | `report-save-sheet.tsx`, `report-wrong-answer-sheet.tsx` | **done** — shipped with help |
 | ~~19~~ | ~~feedback form sheet~~ | `feedback-form-sheet.tsx` | **done** — shipped with help |
-| 20 | country picker | `country-picker-sheet.tsx` | a long list with a filter: filtered-empty case |
-| 21 | maps chooser | `maps-chooser-sheet.tsx` | "no maps app installed" is an empty state nobody wrote |
-| 22 | confirm sheet | `confirm-sheet.tsx` | the confirmed action's in-flight and failed states (nuke, clear history) |
-| 23 | action sheet / context menu | `action-sheet.tsx`, `context-menu/` | an item whose action fails — undo path exists, failure path doesn't |
-| 24 | while you were away | `while-you-were-away.tsx` | home card; row states exist, card-level failure doesn't |
-| 25 | share intent receiver | `share-intent-receiver.tsx` | the moment a share lands while the app is cold |
-| 26 | toasts | `toast.tsx` | already the settled vocabulary — audit only, that every new error routes through it |
+| 20 | country picker | `country-picker-sheet.tsx` | no-match now reads exactly like the library's search empty |
+| 21 | maps chooser | `maps-chooser-sheet.tsx` | lists only apps the OS can open; one line when there's nothing to open |
+| 22 | confirm sheet | `confirm-sheet.tsx` | **holds** while its action runs and stays open on failure with "nothing was deleted" |
+| 23 | action sheet / context menu | `use-place-menu-items.ts` | each action names its own failure and offers the retry |
+| 24 | while you were away | `while-you-were-away.tsx` | unchanged — per-row retries are the smallest true unit |
+| 25 | share intent receiver | `share-intent-receiver.tsx` | **bug fix**: a cold start could see the intent flag before its payload and reset it, dropping the share silently |
+| 26 | toasts | `toast.tsx` | unchanged — every new error routes through it |
 | — | gallery | `app/gallery.tsx` | dev route. Add a Section per new state component, per the existing convention. |
 
 ---
