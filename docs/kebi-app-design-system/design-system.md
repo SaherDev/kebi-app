@@ -93,6 +93,20 @@ Three variants only: primary (filled dark), outlined (transparent + surface-2 bo
 
 **One primary button per screen.** Always. Never two. The primary CTA is the most important action on the screen.
 
+**A filled primary is reserved for the one action a screen exists to perform** — save on the place
+page, save in the save sheet, send in a report sheet, the submit on a form. It is the heaviest ink
+the system has, so it is never spent on a screen that is failing, empty, or waiting.
+
+Specifically, **never filled**:
+- in an **empty state** — the action there is the ghost preview's `+` row, not a button (§ empty states)
+- on a **dead end** (a gone place, a gone area, an unmatched route) — the way out is outlined
+- on any **error** or **retry** — retry is the error row's borderless text action, or an outlined button
+  on a full-screen failure
+- when the screen's real trigger already lives in the top bar (the save bookmark) — teach that instead
+
+The rule reads the same from the other side: if a button is offering to undo something that went
+wrong, it is not the most important thing on the screen, so it is not the primary.
+
 **Required:**
 - 13–14px font, weight 600
 - 9–13px vertical / 14–16px horizontal padding
@@ -103,6 +117,8 @@ Three variants only: primary (filled dark), outlined (transparent + surface-2 bo
 - Don't put two primary buttons in the same row.
 - Don't use color for primary buttons (always var(--text) bg).
 - Don't put icons inside primary buttons unless the action is destructive or directional.
+- Don't put a filled button on an empty, failed, or dead-end screen. See above — this one gets
+  re-proposed every time, and the answer is always no.
 
 ### AI button
 

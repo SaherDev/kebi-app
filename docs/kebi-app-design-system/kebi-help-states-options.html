@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Kebi help — sending, sent, failed</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #FAFAF9; --surface: #F1F1EF; --surface-2: #E8E8E5;
+    --text: #1A1A1A; --text-muted: #8A8A87; --text-soft: #B5B5B1;
+    --success: #4A7C3A; --green-bg: rgba(74,124,58,.14);
+    --danger: #D14343; --warn: #B45309;
+    --tag: #D4B891; --tag-rec: #A7C7A0; --tag-cur: #C9C9C4;
+    --page: #FAFAF9; --page-ink: #1A1A1A;
+  }
+  body.dark {
+    --bg: #13110F; --surface: #1C1A17; --surface-2: #26231F;
+    --text: #F5F1EA; --text-muted: #9A938A; --text-soft: #6E6862;
+    --success: #7FB08C; --green-bg: rgba(127,176,140,.16);
+    --danger: #E89090; --warn: #D9B45F; --tag-cur: #45413B;
+    --page: #0A0908; --page-ink: #F5F1EA;
+  }
+  html, body { background: var(--page); color: var(--page-ink);
+    font-family: 'Inter', system-ui, sans-serif; -webkit-font-smoothing: antialiased; min-height: 100vh; }
+  .page { max-width: 1800px; margin: 0 auto; padding: 52px 36px 120px; }
+  .header { display: flex; align-items: flex-start; justify-content: space-between;
+    padding-bottom: 26px; border-bottom: 1px solid var(--surface-2); }
+  h1 { font-size: 25px; font-weight: 700; letter-spacing: -0.028em; }
+  .meta { font-size: 12px; color: var(--text-muted); margin-top: 5px; }
+  .lede { font-size: 14px; color: var(--text-muted); line-height: 1.65; max-width: 880px; margin-top: 14px; }
+  .lede b { color: var(--page-ink); font-weight: 600; }
+  .lede code, .section-desc code, .note code, .verdict code { font-size: 12px;
+    background: var(--surface-2); border-radius: 5px; padding: 1px 6px; }
+  .theme-toggle { display: flex; background: var(--surface); border-radius: 999px; padding: 3px; flex-shrink: 0; }
+  .theme-toggle button { padding: 6px 14px; background: transparent; border: none; border-radius: 999px;
+    font-family: inherit; font-size: 12px; font-weight: 500; color: var(--text-muted); cursor: pointer; }
+  .theme-toggle button.active { background: var(--page-ink); color: var(--page); }
+  .section-head { display: flex; align-items: baseline; justify-content: space-between;
+    margin: 46px 0 12px; padding-bottom: 12px; border-bottom: 1px solid var(--surface-2); }
+  .section-title { font-size: 11px; font-weight: 600; color: var(--text-soft);
+    text-transform: uppercase; letter-spacing: 0.08em; }
+  .section-q { font-size: 12px; color: var(--text-soft); }
+  .section-desc { font-size: 14px; color: var(--text-muted); line-height: 1.6; max-width: 880px; margin-bottom: 24px; }
+  .section-desc b { color: var(--page-ink); font-weight: 600; }
+  .row-of { display: flex; flex-wrap: wrap; gap: 34px; align-items: flex-start; }
+  .col { width: 390px; display: flex; flex-direction: column; gap: 10px; }
+  .col h2 { font-size: 15px; font-weight: 700; letter-spacing: -0.02em; }
+  .note { font-size: 11.5px; color: var(--text-muted); line-height: 1.55; }
+  .note b { color: var(--page-ink); font-weight: 600; }
+  .tag { display: inline-block; align-self: flex-start; font-size: 10px; font-weight: 700;
+    letter-spacing: .08em; text-transform: uppercase; color: #1A1A1A; background: var(--tag);
+    border-radius: 999px; padding: 3px 10px; }
+  .tag.rec { background: var(--tag-rec); }
+  .tag.cur { background: var(--tag-cur); color: var(--page-ink); }
+
+  .phone { width: 390px; height: 700px; background: var(--bg); border-radius: 44px; overflow: hidden;
+    position: relative; box-shadow: 0 0 0 10px #111, 0 0 0 12px var(--page), 0 24px 50px rgba(0,0,0,0.28);
+    display: flex; flex-direction: column; }
+  .status-bar { height: 44px; padding: 15px 30px 0; display: flex; justify-content: space-between;
+    align-items: center; font-size: 14px; font-weight: 600; color: var(--text); flex-shrink: 0; }
+  .batt { width: 22px; height: 11px; border: 1px solid var(--text); border-radius: 3px; position: relative; }
+  .batt::before { content: ''; position: absolute; inset: 1.5px; background: var(--text); border-radius: 1px; }
+  .top-bar { padding: 12px 16px 8px; display: flex; align-items: center; flex-shrink: 0; }
+  .icon-btn { width: 38px; height: 38px; border-radius: 50%; background: var(--surface);
+    display: flex; align-items: center; justify-content: center; border: none; }
+  .icon-btn svg { width: 17px; height: 17px; stroke: var(--text); stroke-width: 1.8; fill: none; }
+  .scroll { flex: 1; overflow: hidden; padding: 8px 24px 16px; display: flex; flex-direction: column; gap: 20px; }
+  .home-indicator { width: 128px; height: 5px; background: var(--text); border-radius: 3px;
+    margin: 2px auto 8px; flex-shrink: 0; opacity: .85; }
+  .scrim { position: absolute; inset: 0; background: rgba(15,13,10,0.45); }
+  .sheet { position: absolute; left: 0; right: 0; bottom: 0; background: var(--bg);
+    border-radius: 22px 22px 0 0; padding: 10px 20px 26px; display: flex; flex-direction: column; gap: 14px; }
+  .grab { width: 36px; height: 4px; border-radius: 2px; background: var(--surface-2); align-self: center; }
+  .sheet h3 { font-size: 17px; font-weight: 700; letter-spacing: -0.02em; }
+  .sheet .sub { font-size: 12.5px; color: var(--text-muted); line-height: 1.5; }
+  .field { background: var(--surface); border-radius: 14px; padding: 13px 14px;
+    font-size: 15px; color: var(--text); min-height: 96px; }
+  .field.ph { color: var(--text-soft); }
+  .cta { background: var(--text); color: var(--bg); border: none; font-family: inherit;
+    border-radius: 14px; padding: 13px; text-align: center; font-size: 14px; font-weight: 600; }
+  .cta.dim { opacity: .35; }
+  .cta-row { display: flex; align-items: center; justify-content: center; gap: 9px; }
+  .spin { width: 15px; height: 15px; border-radius: 50%; border: 2px solid rgba(255,255,255,.25);
+    border-top-color: var(--bg); animation: rot .8s linear infinite; }
+  body.dark .spin { border-color: rgba(0,0,0,.25); border-top-color: var(--bg); }
+  @keyframes rot { 100% { transform: rotate(360deg); } }
+  .eyebrow { font-size: 11px; font-weight: 600; color: var(--text-soft);
+    text-transform: uppercase; letter-spacing: 0.08em; }
+  .hero { font-size: 28px; font-weight: 700; letter-spacing: -0.03em; color: var(--text); margin-top: 4px; }
+  .group { background: var(--surface); border-radius: 14px; padding: 2px 12px; margin-top: 9px; }
+  .srow { display: flex; align-items: center; gap: 11px; padding: 12px 2px; }
+  .sem { width: 26px; text-align: center; font-size: 16px; }
+  .slabel { font-size: 14.5px; font-weight: 500; color: var(--text); }
+  .ssub { font-size: 11.5px; color: var(--text-soft); margin-top: 2px; }
+  .chev { width: 12px; height: 12px; stroke: var(--text-soft); stroke-width: 2.2; fill: none; }
+  .rule { height: 1px; background: var(--surface-2); }
+  .err-inline { display: flex; align-items: center; gap: 9px; }
+  .err-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--danger); flex-shrink: 0; }
+  .err-txt { font-size: 12.5px; color: var(--text-muted); flex: 1; line-height: 1.4; }
+  .err-txt b { color: var(--text); font-weight: 600; }
+  .retry { background: transparent; border: none; font-family: inherit; font-size: 13px;
+    font-weight: 600; color: var(--text); padding: 2px 6px; }
+  .toast-wrap { position: absolute; left: 0; right: 0; bottom: 40px; display: flex; justify-content: center; }
+  .toast { display: flex; align-items: center; gap: 10px; background: var(--text); color: var(--bg);
+    border-radius: 999px; padding: 11px 16px; max-width: 290px; font-size: 13px; font-weight: 500; }
+  .pill-ok { display: inline-flex; align-items: center; gap: 6px; background: var(--green-bg);
+    color: var(--success); border-radius: 999px; padding: 4px 11px; font-size: 12px; font-weight: 600; }
+
+  .verdict { margin-top: 44px; border: 1px solid var(--surface-2); border-radius: 16px;
+    padding: 22px 24px; background: var(--surface); max-width: 1000px; }
+  .verdict h3 { font-size: 14px; font-weight: 700; margin-bottom: 10px; }
+  .verdict p { font-size: 13px; color: var(--text-muted); line-height: 1.68; }
+  .verdict p + p { margin-top: 10px; }
+  .verdict b { color: var(--page-ink); font-weight: 600; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="header">
+    <div>
+      <h1>help — sending, sent, failed</h1>
+      <div class="meta">kebi-app · app/help.tsx + feedback-form-sheet.tsx · applies the kernel</div>
+      <p class="lede">
+        Help itself has no loading and no empty state: it is four static rows over local data
+        (<code>latestExchange</code>, <code>recentSaveAttempts</code>). Everything happens in the
+        <b>report sheets</b>, and their handling is already thoughtful — a throw keeps the sheet open
+        with the draft intact behind an error toast, precisely so a blip isn't a dead end.
+        <br><br>
+        Two things are missing. The send button has <b>no in-flight state</b> (it dims via
+        <code>canSend</code>, but says nothing), and the failure is a toast that fades in three seconds
+        while the user is still looking at the sheet that failed — the one place the app tells you
+        something important somewhere you aren't looking.
+      </p>
+    </div>
+    <div class="theme-toggle">
+      <button class="active" data-theme="light">light</button>
+      <button data-theme="dark">dark</button>
+    </div>
+  </div>
+
+  <div class="section-head">
+    <span class="section-title">1 · sending a report</span>
+    <span class="section-q">where does the outcome appear?</span>
+  </div>
+  <p class="section-desc">
+    The sheet is the surface the user is looking at. Anything about <i>this send</i> belongs in it;
+    the toast is for after it closes.
+  </p>
+
+  <div class="row-of">
+
+    <div class="col">
+      <span class="tag cur">today</span>
+      <h2>a · dim button, toast on failure</h2>
+      <div class="phone">
+        <div class="status-bar"><span>9:41</span><div class="batt"></div></div>
+        <div class="top-bar"><button class="icon-btn"><svg viewBox="0 0 24 24"><polyline points="15 6 9 12 15 18"/></svg></button></div>
+        <div class="scroll">
+          <div><div class="eyebrow">help</div><div class="hero">something off?</div></div>
+        </div>
+        <div class="scrim"></div>
+        <div class="sheet">
+          <div class="grab"></div>
+          <h3>tell us what happened</h3>
+          <div class="field">the place it picked was closed on mondays</div>
+          <button class="cta dim">send</button>
+        </div>
+        <div class="toast-wrap"><div class="toast">couldn't send that</div></div>
+      </div>
+      <p class="note">
+        The button dims but never says it's working, so a slow send looks like a dead tap. The failure
+        toast floats at the bottom of the screen <b>behind the sheet's own footer</b> and is gone in 3s,
+        with no retry.
+      </p>
+    </div>
+
+    <div class="col">
+      <span class="tag rec">recommended</span>
+      <h2>b · the sheet reports its own send</h2>
+      <div class="phone">
+        <div class="status-bar"><span>9:41</span><div class="batt"></div></div>
+        <div class="top-bar"><button class="icon-btn"><svg viewBox="0 0 24 24"><polyline points="15 6 9 12 15 18"/></svg></button></div>
+        <div class="scroll">
+          <div><div class="eyebrow">help</div><div class="hero">something off?</div></div>
+        </div>
+        <div class="scrim"></div>
+        <div class="sheet">
+          <div class="grab"></div>
+          <h3>tell us what happened</h3>
+          <div class="field">the place it picked was closed on mondays</div>
+          <button class="cta"><span class="cta-row"><span class="spin"></span>sending</span></button>
+        </div>
+      </div>
+      <p class="note">
+        <b>Spinner + "sending" in the button</b>, the field goes read-only, and the sheet can't be
+        dismissed mid-flight — the same language the save sheet already uses. A spinner inside a button
+        is allowed: it marks an action, not content.
+      </p>
+    </div>
+
+    <div class="col">
+      <span class="tag rec">recommended</span>
+      <h2>c · it didn't send</h2>
+      <div class="phone">
+        <div class="status-bar"><span>9:41</span><div class="batt"></div></div>
+        <div class="top-bar"><button class="icon-btn"><svg viewBox="0 0 24 24"><polyline points="15 6 9 12 15 18"/></svg></button></div>
+        <div class="scroll">
+          <div><div class="eyebrow">help</div><div class="hero">something off?</div></div>
+        </div>
+        <div class="scrim"></div>
+        <div class="sheet">
+          <div class="grab"></div>
+          <h3>tell us what happened</h3>
+          <div class="field">the place it picked was closed on mondays</div>
+          <div class="err-inline">
+            <span class="err-dot"></span>
+            <span class="err-txt"><b>couldn't send that.</b> your words are still here.</span>
+          </div>
+          <button class="cta">try again</button>
+        </div>
+      </div>
+      <p class="note">
+        The failure sits <b>in the sheet, above the button</b>, and stays until it's fixed. The draft is
+        already preserved in code — this says so, which is the part that was missing. The button becomes
+        <code>try again</code>, so the retry is the same control, not a second one.
+      </p>
+    </div>
+
+    <div class="col">
+      <span class="tag rec">settled</span>
+      <h2>d · sent</h2>
+      <div class="phone">
+        <div class="status-bar"><span>9:41</span><div class="batt"></div></div>
+        <div class="top-bar"><button class="icon-btn"><svg viewBox="0 0 24 24"><polyline points="15 6 9 12 15 18"/></svg></button></div>
+        <div class="scroll">
+          <div><div class="eyebrow">help</div><div class="hero">something off?</div></div>
+          <div>
+            <div class="eyebrow">issues</div>
+            <div class="group">
+              <div class="srow"><div class="sem">🤔</div><div style="flex:1"><div class="slabel">a wrong answer</div><div class="ssub">kebi picked badly</div></div><svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></div>
+              <div class="rule"></div>
+              <div class="srow"><div class="sem">🔖</div><div style="flex:1"><div class="slabel">a save that didn't work</div><div class="ssub">a link kebi couldn't read</div></div><svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></div>
+            </div>
+          </div>
+        </div>
+        <div class="toast-wrap"><div class="toast">✅ sent — thanks</div></div>
+      </div>
+      <p class="note">
+        Success closes the sheet and confirms on the screen behind it. Unchanged: the toast is right
+        here, because the thing it confirms is finished and the surface it happened on is gone.
+      </p>
+    </div>
+
+  </div>
+
+  <div class="section-head">
+    <span class="section-title">2 · the rows themselves</span>
+    <span class="section-q">two of them depend on data</span>
+  </div>
+  <p class="section-desc">
+    "a wrong answer" attaches the latest chat exchange; "a save that didn't work" attaches recent save
+    attempts. Both read <b>local</b> state, so neither can load or fail — but both can be <b>empty</b>,
+    and today the row looks identical either way.
+  </p>
+
+  <div class="row-of">
+
+    <div class="col">
+      <span class="tag cur">today</span>
+      <h2>a · every row always available</h2>
+      <div class="phone">
+        <div class="status-bar"><span>9:41</span><div class="batt"></div></div>
+        <div class="top-bar"><button class="icon-btn"><svg viewBox="0 0 24 24"><polyline points="15 6 9 12 15 18"/></svg></button></div>
+        <div class="scroll">
+          <div><div class="eyebrow">help</div><div class="hero">something off?</div></div>
+          <div>
+            <div class="eyebrow">issues</div>
+            <div class="group">
+              <div class="srow"><div class="sem">🤔</div><div style="flex:1"><div class="slabel">a wrong answer</div><div class="ssub">kebi picked badly</div></div><svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></div>
+              <div class="rule"></div>
+              <div class="srow"><div class="sem">🔖</div><div style="flex:1"><div class="slabel">a save that didn't work</div><div class="ssub">a link kebi couldn't read</div></div><svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></div>
+              <div class="rule"></div>
+              <div class="srow"><div class="sem">🐛</div><div style="flex:1"><div class="slabel">something's broken</div><div class="ssub">a bug in the app</div></div><svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></div>
+            </div>
+          </div>
+        </div>
+        <div class="home-indicator"></div>
+      </div>
+      <p class="note">
+        A user who has never chatted can report a wrong answer, and the report goes out with an empty
+        exchange. Harmless, but it wastes their words and our triage.
+      </p>
+    </div>
+
+    <div class="col">
+      <span class="tag rec">recommended</span>
+      <h2>b · the sublabel says what it will attach</h2>
+      <div class="phone">
+        <div class="status-bar"><span>9:41</span><div class="batt"></div></div>
+        <div class="top-bar"><button class="icon-btn"><svg viewBox="0 0 24 24"><polyline points="15 6 9 12 15 18"/></svg></button></div>
+        <div class="scroll">
+          <div><div class="eyebrow">help</div><div class="hero">something off?</div></div>
+          <div>
+            <div class="eyebrow">issues</div>
+            <div class="group">
+              <div class="srow"><div class="sem">🤔</div><div style="flex:1"><div class="slabel">a wrong answer</div><div class="ssub" style="color:var(--text-muted)">attaches your last conversation</div></div><svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></div>
+              <div class="rule"></div>
+              <div class="srow" style="opacity:.45"><div class="sem">🔖</div><div style="flex:1"><div class="slabel">a save that didn't work</div><div class="ssub">nothing recent to attach</div></div></div>
+              <div class="rule"></div>
+              <div class="srow"><div class="sem">🐛</div><div style="flex:1"><div class="slabel">something's broken</div><div class="ssub">a bug in the app</div></div><svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></div>
+            </div>
+          </div>
+        </div>
+        <div class="home-indicator"></div>
+      </div>
+      <p class="note">
+        A row with nothing to attach <b>dims and loses its chevron</b>, with the sublabel saying why.
+        Nothing is hidden — the row still teaches that the feature exists — and "something's broken"
+        stays available always, because a bug report attaches only the device meta.
+      </p>
+    </div>
+
+    <div class="col">
+      <span class="tag">alternative</span>
+      <h2>c · hide the row entirely</h2>
+      <div class="phone">
+        <div class="status-bar"><span>9:41</span><div class="batt"></div></div>
+        <div class="top-bar"><button class="icon-btn"><svg viewBox="0 0 24 24"><polyline points="15 6 9 12 15 18"/></svg></button></div>
+        <div class="scroll">
+          <div><div class="eyebrow">help</div><div class="hero">something off?</div></div>
+          <div>
+            <div class="eyebrow">issues</div>
+            <div class="group">
+              <div class="srow"><div class="sem">🤔</div><div style="flex:1"><div class="slabel">a wrong answer</div><div class="ssub">attaches your last conversation</div></div><svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></div>
+              <div class="rule"></div>
+              <div class="srow"><div class="sem">🐛</div><div style="flex:1"><div class="slabel">something's broken</div><div class="ssub">a bug in the app</div></div><svg class="chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></div>
+            </div>
+          </div>
+        </div>
+        <div class="home-indicator"></div>
+      </div>
+      <p class="note">
+        Tidier, but the group changes shape between visits and the user never learns that reporting a
+        failed save is possible — on the screen whose whole job is telling them what they can report.
+      </p>
+    </div>
+
+  </div>
+
+  <div class="verdict">
+    <h3>help, recommended</h3>
+    <p>
+      <b>1b + 1c + 1d</b> — the sheet owns its send: spinner + "sending" in the button, the failure as a
+      persistent line inside the sheet with the button becoming "try again", and the success toast on the
+      screen behind after it closes. The draft already survives; the change is saying so where the user
+      is looking instead of in a toast that fades.
+    </p>
+    <p>
+      <b>2b</b> — a report row with nothing to attach dims and says so, rather than sending an empty
+      exchange. "something's broken" is always available.
+    </p>
+  </div>
+
+</div>
+<script>
+  document.querySelectorAll('.theme-toggle button').forEach(function (b) {
+    b.addEventListener('click', function () {
+      document.querySelectorAll('.theme-toggle button').forEach(function (x) { x.classList.remove('active'); });
+      b.classList.add('active');
+      document.body.classList.toggle('dark', b.dataset.theme === 'dark');
+    });
+  });
+</script>
+</body>
+</html>
