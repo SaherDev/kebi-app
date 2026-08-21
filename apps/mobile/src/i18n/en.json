@@ -842,6 +842,13 @@
       "saved": "{{count}} saved",
       "failed": "{{count}} didn't",
       "working": "{{count}} saving"
+    },
+    "emptySub": "nothing yet — this is where shared links land.",
+    "emptyHow": "share a link from tiktok, instagram or maps, pick kebi, and it lands here.",
+    "ghost": {
+      "heading": "11:20 pm · vt.tiktok.com/ZSVSnKYxm/",
+      "second": "the café next door to it",
+      "secondMeta": "coffee · ¥¥ · nezu"
     }
   }
 }
