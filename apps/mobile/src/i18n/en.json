@@ -524,12 +524,18 @@
     "hero": "what you've added",
     "subtitle": "{{notes}} notes across {{places}} places",
     "empty": "nothing yet — write something and it shows up here",
-    "loadFailed": "couldn't load your notes",
+    "loadFailed": "couldn't load your notes.",
     "remove": "remove this note",
     "toast": {
       "removed": "note removed",
       "removeFailed": "couldn't remove that one"
-    }
+    },
+    "loadFailedDetail": "they're still there — this is the list, not the writing.",
+    "emptySub": "nothing yet — this is where it lands.",
+    "ghostAnchor": "🍜 kamachiku",
+    "ghostNote": "ask for the counter seats, the ones by the window get cold in winter.",
+    "writeFirst": "write your first note",
+    "writeFirstSub": "about a place, an area, or anything"
   },
   "countries": {
     "ac": "Ascension Island",
