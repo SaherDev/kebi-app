@@ -1,6 +1,7 @@
 import { Text, View } from 'react-native';
 import type { IntentItem } from '@kebi-app/shared';
 import { IntentRow } from './intent-row';
+import { ErrorRow } from './error-row';
 import { useTranslation } from '../i18n/context';
 
 /**
@@ -11,10 +12,31 @@ import { useTranslation } from '../i18n/context';
 interface IntentListProps {
   intents: IntentItem[];
   onSelect: (text: string) => void;
+  /** The read failed and we have nothing — the section says so itself. */
+  error?: boolean;
+  onRetry?: () => void;
 }
 
-export function IntentList({ intents, onSelect }: IntentListProps) {
+export function IntentList({ intents, onSelect, error, onRetry }: IntentListProps) {
   const { t } = useTranslation();
+
+  // Hidden when there is nothing to recall, but *not* when we failed to find
+  // out (ADR-056) — those are different facts and used to look identical.
+  if (intents.length === 0 && error) {
+    return (
+      <View className="gap-3">
+        <Text className="text-eyebrow font-semibold uppercase text-text-soft">
+          {t('home.whatYouWanted')}
+        </Text>
+        <ErrorRow
+          text={t('home.recallFailed')}
+          actionLabel={t('common.retry')}
+          onAction={() => onRetry?.()}
+        />
+      </View>
+    );
+  }
+
   if (intents.length === 0) return null;
 
   return (

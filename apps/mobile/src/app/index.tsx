@@ -85,12 +85,25 @@ export default function HomeScreen() {
       >
         <HomeHero greeting={home.greeting} />
         <QuickPrompts chips={home.chips} onSelect={chat.open} />
-        <IntentList intents={intents.intents} onSelect={chat.open} />
+        {/* Each section owns its own failure (ADR-056): one failed read never
+            blocks the others, and never renders as an empty section — a user
+            with forty saves must not see the same home as a user with none. */}
+        <IntentList
+          intents={intents.intents}
+          onSelect={chat.open}
+          error={intents.error}
+          onRetry={refetchIntents}
+        />
         {/* Above the stash: what came in from outside while the app was closed.
             Renders nothing unless something did (ADR-041 — no empty states on
             home), and clears for good once dismissed. */}
         <WhileYouWereAway />
-        <StashSection views={stash.views} total={stash.total} />
+        <StashSection
+          views={stash.views}
+          total={stash.total}
+          error={stash.error}
+          onRetry={refetchStash}
+        />
       </ScrollView>
     </ScreenScaffold>
   );

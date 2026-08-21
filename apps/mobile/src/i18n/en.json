@@ -36,7 +36,10 @@
       "nearby": "somewhere nearby",
       "dinner": "good for dinner",
       "surprise": "surprise me"
-    }
+    },
+    "stashFailed": "couldn't load your stash.",
+    "recallFailed": "couldn't load what you asked for.",
+    "nothingLost": "nothing lost."
   },
   "placeMenu": {
     "thisPlace": "this place",
