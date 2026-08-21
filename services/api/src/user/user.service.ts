@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import type {
   AuthUser,
   DataScope,
@@ -18,7 +18,10 @@ import type {
 import { KebiHttpClient } from '../kebi/kebi-http.client';
 import { PROFILE_WRITER } from '../auth/profile-writer.interface';
 import type { ProfileWriter } from '../auth/profile-writer.interface';
+import { IDENTITY_PROVIDER } from '../auth/identity-provider.interface';
+import type { IdentityProvider } from '../auth/identity-provider.interface';
 import { ClaimStamper } from '../auth/claim-stamper';
+import { UserIdentityService } from '../auth/user-identity.service';
 import { UserSettingsService } from '../auth/user-settings.service';
 import { UpdateAboutMeDto } from './dto/update-about-me.dto';
 import { UpdateMovementProfileDto } from './dto/update-movement-profile.dto';
@@ -35,12 +38,46 @@ const EMPTY_ABOUT_ME: UserAboutMe = { call_me: null, home_country: null, about: 
 
 @Injectable()
 export class UserService {
+  private readonly logger = new Logger(UserService.name);
+
   constructor(
     private readonly kebi: KebiHttpClient,
     @Inject(PROFILE_WRITER) private readonly profileWriter: ProfileWriter,
+    @Inject(IDENTITY_PROVIDER) private readonly provider: IdentityProvider,
+    private readonly userIdentity: UserIdentityService,
     private readonly userSettings: UserSettingsService,
     private readonly claimStamper: ClaimStamper,
   ) {}
+
+  /**
+   * The internal id a settings write may use: the one the `users` mapping owns
+   * for this verified identity — never the id read back from token claims,
+   * which is a cache that has been wrong before (a stale or corrupted token
+   * would otherwise write another user's row and copy its bad id back onto the
+   * account). Falls back to the claimed id only when no mapping exists at all
+   * (the local dev bypass, where there is no real account behind the identity).
+   */
+  private async writeIdFor(
+    identity: NormalizedIdentity,
+    user: AuthUser,
+  ): Promise<string> {
+    const mapped = await this.userIdentity.lookup(
+      this.provider.name,
+      identity.externalId,
+    );
+    if (mapped === null) {
+      this.logger.warn(
+        `No identity mapping for ${this.provider.name}:${identity.externalId} — settings write uses the token's id.`,
+      );
+      return user.id;
+    }
+    if (mapped !== user.id) {
+      this.logger.error(
+        `[IDENTITY_DRIFT] Token for ${identity.externalId} claims internal_id ${user.id} but the mapping owns ${mapped} — writing with the mapped id.`,
+      );
+    }
+    return mapped;
+  }
 
   /**
    * The user's display profile, read gateway-local (never forwarded to kebi).
@@ -92,8 +129,9 @@ export class UserService {
     user: AuthUser,
     plan: PlanTier,
   ): Promise<UserProfile> {
-    const settings = await this.userSettings.updatePlan(user.id, plan);
-    await this.claimStamper.stamp(identity.externalId, user.id, settings);
+    const userId = await this.writeIdFor(identity, user);
+    const settings = await this.userSettings.updatePlan(userId, plan);
+    await this.claimStamper.stamp(identity.externalId, userId, settings);
     return {
       name: identity.name ?? '',
       email: identity.email ?? '',
@@ -138,8 +176,9 @@ export class UserService {
       home_country: dto.home_country ?? null,
       about: dto.about ?? null,
     };
-    const settings = await this.userSettings.updateAboutMe(user.id, aboutMe);
-    await this.claimStamper.stamp(identity.externalId, user.id, settings);
+    const userId = await this.writeIdFor(identity, user);
+    const settings = await this.userSettings.updateAboutMe(userId, aboutMe);
+    await this.claimStamper.stamp(identity.externalId, userId, settings);
     return settings.about_me ?? EMPTY_ABOUT_ME;
   }
 
@@ -153,8 +192,9 @@ export class UserService {
     user: AuthUser,
     dto: UpdateMovementProfileDto,
   ): Promise<MovementProfile> {
-    const settings = await this.userSettings.updateMovementProfile(user.id, dto);
-    await this.claimStamper.stamp(identity.externalId, user.id, settings);
+    const userId = await this.writeIdFor(identity, user);
+    const settings = await this.userSettings.updateMovementProfile(userId, dto);
+    await this.claimStamper.stamp(identity.externalId, userId, settings);
     // Non-null by construction — the setter always writes a profile.
     return settings.movement_profile as MovementProfile;
   }

@@ -23,6 +23,21 @@ export class UserIdentityService {
   ) {}
 
   /**
+   * Return the internal id already mapped to `(authProvider, externalId)`, or
+   * null when no mapping exists. Never creates — that is `resolve`'s job, and
+   * only login/signup may do it. This is what identity *writes* consult: a
+   * stamp or settings write must target the mapped id, never one read back
+   * from token claims.
+   */
+  async lookup(
+    authProvider: string,
+    externalId: string,
+  ): Promise<string | null> {
+    const existing = await this.users.findByExternal(authProvider, externalId);
+    return existing?.id ?? null;
+  }
+
+  /**
    * Return the internal id for `(authProvider, externalId)`, creating the
    * mapping on first sight. Idempotent and race-safe — a concurrent create that
    * loses the unique-constraint race re-reads the winner's row.

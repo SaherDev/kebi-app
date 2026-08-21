@@ -8,7 +8,9 @@ import type {
 import { KebiHttpClient } from '../kebi/kebi-http.client';
 import type { ProfileWriter } from '../auth/profile-writer.interface';
 import type { IdentityMetadataWriter } from '../auth/identity-metadata.writer';
+import type { IdentityProvider } from '../auth/identity-provider.interface';
 import { ClaimStamper } from '../auth/claim-stamper';
+import type { UserIdentityService } from '../auth/user-identity.service';
 import type { UserSettingsService } from '../auth/user-settings.service';
 import type { IntentsQueryDto } from './dto/intents-query.dto';
 import type { LibraryQueryDto } from './dto/library-query.dto';
@@ -29,6 +31,7 @@ describe('UserService', () => {
     updateMovementProfile: jest.Mock;
   };
   let metadataWriter: { stamp: jest.Mock };
+  let userIdentity: { resolve: jest.Mock; lookup: jest.Mock };
 
   beforeEach(() => {
     kebi = {
@@ -45,11 +48,23 @@ describe('UserService', () => {
       updateMovementProfile: jest.fn(),
     };
     metadataWriter = { stamp: jest.fn().mockResolvedValue(undefined) };
+    // Steady state: the mapping owns the same id the token claims.
+    userIdentity = {
+      resolve: jest.fn().mockResolvedValue(USER_ID),
+      lookup: jest.fn().mockResolvedValue(USER_ID),
+    };
+    const provider = { name: 'supabase', verify: jest.fn() } as IdentityProvider;
     service = new UserService(
       kebi,
       profileWriter as unknown as ProfileWriter,
+      provider,
+      userIdentity as unknown as UserIdentityService,
       userSettings as unknown as UserSettingsService,
-      new ClaimStamper(metadataWriter as unknown as IdentityMetadataWriter),
+      new ClaimStamper(
+        metadataWriter as unknown as IdentityMetadataWriter,
+        provider,
+        userIdentity as unknown as UserIdentityService,
+      ),
     );
   });
 
@@ -149,6 +164,44 @@ describe('UserService', () => {
         movement_profile: { available_modes: ['walking'], reach: 'normal' },
       });
       expect(profile).toEqual({ name: 'saher', email: 'saher@kebi.app', plan: 'explorer' });
+    });
+
+    it('writes and stamps the MAPPED id when the token claims a different one (corrupted-token safety)', async () => {
+      // The production incident: a token carrying a stale test id would write
+      // the wrong settings row and copy the bad id back onto the account.
+      userIdentity.lookup.mockResolvedValue('user_real');
+      userSettings.updatePlan.mockResolvedValueOnce({
+        plan: 'explorer',
+        ai_enabled: true,
+        can_curate: false,
+        movement_profile: null,
+        about_me: null,
+      });
+
+      await service.changePlan(identity, { ...user, id: 'user_stale_bad' }, 'explorer');
+
+      expect(userSettings.updatePlan).toHaveBeenCalledWith('user_real', 'explorer');
+      expect(metadataWriter.stamp).toHaveBeenCalledWith(
+        'ext_1',
+        expect.objectContaining({ internal_id: 'user_real' }),
+      );
+    });
+
+    it('falls back to the token id and skips the stamp when no mapping exists (dev bypass)', async () => {
+      userIdentity.lookup.mockResolvedValue(null);
+      userSettings.updatePlan.mockResolvedValueOnce({
+        plan: 'explorer',
+        ai_enabled: true,
+        can_curate: false,
+        movement_profile: null,
+        about_me: null,
+      });
+
+      await service.changePlan(identity, user, 'explorer');
+
+      expect(userSettings.updatePlan).toHaveBeenCalledWith(USER_ID, 'explorer');
+      // No mapping → no real account behind the identity → nothing to stamp.
+      expect(metadataWriter.stamp).not.toHaveBeenCalled();
     });
 
     it('omits movement_profile from the stamp when the user has none', async () => {
