@@ -108,6 +108,9 @@ module.exports = {
         breathe: 'breathe 2400ms ease-in-out infinite',
         spin: 'spin 700ms linear infinite',
         'pulse-dot': 'pulse-dot 1400ms ease-in-out infinite',
+        // `animate-shimmer` → the skeleton loop (ADR-056). 1400ms linear, the
+        // one linear curve the design system allows.
+        shimmer: 'shimmer 1400ms linear infinite',
       },
     },
   },

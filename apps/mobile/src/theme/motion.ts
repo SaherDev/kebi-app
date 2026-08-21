@@ -186,6 +186,28 @@ export const SHAKE = {
 } as const;
 
 /**
+ * The four screen states (ADR-056, design-system § the four states of a screen).
+ * Every literal the skeleton / frozen / ghost treatments need, so no screen
+ * types an opacity or a duration inline.
+ *
+ * The mockups draw the skeleton as a sweeping highlight; on device it is an
+ * opacity loop (`animate-shimmer`) — react-native has no gradient without an
+ * extra dependency, and the loop reads the same at 1.4s linear.
+ */
+export const STATES = {
+  /** Skeleton shimmer loop: one direction of the 1.4s linear cycle. */
+  shimmerHalfMs: DURATION.shimmerHalf,
+  /** Skeleton block opacity floor at the dim end of the loop. */
+  shimmerMinOpacity: 0.45,
+  /** A failed load freezes its skeleton: animation off, whole block dimmed. */
+  frozenOpacity: 0.45,
+  /** Ghost preview rows — real content shape, faded to "this isn't yours yet". */
+  ghostOpacity: 0.38,
+  /** Sections that may resolve to nothing fade in when they land. */
+  arriveMs: DURATION.stateChange,
+} as const;
+
+/**
  * Toast auto-dismiss durations.
  */
 export const TOAST_DISMISS_MS = {

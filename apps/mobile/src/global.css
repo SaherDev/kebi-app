@@ -142,3 +142,15 @@
   0%, 100% { transform: scale(1);   opacity: 1; }
   50%      { transform: scale(0.6); opacity: 0.45; }
 }
+
+/*
+  Skeleton loop (ADR-056, design-system § loading states). The mockups draw a
+  sweeping highlight; react-native has no gradient without another dependency,
+  so on device it is an opacity loop at the same 1400ms linear pacing. Driven
+  via the `animate-shimmer` utility (tailwind.config.js); the floor matches
+  STATES.shimmerMinOpacity in theme/motion.ts.
+*/
+@keyframes shimmer {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.45; }
+}

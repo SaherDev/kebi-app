@@ -16,6 +16,9 @@ import { AreaChildRow, AreaPlaceRow } from '../components/area-row';
 import { ChatEntityRail } from '../components/chat-entity-rail';
 import { AreaSubArea, AreaVenueRow } from '../api/models/area';
 import { Mascot } from '../components/mascot';
+import { SkeletonOnSurface } from '../components/skeleton';
+import { ErrorRow } from '../components/error-row';
+import { AddRow, GhostPreview } from '../components/ghost-preview';
 import { Splash } from '../components/splash';
 import { SocialButton } from '../components/auth/social-button';
 import { AuthDivider } from '../components/auth/auth-divider';
@@ -488,6 +491,66 @@ export default function GalleryScreen() {
       }
     >
       <ScrollView className="flex-1 px-6 pt-2" contentContainerClassName="pb-24">
+        <Section title="States — skeleton / frozen / error row / ghost + add row">
+          <View className="gap-4">
+            {/* Loading: a row's exact geometry, shimmering. */}
+            <View className="rounded-large border border-surface-2 bg-surface p-3">
+              <View className="flex-row items-center gap-3 py-2.5">
+                <SkeletonOnSurface height={36} width={36} radius="small" />
+                <View className="flex-1 gap-2">
+                  <SkeletonOnSurface height={13} width="62%" />
+                  <SkeletonOnSurface height={10} width="42%" />
+                </View>
+              </View>
+            </View>
+
+            {/* Failed: the same skeleton, frozen and dimmed, under the error row. */}
+            <View>
+              <ErrorRow
+                text="couldn't load your places."
+                detail="nothing lost."
+                actionLabel="retry"
+                onAction={() => undefined}
+              />
+              <View className="rounded-large border border-surface-2 bg-surface p-3">
+                <View className="flex-row items-center gap-3 py-2.5">
+                  <SkeletonOnSurface height={36} width={36} radius="small" frozen />
+                  <View className="flex-1 gap-2">
+                    <SkeletonOnSurface height={13} width="62%" frozen />
+                    <SkeletonOnSurface height={10} width="42%" frozen />
+                  </View>
+                </View>
+              </View>
+            </View>
+
+            {/* Warn tone: a condition, not a failure — often nothing to retry. */}
+            <ErrorRow text="you're offline." detail="showing what's saved." tone="warn" />
+
+            {/* Cold empty: ghost rows in the real shape, action as the last row. */}
+            <View className="rounded-large border border-surface-2 bg-surface p-3">
+              <GhostPreview>
+                <View className="flex-row items-center gap-3 py-2.5">
+                  <View className="size-9 items-center justify-center rounded-small bg-bg">
+                    <Text className="text-[17px]">🍜</Text>
+                  </View>
+                  <View className="flex-1">
+                    <Text className="text-body font-semibold text-text">
+                      the ramen place you sent yourself
+                    </Text>
+                    <Text className="mt-0.5 text-small text-text-muted">udon · ¥¥ · nezu</Text>
+                  </View>
+                </View>
+              </GhostPreview>
+              <View className="h-px bg-surface-2" />
+              <AddRow
+                label="save your first place"
+                sublabel="paste a link, or just name it"
+                onPress={() => undefined}
+              />
+            </View>
+          </View>
+        </Section>
+
         <Section title="Status pills">
           <View className="flex-row flex-wrap items-center gap-2">
             <StatusPill variant="green">visited</StatusPill>
